@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -71,11 +72,21 @@ export default function TransactionsPage() {
           setIsFormModalOpen(isOpen);
           if (!isOpen) setEditingTransaction(undefined); // Reset editing state when dialog closes
         }}>
-        <DialogContent className="sm:max-w-lg"> {/* Adjust width as needed */}
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              {editingTransaction ? <Edit className="mr-2 h-5 w-5" /> : <PlusCircle className="mr-2 h-5 w-5" />}
+              {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
+            </DialogTitle>
+            <DialogDescription>
+              Enter the details of the financial transaction.
+            </DialogDescription>
+          </DialogHeader>
           <TransactionForm 
             onSave={handleSaveTransaction} 
             initialData={editingTransaction} 
-            className="shadow-none border-0 p-0" // Remove card styling when in dialog
+            isInDialog={true}
+            className="pt-6" // Add padding for the form content after DialogHeader
           />
         </DialogContent>
       </Dialog>
