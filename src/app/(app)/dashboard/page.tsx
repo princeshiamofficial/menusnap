@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import type { FinancialMetric, Transaction } from '@/lib/types';
 import { FinancialSummaryCard } from '@/components/dashboard/financial-summary-card';
 import { SummaryChart } from '@/components/dashboard/summary-chart';
-import { TrendingUp, TrendingDown, Sigma, Coins, CalendarClock, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Sigma, Coins, CalendarClock, AlertTriangle, CalendarPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -94,8 +94,7 @@ export default function DashboardPage() {
         <SummaryChart data={chartData} />
       </div>
       
-      {/* Placeholder for recent activity or other widgets */}
-       <Card className="shadow-lg">
+      <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
           <CardDescription>Latest transactions and updates.</CardDescription>
@@ -115,6 +114,35 @@ export default function DashboardPage() {
           {MOCK_TRANSACTIONS.length === 0 && <p className="text-muted-foreground">No recent transactions.</p>}
         </CardContent>
       </Card>
+
+      {/* Quick Actions Section */}
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Perform common tasks quickly.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Button asChild variant="outline" className="justify-start text-left p-4 h-auto">
+            <Link href="/transactions/new" className="flex items-center">
+              <Coins className="mr-3 h-5 w-5 text-primary" /> 
+              <div>
+                <p className="font-semibold">Add New Transaction</p>
+                <p className="text-xs text-muted-foreground">Quickly record income or expenses.</p>
+              </div>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start text-left p-4 h-auto">
+            <Link href="/calendar" className="flex items-center">
+              <CalendarPlus className="mr-3 h-5 w-5 text-primary" /> 
+              <div>
+                <p className="font-semibold">Schedule Appointment</p>
+                <p className="text-xs text-muted-foreground">Manage your upcoming meetings.</p>
+              </div>
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
