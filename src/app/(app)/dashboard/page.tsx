@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,6 +9,8 @@ import { TrendingUp, TrendingDown, Sigma, Coins, CalendarClock, AlertTriangle } 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 // Mock data - in a real app, this would come from an API/DB
 const MOCK_TRANSACTIONS: Transaction[] = [
