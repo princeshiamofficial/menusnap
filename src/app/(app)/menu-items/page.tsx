@@ -6,7 +6,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { Reorder } from "framer-motion";
 import {
   Search,
-  Power,
   Save,
   Eye,
   GripVertical,
@@ -21,6 +20,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Category {
   id: string;
@@ -62,7 +68,7 @@ export default function MenuItemsPage() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
-  const [isPowerOn, setIsPowerOn] = useState(true);
+  const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
   
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
@@ -225,11 +231,14 @@ export default function MenuItemsPage() {
   };
 
   let itemsGridClass = 'grid-cols-1';
-  if (currentMenuItems.length === 2) {
+  if (currentMenuItems.length === 1) {
+    itemsGridClass = 'grid-cols-1';
+  } else if (currentMenuItems.length === 2) {
     itemsGridClass = 'grid-cols-1 md:grid-cols-2';
   } else if (currentMenuItems.length > 2) {
     itemsGridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
   }
+
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
@@ -281,9 +290,15 @@ export default function MenuItemsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="outline" size="icon" onClick={() => setIsPowerOn(!isPowerOn)} className={isPowerOn ? "text-primary" : "text-muted-foreground"}>
-              <Power className="h-5 w-5" />
-            </Button>
+            <Select value={selectedMenuType} onValueChange={setSelectedMenuType}>
+              <SelectTrigger className="w-[180px] text-sm">
+                <SelectValue placeholder="Select menu type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="restaurant">Restaurant Menu</SelectItem>
+                <SelectItem value="parlour">Parlour Menu</SelectItem>
+              </SelectContent>
+            </Select>
             <Button variant="outline" className="text-sm">
               <Save className="h-4 w-4 mr-2" />
               Save as Draft
