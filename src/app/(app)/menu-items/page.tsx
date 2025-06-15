@@ -32,12 +32,12 @@ interface MenuItem {
   id: string;
   name: string;
   price: number;
-  iconPlaceholder?: boolean; 
+  iconPlaceholder?: boolean;
 }
 
 const mockCategories: Category[] = [
   { id: 'cat1', name: 'Expresso Based Classics', emoji: '☕' },
-  { id: 'cat2', name: 'Dhakaiya Chaap', emoji: '🍖' }, 
+  { id: 'cat2', name: 'Dhakaiya Chaap', emoji: '🍖' },
   { id: 'cat3', name: 'Peshwari Kabab', emoji: '🍗' },
   { id: 'cat4', name: 'Drumstick', emoji: '🍗' },
   { id: 'cat5', name: 'Flavored Latte', emoji: '🥤' },
@@ -45,11 +45,11 @@ const mockCategories: Category[] = [
   { id: 'cat7', name: 'Steak', emoji: '🥩' },
   { id: 'cat8', name: 'Italian Soda', emoji: '🍹' },
   { id: 'cat9', name: 'Arabian Cuisine', emoji: '🥗' },
-  { id: 'cat10', name: 'Sushi Platter', emoji: '🍣' }, 
+  { id: 'cat10', name: 'Sushi Platter', emoji: '🍣' },
   { id: 'cat11', name: 'Bento', emoji: '🍱' },
   { id: 'cat12', name: 'Smoothie', emoji: '🥛' },
   { id: 'cat13', name: 'Masala', emoji: '🥘' },
-  { id: 'cat14', name: 'Waffle', emoji: '🧇' }, 
+  { id: 'cat14', name: 'Waffle', emoji: '🧇' },
   { id: 'cat15', name: 'Dosa', emoji: '🥞' },
   { id: 'cat16', name: 'BBQ', emoji: '🔥' },
   { id: 'cat17', name: 'Vegetable', emoji: '🥦' },
@@ -105,7 +105,7 @@ export default function MenuItemsPage() {
               <Button
                 key={category.id}
                 variant={selectedCategory?.id === category.id ? "secondary" : "ghost"}
-                className={`w-full justify-start items-center text-sm h-10 ${selectedCategory?.id === category.id ? 'font-semibold':''}`}
+                className={`w-full justify-start items-center text-sm h-10 border border-border ${selectedCategory?.id === category.id ? 'font-semibold':''}`}
                 onClick={() => setSelectedCategory(category)}
               >
                 <span className="mr-2 text-lg">{category.emoji}</span>
