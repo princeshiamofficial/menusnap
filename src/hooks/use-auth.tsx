@@ -1,3 +1,4 @@
+
 // src/hooks/use-auth.tsx
 "use client";
 
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Failed to save user to localStorage", error);
     }
     setUser(mockUser);
-    router.push('/welcome'); // Changed from /transactions
+    router.push('/dashboard'); 
   }, [router]);
 
   const logout = useCallback(() => {
@@ -60,7 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
   
   useEffect(() => {
-    if (!loading && !user && pathname !== '/' && !pathname.startsWith('/welcome')) { // Allow /welcome even if not logged in initially during redirect
+    // If not loading, no user, and not on the login page or the target dashboard page (to prevent redirect loop during initial auth check)
+    if (!loading && !user && pathname !== '/' && pathname !== '/dashboard') { 
       router.push('/');
     }
   }, [user, loading, router, pathname]);

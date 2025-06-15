@@ -8,94 +8,94 @@ body {
 
 @layer base {
   :root {
-    --background: 220 20% 96%; /* Light Gray */
-    --foreground: 220 10% 20%; /* Dark Gray for text */
+    --background: 0 0% 98%; /* Very light gray / Almost white */
+    --foreground: 0 0% 10%; /* Dark Gray for text */
 
     --card: 0 0% 100%; /* White */
-    --card-foreground: 220 10% 20%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%; /* White */
-    --popover-foreground: 220 10% 20%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 231 48% 48%; /* Deep Blue */
+    --primary: 24 94% 52%; /* Orange */
     --primary-foreground: 0 0% 100%; /* White */
 
-    --secondary: 220 20% 90%; /* Slightly darker gray */
-    --secondary-foreground: 220 10% 10%;
+    --secondary: 0 0% 12%; /* Dark gray for secondary elements like some cards */
+    --secondary-foreground: 0 0% 95%; /* White text on dark gray */
 
-    --muted: 220 20% 93%; /* Lighter gray for muted elements */
-    --muted-foreground: 220 10% 45%; /* Adjusted from 40% for better contrast */
+    --muted: 0 0% 93%; 
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 36 100% 50%; /* Vibrant Orange */
-    --accent-foreground: 0 0% 10%; /* Dark text for accent */
+    --accent: 24 94% 52%; /* Orange for general accents */
+    --accent-foreground: 0 0% 100%; /* White text on accent */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 10% 88%; /* Adjusted for better visibility on light gray */
-    --input: 0 0% 100%; /* White for input background */
-    --ring: 231 48% 48%; /* Primary color for ring */
+    --border: 0 0% 90%; 
+    --input: 0 0% 100%; 
+    --ring: 24 94% 52%; /* Primary color for ring */
 
     --radius: 0.5rem;
 
     /* Sidebar specific theme */
-    --sidebar-background: 230 30% 12%; /* Darker blue-gray */
-    --sidebar-foreground: 220 20% 85%; /* Light text for dark sidebar */
-    --sidebar-primary: 36 100% 50%; /* Accent color for active items */
-    --sidebar-primary-foreground: 0 0% 10%; /* Dark text on accent */
-    --sidebar-accent: 230 30% 22%; /* Hover state for sidebar items */
-    --sidebar-accent-foreground: 0 0% 100%; /* White text on hover */
-    --sidebar-border: 230 30% 18%;
-    --sidebar-ring: 36 100% 50%;
+    --sidebar-background: 0 0% 8%; /* Very Dark Gray / Near Black */
+    --sidebar-foreground: 0 0% 85%; /* Light gray text for dark sidebar */
+    --sidebar-primary: 24 94% 52%; /* Orange for active items / logo part */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on orange */
+    --sidebar-accent: 0 0% 15%; /* Hover state for sidebar items */
+    --sidebar-accent-foreground: 0 0% 95%; /* Light text on hover */
+    --sidebar-border: 0 0% 18%; /* Border color within sidebar */
+    --sidebar-ring: 24 94% 52%; /* Orange for focus rings in sidebar */
 
-    --chart-1: 231 48% 48%; /* Primary */
-    --chart-2: 36 100% 50%; /* Accent */
+    --chart-1: 24 94% 52%; 
+    --chart-2: 210 40% 96.1%; 
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
 
   .dark {
-    --background: 220 10% 10%; /* Dark Gray */
-    --foreground: 220 10% 90%; /* Light Gray for text */
+    --background: 0 0% 8%; 
+    --foreground: 0 0% 90%; 
 
-    --card: 220 10% 15%; /* Darker Card */
-    --card-foreground: 220 10% 90%;
+    --card: 0 0% 12%; 
+    --card-foreground: 0 0% 90%;
 
-    --popover: 220 10% 15%;
-    --popover-foreground: 220 10% 90%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 90%;
 
-    --primary: 231 48% 58%; /* Lighter Deep Blue for dark mode */
+    --primary: 24 94% 58%; /* Lighter Orange for dark mode */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 10% 20%;
-    --secondary-foreground: 220 10% 90%;
+    --secondary: 0 0% 98%; /* Light gray for secondary elements in dark mode (e.g. some cards) */
+    --secondary-foreground: 0 0% 10%; /* Dark text on light gray */
 
-    --muted: 220 10% 25%;
-    --muted-foreground: 220 10% 65%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 36 100% 60%; /* Lighter Orange for dark mode */
+    --accent: 24 94% 60%; 
     --accent-foreground: 0 0% 10%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 10% 25%;
-    --input: 220 10% 20%;
-    --ring: 231 48% 58%;
+    --border: 0 0% 25%;
+    --input: 0 0% 18%;
+    --ring: 24 94% 58%;
 
-    /* Sidebar specific theme for dark mode */
-    --sidebar-background: 230 25% 8%; 
-    --sidebar-foreground: 220 15% 80%;
-    --sidebar-primary: 36 100% 60%; 
-    --sidebar-primary-foreground: 0 0% 10%;
-    --sidebar-accent: 230 25% 18%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 230 25% 15%;
-    --sidebar-ring: 36 100% 60%;
+    /* Sidebar specific theme for dark mode (already dark, so minor adjustments or same) */
+    --sidebar-background: 0 0% 8%; 
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 24 94% 58%; 
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 24 94% 58%;
 
-    --chart-1: 231 48% 58%;
-    --chart-2: 36 100% 60%;
+    --chart-1: 24 94% 58%;
+    --chart-2: 210 40% 10%; 
     --chart-3: 197 37% 34%;
     --chart-4: 43 74% 76%;
     --chart-5: 27 87% 77%;

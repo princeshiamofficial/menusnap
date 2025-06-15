@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from 'react';
@@ -12,7 +13,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/welcome'); // Changed from /transactions
+      router.replace('/dashboard'); 
     }
   }, [user, loading, router]);
 
@@ -31,8 +32,9 @@ export default function HomePage() {
 
   // If not loading and no user, show Login page
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-background to-secondary p-4 sm:p-6 md:p-8">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-background to-muted p-4 sm:p-6 md:p-8">
       <LoginForm />
     </main>
   );
 }
+
