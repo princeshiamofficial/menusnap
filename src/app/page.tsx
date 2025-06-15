@@ -12,7 +12,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/transactions'); // Changed from /calendar
+      router.replace('/welcome'); // Changed from /transactions
     }
   }, [user, loading, router]);
 

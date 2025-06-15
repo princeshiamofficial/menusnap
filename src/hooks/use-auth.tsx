@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Failed to save user to localStorage", error);
     }
     setUser(mockUser);
-    router.push('/transactions'); // Changed from /calendar
+    router.push('/welcome'); // Changed from /transactions
   }, [router]);
 
   const logout = useCallback(() => {
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
   
   useEffect(() => {
-    if (!loading && !user && pathname !== '/') {
+    if (!loading && !user && pathname !== '/' && !pathname.startsWith('/welcome')) { // Allow /welcome even if not logged in initially during redirect
       router.push('/');
     }
   }, [user, loading, router, pathname]);

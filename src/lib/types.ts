@@ -1,10 +1,2 @@
-export interface Transaction {
-  id: string;
-  date: Date;
-  description: string;
-  category: string;
-  amount: number;
-  type: 'revenue' | 'expense';
-}
-
+// Transaction interface removed
 // Appointment interface removed
