@@ -83,12 +83,8 @@ export default function MenuItemsPage() {
     const fetchData = async () => {
       setLoadingCategories(true);
       setErrorCategories(null);
-      // Only set menu items loading to true if they haven't been fetched yet or if menu type implies different items
-      // For now, menu items are fetched once. If they need to change per menu type, this logic would expand.
-      if (allMenuItems.length === 0) {
-        setLoadingMenuItems(true);
-        setErrorMenuItems(null);
-      }
+      setLoadingMenuItems(true); // Always set loading for menu items
+      setErrorMenuItems(null);  // Always reset error for menu items
 
       let categoriesResponse: Response | undefined;
       let menuItemsResponse: Response | undefined;
@@ -97,38 +93,35 @@ export default function MenuItemsPage() {
         ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
         : 'https://colorhutbd.xyz/vm/api/categories.php';
       
-      const menuItemsApiUrl = 'https://colorhutbd.xyz/vm/api/menu-items.php';
+      const menuItemsApiUrl = selectedMenuType === 'parlour'
+        ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
+        : 'https://colorhutbd.xyz/vm/api/menu-items.php';
 
       try {
-        const fetchPromises: [Promise<Response>, Promise<Response>?] = [
-          fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } })
+        const fetchPromises: [Promise<Response>, Promise<Response>] = [
+          fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } }),
+          fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
         ];
-        // Only fetch menu items if they haven't been loaded yet.
-        if (allMenuItems.length === 0) {
-          fetchPromises.push(fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } }));
-        }
         
         const responses = await Promise.all(fetchPromises);
         categoriesResponse = responses[0];
-        if (responses.length > 1 && responses[1]) {
-          menuItemsResponse = responses[1];
-        }
+        menuItemsResponse = responses[1];
 
       } catch (networkError: any) {
         console.error("Network error during initial data fetch:", networkError);
         setErrorCategories("Network error fetching categories.");
-        if (allMenuItems.length === 0) setErrorMenuItems("Network error fetching menu items.");
+        setErrorMenuItems("Network error fetching menu items.");
         setApiCategories([]);
         setOrderedCategories([]);
         setSelectedCategory(null);
-        if (allMenuItems.length === 0) setAllMenuItems([]);
+        setAllMenuItems([]);
         setLoadingCategories(false);
-        if (allMenuItems.length === 0) setLoadingMenuItems(false);
+        setLoadingMenuItems(false);
         return; 
       }
 
       // Process Categories
-      const prevSelectedCategoryId = selectedCategory?.id; // Store previous selection's ID
+      const prevSelectedCategoryId = selectedCategory?.id; 
       try {
         if (!categoriesResponse || !categoriesResponse.ok) {
           throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
@@ -178,13 +171,15 @@ export default function MenuItemsPage() {
         setLoadingCategories(false);
       }
 
-      // Process Menu Items (only if they were fetched in this run)
+      // Process Menu Items
       if (menuItemsResponse) {
         try {
           if (!menuItemsResponse.ok) { 
             throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
           }
           const menuItemsApiResponse = await menuItemsResponse.json();
+          // The menu-items.php returns data as an array directly in menuItemsApiResponse.data
+          // The parlour-items.php also returns data as an array directly in menuItemsApiResponse.data
           if (!menuItemsApiResponse.success || !Array.isArray(menuItemsApiResponse.data)) {
             console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
             throw new Error("Invalid data format for menu items from API");
@@ -223,15 +218,16 @@ export default function MenuItemsPage() {
         } finally {
           setLoadingMenuItems(false);
         }
-      } else if (allMenuItems.length > 0) {
-        // If menu items were not fetched in this run (because they already exist),
-        // ensure loading state is false.
-        setLoadingMenuItems(false);
+      } else {
+         // This case should ideally not be hit if menuItemsResponse is always expected
+         setLoadingMenuItems(false);
+         setErrorMenuItems("Menu items response was unexpectedly undefined.");
+         setAllMenuItems([]);
       }
     };
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMenuType]); // Re-fetch when menu type changes
+  }, [selectedMenuType]); 
 
   const currentMenuItems = useMemo(() => {
     if (!selectedCategory || !allMenuItems.length) return [];
