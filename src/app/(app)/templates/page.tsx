@@ -8,7 +8,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UtensilsCrossed, Search, Star, Maximize, AlertTriangle } from "lucide-react";
+import { Layers, Search, Star, Maximize, AlertTriangle } from "lucide-react"; // Changed UtensilsCrossed to Layers
 import type { ReactNode } from 'react';
 
 interface ApiTemplate {
@@ -174,20 +174,20 @@ export default function TemplatesPage(): ReactNode {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <UtensilsCrossed className="h-8 w-8 text-primary" />
+            <Layers className="h-8 w-8 text-primary" />
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Restaurant Templates
+              All Templates
             </h1>
           </div>
           <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">
-            Choose a restaurant template that best represents your dining establishment. Perfect for restaurants, cafes, and food services.
+            Choose a template that best represents your brand. Perfect for various businesses and services.
           </p>
         </div>
         <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search restaurant templates..."
+            placeholder="Search all templates..."
             className="pl-10 w-full sm:w-64 md:w-72 text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
