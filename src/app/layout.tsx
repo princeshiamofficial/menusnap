@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'BizView - Small Business ERP',
-  description: 'Manage your finances and appointments with BizView.',
+  title: 'Color Hut - Menu Builder',
+  description: 'Design and build beautiful menus with Color Hut.',
 };
 
 export default function RootLayout({
