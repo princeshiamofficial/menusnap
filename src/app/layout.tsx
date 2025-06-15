@@ -2,8 +2,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/hooks/use-auth';
+import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -30,7 +30,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
         <AuthProvider>
           {children}
-          <Toaster />
+          <ClientSideOnlyToaster />
         </AuthProvider>
       </body>
     </html>
