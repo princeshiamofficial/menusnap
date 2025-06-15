@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card"; 
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 interface Category {
@@ -300,7 +300,7 @@ export default function MenuItemsPage() {
               </div>
               
               <ScrollArea className="flex-1 -mx-1">
-                <div className="px-1 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-1">
                   {currentMenuItems.length > 0 ? (
                     currentMenuItems.map(item => (
                         <Card 
@@ -308,20 +308,20 @@ export default function MenuItemsPage() {
                           className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
                         >
                           <CardContent className="p-4">
-                            <div className="flex items-start gap-4"> {/* Changed to items-start for description alignment */}
+                            <div className="flex items-start gap-4">
                               <Checkbox
                                 id={`item-${item.id}`}
                                 checked={!!selectedItems[String(item.id)]}
                                 onCheckedChange={() => handleSelectItem(String(item.id))}
                                 aria-label={`Select ${item.name}`}
-                                className="mt-1" // Align checkbox with first line of text
+                                className="mt-1" 
                               />
                               {item.iconPlaceholder && (
                                  <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
                                    {/* Placeholder for icon, e.g., first letter or generic icon */}
                                  </div>
                               )}
-                              <div className="flex-1"> {/* Wrapper for name and description */}
+                              <div className="flex-1"> 
                                 <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
                                   {item.name}
                                 </label>
@@ -349,7 +349,7 @@ export default function MenuItemsPage() {
                               </Button>
                             </div>
                             {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
-                              <div className="mt-3 pl-10 space-y-2"> {/* Matched subitem indent from example */}
+                              <div className="mt-3 pl-10 space-y-2">
                                 {item.subItems.map(subItem => (
                                   <div key={subItem.id} className="flex justify-between items-center text-xs">
                                     <span className="text-muted-foreground">{subItem.name}</span>
@@ -362,7 +362,7 @@ export default function MenuItemsPage() {
                         </Card>
                       ))
                   ) : (
-                    <div className="text-center py-10">
+                    <div className="text-center py-10 md:col-span-2">
                       <p className="text-muted-foreground text-sm">
                         {searchTerm ? "No items match your search." : "No items in this category."}
                       </p>
