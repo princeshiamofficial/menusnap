@@ -83,8 +83,8 @@ export default function MenuItemsPage() {
     const fetchData = async () => {
       setLoadingCategories(true);
       setErrorCategories(null);
-      setLoadingMenuItems(true); // Always set loading for menu items
-      setErrorMenuItems(null);  // Always reset error for menu items
+      setLoadingMenuItems(true); 
+      setErrorMenuItems(null);  
 
       let categoriesResponse: Response | undefined;
       let menuItemsResponse: Response | undefined;
@@ -120,7 +120,6 @@ export default function MenuItemsPage() {
         return; 
       }
 
-      // Process Categories
       const prevSelectedCategoryId = selectedCategory?.id; 
       try {
         if (!categoriesResponse || !categoriesResponse.ok) {
@@ -171,15 +170,12 @@ export default function MenuItemsPage() {
         setLoadingCategories(false);
       }
 
-      // Process Menu Items
       if (menuItemsResponse) {
         try {
           if (!menuItemsResponse.ok) { 
             throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
           }
           const menuItemsApiResponse = await menuItemsResponse.json();
-          // The menu-items.php returns data as an array directly in menuItemsApiResponse.data
-          // The parlour-items.php also returns data as an array directly in menuItemsApiResponse.data
           if (!menuItemsApiResponse.success || !Array.isArray(menuItemsApiResponse.data)) {
             console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
             throw new Error("Invalid data format for menu items from API");
@@ -219,7 +215,6 @@ export default function MenuItemsPage() {
           setLoadingMenuItems(false);
         }
       } else {
-         // This case should ideally not be hit if menuItemsResponse is always expected
          setLoadingMenuItems(false);
          setErrorMenuItems("Menu items response was unexpectedly undefined.");
          setAllMenuItems([]);
