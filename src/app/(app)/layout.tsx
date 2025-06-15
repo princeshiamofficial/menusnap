@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
-import { UserNav } from '@/components/layout/user-nav';
+// import { UserNav } from '@/components/layout/user-nav'; // UserNav import removed
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { SpeedDialFAB } from '@/components/layout/SpeedDialFAB'; // New import
+import { SpeedDialFAB } from '@/components/layout/SpeedDialFAB'; 
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -24,11 +24,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </SidebarInset>
         
         {/* FABs Area */}
-        <SpeedDialFAB /> {/* Add the new FAB */}
+        <SpeedDialFAB /> 
         
-        <div className="fixed bottom-4 right-4 z-50"> {/* UserNav fixed to bottom right */}
+        {/* UserNav removed from here */}
+        {/* 
+        <div className="fixed bottom-4 right-4 z-50"> 
           <UserNav />
-        </div>
+        </div> 
+        */}
       </SidebarProvider>
     </ProtectedRoute>
   );
