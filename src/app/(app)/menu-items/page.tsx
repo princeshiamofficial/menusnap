@@ -307,7 +307,7 @@ export default function MenuItemsPage() {
                             {item.name}
                           </label>
                           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-                            ৳{item.price.toLocaleString()}
+                            ৳{(item.price ?? 0).toLocaleString()}
                           </div>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/70 hover:text-foreground">
                             <ChevronRight className="h-5 w-5" />
