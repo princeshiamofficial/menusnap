@@ -1,15 +1,47 @@
 
 "use client";
 
+import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, LogOut } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function MAdminDashboardPage() {
+  const { isAdminLoggedIn, adminLoading, adminLogout } = useAdminAuth();
+
+  if (adminLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-muted dark:bg-neutral-900 p-4">
+        <div className="w-full max-w-md space-y-4">
+          <Skeleton className="h-16 w-16 rounded-full mx-auto bg-card" />
+          <Skeleton className="h-8 w-48 mx-auto bg-card" />
+          <Skeleton className="h-6 w-64 mx-auto bg-card" />
+          <Skeleton className="h-10 w-full mt-4 bg-card" />
+          <Skeleton className="h-10 w-full bg-card" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdminLoggedIn) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 p-4 sm:p-6 md:p-8">
+        <AdminLoginForm />
+      </div>
+    );
+  }
+
+  // If admin is logged in, show the dashboard
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 sm:p-8 md:p-10">
         <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            {/* Can add buttons or actions here later */}
+            <Button variant="outline" onClick={adminLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+            </Button>
         </div>
       <Card className="shadow-md rounded-lg">
         <CardHeader className="bg-card">
