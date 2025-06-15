@@ -16,14 +16,15 @@ interface ApiTemplate {
   name: string; // Used as title
   description: string;
   isTopRated?: boolean;
+  isPublished: boolean; // Added for filtering
   tags: string[];
-  imageUrl: string; 
+  imageUrl: string;
   // Add other fields from API if needed in the future
 }
 
 interface TemplateCardProps {
   id: string;
-  imageUrl: string; 
+  imageUrl: string;
   imageHint: string;
   title: string;
   description: string;
@@ -135,7 +136,12 @@ export default function TemplatesPage(): ReactNode {
           console.error("Invalid API response structure:", result);
           throw new Error("Invalid data format from API");
         }
-        setTemplates(result.data.templates);
+        // Ensure all templates have an isPublished field, defaulting to false if undefined
+        const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any) => ({
+          ...t,
+          isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
+        }));
+        setTemplates(fetchedTemplates);
       } catch (e: any) {
         console.error("Failed to fetch templates:", e);
         setError(e.message || "Failed to load templates. Please try again later.");
@@ -150,11 +156,13 @@ export default function TemplatesPage(): ReactNode {
     return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
   }
 
-  const filteredTemplates = templates.filter(template => 
-    template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredTemplates = templates
+    .filter(template => template.isPublished) // Filter for published templates first
+    .filter(template =>
+      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+    );
 
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
@@ -201,7 +209,7 @@ export default function TemplatesPage(): ReactNode {
         ) : filteredTemplates.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground text-lg">
-                {searchTerm ? "No templates match your search." : "No templates available at the moment."}
+                {searchTerm ? "No published templates match your search." : "No published templates available at the moment."}
               </p>
             </div>
         ) : (
@@ -212,9 +220,9 @@ export default function TemplatesPage(): ReactNode {
                 id={template.id}
                 title={template.name}
                 description={template.description}
-                imageUrl={template.imageUrl} // Pass the API image URL
+                imageUrl={template.imageUrl}
                 imageHint={getImageHint(template.name)}
-                tags={template.tags}
+                tags={template.tags || []}
                 isTopRated={template.isTopRated}
               />
             ))}
@@ -224,4 +232,6 @@ export default function TemplatesPage(): ReactNode {
     </div>
   );
 }
+    
+
     
