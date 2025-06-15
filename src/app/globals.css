@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,7 +8,8 @@ body {
 }
 
 @layer base {
-  :root {
+  /* Default Theme (Orange) */
+  :root, .theme-default {
     --background: 0 0% 98%; /* Very light gray / Almost white */
     --foreground: 0 0% 10%; /* Dark Gray for text */
 
@@ -34,7 +36,7 @@ body {
 
     --border: 0 0% 90%; 
     --input: 0 0% 100%; 
-    --ring: 24 94% 52%; /* Primary color for ring */
+    --ring: 24 94% 52%; /* Orange for ring */
 
     --radius: 0.5rem;
 
@@ -55,35 +57,40 @@ body {
     --chart-5: 27 87% 67%;
   }
 
-  .dark {
+  /* Parlour Theme (Pink) */
+  .theme-parlour {
+    --primary: 330 85% 60%; /* Pink */
+    --primary-foreground: 0 0% 100%; /* White */
+    --accent: 330 85% 60%; /* Pink for general accents */
+    --accent-foreground: 0 0% 100%; /* White text on accent */
+    --ring: 330 85% 60%; /* Pink for ring */
+    --sidebar-primary: 330 85% 60%; /* Pink */
+    --sidebar-ring: 330 85% 60%; /* Pink */
+    --chart-1: 330 85% 60%; /* Pink for chart */
+    /* Other variables like background, secondary, muted, etc., remain the same unless specified */
+  }
+
+  /* Default Dark Theme */
+  .dark.theme-default, .dark { 
     --background: 0 0% 8%; 
     --foreground: 0 0% 90%; 
-
     --card: 0 0% 12%; 
     --card-foreground: 0 0% 90%;
-
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 90%;
-
     --primary: 24 94% 58%; /* Lighter Orange for dark mode */
     --primary-foreground: 0 0% 100%;
-
     --secondary: 0 0% 98%; /* Light gray for secondary elements in dark mode (e.g. some cards) */
     --secondary-foreground: 0 0% 10%; /* Dark text on light gray */
-
     --muted: 0 0% 20%;
     --muted-foreground: 0 0% 65%;
-
     --accent: 24 94% 60%; 
     --accent-foreground: 0 0% 10%;
-
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 0 0% 25%;
     --input: 0 0% 18%;
     --ring: 24 94% 58%;
-
     /* Sidebar specific theme for dark mode (already dark, so minor adjustments or same) */
     --sidebar-background: 0 0% 8%; 
     --sidebar-foreground: 0 0% 85%;
@@ -99,6 +106,18 @@ body {
     --chart-3: 197 37% 34%;
     --chart-4: 43 74% 76%;
     --chart-5: 27 87% 77%;
+  }
+
+  /* Parlour Dark Theme (Pink) */
+  .dark.theme-parlour {
+    --primary: 330 85% 65%; /* Lighter Pink for dark mode */
+    --primary-foreground: 0 0% 100%;
+    --accent: 330 85% 65%; /* Lighter Pink for general accents */
+    --accent-foreground: 0 0% 10%; /* Dark text on Lighter Pink accent */
+    --ring: 330 85% 65%; /* Lighter Pink for ring */
+    --sidebar-primary: 330 85% 65%; /* Lighter Pink */
+    --sidebar-ring: 330 85% 65%; /* Lighter Pink */
+    --chart-1: 330 85% 65%; /* Lighter Pink for chart */
   }
 }
 

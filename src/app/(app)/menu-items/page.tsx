@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTheme } from '@/context/ThemeContext';
 
 interface Category {
   id: string;
@@ -78,6 +79,7 @@ export default function MenuItemsPage() {
   const [errorMenuItems, setErrorMenuItems] = useState<string | null>(null);
 
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -221,8 +223,14 @@ export default function MenuItemsPage() {
       }
     };
     fetchData();
+
+    if (selectedMenuType === 'parlour') {
+      setTheme('parlour');
+    } else {
+      setTheme('default');
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMenuType]); 
+  }, [selectedMenuType, setTheme]); 
 
   const currentMenuItems = useMemo(() => {
     if (!selectedCategory || !allMenuItems.length) return [];
@@ -437,4 +445,3 @@ export default function MenuItemsPage() {
     </div>
   );
 }
-
