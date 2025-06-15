@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card"; // CardContent imported
+import { Card, CardContent } from "@/components/ui/card"; 
 import { Badge } from "@/components/ui/badge";
 
 interface Category {
@@ -163,6 +163,7 @@ export default function MenuItemsPage() {
         const fetchedMenuItems: MenuItem[] = menuItemsApiResponse.data.map((item: any) => ({
           ...item,
           id: String(item.id), 
+          price: parseFloat(item.price) || 0,
           iconPlaceholder: !item.image,
           subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any) => ({
             id: String(sub.id),
@@ -307,33 +308,36 @@ export default function MenuItemsPage() {
                           className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
                         >
                           <CardContent className="p-4">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-start gap-4"> {/* Changed to items-start for description alignment */}
                               <Checkbox
                                 id={`item-${item.id}`}
                                 checked={!!selectedItems[String(item.id)]}
                                 onCheckedChange={() => handleSelectItem(String(item.id))}
                                 aria-label={`Select ${item.name}`}
+                                className="mt-1" // Align checkbox with first line of text
                               />
                               {item.iconPlaceholder && (
                                  <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
                                    {/* Placeholder for icon, e.g., first letter or generic icon */}
                                  </div>
                               )}
-                              {/* If you want to display the image:
-                              {item.image && (
-                                <Image src={item.image} alt={item.name} width={40} height={40} className="rounded-full" />
-                              )}
-                              */}
-                              <label htmlFor={`item-${item.id}`} className="flex-1 text-sm font-medium text-foreground cursor-pointer truncate">
-                                {item.name}
-                              </label>
+                              <div className="flex-1"> {/* Wrapper for name and description */}
+                                <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
+                                  {item.name}
+                                </label>
+                                {item.description && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {item.description}
+                                  </p>
+                                )}
+                              </div>
                               <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
                                 ৳{(item.price ?? 0).toLocaleString()}
                               </div>
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="h-8 w-8 text-muted-foreground/70 hover:text-foreground"
+                                className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
                                 onClick={() => item.subItems && item.subItems.length > 0 && toggleSubItems(String(item.id))}
                                 disabled={!item.subItems || item.subItems.length === 0}
                               >
@@ -345,7 +349,7 @@ export default function MenuItemsPage() {
                               </Button>
                             </div>
                             {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
-                              <div className="mt-3 pl-10 space-y-2">
+                              <div className="mt-3 pl-10 space-y-2"> {/* Matched subitem indent from example */}
                                 {item.subItems.map(subItem => (
                                   <div key={subItem.id} className="flex justify-between items-center text-xs">
                                     <span className="text-muted-foreground">{subItem.name}</span>
