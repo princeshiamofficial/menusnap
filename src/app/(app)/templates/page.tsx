@@ -74,6 +74,24 @@ const templateData: TemplateCardProps[] = [
     tags: ["Diner", "Retro", "Fun"],
     isTopRated: false,
   },
+  {
+    id: "7",
+    imageUrl: "https://placehold.co/600x400.png",
+    imageHint: "dark mode menu",
+    title: "Midnight Bite",
+    description: "A sleek dark-themed menu for upscale or late-night venues.",
+    tags: ["Restaurant", "Bar", "Elegant"],
+    isTopRated: false,
+  },
+  {
+    id: "8",
+    imageUrl: "https://placehold.co/600x400.png",
+    imageHint: "bright colorful menu",
+    title: "Rainbow Feast",
+    description: "Vibrant and colorful design, perfect for family-friendly restaurants.",
+    tags: ["Family", "Fun", "Colorful"],
+    isTopRated: false,
+  },
 ];
 
 function TemplateCard({
@@ -158,7 +176,7 @@ export default function TemplatesPage(): ReactNode {
       </header>
 
       <main>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {templateData.map((template) => (
             <TemplateCard key={template.id} {...template} />
           ))}
@@ -167,3 +185,4 @@ export default function TemplatesPage(): ReactNode {
     </div>
   );
 }
+
