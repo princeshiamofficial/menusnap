@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -137,7 +138,6 @@ export default function MenuItemsPage() {
             if (newSelectedCategory) {
                 setSelectedCategory(newSelectedCategory);
             } else {
-                // Try to find a default like 'burger', or fallback to the first category
                 const defaultCat = fetchedApiCategories.find(c => c.id === 'burger') || fetchedApiCategories[0];
                 setSelectedCategory(defaultCat);
             }
@@ -157,7 +157,7 @@ export default function MenuItemsPage() {
 
       // Process Menu Items
       try {
-        if (!menuItemsResponse || !menuItemsResponse.ok) { // Check if menuItemsResponse is defined
+        if (!menuItemsResponse || !menuItemsResponse.ok) { 
           throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
         }
         const menuItemsApiResponse = await menuItemsResponse.json();
@@ -202,7 +202,7 @@ export default function MenuItemsPage() {
     };
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // selectedCategory removed from deps to avoid re-fetch loops on category change
+  }, []); 
 
   const currentMenuItems = useMemo(() => {
     if (!selectedCategory || !allMenuItems.length) return [];
@@ -223,6 +223,13 @@ export default function MenuItemsPage() {
   const toggleSubItems = (itemId: string) => {
     setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   };
+
+  let itemsGridClass = 'grid-cols-1';
+  if (currentMenuItems.length === 2) {
+    itemsGridClass = 'grid-cols-1 md:grid-cols-2';
+  } else if (currentMenuItems.length > 2) {
+    itemsGridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+  }
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
@@ -319,7 +326,7 @@ export default function MenuItemsPage() {
               </div>
               
               <ScrollArea className="flex-1 -mx-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1">
+                <div className={cn("grid gap-4 px-1", itemsGridClass)}>
                   {currentMenuItems.length > 0 ? (
                     currentMenuItems.map(item => (
                         <Card 
@@ -381,7 +388,7 @@ export default function MenuItemsPage() {
                         </Card>
                       ))
                   ) : (
-                    <div className="text-center py-10 md:col-span-2 lg:col-span-3">
+                    <div className="text-center py-10 col-span-full">
                       <p className="text-muted-foreground text-sm">
                         {searchTerm ? "No items match your search." : "No items in this category."}
                       </p>
