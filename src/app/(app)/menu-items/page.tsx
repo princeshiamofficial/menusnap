@@ -39,7 +39,7 @@ interface SubMenuItem {
 }
 
 interface MenuItem {
-  id: string | number;
+  id: string;
   name: string;
   price: number;
   category: string;
@@ -114,16 +114,20 @@ export default function MenuItemsPage() {
           console.error("Invalid API response structure for categories:", categoriesApiResponse);
           throw new Error("Invalid data format for categories from API");
         }
-        const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories.map((cat: any) => ({
-          id: cat.id,
-          name: cat.name,
-          icon: cat.icon || '📁',
-          itemCount: cat.itemCount || 0,
-          status: cat.status,
-          createdAt: cat.createdAt,
-          description: cat.description,
-          visibleToUsers: cat.visibleToUsers !== undefined ? cat.visibleToUsers : true,
-        }));
+        
+        const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories
+          .filter((cat: any) => cat.id !== null && cat.id !== undefined)
+          .map((cat: any) => ({
+            id: String(cat.id),
+            name: String(cat.name || 'Unnamed Category'),
+            icon: String(cat.icon || '📁'),
+            itemCount: Number(cat.itemCount || 0),
+            status: String(cat.status || 'active'),
+            createdAt: String(cat.createdAt || new Date().toISOString()),
+            description: String(cat.description || ''),
+            visibleToUsers: cat.visibleToUsers !== undefined ? Boolean(cat.visibleToUsers) : true,
+          }));
+
         setApiCategories(fetchedApiCategories);
         setOrderedCategories(fetchedApiCategories);
 
@@ -133,6 +137,7 @@ export default function MenuItemsPage() {
             if (newSelectedCategory) {
                 setSelectedCategory(newSelectedCategory);
             } else {
+                // Try to find a default like 'burger', or fallback to the first category
                 const defaultCat = fetchedApiCategories.find(c => c.id === 'burger') || fetchedApiCategories[0];
                 setSelectedCategory(defaultCat);
             }
@@ -152,7 +157,7 @@ export default function MenuItemsPage() {
 
       // Process Menu Items
       try {
-        if (!menuItemsResponse || !menuItemsResponse.ok) {
+        if (!menuItemsResponse || !menuItemsResponse.ok) { // Check if menuItemsResponse is defined
           throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
         }
         const menuItemsApiResponse = await menuItemsResponse.json();
@@ -160,17 +165,31 @@ export default function MenuItemsPage() {
           console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
           throw new Error("Invalid data format for menu items from API");
         }
-        const fetchedMenuItems: MenuItem[] = menuItemsApiResponse.data.map((item: any) => ({
-          ...item,
-          id: String(item.id), 
-          price: parseFloat(item.price) || 0,
-          iconPlaceholder: !item.image,
-          subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any) => ({
-            id: String(sub.id),
-            name: sub.name,
-            price: parseFloat(sub.price) || 0,
-          })) : [],
-        }));
+        const fetchedMenuItems: MenuItem[] = menuItemsApiResponse.data
+          .filter((item: any) => item.id !== null && item.id !== undefined)
+          .map((item: any) => ({
+            id: String(item.id), 
+            name: String(item.name || 'Unnamed Item'),
+            price: parseFloat(item.price) || 0,
+            category: String(item.category || 'uncategorized'),
+            description: String(item.description || ''),
+            image: item.image,
+            status: String(item.status || 'active'),
+            featured: Boolean(item.featured || false),
+            visibleToUsers: item.visibleToUsers !== undefined ? Boolean(item.visibleToUsers) : true,
+            createdAt: String(item.createdAt || new Date().toISOString()),
+            updatedAt: String(item.updatedAt || new Date().toISOString()),
+            iconPlaceholder: !item.image,
+            subItems: Array.isArray(item.subItems) 
+              ? item.subItems
+                  .filter((sub: any) => sub.id !== null && sub.id !== undefined)
+                  .map((sub: any) => ({
+                    id: String(sub.id),
+                    name: String(sub.name || 'Unnamed Sub-item'),
+                    price: parseFloat(sub.price) || 0,
+                  })) 
+              : [],
+          }));
         setAllMenuItems(fetchedMenuItems);
         setErrorMenuItems(null);
       } catch (e: any) {
@@ -183,7 +202,7 @@ export default function MenuItemsPage() {
     };
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // selectedCategory removed from deps to avoid re-fetch loops on category change
 
   const currentMenuItems = useMemo(() => {
     if (!selectedCategory || !allMenuItems.length) return [];
