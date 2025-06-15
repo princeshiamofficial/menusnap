@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, X, Phone, MessageCircle, MessagesSquare } from 'lucide-react';
+import { HelpCircle, X, Phone, MessageCircle, MessagesSquare } from 'lucide-react';
 
 interface ContactOption {
   name: string;
@@ -57,7 +57,7 @@ export function SpeedDialFAB(): ReactNode {
           <Button
             key={option.name}
             onClick={option.action}
-            variant="default" // variant is overridden by className bg-card
+            variant="default" 
             className="flex items-center justify-between w-48 h-12 rounded-full shadow-lg bg-card text-card-foreground hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring pl-6 pr-2 py-2"
             aria-label={option.ariaLabel}
           >
@@ -72,7 +72,7 @@ export function SpeedDialFAB(): ReactNode {
       {/* Main Toggle FAB */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        variant="default" // variant is overridden by conditional className
+        variant="default" 
         className={`rounded-full h-16 w-16 shadow-xl flex items-center justify-center
                     focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
                     transition-colors duration-200
@@ -80,7 +80,7 @@ export function SpeedDialFAB(): ReactNode {
         aria-expanded={isOpen}
         aria-label={isOpen ? "Close contact options" : "Open contact options"}
       >
-        {isOpen ? <X className="h-8 w-8" /> : <Plus className="h-8 w-8" />}
+        {isOpen ? <X className="h-8 w-8" /> : <HelpCircle className="h-8 w-8" />}
       </Button>
     </div>
   );
