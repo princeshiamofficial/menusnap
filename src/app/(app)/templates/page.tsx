@@ -17,13 +17,13 @@ interface ApiTemplate {
   description: string;
   isTopRated?: boolean;
   tags: string[];
-  imageUrl: string; // Source URL, will be transformed if it's a placeholder
+  imageUrl: string; 
   // Add other fields from API if needed in the future
 }
 
 interface TemplateCardProps {
   id: string;
-  displayImageUrl: string; // Transformed URL for next/image
+  imageUrl: string; 
   imageHint: string;
   title: string;
   description: string;
@@ -32,7 +32,7 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({
-  displayImageUrl,
+  imageUrl,
   imageHint,
   title,
   description,
@@ -44,7 +44,7 @@ function TemplateCard({
       <CardHeader className="p-0 relative">
         <div className="aspect-[4/3] relative group">
           <Image
-            src={displayImageUrl}
+            src={imageUrl} // Use the direct imageUrl from API
             alt={title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -212,8 +212,7 @@ export default function TemplatesPage(): ReactNode {
                 id={template.id}
                 title={template.name}
                 description={template.description}
-                // Forcing placeholder.co for consistency as per project guidelines
-                displayImageUrl={`https://placehold.co/600x400.png`} 
+                imageUrl={template.imageUrl} // Pass the API image URL
                 imageHint={getImageHint(template.name)}
                 tags={template.tags}
                 isTopRated={template.isTopRated}
