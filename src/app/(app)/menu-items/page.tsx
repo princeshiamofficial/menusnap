@@ -5,16 +5,12 @@ import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import { Reorder } from "framer-motion";
 import {
-  ListOrdered,
-  Layers,
-  FileEdit,
   Search,
   Power,
   Save,
   Eye,
   GripVertical,
   ChevronRight,
-  Minus
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +22,12 @@ import { Badge } from "@/components/ui/badge";
 interface Category {
   id: string;
   name: string;
-  emoji: string;
+  icon: string; // From API, e.g., "🍔"
+  itemCount?: number;
+  status?: string;
+  createdAt?: string;
+  description?: string;
+  visibleToUsers?: boolean;
 }
 
 interface MenuItem {
@@ -36,29 +37,17 @@ interface MenuItem {
   iconPlaceholder?: boolean;
 }
 
-const initialMockCategories: Category[] = [
-  { id: 'cat1', name: 'Expresso Based Classics', emoji: '☕' },
-  { id: 'cat2', name: 'Dhakaiya Chaap', emoji: '🍖' },
-  { id: 'cat3', name: 'Peshwari Kabab', emoji: '🍗' },
-  { id: 'cat4', name: 'Drumstick', emoji: '🍗' },
-  { id: 'cat5', name: 'Flavored Latte', emoji: '🥤' },
-  { id: 'cat6', name: 'Lemonade', emoji: '🍋' },
-  { id: 'cat7', name: 'Steak', emoji: '🥩' },
-  { id: 'cat8', name: 'Italian Soda', emoji: '🍹' },
-  { id: 'cat9', name: 'Arabian Cuisine', emoji: '🥗' },
-  { id: 'cat10', name: 'Sushi Platter', emoji: '🍣' },
-  { id: 'cat11', name: 'Bento', emoji: '🍱' },
-  { id: 'cat12', name: 'Smoothie', emoji: '🥛' },
-  { id: 'cat13', name: 'Masala', emoji: '🥘' },
-  { id: 'cat14', name: 'Waffle', emoji: '🧇' },
-  { id: 'cat15', name: 'Dosa', emoji: '🥞' },
-  { id: 'cat16', name: 'BBQ', emoji: '🔥' },
-  { id: 'cat17', name: 'Vegetable', emoji: '🥦' },
-  { id: 'cat18', name: 'Mutton', emoji: '🐑' },
-  { id: 'cat19', name: 'Noodles', emoji: '🍜' },
-];
-
+// Menu items are still mocked for now
 const mockMenuItems: { [categoryId: string]: MenuItem[] } = {
+  burger: [ // Assuming 'burger' is a category ID from your API
+    { id: 'item-burger-1', name: 'Classic Burger', price: 150, iconPlaceholder: true },
+    { id: 'item-burger-2', name: 'Cheese Burger', price: 180, iconPlaceholder: true },
+    { id: 'item-burger-3', name: 'Vegan Burger', price: 200, iconPlaceholder: true },
+  ],
+  drinks: [ // Assuming 'drinks' is a category ID from your API
+    { id: 'item-drinks-1', name: 'Cola', price: 50, iconPlaceholder: true },
+    { id: 'item-drinks-2', name: 'Orange Juice', price: 70, iconPlaceholder: true },
+  ],
   cat1: [
     { id: 'item1-1', name: 'Ristretto', price: 0, iconPlaceholder: true },
     { id: 'item1-2', name: 'Lungo', price: 0, iconPlaceholder: true },
@@ -70,27 +59,79 @@ const mockMenuItems: { [categoryId: string]: MenuItem[] } = {
   ],
   cat3: [
     { id: 'item3-1', name: 'Chicken Peshwari Kabab', price: 0, iconPlaceholder: true },
-    { id: 'item3-2', name: 'Chicken Boti Peshwari Kabab', price: 0, iconPlaceholder: true },
-    { id: 'item3-3', name: 'Chicken Tikka', price: 0, iconPlaceholder: true },
-    { id: 'item3-4', name: 'Rabbit Kabab', price: 0, iconPlaceholder: true },
   ],
-  // Add more items for other categories if needed
 };
 
 export default function MenuItemsPage() {
-  const [orderedCategories, setOrderedCategories] = useState<Category[]>(initialMockCategories);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(orderedCategories.find(c => c.id === 'cat2') || initialMockCategories[0] || null);
+  const [apiCategories, setApiCategories] = useState<Category[]>([]);
+  const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [isPowerOn, setIsPowerOn] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [errorCategories, setErrorCategories] = useState<string | null>(null);
 
   useEffect(() => {
-    // If the selected category is no longer in the ordered list (e.g., if categories were dynamic)
-    // or if no category is selected, try to re-select or default
-    if (!selectedCategory || !orderedCategories.find(c => c.id === selectedCategory.id)) {
-      setSelectedCategory(orderedCategories.find(c => c.id === 'cat2') || orderedCategories[0] || null);
-    }
-  }, [orderedCategories, selectedCategory]);
+    const fetchCategories = async () => {
+      setLoadingCategories(true);
+      setErrorCategories(null);
+      try {
+        const response = await fetch('https://colorhutbd.xyz/vm/api/categories.php', {
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const apiResponse = await response.json();
+
+        if (!apiResponse.success || !apiResponse.data || !Array.isArray(apiResponse.data.categories)) {
+          console.error("Invalid API response structure:", apiResponse);
+          throw new Error("Invalid data format for categories from API");
+        }
+        
+        const fetchedApiCategories: Category[] = apiResponse.data.categories.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          icon: cat.icon || '📁', // Default icon if missing
+          itemCount: cat.itemCount || 0,
+          status: cat.status,
+          createdAt: cat.createdAt,
+          description: cat.description,
+          visibleToUsers: cat.visibleToUsers !== undefined ? cat.visibleToUsers : true,
+        }));
+
+        setApiCategories(fetchedApiCategories);
+        setOrderedCategories(fetchedApiCategories);
+
+        if (fetchedApiCategories.length > 0) {
+            const currentSelected = selectedCategory ? fetchedApiCategories.find(c => c.id === selectedCategory.id) : null;
+            if (currentSelected) {
+                setSelectedCategory(currentSelected);
+            } else {
+                // You can set a preferred default, e.g., 'burger' if it exists, or the first category
+                const defaultCat = fetchedApiCategories.find(c => c.id === 'burger') || fetchedApiCategories[0];
+                setSelectedCategory(defaultCat);
+            }
+        } else {
+            setSelectedCategory(null);
+        }
+
+      } catch (e: any) {
+        console.error("Failed to fetch categories:", e);
+        setErrorCategories(e.message);
+        setApiCategories([]);
+        setOrderedCategories([]);
+        setSelectedCategory(null);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    fetchCategories();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Fetch categories once on component mount
 
   const currentMenuItems = selectedCategory ? (mockMenuItems[selectedCategory.id] || []) : [];
 
@@ -110,25 +151,32 @@ export default function MenuItemsPage() {
           <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
         </div>
         <ScrollArea className="flex-1">
-          <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
-            {orderedCategories.map(category => (
-              <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
-                <Button
-                  className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
-                    selectedCategory?.id === category.id 
-                    ? 'bg-muted font-semibold text-foreground'
-                    : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
-                  }`}
-                  onClick={() => setSelectedCategory(category)}
-                  // Framer Motion uses inline styles for transforms, so avoid overriding them directly here
-                >
-                  <span className="mr-2 text-sm">{category.emoji}</span>
-                  <span className="flex-1 text-left truncate">{category.name}</span>
-                  <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
-                </Button>
-              </Reorder.Item>
-            ))}
-          </Reorder.Group>
+          {loadingCategories && <p className="p-4 text-sm text-muted-foreground">Loading categories...</p>}
+          {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
+          {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
+            <p className="p-4 text-sm text-muted-foreground">No categories found.</p>
+          )}
+          {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
+            <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
+              {orderedCategories.map(category => (
+                <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
+                  <Button
+                    variant="ghost"
+                    className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
+                      selectedCategory?.id === category.id 
+                      ? 'bg-muted font-semibold text-foreground'
+                      : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                    }`}
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    <span className="mr-2 text-sm">{category.icon}</span>
+                    <span className="flex-1 text-left truncate">{category.name}</span>
+                    <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
+                  </Button>
+                </Reorder.Item>
+              ))}
+            </Reorder.Group>
+          )}
         </ScrollArea>
       </aside>
 
@@ -175,12 +223,14 @@ export default function MenuItemsPage() {
           {selectedCategory && (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="flex items-center gap-2 mb-4">
-                {selectedCategory.emoji && <span className="text-xl">{selectedCategory.emoji}</span>}
+                {selectedCategory.icon && <span className="text-xl">{selectedCategory.icon}</span>}
                 <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
-                <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">{currentMenuItems.length}</Badge>
+                <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
+                  {selectedCategory?.itemCount ?? currentMenuItems.length}
+                </Badge>
               </div>
               
-              <ScrollArea className="flex-1 -mx-1"> {/* Negative margin to allow full-width cards if desired */}
+              <ScrollArea className="flex-1 -mx-1">
                 <div className="px-1 space-y-3">
                   {currentMenuItems.length > 0 ? (
                     currentMenuItems
@@ -199,7 +249,6 @@ export default function MenuItemsPage() {
                           {item.iconPlaceholder && (
                              <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
                                {/* Placeholder for icon, e.g., first letter or generic icon */}
-                               {/* <span className="text-muted-foreground text-lg">{item.name.charAt(0)}</span> */}
                              </div>
                           )}
                           <label htmlFor={`item-${item.id}`} className="flex-1 text-sm font-medium text-foreground cursor-pointer truncate">
@@ -215,14 +264,14 @@ export default function MenuItemsPage() {
                       ))
                   ) : (
                     <div className="text-center py-10">
-                      <p className="text-muted-foreground text-sm">No items in this category.</p>
+                      <p className="text-muted-foreground text-sm">No items in this category or category not found in mock data.</p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
             </div>
           )}
-          {!selectedCategory && (
+          {!selectedCategory && !loadingCategories && (
               <div className="flex-1 flex items-center justify-center">
                   <p className="text-muted-foreground">Select a category to see menu items.</p>
               </div>
@@ -232,4 +281,3 @@ export default function MenuItemsPage() {
     </div>
   );
 }
-
