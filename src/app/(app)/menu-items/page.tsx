@@ -120,7 +120,7 @@ export default function MenuItemsPage() {
       {/* Right Content Area */}
       <main className="flex-1 flex flex-col bg-background overflow-hidden">
         {/* Header Section */}
-        <div className="p-6 border-b border-border bg-card flex items-center justify-between">
+        <div className="py-6 px-6 border-b border-border bg-card flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
           <div className="flex items-center gap-3">
             <div className="relative w-64">
@@ -148,7 +148,7 @@ export default function MenuItemsPage() {
         </div>
 
         {/* Selected Count Badge and Menu Item List Section */}
-        <div className="flex-1 flex flex-col overflow-hidden p-6">
+        <div className="flex-1 flex flex-col overflow-hidden py-6 px-6">
           {selectedCount > 0 && (
             <div className="mb-4">
               <Badge variant="default" className="bg-orange-500 hover:bg-orange-600 text-white">
