@@ -69,8 +69,11 @@ export default function MenuItemsPage() {
       setLoadingMenuItems(true);
       setErrorMenuItems(null);
 
+      let categoriesResponse: Response | undefined;
+      let menuItemsResponse: Response | undefined;
+
       try {
-        const [categoriesResponse, menuItemsResponse] = await Promise.all([
+        [categoriesResponse, menuItemsResponse] = await Promise.all([
           fetch('https://colorhutbd.xyz/vm/api/categories.php', {
             headers: { 'Accept': 'application/json' }
           }),
@@ -78,10 +81,23 @@ export default function MenuItemsPage() {
             headers: { 'Accept': 'application/json' }
           })
         ]);
+      } catch (networkError: any) {
+        console.error("Network error during initial data fetch:", networkError);
+        setErrorCategories("Network error fetching categories.");
+        setErrorMenuItems("Network error fetching menu items.");
+        setApiCategories([]);
+        setOrderedCategories([]);
+        setSelectedCategory(null);
+        setAllMenuItems([]);
+        setLoadingCategories(false);
+        setLoadingMenuItems(false);
+        return; 
+      }
 
-        // Process Categories
-        if (!categoriesResponse.ok) {
-          throw new Error(`Categories API error! status: ${categoriesResponse.status}`);
+      // Process Categories
+      try {
+        if (!categoriesResponse || !categoriesResponse.ok) {
+          throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
         }
         const categoriesApiResponse = await categoriesResponse.json();
         if (!categoriesApiResponse.success || !categoriesApiResponse.data || !Array.isArray(categoriesApiResponse.data.categories)) {
@@ -115,8 +131,8 @@ export default function MenuItemsPage() {
         }
         setErrorCategories(null);
       } catch (e: any) {
-        console.error("Failed to fetch categories:", e);
-        setErrorCategories(e.message);
+        console.error("Failed to fetch/process categories:", e);
+        setErrorCategories(e.message || "Error processing categories data.");
         setApiCategories([]);
         setOrderedCategories([]);
         setSelectedCategory(null);
@@ -126,8 +142,8 @@ export default function MenuItemsPage() {
 
       // Process Menu Items
       try {
-        if (!menuItemsResponse.ok) {
-          throw new Error(`Menu Items API error! status: ${menuItemsResponse.status}`);
+        if (!menuItemsResponse || !menuItemsResponse.ok) {
+          throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
         }
         const menuItemsApiResponse = await menuItemsResponse.json();
         if (!menuItemsApiResponse.success || !Array.isArray(menuItemsApiResponse.data)) {
@@ -136,14 +152,14 @@ export default function MenuItemsPage() {
         }
         const fetchedMenuItems: MenuItem[] = menuItemsApiResponse.data.map((item: any) => ({
           ...item,
-          id: String(item.id), // Ensure ID is a string for consistency with keys
+          id: String(item.id), 
           iconPlaceholder: !item.image,
         }));
         setAllMenuItems(fetchedMenuItems);
         setErrorMenuItems(null);
       } catch (e: any) {
-        console.error("Failed to fetch menu items:", e);
-        setErrorMenuItems(e.message);
+        console.error("Failed to fetch/process menu items:", e);
+        setErrorMenuItems(e.message || "Error processing menu items data.");
         setAllMenuItems([]);
       } finally {
         setLoadingMenuItems(false);
@@ -162,9 +178,9 @@ export default function MenuItemsPage() {
 
 
   const handleSelectItem = (itemId: string) => {
-    setSelectedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+    setSelectedItems(prev => ({ ...prev, [String(itemId)]: !prev[String(itemId)] }));
   };
-
+  
   const selectedCount = useMemo(() => {
     return Object.values(selectedItems).filter(Boolean).length;
   }, [selectedItems]);
