@@ -1,3 +1,5 @@
-// This route group (m-admin) is no longer in use and has been replaced by /src/app/(app)/m-admin.
-// This file is a placeholder to prevent routing conflicts and can be deleted.
-// If you see errors related to "two parallel pages" for (m-admin), ensure your dev server is fully restarted.
+// This route group (m-admin) and its layout are no longer in use
+// and can be deleted. The active admin panel is now at /src/app/(app)/m-admin/
+// This file is kept as a placeholder to prevent routing errors from cached or
+// misconfigured build processes until it can be safely removed.
+// Do not add any default export or React component here.

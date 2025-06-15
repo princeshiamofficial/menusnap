@@ -27,7 +27,7 @@ export default function MAdminDashboardPage() {
 
   if (!isAdminLoggedIn) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
         <AdminLoginForm />
       </div>
     );
