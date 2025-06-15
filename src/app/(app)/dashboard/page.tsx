@@ -3,10 +3,12 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, FileArchive, BookOpenCheck, FileText, Building2, Globe2, Star } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Users, FileArchive, BookOpenCheck, FileText, Building2, Globe2, Star, AlertTriangle } from "lucide-react";
 
 interface StatCardProps {
   title: string;
@@ -33,6 +35,17 @@ function StatCard({ title, value, icon: Icon, bgColorClass, textColorClass, icon
   );
 }
 
+// Interface for API template structure
+interface ApiTemplate {
+  id: string;
+  name: string;
+  description: string;
+  isTopRated?: boolean;
+  isPublished: boolean;
+  tags: string[];
+  imageUrl: string;
+}
+
 interface TemplateCardProps {
   imageUrl: string;
   title: string;
@@ -44,16 +57,18 @@ interface TemplateCardProps {
 
 function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHint }: TemplateCardProps) {
   return (
-    <Card className="shadow-xl rounded-xl overflow-hidden w-full max-w-md mx-auto sm:max-w-sm">
+    <Card className="shadow-xl rounded-xl overflow-hidden w-full max-w-md mx-auto sm:max-w-sm flex flex-col h-full">
       <CardHeader className="p-0 relative">
-        <Image
-          src={imageUrl}
-          alt={title}
-          width={600}
-          height={400}
-          className="w-full h-auto object-cover"
-          data-ai-hint={imageHint || "menu design"}
-        />
+        <div className="aspect-[4/3] relative">
+          <Image
+            src={imageUrl}
+            alt={title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover"
+            data-ai-hint={imageHint || "menu design"}
+          />
+        </div>
         {isTopRated && (
           <Badge variant="default" className="absolute top-3 right-3 bg-primary text-primary-foreground">
             <Star className="h-3 w-3 mr-1 fill-current" />
@@ -61,29 +76,98 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
           </Badge>
         )}
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="p-4 flex-grow">
         <CardTitle className="text-xl font-semibold mb-1">{title}</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground mb-3">{description}</CardDescription>
+        <CardDescription className="text-sm text-muted-foreground mb-3 min-h-[40px]">{description}</CardDescription>
         <div className="flex flex-wrap gap-2 mb-4">
           {tags.map(tag => (
             <Badge key={tag} variant="secondary" className="bg-muted text-muted-foreground">{tag}</Badge>
           ))}
         </div>
       </CardContent>
-      <CardFooter className="p-4 bg-muted/50">
+      <CardFooter className="p-4 bg-muted/50 mt-auto">
         <Button variant="secondary" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90">View Template</Button>
       </CardFooter>
     </Card>
   );
 }
 
+function TemplateSkeletonCard() {
+  return (
+    <Card className="shadow-xl rounded-xl overflow-hidden w-full max-w-md mx-auto sm:max-w-sm">
+      <CardHeader className="p-0 relative">
+        <Skeleton className="w-full aspect-[4/3]" />
+      </CardHeader>
+      <CardContent className="p-4">
+        <Skeleton className="h-6 w-3/4 mb-2" />
+        <Skeleton className="h-4 w-full mb-1" />
+        <Skeleton className="h-4 w-5/6 mb-3" />
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+      </CardContent>
+      <CardFooter className="p-4 bg-muted/50">
+        <Skeleton className="h-10 w-full" />
+      </CardFooter>
+    </Card>
+  );
+}
+
+const getImageHint = (name: string): string => {
+  return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
+}
 
 export default function DashboardPage() {
   const [isMounted, setIsMounted] = useState(false);
+  const [topRatedTemplates, setTopRatedTemplates] = useState<ApiTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), 100); // Small delay to ensure styles apply
+    const timer = setTimeout(() => setIsMounted(true), 100); 
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    async function fetchTopRatedTemplates() {
+      setIsLoadingTemplates(true);
+      setTemplatesError(null);
+      try {
+        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        });
+        if (!response.ok) {
+          throw new Error(`API error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        if (!result.success || !result.data || !Array.isArray(result.data.templates)) {
+          console.error("Invalid API response structure for templates:", result);
+          throw new Error("Invalid data format from API");
+        }
+        
+        const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any) => ({
+          ...t,
+          isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
+          tags: Array.isArray(t.tags) ? t.tags : [],
+        }));
+
+        const filteredTopRated = fetchedTemplates.filter(
+          template => template.isPublished && template.isTopRated
+        );
+        setTopRatedTemplates(filteredTopRated);
+
+      } catch (e: any) {
+        console.error("Failed to fetch top-rated templates:", e);
+        setTemplatesError(e.message || "Failed to load top-rated templates.");
+      } finally {
+        setIsLoadingTemplates(false);
+      }
+    }
+    fetchTopRatedTemplates();
   }, []);
 
   const stats = [
@@ -120,17 +204,36 @@ export default function DashboardPage() {
         <p className="text-muted-foreground mb-6">
           Our most popular professionally designed templates for your restaurant menu.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <TemplateCard
-            imageUrl="https://placehold.co/600x400.png"
-            imageHint="restaurant menu"
-            title="Golden Delights"
-            description="Modern orange & gold design with bold food photography."
-            tags={["Restaurant", "Cafe", "Popular"]}
-            isTopRated
-          />
-          {/* Add more TemplateCard components here as needed */}
-        </div>
+        
+        {isLoadingTemplates ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <TemplateSkeletonCard key={index} />
+            ))}
+          </div>
+        ) : templatesError ? (
+          <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
+            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <h2 className="text-xl font-semibold text-destructive mb-2">Oops! Something went wrong.</h2>
+            <p className="text-muted-foreground max-w-md">{templatesError}</p>
+          </div>
+        ) : topRatedTemplates.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {topRatedTemplates.map(template => (
+              <TemplateCard
+                key={template.id}
+                imageUrl={template.imageUrl}
+                imageHint={getImageHint(template.name)}
+                title={template.name}
+                description={template.description}
+                tags={template.tags || []}
+                isTopRated={template.isTopRated}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-center py-4">No top-rated templates available at the moment.</p>
+        )}
       </div>
 
       <div
@@ -139,9 +242,10 @@ export default function DashboardPage() {
         }`}
         style={{ transitionDelay: isMounted ? '300ms' : '0ms' }}
       >
-        <Button size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">View All Templates</Button>
+        <Link href="/templates" passHref>
+          <Button as="a" size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">View All Templates</Button>
+        </Link>
       </div>
     </div>
   );
 }
-
