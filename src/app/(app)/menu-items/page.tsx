@@ -300,7 +300,7 @@ export default function MenuItemsPage() {
               </div>
               
               <ScrollArea className="flex-1 -mx-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1">
                   {currentMenuItems.length > 0 ? (
                     currentMenuItems.map(item => (
                         <Card 
@@ -362,7 +362,7 @@ export default function MenuItemsPage() {
                         </Card>
                       ))
                   ) : (
-                    <div className="text-center py-10 md:col-span-2">
+                    <div className="text-center py-10 md:col-span-2 lg:col-span-3">
                       <p className="text-muted-foreground text-sm">
                         {searchTerm ? "No items match your search." : "No items in this category."}
                       </p>
