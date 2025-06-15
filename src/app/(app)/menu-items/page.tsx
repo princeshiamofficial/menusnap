@@ -2,7 +2,8 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { Reorder } from "framer-motion";
 import {
   ListOrdered,
   Layers,
@@ -35,7 +36,7 @@ interface MenuItem {
   iconPlaceholder?: boolean;
 }
 
-const mockCategories: Category[] = [
+const initialMockCategories: Category[] = [
   { id: 'cat1', name: 'Expresso Based Classics', emoji: '☕' },
   { id: 'cat2', name: 'Dhakaiya Chaap', emoji: '🍖' },
   { id: 'cat3', name: 'Peshwari Kabab', emoji: '🍗' },
@@ -77,10 +78,19 @@ const mockMenuItems: { [categoryId: string]: MenuItem[] } = {
 };
 
 export default function MenuItemsPage() {
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(mockCategories[1]); // Default to Dhakaiya Chaap
+  const [orderedCategories, setOrderedCategories] = useState<Category[]>(initialMockCategories);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(orderedCategories.find(c => c.id === 'cat2') || initialMockCategories[0] || null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [isPowerOn, setIsPowerOn] = useState(true);
+
+  useEffect(() => {
+    // If the selected category is no longer in the ordered list (e.g., if categories were dynamic)
+    // or if no category is selected, try to re-select or default
+    if (!selectedCategory || !orderedCategories.find(c => c.id === selectedCategory.id)) {
+      setSelectedCategory(orderedCategories.find(c => c.id === 'cat2') || orderedCategories[0] || null);
+    }
+  }, [orderedCategories, selectedCategory]);
 
   const currentMenuItems = selectedCategory ? (mockMenuItems[selectedCategory.id] || []) : [];
 
@@ -100,23 +110,25 @@ export default function MenuItemsPage() {
           <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
         </div>
         <ScrollArea className="flex-1">
-          <nav className="p-2 space-y-2.5">
-            {mockCategories.map(category => (
-              <Button
-                key={category.id}
-                className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
-                  selectedCategory?.id === category.id 
-                  ? 'bg-muted font-semibold text-foreground'
-                  : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
-                }`}
-                onClick={() => setSelectedCategory(category)}
-              >
-                <span className="mr-2 text-sm">{category.emoji}</span>
-                <span className="flex-1 text-left truncate">{category.name}</span>
-                <GripVertical className="h-4 w-4 text-muted-foreground/50" />
-              </Button>
+          <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
+            {orderedCategories.map(category => (
+              <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
+                <Button
+                  className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
+                    selectedCategory?.id === category.id 
+                    ? 'bg-muted font-semibold text-foreground'
+                    : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                  }`}
+                  onClick={() => setSelectedCategory(category)}
+                  // Framer Motion uses inline styles for transforms, so avoid overriding them directly here
+                >
+                  <span className="mr-2 text-sm">{category.emoji}</span>
+                  <span className="flex-1 text-left truncate">{category.name}</span>
+                  <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
+                </Button>
+              </Reorder.Item>
             ))}
-          </nav>
+          </Reorder.Group>
         </ScrollArea>
       </aside>
 
