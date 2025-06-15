@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,6 +79,13 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
 
 
 export default function DashboardPage() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 100); // Small delay to ensure styles apply
+    return () => clearTimeout(timer);
+  }, []);
+
   const stats = [
     { title: "Designs", value: "12,365+", icon: FileArchive, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
     { title: "Customers", value: "4,332+", icon: Users, bgColorClass: "bg-primary", textColorClass: "text-primary-foreground", iconColorClass: "text-white" },
@@ -89,13 +97,22 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transform transition-all duration-700 ease-out ${
+          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+        }`}
+      >
         {stats.map(stat => (
           <StatCard key={stat.title} {...stat} />
         ))}
       </div>
 
-      <div>
+      <div
+        className={`transform transition-all duration-700 ease-out ${
+          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+        }`}
+        style={{ transitionDelay: isMounted ? '150ms' : '0ms' }}
+      >
         <div className="flex items-center mb-4">
           <Star className="h-6 w-6 text-primary mr-2" />
           <h2 className="text-2xl font-semibold text-foreground">Top-Rated Templates</h2>
@@ -108,7 +125,7 @@ export default function DashboardPage() {
             imageUrl="https://placehold.co/600x400.png"
             imageHint="restaurant menu"
             title="Golden Delights"
-            description="Modern orange &amp; gold design with bold food photography."
+            description="Modern orange & gold design with bold food photography."
             tags={["Restaurant", "Cafe", "Popular"]}
             isTopRated
           />
@@ -116,7 +133,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="text-center mt-12">
+      <div
+        className={`text-center mt-12 transform transition-all duration-700 ease-out ${
+          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+        }`}
+        style={{ transitionDelay: isMounted ? '300ms' : '0ms' }}
+      >
         <Button size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">View All Templates</Button>
       </div>
     </div>
