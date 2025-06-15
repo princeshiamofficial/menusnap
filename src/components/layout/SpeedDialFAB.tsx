@@ -80,8 +80,9 @@ export function SpeedDialFAB(): ReactNode {
         aria-expanded={isOpen}
         aria-label={isOpen ? "Close contact options" : "Open contact options"}
       >
-        {isOpen ? <X className="h-8 w-8" /> : <HelpCircle className="h-8 w-8" />}
+        {isOpen ? <X className="h-8 w-8" /> : <MessagesSquare className="h-8 w-8" />}
       </Button>
     </div>
   );
 }
+
