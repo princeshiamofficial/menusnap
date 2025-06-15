@@ -7,12 +7,4 @@ export interface Transaction {
   type: 'revenue' | 'expense';
 }
 
-export interface Appointment {
-  id: string;
-  date: Date;
-  time: string;
-  title: string;
-  description?: string;
-}
-
-// FinancialMetric type removed as it was specific to the dashboard
+// Appointment interface removed
