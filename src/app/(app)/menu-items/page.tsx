@@ -83,35 +83,52 @@ export default function MenuItemsPage() {
     const fetchData = async () => {
       setLoadingCategories(true);
       setErrorCategories(null);
-      setLoadingMenuItems(true);
-      setErrorMenuItems(null);
+      // Only set menu items loading to true if they haven't been fetched yet or if menu type implies different items
+      // For now, menu items are fetched once. If they need to change per menu type, this logic would expand.
+      if (allMenuItems.length === 0) {
+        setLoadingMenuItems(true);
+        setErrorMenuItems(null);
+      }
 
       let categoriesResponse: Response | undefined;
       let menuItemsResponse: Response | undefined;
 
+      const categoriesApiUrl = selectedMenuType === 'parlour'
+        ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
+        : 'https://colorhutbd.xyz/vm/api/categories.php';
+      
+      const menuItemsApiUrl = 'https://colorhutbd.xyz/vm/api/menu-items.php';
+
       try {
-        [categoriesResponse, menuItemsResponse] = await Promise.all([
-          fetch('https://colorhutbd.xyz/vm/api/categories.php', {
-            headers: { 'Accept': 'application/json' }
-          }),
-          fetch('https://colorhutbd.xyz/vm/api/menu-items.php', {
-            headers: { 'Accept': 'application/json' }
-          })
-        ]);
+        const fetchPromises: [Promise<Response>, Promise<Response>?] = [
+          fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } })
+        ];
+        // Only fetch menu items if they haven't been loaded yet.
+        if (allMenuItems.length === 0) {
+          fetchPromises.push(fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } }));
+        }
+        
+        const responses = await Promise.all(fetchPromises);
+        categoriesResponse = responses[0];
+        if (responses.length > 1 && responses[1]) {
+          menuItemsResponse = responses[1];
+        }
+
       } catch (networkError: any) {
         console.error("Network error during initial data fetch:", networkError);
         setErrorCategories("Network error fetching categories.");
-        setErrorMenuItems("Network error fetching menu items.");
+        if (allMenuItems.length === 0) setErrorMenuItems("Network error fetching menu items.");
         setApiCategories([]);
         setOrderedCategories([]);
         setSelectedCategory(null);
-        setAllMenuItems([]);
+        if (allMenuItems.length === 0) setAllMenuItems([]);
         setLoadingCategories(false);
-        setLoadingMenuItems(false);
+        if (allMenuItems.length === 0) setLoadingMenuItems(false);
         return; 
       }
 
       // Process Categories
+      const prevSelectedCategoryId = selectedCategory?.id; // Store previous selection's ID
       try {
         if (!categoriesResponse || !categoriesResponse.ok) {
           throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
@@ -139,14 +156,14 @@ export default function MenuItemsPage() {
         setOrderedCategories(fetchedApiCategories);
 
         if (fetchedApiCategories.length > 0) {
-            const currentSelectedId = selectedCategory?.id;
-            const newSelectedCategory = currentSelectedId ? fetchedApiCategories.find(c => c.id === currentSelectedId) : null;
-            if (newSelectedCategory) {
-                setSelectedCategory(newSelectedCategory);
-            } else {
-                const defaultCat = fetchedApiCategories.find(c => c.id === 'burger') || fetchedApiCategories[0];
-                setSelectedCategory(defaultCat);
+            let categoryToSelect: Category | null = null;
+            if (prevSelectedCategoryId) {
+                categoryToSelect = fetchedApiCategories.find(c => c.id === prevSelectedCategoryId) || null;
             }
+            if (!categoryToSelect) {
+                categoryToSelect = fetchedApiCategories[0];
+            }
+            setSelectedCategory(categoryToSelect);
         } else {
             setSelectedCategory(null);
         }
@@ -161,54 +178,60 @@ export default function MenuItemsPage() {
         setLoadingCategories(false);
       }
 
-      // Process Menu Items
-      try {
-        if (!menuItemsResponse || !menuItemsResponse.ok) { 
-          throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
+      // Process Menu Items (only if they were fetched in this run)
+      if (menuItemsResponse) {
+        try {
+          if (!menuItemsResponse.ok) { 
+            throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
+          }
+          const menuItemsApiResponse = await menuItemsResponse.json();
+          if (!menuItemsApiResponse.success || !Array.isArray(menuItemsApiResponse.data)) {
+            console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
+            throw new Error("Invalid data format for menu items from API");
+          }
+          const fetchedMenuItems: MenuItem[] = menuItemsApiResponse.data
+            .filter((item: any) => item.id !== null && item.id !== undefined)
+            .map((item: any) => ({
+              id: String(item.id), 
+              name: String(item.name || 'Unnamed Item'),
+              price: parseFloat(item.price) || 0,
+              category: String(item.category || 'uncategorized'),
+              description: String(item.description || ''),
+              image: item.image,
+              status: String(item.status || 'active'),
+              featured: Boolean(item.featured || false),
+              visibleToUsers: item.visibleToUsers !== undefined ? Boolean(item.visibleToUsers) : true,
+              createdAt: String(item.createdAt || new Date().toISOString()),
+              updatedAt: String(item.updatedAt || new Date().toISOString()),
+              iconPlaceholder: !item.image,
+              subItems: Array.isArray(item.subItems) 
+                ? item.subItems
+                    .filter((sub: any) => sub.id !== null && sub.id !== undefined)
+                    .map((sub: any) => ({
+                      id: String(sub.id),
+                      name: String(sub.name || 'Unnamed Sub-item'),
+                      price: parseFloat(sub.price) || 0,
+                    })) 
+                : [],
+            }));
+          setAllMenuItems(fetchedMenuItems);
+          setErrorMenuItems(null);
+        } catch (e: any) {
+          console.error("Failed to fetch/process menu items:", e);
+          setErrorMenuItems(e.message || "Error processing menu items data.");
+          setAllMenuItems([]);
+        } finally {
+          setLoadingMenuItems(false);
         }
-        const menuItemsApiResponse = await menuItemsResponse.json();
-        if (!menuItemsApiResponse.success || !Array.isArray(menuItemsApiResponse.data)) {
-          console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
-          throw new Error("Invalid data format for menu items from API");
-        }
-        const fetchedMenuItems: MenuItem[] = menuItemsApiResponse.data
-          .filter((item: any) => item.id !== null && item.id !== undefined)
-          .map((item: any) => ({
-            id: String(item.id), 
-            name: String(item.name || 'Unnamed Item'),
-            price: parseFloat(item.price) || 0,
-            category: String(item.category || 'uncategorized'),
-            description: String(item.description || ''),
-            image: item.image,
-            status: String(item.status || 'active'),
-            featured: Boolean(item.featured || false),
-            visibleToUsers: item.visibleToUsers !== undefined ? Boolean(item.visibleToUsers) : true,
-            createdAt: String(item.createdAt || new Date().toISOString()),
-            updatedAt: String(item.updatedAt || new Date().toISOString()),
-            iconPlaceholder: !item.image,
-            subItems: Array.isArray(item.subItems) 
-              ? item.subItems
-                  .filter((sub: any) => sub.id !== null && sub.id !== undefined)
-                  .map((sub: any) => ({
-                    id: String(sub.id),
-                    name: String(sub.name || 'Unnamed Sub-item'),
-                    price: parseFloat(sub.price) || 0,
-                  })) 
-              : [],
-          }));
-        setAllMenuItems(fetchedMenuItems);
-        setErrorMenuItems(null);
-      } catch (e: any) {
-        console.error("Failed to fetch/process menu items:", e);
-        setErrorMenuItems(e.message || "Error processing menu items data.");
-        setAllMenuItems([]);
-      } finally {
+      } else if (allMenuItems.length > 0) {
+        // If menu items were not fetched in this run (because they already exist),
+        // ensure loading state is false.
         setLoadingMenuItems(false);
       }
     };
     fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, [selectedMenuType]); // Re-fetch when menu type changes
 
   const currentMenuItems = useMemo(() => {
     if (!selectedCategory || !allMenuItems.length) return [];
@@ -250,7 +273,7 @@ export default function MenuItemsPage() {
           {loadingCategories && <p className="p-4 text-sm text-muted-foreground">Loading categories...</p>}
           {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
           {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">No categories found.</p>
+            <p className="p-4 text-sm text-muted-foreground">No categories found for {selectedMenuType} menu.</p>
           )}
           {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
             <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
