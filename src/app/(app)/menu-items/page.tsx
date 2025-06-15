@@ -104,8 +104,8 @@ export default function MenuItemsPage() {
             {mockCategories.map(category => (
               <Button
                 key={category.id}
-                variant={selectedCategory?.id === category.id ? "secondary" : "ghost"}
-                className={`w-full justify-start items-center text-sm h-9 border border-border ${selectedCategory?.id === category.id ? 'font-semibold':''}`}
+                variant={"ghost"}
+                className={`w-full justify-start items-center text-sm h-9 border border-border ${selectedCategory?.id === category.id ? 'bg-muted font-semibold': 'hover:bg-muted/50'}`}
                 onClick={() => setSelectedCategory(category)}
               >
                 <span className="mr-2 text-sm">{category.emoji}</span>
