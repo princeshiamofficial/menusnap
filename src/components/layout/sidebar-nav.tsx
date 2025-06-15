@@ -2,16 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CalendarDays, ListChecks, Briefcase } from 'lucide-react';
+import { CalendarDays, ListChecks, Briefcase } from 'lucide-react'; // Removed LayoutDashboard
 import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-} from '@/components/ui/sidebar'; // Assuming sidebar components exist
+} from '@/components/ui/sidebar'; 
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  // { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }, // Removed Dashboard
   { href: '/calendar', label: 'Appointments', icon: CalendarDays },
   { href: '/transactions', label: 'Transactions', icon: ListChecks },
 ];

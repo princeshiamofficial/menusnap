@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Failed to save user to localStorage", error);
     }
     setUser(mockUser);
-    router.push('/dashboard');
+    router.push('/calendar'); // Changed from /dashboard
   }, [router]);
 
   const logout = useCallback(() => {

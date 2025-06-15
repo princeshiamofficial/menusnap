@@ -12,7 +12,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard');
+      router.replace('/calendar'); // Changed from /dashboard
     }
   }, [user, loading, router]);
 

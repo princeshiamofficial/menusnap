@@ -15,9 +15,4 @@ export interface Appointment {
   description?: string;
 }
 
-export type FinancialMetric = {
-  label: string;
-  value: number;
-  previousValue?: number; // For percentage change calculation
-  icon?: React.ElementType;
-};
+// FinancialMetric type removed as it was specific to the dashboard
