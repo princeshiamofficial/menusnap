@@ -11,12 +11,14 @@ import {
   Eye,
   GripVertical,
   ChevronRight,
+  MinusCircle,
+  PlusCircle,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card"; // CardContent imported
 import { Badge } from "@/components/ui/badge";
 
 interface Category {
@@ -30,6 +32,12 @@ interface Category {
   visibleToUsers?: boolean;
 }
 
+interface SubMenuItem {
+  id: string;
+  name: string;
+  price: number;
+}
+
 interface MenuItem {
   id: string | number;
   name: string;
@@ -40,7 +48,7 @@ interface MenuItem {
   status?: string;
   featured?: boolean;
   visibleToUsers?: boolean;
-  subItems?: any[];
+  subItems?: SubMenuItem[];
   createdAt?: string;
   updatedAt?: string;
   iconPlaceholder?: boolean;
@@ -61,6 +69,8 @@ export default function MenuItemsPage() {
   const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]);
   const [loadingMenuItems, setLoadingMenuItems] = useState(true);
   const [errorMenuItems, setErrorMenuItems] = useState<string | null>(null);
+
+  const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -154,6 +164,11 @@ export default function MenuItemsPage() {
           ...item,
           id: String(item.id), 
           iconPlaceholder: !item.image,
+          subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any) => ({
+            id: String(sub.id),
+            name: sub.name,
+            price: parseFloat(sub.price) || 0,
+          })) : [],
         }));
         setAllMenuItems(fetchedMenuItems);
         setErrorMenuItems(null);
@@ -184,6 +199,10 @@ export default function MenuItemsPage() {
   const selectedCount = useMemo(() => {
     return Object.values(selectedItems).filter(Boolean).length;
   }, [selectedItems]);
+
+  const toggleSubItems = (itemId: string) => {
+    setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  };
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
@@ -285,33 +304,57 @@ export default function MenuItemsPage() {
                     currentMenuItems.map(item => (
                         <Card 
                           key={item.id} 
-                          className="p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
+                          className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
                         >
-                          <Checkbox
-                            id={`item-${item.id}`}
-                            checked={!!selectedItems[String(item.id)]}
-                            onCheckedChange={() => handleSelectItem(String(item.id))}
-                            aria-label={`Select ${item.name}`}
-                          />
-                          {item.iconPlaceholder && (
-                             <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
-                               {/* Placeholder for icon, e.g., first letter or generic icon */}
-                             </div>
-                          )}
-                          {/* If you want to display the image:
-                          {item.image && (
-                            <Image src={item.image} alt={item.name} width={40} height={40} className="rounded-full" />
-                          )}
-                          */}
-                          <label htmlFor={`item-${item.id}`} className="flex-1 text-sm font-medium text-foreground cursor-pointer truncate">
-                            {item.name}
-                          </label>
-                          <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-                            ৳{(item.price ?? 0).toLocaleString()}
-                          </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/70 hover:text-foreground">
-                            <ChevronRight className="h-5 w-5" />
-                          </Button>
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-4">
+                              <Checkbox
+                                id={`item-${item.id}`}
+                                checked={!!selectedItems[String(item.id)]}
+                                onCheckedChange={() => handleSelectItem(String(item.id))}
+                                aria-label={`Select ${item.name}`}
+                              />
+                              {item.iconPlaceholder && (
+                                 <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
+                                   {/* Placeholder for icon, e.g., first letter or generic icon */}
+                                 </div>
+                              )}
+                              {/* If you want to display the image:
+                              {item.image && (
+                                <Image src={item.image} alt={item.name} width={40} height={40} className="rounded-full" />
+                              )}
+                              */}
+                              <label htmlFor={`item-${item.id}`} className="flex-1 text-sm font-medium text-foreground cursor-pointer truncate">
+                                {item.name}
+                              </label>
+                              <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
+                                ৳{(item.price ?? 0).toLocaleString()}
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground/70 hover:text-foreground"
+                                onClick={() => item.subItems && item.subItems.length > 0 && toggleSubItems(String(item.id))}
+                                disabled={!item.subItems || item.subItems.length === 0}
+                              >
+                                {item.subItems && item.subItems.length > 0 ? (
+                                  expandedSubItems[String(item.id)] ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />
+                                ) : (
+                                  <ChevronRight className="h-5 w-5 opacity-30" />
+                                )}
+                              </Button>
+                            </div>
+                            {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
+                              <div className="mt-3 pl-10 space-y-2">
+                                {item.subItems.map(subItem => (
+                                  <div key={subItem.id} className="flex justify-between items-center text-xs">
+                                    <span className="text-muted-foreground">{subItem.name}</span>
+                                    <span className="text-muted-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
                         </Card>
                       ))
                   ) : (
