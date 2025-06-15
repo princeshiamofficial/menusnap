@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ListOrdered, Layers, FileEdit, ChevronRight, Bell, User } from 'lucide-react';
+import { LayoutGrid, ListOrdered, Layers, FileEdit, ChevronRight, Bell, User, Settings, SlidersHorizontal, PanelTopOpen } from 'lucide-react'; // Added SlidersHorizontal, PanelTopOpen
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -18,6 +18,9 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
   { href: '/menu-items', label: 'Menu Items', icon: ListOrdered, hasChevron: true },
   { href: '/templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/draft', label: 'Draft', icon: FileEdit, hasChevron: true },
+  { href: '/m-admin', label: 'Admin Panel', icon: Settings, hasChevron: true },
+  { href: '/m-panel', label: 'M-Panel', icon: PanelTopOpen, hasChevron: true },
+  { href: '/cpanel', label: 'cPanel', icon: SlidersHorizontal, hasChevron: true },
 ];
 
 export function SidebarNav() {
