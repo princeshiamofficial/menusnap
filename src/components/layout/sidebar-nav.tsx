@@ -8,6 +8,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
@@ -24,12 +25,15 @@ export function SidebarNav() {
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      <div className="p-4 flex flex-col items-start gap-1 border-b border-sidebar-border">
-        <h1 className="text-3xl font-bold group-data-[collapsible=icon]:hidden">
-          <span className="text-sidebar-primary">COLOR</span>
-          <span className="text-sidebar-foreground">HUT</span>
-        </h1>
-        <p className="text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">YOUR TRUSTED PARTNER</p>
+      <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
+        <div className="flex flex-col items-start gap-1">
+          <h1 className="text-3xl font-bold group-data-[collapsible=icon]:hidden">
+            <span className="text-sidebar-primary">COLOR</span>
+            <span className="text-sidebar-foreground">HUT</span>
+          </h1>
+          <p className="text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">YOUR TRUSTED PARTNER</p>
+        </div>
+        <SidebarTrigger className="group-data-[collapsible=icon]:hidden text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent" />
       </div>
       <nav className="flex-1 p-2 overflow-y-auto">
         {mainNavItems.length > 0 ? (
@@ -87,3 +91,4 @@ export function SidebarNav() {
     </div>
   );
 }
+
