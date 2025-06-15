@@ -100,7 +100,7 @@ export default function MenuItemsPage() {
           <h2 className="text-lg font-semibold text-foreground">All Items</h2>
         </div>
         <ScrollArea className="flex-1">
-          <nav className="p-2 space-y-2">
+          <nav className="p-2 space-y-2.5">
             {mockCategories.map(category => (
               <Button
                 key={category.id}
