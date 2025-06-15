@@ -16,10 +16,9 @@ interface ApiTemplate {
   name: string; // Used as title
   description: string;
   isTopRated?: boolean;
-  isPublished: boolean; // Added for filtering
+  isPublished: boolean;
   tags: string[];
   imageUrl: string;
-  // Add other fields from API if needed in the future
 }
 
 interface TemplateCardProps {
@@ -45,7 +44,7 @@ function TemplateCard({
       <CardHeader className="p-0 relative">
         <div className="aspect-[4/3] relative group">
           <Image
-            src={imageUrl} // Use the direct imageUrl from API
+            src={imageUrl}
             alt={title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -136,10 +135,10 @@ export default function TemplatesPage(): ReactNode {
           console.error("Invalid API response structure:", result);
           throw new Error("Invalid data format from API");
         }
-        // Ensure all templates have an isPublished field, defaulting to false if undefined
         const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any) => ({
           ...t,
           isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
+          tags: Array.isArray(t.tags) ? t.tags : [],
         }));
         setTemplates(fetchedTemplates);
       } catch (e: any) {
@@ -157,12 +156,18 @@ export default function TemplatesPage(): ReactNode {
   }
 
   const filteredTemplates = templates
-    .filter(template => template.isPublished) // Filter for published templates first
+    .filter(template => template.isPublished)
     .filter(template =>
       template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-    );
+    )
+    .sort((a, b) => {
+      // Prioritize top-rated templates
+      if (a.isTopRated && !b.isTopRated) return -1;
+      if (!a.isTopRated && b.isTopRated) return 1;
+      return 0; // Maintain original order for items with same top-rated status
+    });
 
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
