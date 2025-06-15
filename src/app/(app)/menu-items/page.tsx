@@ -4,7 +4,6 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import {
-  LayoutGrid,
   ListOrdered,
   Layers,
   FileEdit,
@@ -13,21 +12,8 @@ import {
   Save,
   Eye,
   GripVertical,
-  Coffee,
   ChevronRight,
-  Beef,
-  DrumstickIcon,
-  CupSoda,
-  GlassWater,
-  Wine,
-  Salad,
-  Fish, // Replaced SushiIcon
-  Box,
-  Milk,
-  CookingPot, // for Dosa / Masala
-  Flame,
-  Vegan,
-  Minus // Using Minus for Noodles as PanelTop is not ideal
+  Minus
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,36 +25,36 @@ import { Badge } from "@/components/ui/badge";
 interface Category {
   id: string;
   name: string;
-  icon: React.ElementType;
+  emoji: string; // Changed from icon: React.ElementType to emoji: string
 }
 
 interface MenuItem {
   id: string;
   name: string;
   price: number;
-  iconPlaceholder?: boolean; // True if it should show a circular placeholder
+  iconPlaceholder?: boolean; 
 }
 
 const mockCategories: Category[] = [
-  { id: 'cat1', name: 'Expresso Based Classics', icon: Coffee },
-  { id: 'cat2', name: 'Dhakaiya Chaap', icon: Beef }, // Using Beef as placeholder
-  { id: 'cat3', name: 'Peshwari Kabab', icon: Beef },
-  { id: 'cat4', name: 'Drumstick', icon: DrumstickIcon },
-  { id: 'cat5', name: 'Flavored Latte', icon: CupSoda },
-  { id: 'cat6', name: 'Lemonade', icon: GlassWater },
-  { id: 'cat7', name: 'Steak', icon: Beef },
-  { id: 'cat8', name: 'Italian Soda', icon: Wine },
-  { id: 'cat9', name: 'Arabian Cuisine', icon: Salad },
-  { id: 'cat10', name: 'Sushi Platter', icon: Fish }, // Updated icon
-  { id: 'cat11', name: 'Bento', icon: Box },
-  { id: 'cat12', name: 'Smoothie', icon: Milk },
-  { id: 'cat13', name: 'Masala', icon: CookingPot },
-  { id: 'cat14', name: 'Waffle', icon: Layers }, // Placeholder
-  { id: 'cat15', name: 'Dosa', icon: CookingPot },
-  { id: 'cat16', name: 'BBQ', icon: Flame },
-  { id: 'cat17', name: 'Vegetable', icon: Vegan },
-  { id: 'cat18', name: 'Mutton', icon: Beef },
-  { id: 'cat19', name: 'Noodles', icon: Minus },
+  { id: 'cat1', name: 'Expresso Based Classics', emoji: '☕' },
+  { id: 'cat2', name: 'Dhakaiya Chaap', emoji: '🥩' }, 
+  { id: 'cat3', name: 'Peshwari Kabab', emoji: '🍖' },
+  { id: 'cat4', name: 'Drumstick', emoji: '🍗' },
+  { id: 'cat5', name: 'Flavored Latte', emoji: '🥤' },
+  { id: 'cat6', name: 'Lemonade', emoji: '🍋' },
+  { id: 'cat7', name: 'Steak', emoji: '🥩' },
+  { id: 'cat8', name: 'Italian Soda', emoji: '🍹' },
+  { id: 'cat9', name: 'Arabian Cuisine', emoji: '🥗' },
+  { id: 'cat10', name: 'Sushi Platter', emoji: '🍣' }, 
+  { id: 'cat11', name: 'Bento', emoji: '🍱' },
+  { id: 'cat12', name: 'Smoothie', emoji: '🥛' },
+  { id: 'cat13', name: 'Masala', emoji: '🥘' },
+  { id: 'cat14', name: 'Waffle', emoji: '🧇' }, 
+  { id: 'cat15', name: 'Dosa', emoji: '🥞' },
+  { id: 'cat16', name: 'BBQ', emoji: '🔥' },
+  { id: 'cat17', name: 'Vegetable', emoji: '🥦' },
+  { id: 'cat18', name: 'Mutton', emoji: '🐑' },
+  { id: 'cat19', name: 'Noodles', emoji: '🍜' },
 ];
 
 const mockMenuItems: { [categoryId: string]: MenuItem[] } = {
@@ -116,7 +102,7 @@ export default function MenuItemsPage() {
                 className={`w-full justify-start items-center text-sm ${selectedCategory?.id === category.id ? 'font-semibold':''}`}
                 onClick={() => setSelectedCategory(category)}
               >
-                <category.icon className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="mr-2 text-lg">{category.emoji}</span> {/* Display emoji */}
                 <span className="flex-1 text-left truncate">{category.name}</span>
                 <GripVertical className="h-4 w-4 text-muted-foreground opacity-50" />
               </Button>
@@ -159,7 +145,7 @@ export default function MenuItemsPage() {
         {selectedCategory && (
           <div className="p-6 flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 mb-4">
-              {selectedCategory.icon && <selectedCategory.icon className="h-5 w-5 text-primary" />}
+              {selectedCategory.emoji && <span className="text-xl">{selectedCategory.emoji}</span>} {/* Display emoji */}
               <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
               <Badge variant="secondary" className="text-xs">{currentMenuItems.length}</Badge>
             </div>
