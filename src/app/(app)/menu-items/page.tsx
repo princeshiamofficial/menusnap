@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 interface Category {
   id: string;
   name: string;
-  icon: string; // From API, e.g., "🍔"
+  icon: string;
   itemCount?: number;
   status?: string;
   createdAt?: string;
@@ -31,36 +31,21 @@ interface Category {
 }
 
 interface MenuItem {
-  id: string;
+  id: string | number;
   name: string;
   price: number;
+  category: string;
+  description?: string;
+  image?: string;
+  status?: string;
+  featured?: boolean;
+  visibleToUsers?: boolean;
+  subItems?: any[];
+  createdAt?: string;
+  updatedAt?: string;
   iconPlaceholder?: boolean;
 }
 
-// Menu items are still mocked for now
-const mockMenuItems: { [categoryId: string]: MenuItem[] } = {
-  burger: [ // Assuming 'burger' is a category ID from your API
-    { id: 'item-burger-1', name: 'Classic Burger', price: 150, iconPlaceholder: true },
-    { id: 'item-burger-2', name: 'Cheese Burger', price: 180, iconPlaceholder: true },
-    { id: 'item-burger-3', name: 'Vegan Burger', price: 200, iconPlaceholder: true },
-  ],
-  drinks: [ // Assuming 'drinks' is a category ID from your API
-    { id: 'item-drinks-1', name: 'Cola', price: 50, iconPlaceholder: true },
-    { id: 'item-drinks-2', name: 'Orange Juice', price: 70, iconPlaceholder: true },
-  ],
-  cat1: [
-    { id: 'item1-1', name: 'Ristretto', price: 0, iconPlaceholder: true },
-    { id: 'item1-2', name: 'Lungo', price: 0, iconPlaceholder: true },
-    { id: 'item1-3', name: 'Macchiato', price: 0, iconPlaceholder: true },
-  ],
-  cat2: [
-    { id: 'item2-1', name: 'Chicken Dhakaiya Chaap', price: 0, iconPlaceholder: true },
-    { id: 'item2-2', name: 'Beef Dhakaiya Chaap', price: 0, iconPlaceholder: true },
-  ],
-  cat3: [
-    { id: 'item3-1', name: 'Chicken Peshwari Kabab', price: 0, iconPlaceholder: true },
-  ],
-};
 
 export default function MenuItemsPage() {
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
@@ -69,56 +54,66 @@ export default function MenuItemsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [isPowerOn, setIsPowerOn] = useState(true);
+  
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
 
+  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]);
+  const [loadingMenuItems, setLoadingMenuItems] = useState(true);
+  const [errorMenuItems, setErrorMenuItems] = useState<string | null>(null);
+
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       setLoadingCategories(true);
       setErrorCategories(null);
-      try {
-        const response = await fetch('https://colorhutbd.xyz/vm/api/categories.php', {
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const apiResponse = await response.json();
+      setLoadingMenuItems(true);
+      setErrorMenuItems(null);
 
-        if (!apiResponse.success || !apiResponse.data || !Array.isArray(apiResponse.data.categories)) {
-          console.error("Invalid API response structure:", apiResponse);
+      try {
+        const [categoriesResponse, menuItemsResponse] = await Promise.all([
+          fetch('https://colorhutbd.xyz/vm/api/categories.php', {
+            headers: { 'Accept': 'application/json' }
+          }),
+          fetch('https://colorhutbd.xyz/vm/api/menu-items.php', {
+            headers: { 'Accept': 'application/json' }
+          })
+        ]);
+
+        // Process Categories
+        if (!categoriesResponse.ok) {
+          throw new Error(`Categories API error! status: ${categoriesResponse.status}`);
+        }
+        const categoriesApiResponse = await categoriesResponse.json();
+        if (!categoriesApiResponse.success || !categoriesApiResponse.data || !Array.isArray(categoriesApiResponse.data.categories)) {
+          console.error("Invalid API response structure for categories:", categoriesApiResponse);
           throw new Error("Invalid data format for categories from API");
         }
-        
-        const fetchedApiCategories: Category[] = apiResponse.data.categories.map((cat: any) => ({
+        const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories.map((cat: any) => ({
           id: cat.id,
           name: cat.name,
-          icon: cat.icon || '📁', // Default icon if missing
+          icon: cat.icon || '📁',
           itemCount: cat.itemCount || 0,
           status: cat.status,
           createdAt: cat.createdAt,
           description: cat.description,
           visibleToUsers: cat.visibleToUsers !== undefined ? cat.visibleToUsers : true,
         }));
-
         setApiCategories(fetchedApiCategories);
         setOrderedCategories(fetchedApiCategories);
 
         if (fetchedApiCategories.length > 0) {
-            const currentSelected = selectedCategory ? fetchedApiCategories.find(c => c.id === selectedCategory.id) : null;
-            if (currentSelected) {
-                setSelectedCategory(currentSelected);
+            const currentSelectedId = selectedCategory?.id;
+            const newSelectedCategory = currentSelectedId ? fetchedApiCategories.find(c => c.id === currentSelectedId) : null;
+            if (newSelectedCategory) {
+                setSelectedCategory(newSelectedCategory);
             } else {
-                // You can set a preferred default, e.g., 'burger' if it exists, or the first category
                 const defaultCat = fetchedApiCategories.find(c => c.id === 'burger') || fetchedApiCategories[0];
                 setSelectedCategory(defaultCat);
             }
         } else {
             setSelectedCategory(null);
         }
-
+        setErrorCategories(null);
       } catch (e: any) {
         console.error("Failed to fetch categories:", e);
         setErrorCategories(e.message);
@@ -128,12 +123,43 @@ export default function MenuItemsPage() {
       } finally {
         setLoadingCategories(false);
       }
-    };
-    fetchCategories();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Fetch categories once on component mount
 
-  const currentMenuItems = selectedCategory ? (mockMenuItems[selectedCategory.id] || []) : [];
+      // Process Menu Items
+      try {
+        if (!menuItemsResponse.ok) {
+          throw new Error(`Menu Items API error! status: ${menuItemsResponse.status}`);
+        }
+        const menuItemsApiResponse = await menuItemsResponse.json();
+        if (!menuItemsApiResponse.success || !Array.isArray(menuItemsApiResponse.data)) {
+          console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
+          throw new Error("Invalid data format for menu items from API");
+        }
+        const fetchedMenuItems: MenuItem[] = menuItemsApiResponse.data.map((item: any) => ({
+          ...item,
+          id: String(item.id), // Ensure ID is a string for consistency with keys
+          iconPlaceholder: !item.image,
+        }));
+        setAllMenuItems(fetchedMenuItems);
+        setErrorMenuItems(null);
+      } catch (e: any) {
+        console.error("Failed to fetch menu items:", e);
+        setErrorMenuItems(e.message);
+        setAllMenuItems([]);
+      } finally {
+        setLoadingMenuItems(false);
+      }
+    };
+    fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const currentMenuItems = useMemo(() => {
+    if (!selectedCategory || !allMenuItems.length) return [];
+    return allMenuItems
+      .filter(item => item.category === selectedCategory.id && item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .map(item => ({ ...item, iconPlaceholder: !item.image }));
+  }, [selectedCategory, allMenuItems, searchTerm]);
+
 
   const handleSelectItem = (itemId: string) => {
     setSelectedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -144,8 +170,7 @@ export default function MenuItemsPage() {
   }, [selectedItems]);
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]"> {/* Adjusted for typical header/padding */}
-      {/* Left Sidebar - Categories */}
+    <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
       <aside className="w-72 bg-card border-r border-border flex flex-col">
         <div className="p-4 border-b border-border">
           <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
@@ -180,9 +205,7 @@ export default function MenuItemsPage() {
         </ScrollArea>
       </aside>
 
-      {/* Right Content Area */}
       <main className="flex-1 flex flex-col bg-background overflow-hidden">
-        {/* Header Section */}
         <div className="py-6 px-6 border-b border-border bg-card flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
           <div className="flex items-center gap-3">
@@ -210,7 +233,6 @@ export default function MenuItemsPage() {
           </div>
         </div>
 
-        {/* Selected Count Badge and Menu Item List Section */}
         <div className="flex-1 flex flex-col overflow-hidden py-6 px-6">
           {selectedCount > 0 && (
             <div className="mb-4">
@@ -220,7 +242,18 @@ export default function MenuItemsPage() {
             </div>
           )}
           
-          {selectedCategory && (
+          {loadingMenuItems && (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-muted-foreground">Loading menu items...</p>
+            </div>
+          )}
+          {errorMenuItems && (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-destructive">Error loading menu items: {errorMenuItems}</p>
+            </div>
+          )}
+
+          {!loadingMenuItems && !errorMenuItems && selectedCategory && (
             <div className="flex-1 flex flex-col overflow-hidden">
               <div className="flex items-center gap-2 mb-4">
                 {selectedCategory.icon && <span className="text-xl">{selectedCategory.icon}</span>}
@@ -233,17 +266,15 @@ export default function MenuItemsPage() {
               <ScrollArea className="flex-1 -mx-1">
                 <div className="px-1 space-y-3">
                   {currentMenuItems.length > 0 ? (
-                    currentMenuItems
-                      .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .map(item => (
+                    currentMenuItems.map(item => (
                         <Card 
                           key={item.id} 
                           className="p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
                         >
                           <Checkbox
                             id={`item-${item.id}`}
-                            checked={!!selectedItems[item.id]}
-                            onCheckedChange={() => handleSelectItem(item.id)}
+                            checked={!!selectedItems[String(item.id)]}
+                            onCheckedChange={() => handleSelectItem(String(item.id))}
                             aria-label={`Select ${item.name}`}
                           />
                           {item.iconPlaceholder && (
@@ -251,6 +282,11 @@ export default function MenuItemsPage() {
                                {/* Placeholder for icon, e.g., first letter or generic icon */}
                              </div>
                           )}
+                          {/* If you want to display the image:
+                          {item.image && (
+                            <Image src={item.image} alt={item.name} width={40} height={40} className="rounded-full" />
+                          )}
+                          */}
                           <label htmlFor={`item-${item.id}`} className="flex-1 text-sm font-medium text-foreground cursor-pointer truncate">
                             {item.name}
                           </label>
@@ -264,14 +300,16 @@ export default function MenuItemsPage() {
                       ))
                   ) : (
                     <div className="text-center py-10">
-                      <p className="text-muted-foreground text-sm">No items in this category or category not found in mock data.</p>
+                      <p className="text-muted-foreground text-sm">
+                        {searchTerm ? "No items match your search." : "No items in this category."}
+                      </p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
             </div>
           )}
-          {!selectedCategory && !loadingCategories && (
+          {!loadingCategories && !selectedCategory && !loadingMenuItems && !errorMenuItems && (
               <div className="flex-1 flex items-center justify-center">
                   <p className="text-muted-foreground">Select a category to see menu items.</p>
               </div>
@@ -281,3 +319,4 @@ export default function MenuItemsPage() {
     </div>
   );
 }
+
