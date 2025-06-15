@@ -104,8 +104,11 @@ export default function MenuItemsPage() {
             {mockCategories.map(category => (
               <Button
                 key={category.id}
-                // variant={"ghost"} // Removed variant="ghost" to allow explicit background control
-                className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${selectedCategory?.id === category.id ? 'bg-muted font-semibold text-foreground': 'bg-card text-card-foreground hover:bg-muted/50'}`}
+                className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
+                  selectedCategory?.id === category.id 
+                  ? 'bg-muted font-semibold text-foreground'
+                  : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                }`}
                 onClick={() => setSelectedCategory(category)}
               >
                 <span className="mr-2 text-sm">{category.emoji}</span>
