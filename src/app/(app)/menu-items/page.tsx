@@ -100,15 +100,15 @@ export default function MenuItemsPage() {
           <h2 className="text-lg font-semibold text-foreground">All Items</h2>
         </div>
         <ScrollArea className="flex-1">
-          <nav className="p-2 space-y-2"> {/* Changed space-y-1 to space-y-2 */}
+          <nav className="p-2 space-y-2">
             {mockCategories.map(category => (
               <Button
                 key={category.id}
                 variant={selectedCategory?.id === category.id ? "secondary" : "ghost"}
-                className={`w-full justify-start items-center text-sm h-10 border border-border ${selectedCategory?.id === category.id ? 'font-semibold':''}`}
+                className={`w-full justify-start items-center text-sm h-9 border border-border ${selectedCategory?.id === category.id ? 'font-semibold':''}`}
                 onClick={() => setSelectedCategory(category)}
               >
-                <span className="mr-2 text-base">{category.emoji}</span>
+                <span className="mr-2 text-sm">{category.emoji}</span>
                 <span className="flex-1 text-left truncate">{category.name}</span>
                 <GripVertical className="h-4 w-4 text-muted-foreground/50" />
               </Button>
