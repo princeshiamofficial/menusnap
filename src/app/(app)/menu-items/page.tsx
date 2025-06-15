@@ -21,7 +21,7 @@ import {
   GlassWater,
   Wine,
   Salad,
-  SushiIcon,
+  Fish, // Replaced SushiIcon
   Box,
   Milk,
   CookingPot, // for Dosa / Masala
@@ -59,7 +59,7 @@ const mockCategories: Category[] = [
   { id: 'cat7', name: 'Steak', icon: Beef },
   { id: 'cat8', name: 'Italian Soda', icon: Wine },
   { id: 'cat9', name: 'Arabian Cuisine', icon: Salad },
-  { id: 'cat10', name: 'Sushi Platter', icon: SushiIcon },
+  { id: 'cat10', name: 'Sushi Platter', icon: Fish }, // Updated icon
   { id: 'cat11', name: 'Bento', icon: Box },
   { id: 'cat12', name: 'Smoothie', icon: Milk },
   { id: 'cat13', name: 'Masala', icon: CookingPot },
