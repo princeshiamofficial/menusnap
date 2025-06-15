@@ -97,7 +97,7 @@ export default function MenuItemsPage() {
       {/* Left Sidebar - Categories */}
       <aside className="w-72 bg-card border-r border-border flex flex-col">
         <div className="p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">All Items</h2>
+          <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
         </div>
         <ScrollArea className="flex-1">
           <nav className="p-2 space-y-2.5">
