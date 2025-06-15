@@ -1,3 +1,3 @@
-// This file is obsolete and has been replaced.
-// Its content was intentionally cleared to prevent routing conflicts.
-// The active admin page is now at src/app/(app)/m-admin/page.tsx.
+// This file (src/app/(m-admin)/page.tsx) is intentionally left as a non-functional placeholder.
+// It previously exported a default component, which has been removed to prevent routing conflicts.
+// Please ensure your development server (Next.js/Turbopack) is restarted if issues persist.
