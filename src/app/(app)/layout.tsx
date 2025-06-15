@@ -2,7 +2,7 @@
 "use client";
 import type { ReactNode } from 'react';
 import { ProtectedRoute } from '@/components/auth/protected-route';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'; // Removed SidebarTrigger, SidebarContent
+import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { UserNav } from '@/components/layout/user-nav';
 import { ScrollArea } from '@/components/ui/scroll-area';
