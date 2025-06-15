@@ -1,17 +1,29 @@
 
 "use client";
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { UtensilsCrossed, Search, Star, Maximize } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { UtensilsCrossed, Search, Star, Maximize, AlertTriangle } from "lucide-react";
 import type { ReactNode } from 'react';
+
+interface ApiTemplate {
+  id: string;
+  name: string; // Used as title
+  description: string;
+  isTopRated?: boolean;
+  tags: string[];
+  imageUrl: string; // Source URL, will be transformed if it's a placeholder
+  // Add other fields from API if needed in the future
+}
 
 interface TemplateCardProps {
   id: string;
-  imageUrl: string;
+  displayImageUrl: string; // Transformed URL for next/image
   imageHint: string;
   title: string;
   description: string;
@@ -19,83 +31,8 @@ interface TemplateCardProps {
   isTopRated?: boolean;
 }
 
-const templateData: TemplateCardProps[] = [
-  {
-    id: "1",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "modern menu design",
-    title: "Golden Delights",
-    description: "Modern orange &amp; gold design with bold food photography.",
-    tags: ["Restaurant", "Cafe", "Popular"],
-    isTopRated: true,
-  },
-  {
-    id: "2",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "elegant script menu",
-    title: "Crimson Quill",
-    description: "An elegant script-style menu, perfect for handwritten specials or a classic feel.",
-    tags: ["Restaurant", "Menu", "Classic"],
-    isTopRated: false,
-  },
-  {
-    id: "3",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "floral spring menu",
-    title: "Azure Bloom",
-    description: "A fresh and floral design, ideal for spring menus or garden cafes.",
-    tags: ["Restaurant", "Cafe", "Seasonal"],
-    isTopRated: false,
-  },
-  {
-    id: "4",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "rustic menu design",
-    title: "Rustic Eatery",
-    description: "A charming rustic design that gives a homemade, cozy atmosphere.",
-    tags: ["Restaurant", "Bistro"],
-    isTopRated: false,
-  },
-  {
-    id: "5",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "minimalist cafe menu",
-    title: "Simply Stated",
-    description: "Clean and minimalist layout, focusing on typography and clarity.",
-    tags: ["Cafe", "Minimalist", "Modern"],
-    isTopRated: true,
-  },
-  {
-    id: "6",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "vintage diner menu",
-    title: "Retro Diner",
-    description: "Fun retro vibes with classic diner aesthetics for a nostalgic feel.",
-    tags: ["Diner", "Retro", "Fun"],
-    isTopRated: false,
-  },
-  {
-    id: "7",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "dark mode menu",
-    title: "Midnight Bite",
-    description: "A sleek dark-themed menu for upscale or late-night venues.",
-    tags: ["Restaurant", "Bar", "Elegant"],
-    isTopRated: false,
-  },
-  {
-    id: "8",
-    imageUrl: "https://placehold.co/600x400.png",
-    imageHint: "bright colorful menu",
-    title: "Rainbow Feast",
-    description: "Vibrant and colorful design, perfect for family-friendly restaurants.",
-    tags: ["Family", "Fun", "Colorful"],
-    isTopRated: false,
-  },
-];
-
 function TemplateCard({
-  imageUrl,
+  displayImageUrl,
   imageHint,
   title,
   description,
@@ -105,9 +42,9 @@ function TemplateCard({
   return (
     <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
       <CardHeader className="p-0 relative">
-        <div className="aspect-[4/3] relative group"> {/* Aspect ratio for image consistency */}
+        <div className="aspect-[4/3] relative group">
           <Image
-            src={imageUrl}
+            src={displayImageUrl}
             alt={title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -132,7 +69,7 @@ function TemplateCard({
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <h2 className="text-lg font-semibold mb-1.5 text-foreground">{title}</h2>
-        <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{description}</p> {/* min-h for consistent description height */}
+        <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{description}</p>
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="font-normal text-xs">
@@ -141,7 +78,7 @@ function TemplateCard({
           ))}
         </div>
       </CardContent>
-      <CardFooter className="p-4 border-t mt-auto"> {/* mt-auto pushes footer to bottom */}
+      <CardFooter className="p-4 border-t mt-auto">
         <Button variant="outline" className="w-full">
           Select Template
         </Button>
@@ -150,7 +87,75 @@ function TemplateCard({
   );
 }
 
+function TemplateSkeletonCard(): ReactNode {
+  return (
+    <Card className="overflow-hidden shadow-md rounded-lg flex flex-col h-full">
+      <CardHeader className="p-0 relative">
+        <Skeleton className="aspect-[4/3] w-full" />
+      </CardHeader>
+      <CardContent className="p-4 flex-grow">
+        <Skeleton className="h-6 w-3/4 mb-2" />
+        <Skeleton className="h-4 w-full mb-1" />
+        <Skeleton className="h-4 w-5/6 mb-3" />
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-5 w-16 rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+        </div>
+      </CardContent>
+      <CardFooter className="p-4 border-t mt-auto">
+        <Skeleton className="h-10 w-full" />
+      </CardFooter>
+    </Card>
+  );
+}
+
+
 export default function TemplatesPage(): ReactNode {
+  const [templates, setTemplates] = useState<ApiTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    async function fetchTemplates() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        });
+        if (!response.ok) {
+          throw new Error(`API error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        if (!result.success || !result.data || !Array.isArray(result.data.templates)) {
+          console.error("Invalid API response structure:", result);
+          throw new Error("Invalid data format from API");
+        }
+        setTemplates(result.data.templates);
+      } catch (e: any) {
+        console.error("Failed to fetch templates:", e);
+        setError(e.message || "Failed to load templates. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchTemplates();
+  }, []);
+
+  const getImageHint = (name: string): string => {
+    return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
+  }
+
+  const filteredTemplates = templates.filter(template => 
+    template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -171,16 +176,51 @@ export default function TemplatesPage(): ReactNode {
             type="search"
             placeholder="Search restaurant templates..."
             className="pl-10 w-full sm:w-64 md:w-72 text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </header>
 
       <main>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {templateData.map((template) => (
-            <TemplateCard key={template.id} {...template} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <TemplateSkeletonCard key={index} />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
+            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+            <h2 className="text-xl font-semibold text-destructive mb-2">Oops! Something went wrong.</h2>
+            <p className="text-muted-foreground max-w-md">{error}</p>
+            <Button variant="outline" onClick={() => window.location.reload()} className="mt-6">
+              Try Again
+            </Button>
+          </div>
+        ) : filteredTemplates.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground text-lg">
+                {searchTerm ? "No templates match your search." : "No templates available at the moment."}
+              </p>
+            </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredTemplates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                id={template.id}
+                title={template.name}
+                description={template.description}
+                // Forcing placeholder.co for consistency as per project guidelines
+                displayImageUrl={`https://placehold.co/600x400.png`} 
+                imageHint={getImageHint(template.name)}
+                tags={template.tags}
+                isTopRated={template.isTopRated}
+              />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
