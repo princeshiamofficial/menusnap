@@ -1,12 +1,59 @@
 
 "use client";
 
+import type { ReactNode } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  LayoutDashboard, 
+  LogOut,
+  ShoppingCart,
+  DollarSign,
+  FileText,
+  Undo2,
+  Download,
+  AlertTriangle,
+  Redo2,
+  Landmark // Using Landmark for Expense, similar to a bank/financial institution
+} from "lucide-react";
+
+interface StatCardAdminProps {
+  title: string;
+  value: string;
+  icon: React.ElementType;
+  iconBgClass: string;
+  iconTextClass: string;
+}
+
+function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }: StatCardAdminProps): ReactNode {
+  return (
+    <Card className="shadow-sm rounded-lg bg-card">
+      <CardContent className="p-4 flex items-center space-x-3 sm:space-x-4">
+        <div className={`p-3 rounded-full ${iconBgClass} flex-shrink-0`}>
+          <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${iconTextClass}`} />
+        </div>
+        <div className="overflow-hidden">
+          <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
+          <p className="text-lg sm:text-xl font-bold text-foreground">৳{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const adminStats: StatCardAdminProps[] = [
+  { title: "Total Sales", value: "998,150.00", icon: ShoppingCart, iconBgClass: "bg-sky-100 dark:bg-sky-900/50", iconTextClass: "text-sky-600 dark:text-sky-400" },
+  { title: "Net", value: "0.00", icon: DollarSign, iconBgClass: "bg-green-100 dark:bg-green-900/50", iconTextClass: "text-green-600 dark:text-green-400" },
+  { title: "Invoice due", value: "588,685.00", icon: FileText, iconBgClass: "bg-amber-100 dark:bg-amber-900/50", iconTextClass: "text-amber-600 dark:text-amber-400" },
+  { title: "Total Sell Return", value: "0.00", icon: Undo2, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
+  { title: "Total purchase", value: "129,030.00", icon: Download, iconBgClass: "bg-indigo-100 dark:bg-indigo-900/50", iconTextClass: "text-indigo-600 dark:text-indigo-400" },
+  { title: "Purchase due", value: "0.00", icon: AlertTriangle, iconBgClass: "bg-yellow-100 dark:bg-yellow-900/50", iconTextClass: "text-yellow-600 dark:text-yellow-400" },
+  { title: "Total Purchase Return", value: "0.00", icon: Redo2, iconBgClass: "bg-rose-100 dark:bg-rose-900/50", iconTextClass: "text-rose-600 dark:text-rose-400" },
+  { title: "Expense", value: "0.00", icon: Landmark, iconBgClass: "bg-red-100 dark:bg-red-900/50", iconTextClass: "text-red-600 dark:text-red-400" },
+];
 
 export default function MAdminDashboardPage() {
   const { isAdminLoggedIn, adminLoading, adminLogout } = useAdminAuth();
@@ -33,61 +80,47 @@ export default function MAdminDashboardPage() {
     );
   }
 
-  // If admin is logged in, show the dashboard
   return (
-    <div className="space-y-6 p-6 sm:p-8 md:p-10">
-        <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <Button variant="outline" onClick={adminLogout}>
+    <div className="space-y-6 p-4 sm:p-6 md:p-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Dashboard</h1>
+            <Button variant="outline" onClick={adminLogout} className="w-full sm:w-auto">
                 <LogOut className="mr-2 h-4 w-4" />
                 Logout
             </Button>
         </div>
-      <Card className="shadow-md rounded-lg">
-        <CardHeader className="bg-card">
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {adminStats.map((stat) => (
+          <StatCardAdmin 
+            key={stat.title}
+            title={stat.title}
+            value={stat.value}
+            icon={stat.icon}
+            iconBgClass={stat.iconBgClass}
+            iconTextClass={stat.iconTextClass}
+          />
+        ))}
+      </div>
+
+      <Card className="shadow-md rounded-lg mt-8">
+        <CardHeader className="bg-card border-b">
           <div className="flex items-center gap-3">
             <LayoutDashboard className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="text-xl font-semibold text-foreground">Welcome to the Admin Panel</CardTitle>
+              <CardTitle className="text-xl font-semibold text-foreground">System Overview</CardTitle>
               <CardDescription className="text-sm text-muted-foreground pt-1">
-                Manage your application settings, users, and more from here.
+                Additional system information and controls.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="pt-6">
           <p className="text-muted-foreground">
-            This is the main dashboard for the administration section.
+            This section can be used for other administrative tasks, settings, or system status details.
             Use the sidebar navigation to access different admin modules.
           </p>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Users</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold">125</p>
-                    <p className="text-xs text-muted-foreground">Registered Users</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">Content Items</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-2xl font-bold">842</p>
-                    <p className="text-xs text-muted-foreground">Total Content Items</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">System Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-green-600 font-semibold">All Systems Operational</p>
-                </CardContent>
-            </Card>
-          </div>
+          {/* You can add more specific content or components here as needed */}
         </CardContent>
       </Card>
     </div>
