@@ -92,7 +92,7 @@ export default function MAdminDashboardPage() {
       
       const combinedStatsData: Record<string, number | string> = {};
       adminStatConfigs.forEach(config => {
-        combinedStatsData[config.id] = 0;
+        combinedStatsData[config.id] = 0; // Initialize all stats to 0
       });
 
       let errorMessages: string[] = [];
@@ -101,13 +101,16 @@ export default function MAdminDashboardPage() {
         const [
             restaurantCategoriesResponseSettled, 
             menuItemsResponseSettled,
-            parlourCategoriesResponseSettled
+            parlourCategoriesResponseSettled,
+            parlourItemsResponseSettled, // Added parlour items fetch
         ] = await Promise.allSettled([
           fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/parlour-categories.php", { headers: { 'Accept': 'application/json' } })
+          fetch("https://colorhutbd.xyz/vm/api/parlour-categories.php", { headers: { 'Accept': 'application/json' } }),
+          fetch("https://colorhutbd.xyz/vm/api/parlour-items.php", { headers: { 'Accept': 'application/json' } }), // Fetch parlour items
         ]);
 
+        // Process Restaurant Categories
         if (restaurantCategoriesResponseSettled.status === 'fulfilled') {
           const response = restaurantCategoriesResponseSettled.value;
           if (!response.ok) {
@@ -128,6 +131,7 @@ export default function MAdminDashboardPage() {
           errorMessages.push("Network error fetching restaurant categories.");
         }
 
+        // Process Restaurant Menu Items
         if (menuItemsResponseSettled.status === 'fulfilled') {
           const response = menuItemsResponseSettled.value;
           if (!response.ok) {
@@ -148,6 +152,7 @@ export default function MAdminDashboardPage() {
           errorMessages.push("Network error fetching restaurant items.");
         }
 
+        // Process Parlour Categories
         if (parlourCategoriesResponseSettled.status === 'fulfilled') {
           const response = parlourCategoriesResponseSettled.value;
           if (!response.ok) {
@@ -167,6 +172,27 @@ export default function MAdminDashboardPage() {
           console.error("Failed to fetch parlour categories:", parlourCategoriesResponseSettled.reason);
           errorMessages.push("Network error fetching parlour categories.");
         }
+
+        // Process Parlour Items
+        if (parlourItemsResponseSettled.status === 'fulfilled') {
+          const response = parlourItemsResponseSettled.value;
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Parlour Items API error! status: ${response.status}, message: ${errorText}`);
+            errorMessages.push(`Failed to load parlour items (Error ${response.status}).`);
+          } else {
+            const result = await response.json();
+            if (result.success && Array.isArray(result.data)) {
+              combinedStatsData.totalParlourItems = result.data.length;
+            } else {
+              console.error("Invalid API response structure for parlour items:", result);
+              errorMessages.push("Invalid data for parlour items.");
+            }
+          }
+        } else {
+          console.error("Failed to fetch parlour items:", parlourItemsResponseSettled.reason);
+          errorMessages.push("Network error fetching parlour items.");
+        }
         
         if (errorMessages.length > 0) {
           setStatsError(errorMessages.join(' '));
@@ -179,7 +205,7 @@ export default function MAdminDashboardPage() {
         setStatsError(e.message || "An unexpected error occurred while loading dashboard statistics.");
         const defaultErrorStats: Record<string, number | string> = {};
         adminStatConfigs.forEach(config => {
-          defaultErrorStats[config.id] = 0;
+          defaultErrorStats[config.id] = 0; // Initialize to 0 on major error
         });
         setStatsData(defaultErrorStats);
       } finally {
@@ -190,6 +216,7 @@ export default function MAdminDashboardPage() {
     if (isAdminLoggedIn && !adminLoading) {
       fetchAllAdminStats();
     } else if (!isAdminLoggedIn && !adminLoading) {
+      // If not logged in and not loading, ensure loading stats is also false.
       setIsLoadingStats(false); 
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -342,6 +369,8 @@ export default function MAdminDashboardPage() {
     </div>
   );
 }
+    
+
     
 
     
