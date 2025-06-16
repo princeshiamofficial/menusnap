@@ -27,7 +27,7 @@ function StatCard({ title, value, icon: Icon, bgColorClass, textColorClass, icon
           <Icon className="h-6 w-6 sm:h-8 sm:w-8" />
         </div>
         <div>
-          <p className="text-2xl sm:text-3xl font-bold">{value}</p>
+          <p className="text-2xl sm:text-3xl font-bold">{value}+</p>
           <p className="text-xs sm:text-sm opacity-90">{title}</p>
         </div>
       </CardContent>
@@ -171,12 +171,12 @@ export default function DashboardPage() {
   }, []);
 
   const stats = [
-    { title: "Designs", value: "12,365+", icon: FileArchive, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
-    { title: "Customers", value: "4,332+", icon: Users, bgColorClass: "bg-primary", textColorClass: "text-primary-foreground", iconColorClass: "text-white" },
-    { title: "Menu Book Production", value: "57,650+", icon: BookOpenCheck, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
-    { title: "Menu Card Production", value: "43,456+", icon: FileText, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
-    { title: "Our Coverage Thana", value: "639+", icon: Building2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
-    { title: "Our Coverage County", value: "13+", icon: Globe2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
+    { title: "Designs", value: "12,365", icon: FileArchive, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
+    { title: "Customers", value: "4,332", icon: Users, bgColorClass: "bg-primary", textColorClass: "text-primary-foreground", iconColorClass: "text-white" },
+    { title: "Menu Book Production", value: "57,650", icon: BookOpenCheck, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
+    { title: "Menu Card Production", value: "43,456", icon: FileText, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
+    { title: "Our Coverage Thana", value: "639", icon: Building2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
+    { title: "Our Coverage County", value: "13", icon: Globe2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
   ];
 
   return (
