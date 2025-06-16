@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -89,10 +89,9 @@ function AdminTemplateCard({
     if (!dateString) return 'N/A';
     try {
       const date = parseISO(dateString);
-      if (isNaN(date.getTime())) return dateString; // if parseISO results in Invalid Date
+      if (isNaN(date.getTime())) return dateString; 
       return format(date, "dd/MM/yyyy");
     } catch (e) {
-      // If date-fns parsing fails for any reason, return the original string
       return dateString;
     }
   };
@@ -558,7 +557,7 @@ export default function ManageTemplatesPage(): ReactNode {
   const [templateToDeleteInfo, setTemplateToDeleteInfo] = useState<{ id: string, name: string } | null>(null);
   const { toast } = useToast();
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -596,28 +595,28 @@ export default function ManageTemplatesPage(): ReactNode {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchTemplates();
-  }, []);
+  }, [fetchTemplates]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     fetchTemplates();
-  };
+  }, [fetchTemplates]);
 
-  const handleAddTemplateSuccess = () => {
+  const handleAddTemplateSuccess = useCallback(() => {
     setIsAddTemplateDialogOpen(false);
     fetchTemplates(); 
-  };
+  }, [fetchTemplates, setIsAddTemplateDialogOpen]);
 
-  const handleEditTemplateSuccess = () => {
+  const handleEditTemplateSuccess = useCallback(() => {
     setIsEditTemplateDialogOpen(false);
     setEditingTemplateData(null);
     fetchTemplates();
-  };
+  }, [fetchTemplates, setIsEditTemplateDialogOpen, setEditingTemplateData]);
   
-  const handleOpenEditTemplateDialog = (id: string) => {
+  const handleOpenEditTemplateDialog = useCallback((id: string) => {
     const templateToEdit = allTemplates.find(t => t.id === id);
     if (templateToEdit) {
       setEditingTemplateData(templateToEdit);
@@ -629,14 +628,14 @@ export default function ManageTemplatesPage(): ReactNode {
         variant: "destructive",
       });
     }
-  };
+  }, [allTemplates, toast, setEditingTemplateData, setIsEditTemplateDialogOpen]);
 
-  const handleDeleteTemplate = (id: string, name: string) => {
+  const handleDeleteTemplate = useCallback((id: string, name: string) => {
     setTemplateToDeleteInfo({ id, name });
     setIsDeleteDialogOpen(true);
-  };
+  }, [setTemplateToDeleteInfo, setIsDeleteDialogOpen]);
 
-  const executeDeleteTemplate = async () => {
+  const executeDeleteTemplate = useCallback(async () => {
     if (!templateToDeleteInfo) return;
 
     const { id, name } = templateToDeleteInfo;
@@ -671,26 +670,26 @@ export default function ManageTemplatesPage(): ReactNode {
       setIsDeleteDialogOpen(false);
       setTemplateToDeleteInfo(null);
     }
-  };
+  }, [templateToDeleteInfo, toast, setAllTemplates, setIsDeleteDialogOpen, setTemplateToDeleteInfo]);
 
 
-  const handleTogglePublish = (id: string) => {
+  const handleTogglePublish = useCallback((id: string) => {
     console.log(`Toggle publish status for template: ${id}`);
     setAllTemplates(prev => prev.map(t => t.id === id ? {...t, isPublished: !t.isPublished } : t));
      toast({
       title: "Status Updated (Client-side)",
       description: `Publish status for template ${id} toggled locally. API integration pending.`,
     });
-  };
+  }, [toast, setAllTemplates]);
 
-  const handleSetTopRated = (id: string) => {
+  const handleSetTopRated = useCallback((id: string) => {
     console.log(`Set top rated for template: ${id}`);
      setAllTemplates(prev => prev.map(t => t.id === id ? {...t, isTopRated: !t.isTopRated } : t));
      toast({
       title: "Status Updated (Client-side)",
       description: `Top-rated status for template ${id} toggled locally. API integration pending.`,
     });
-  };
+  }, [toast, setAllTemplates]);
 
   const filteredTemplates = useMemo(() => {
     return allTemplates
@@ -753,7 +752,7 @@ export default function ManageTemplatesPage(): ReactNode {
                 {`${stats.available} templates available • ${stats.published} published`}
               </p>
             ) : isLoading ? (
-                <Skeleton className="h-4 w-48 mt-1" />
+                <Skeleton className="h-4 w-48 mt-1.5" />
             ) : (
                  <p className="text-sm text-muted-foreground mt-1">Could not load stats.</p>
             )}
