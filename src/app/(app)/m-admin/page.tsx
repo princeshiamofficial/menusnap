@@ -29,7 +29,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getMonth, parseISO, subDays, isAfter } from 'date-fns';
+import { 
+  getMonth, 
+  parseISO, 
+  subDays, 
+  isAfter, 
+  startOfDay, 
+  endOfDay, 
+  startOfMonth, 
+  endOfMonth, 
+  subMonths, 
+  startOfYear, 
+  endOfYear, 
+  subYears,
+  isWithinInterval
+} from 'date-fns';
 
 interface StatCardAdminProps {
   title: string;
@@ -71,12 +85,29 @@ interface ChartDataItem {
 
 interface ApiOrder {
   id: string;
-  // Define other relevant fields for an order, especially the date field
-  createdAt?: string; // Example date field
-  orderDate?: string; // Alternative date field
-  date?: string; // Another alternative
-  // ... other order properties
+  createdAt?: string; 
+  orderDate?: string; 
+  date?: string; 
 }
+
+const dateRangeFilterOptions = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "7days", label: "Last 7 Days" },
+  { value: "30days", label: "Last 30 Days" },
+  { value: "this_month", label: "This Month" },
+  { value: "last_month", label: "Last Month" },
+  { value: "this_year", label: "This Year" },
+  { value: "last_year", label: "Last Year" },
+  { value: "all_time", label: "All Time" },
+  { value: "custom", label: "Custom Range", disabled: true },
+];
+
+const dateRangeLabels: Record<string, string> = dateRangeFilterOptions.reduce((acc, option) => {
+  acc[option.value] = option.label;
+  return acc;
+}, {} as Record<string, string>);
+
 
 export default function MAdminDashboardPage() {
   const { isAdminLoggedIn, adminLoading, adminLogout } = useAdminAuth();
@@ -96,7 +127,6 @@ export default function MAdminDashboardPage() {
         setIsLoadingStats(false);
         setChartData([]);
         setAllApiOrders([]);
-        // Reset statsData to 0 if not logged in or still loading initial auth status
         const initialStats: Record<string, number | string> = {};
         adminStatConfigs.forEach(config => {
           initialStats[config.id] = 0;
@@ -132,118 +162,70 @@ export default function MAdminDashboardPage() {
           fetch("https://colorhutbd.xyz/vm/api/orders.php", { headers: { 'Accept': 'application/json' } }),
         ]);
 
-        // Process Restaurant Categories
         if (restaurantCategoriesResponseSettled.status === 'fulfilled') {
           const response = restaurantCategoriesResponseSettled.value;
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Restaurant Categories API error! status: ${response.status}, message: ${errorText}`);
-            errorMessages.push(`Failed to load restaurant categories (Error ${response.status}).`);
+            errorMessages.push(`Restaurant Categories API error (${response.status}).`);
           } else {
             const result = await response.json();
             if (result.success && result.data && Array.isArray(result.data.categories)) {
               combinedStatsData.totalRestaurantCategories = result.data.categories.length;
-            } else {
-              console.error("Invalid API response structure for restaurant categories:", result);
-              errorMessages.push("Invalid data for restaurant categories.");
-            }
+            } else { errorMessages.push("Invalid data (Res Categories)."); }
           }
-        } else {
-          console.error("Failed to fetch restaurant categories:", restaurantCategoriesResponseSettled.reason);
-          errorMessages.push("Network error fetching restaurant categories.");
-        }
+        } else { errorMessages.push("Network error (Res Categories)."); }
 
-        // Process Restaurant Menu Items
         if (menuItemsResponseSettled.status === 'fulfilled') {
           const response = menuItemsResponseSettled.value;
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Restaurant Menu Items API error! status: ${response.status}, message: ${errorText}`);
-            errorMessages.push(`Failed to load restaurant items (Error ${response.status}).`);
+            errorMessages.push(`Restaurant Items API error (${response.status}).`);
           } else {
             const result = await response.json();
             if (result.success && Array.isArray(result.data)) { 
               combinedStatsData.totalRestaurantItems = result.data.length;
-            } else {
-              console.error("Invalid API response structure for restaurant menu items:", result);
-              errorMessages.push("Invalid data for restaurant items.");
-            }
+            } else { errorMessages.push("Invalid data (Res Items)."); }
           }
-        } else {
-          console.error("Failed to fetch restaurant menu items:", menuItemsResponseSettled.reason);
-          errorMessages.push("Network error fetching restaurant items.");
-        }
+        } else { errorMessages.push("Network error (Res Items)."); }
 
-        // Process Parlour Categories
         if (parlourCategoriesResponseSettled.status === 'fulfilled') {
           const response = parlourCategoriesResponseSettled.value;
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Parlour Categories API error! status: ${response.status}, message: ${errorText}`);
-            errorMessages.push(`Failed to load parlour categories (Error ${response.status}).`);
+            errorMessages.push(`Parlour Categories API error (${response.status}).`);
           } else {
             const result = await response.json();
             if (result.success && result.data && Array.isArray(result.data.categories)) {
               combinedStatsData.totalParlourCategories = result.data.categories.length;
-            } else {
-              console.error("Invalid API response structure for parlour categories:", result);
-              errorMessages.push("Invalid data for parlour categories.");
-            }
+            } else { errorMessages.push("Invalid data (Parlour Cat)."); }
           }
-        } else {
-          console.error("Failed to fetch parlour categories:", parlourCategoriesResponseSettled.reason);
-          errorMessages.push("Network error fetching parlour categories.");
-        }
+        } else { errorMessages.push("Network error (Parlour Cat)."); }
 
-        // Process Parlour Items
         if (parlourItemsResponseSettled.status === 'fulfilled') {
           const response = parlourItemsResponseSettled.value;
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Parlour Items API error! status: ${response.status}, message: ${errorText}`);
-            errorMessages.push(`Failed to load parlour items (Error ${response.status}).`);
+            errorMessages.push(`Parlour Items API error (${response.status}).`);
           } else {
             const result = await response.json();
             if (result.success && Array.isArray(result.data)) {
               combinedStatsData.totalParlourItems = result.data.length;
-            } else {
-              console.error("Invalid API response structure for parlour items:", result);
-              errorMessages.push("Invalid data for parlour items.");
-            }
+            } else { errorMessages.push("Invalid data (Parlour Items)."); }
           }
-        } else {
-          console.error("Failed to fetch parlour items:", parlourItemsResponseSettled.reason);
-          errorMessages.push("Network error fetching parlour items.");
-        }
+        } else { errorMessages.push("Network error (Parlour Items)."); }
 
-        // Process Templates
         if (templatesResponseSettled.status === 'fulfilled') {
           const response = templatesResponseSettled.value;
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`Templates API error! status: ${response.status}, message: ${errorText}`);
-            errorMessages.push(`Failed to load templates (Error ${response.status}).`);
+            errorMessages.push(`Templates API error (${response.status}).`);
           } else {
             const result = await response.json();
             if (result.success && result.data && Array.isArray(result.data.templates)) {
               combinedStatsData.totalTemplates = result.data.templates.length;
-            } else {
-              console.error("Invalid API response structure for templates:", result);
-              errorMessages.push("Invalid data for templates.");
-            }
+            } else { errorMessages.push("Invalid data (Templates)."); }
           }
-        } else {
-          console.error("Failed to fetch templates:", templatesResponseSettled.reason);
-          errorMessages.push("Network error fetching templates.");
-        }
+        } else { errorMessages.push("Network error (Templates)."); }
 
-        // Process Orders
         if (ordersResponseSettled.status === 'fulfilled') {
             const response = ordersResponseSettled.value;
             if (!response.ok) {
-              const errorText = await response.text();
-              console.error(`Orders API error! status: ${response.status}, message: ${errorText}`);
-              errorMessages.push(`Failed to load orders (Error ${response.status}).`);
+              errorMessages.push(`Orders API error (${response.status}).`);
               setAllApiOrders([]); 
             } else {
               const result = await response.json();
@@ -253,21 +235,16 @@ export default function MAdminDashboardPage() {
                   fetchedApiOrders = result.data.orders;
                 } else if (Array.isArray(result.data)) { 
                   fetchedApiOrders = result.data;
-                } else {
-                  console.error("Invalid API response structure for orders (orders array not found):", result);
-                  errorMessages.push("Invalid data format for orders.");
-                }
+                } else { errorMessages.push("Invalid data format for orders."); }
                 combinedStatsData.totalOrders = fetchedApiOrders.length;
                 setAllApiOrders(fetchedApiOrders);
-              } else {
-                console.error("API indicated failure for orders:", result);
-                errorMessages.push(result.message || "Failed to load orders data from API.");
+              } else { 
+                errorMessages.push(result.message || "Failed to load orders.");
                 setAllApiOrders([]);
               }
             }
-          } else {
-            console.error("Failed to fetch orders:", ordersResponseSettled.reason);
-            errorMessages.push("Network error fetching orders.");
+          } else { 
+            errorMessages.push("Network error (Orders).");
             setAllApiOrders([]);
           }
         
@@ -277,12 +254,9 @@ export default function MAdminDashboardPage() {
         setStatsData(combinedStatsData);
 
       } catch (e: any) { 
-        console.error("Unexpected error fetching admin stats:", e);
-        setStatsError(e.message || "An unexpected error occurred while loading dashboard statistics.");
+        setStatsError(e.message || "An unexpected error occurred.");
         const defaultErrorStats: Record<string, number | string> = {};
-        adminStatConfigs.forEach(config => {
-          defaultErrorStats[config.id] = 0; 
-        });
+        adminStatConfigs.forEach(config => defaultErrorStats[config.id] = 0);
         setStatsData(defaultErrorStats);
         setAllApiOrders([]);
       } finally {
@@ -294,43 +268,61 @@ export default function MAdminDashboardPage() {
   }, [isAdminLoggedIn, adminLoading]);
 
 
-  // useEffect to update chartData based on allApiOrders and selectedDateRange
   useEffect(() => {
-    if (!allApiOrders.length && !isLoadingStats) { // Only set empty if not loading and no orders
+    if (!allApiOrders.length && !isLoadingStats) {
         setChartData([]);
         return;
     }
-    if (isLoadingStats) return; // Don't process if stats are still loading
+    if (isLoadingStats) return;
 
+    let dateFilterRange: { start: Date; end: Date } | null = null;
     const now = new Date();
-    let filterStartDate: Date | null = null;
 
     switch (selectedDateRange) {
+        case 'today':
+            dateFilterRange = { start: startOfDay(now), end: endOfDay(now) };
+            break;
+        case 'yesterday':
+            const yesterday = subDays(now, 1);
+            dateFilterRange = { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+            break;
         case '7days':
-            filterStartDate = subDays(now, 7);
+            dateFilterRange = { start: startOfDay(subDays(now, 6)), end: endOfDay(now) };
             break;
         case '30days':
-            filterStartDate = subDays(now, 30);
+            dateFilterRange = { start: startOfDay(subDays(now, 29)), end: endOfDay(now) };
             break;
-        case '90days':
-            filterStartDate = subDays(now, 90);
+        case 'this_month':
+            dateFilterRange = { start: startOfMonth(now), end: endOfMonth(now) };
             break;
-        case 'custom': // For now, custom acts like 'all time' for the chart
-            filterStartDate = null;
+        case 'last_month':
+            const prevMonthStart = startOfMonth(subMonths(now, 1));
+            dateFilterRange = { start: prevMonthStart, end: endOfMonth(prevMonthStart) };
             break;
-        default: // 'all time' or unknown
-            filterStartDate = null;
+        case 'this_year':
+            dateFilterRange = { start: startOfYear(now), end: endOfYear(now) };
+            break;
+        case 'last_year':
+            const prevYearStart = startOfYear(subYears(now, 1));
+            dateFilterRange = { start: prevYearStart, end: endOfYear(prevYearStart) };
+            break;
+        case 'all_time':
+        case 'custom': 
+        default:
+            dateFilterRange = null; 
+            break;
     }
 
-    const ordersToProcess = filterStartDate
+    const ordersToProcess = dateFilterRange
         ? allApiOrders.filter(order => {
             const orderDateField = order.createdAt || order.orderDate || order.date;
             if (!orderDateField) return false;
             try {
                 const orderDate = parseISO(orderDateField);
-                return isAfter(orderDate, filterStartDate!);
+                if (isNaN(orderDate.getTime())) return false; // Check for invalid date
+                return isWithinInterval(orderDate, dateFilterRange!);
             } catch {
-                return false; // Invalid date format
+                return false; 
             }
           })
         : allApiOrders;
@@ -347,8 +339,6 @@ export default function MAdminDashboardPage() {
           if (monthIndex >= 0 && monthIndex < 12) {
              monthlyOrders[monthIndex].orders += 1;
           }
-        } else {
-           console.warn("Order object missing a recognizable date field for chart:", order);
         }
       } catch (e) {
         console.warn("Could not parse order date for chart aggregation:", order, e);
@@ -414,20 +404,20 @@ export default function MAdminDashboardPage() {
           </Button>
           <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
             <SelectTrigger className="w-auto min-w-[150px] text-muted-foreground">
-              <SelectValue placeholder="Last 30 Days" />
+              <SelectValue placeholder="Select date range" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7days">Last 7 Days</SelectItem>
-              <SelectItem value="30days">Last 30 Days</SelectItem>
-              <SelectItem value="90days">Last 90 Days</SelectItem>
-              <SelectItem value="all_time">All Time</SelectItem>
-              <SelectItem value="custom" disabled>Custom Range</SelectItem>
+              {dateRangeFilterOptions.map(option => (
+                <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
       
-      {isLoadingStats && !statsData.totalOrders ? ( // Show skeletons only on initial load or if all stats are zero from loading
+      {isLoadingStats && !statsData.totalOrders ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {adminStatConfigs.map((statConfig) => (
             <Card key={statConfig.id} className="shadow-md rounded-lg bg-card">
@@ -469,14 +459,12 @@ export default function MAdminDashboardPage() {
             <BarChart3 className="h-6 w-6 text-primary" />
             <div>
               <CardTitle className="text-xl font-semibold text-foreground">Orders Overview (Monthly)</CardTitle>
-              <CardDescription>Based on selected date range: {
-                {'7days': 'Last 7 Days', '30days': 'Last 30 Days', '90days': 'Last 90 Days', 'all_time': 'All Time', 'custom': 'Custom Range'}[selectedDateRange] || 'All Time'
-              }</CardDescription>
+              <CardDescription>Based on selected date range: {dateRangeLabels[selectedDateRange] || 'All Time'}</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6 h-[350px]">
-          {isLoadingStats && !chartData.length ? ( // Show skeleton only if chart data isn't available due to loading
+          {isLoadingStats && !chartData.length ? (
             <div className="flex items-center justify-center h-full">
               <Skeleton className="h-3/4 w-full" />
             </div>
@@ -536,3 +524,6 @@ export default function MAdminDashboardPage() {
     
 
 
+
+
+    
