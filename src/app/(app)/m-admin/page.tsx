@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getMonth, parseISO } from 'date-fns';
 
 interface StatCardAdminProps {
   title: string;
@@ -63,27 +64,17 @@ const adminStatConfigs: Omit<StatCardAdminProps, 'value'> & { id: string }[] = [
   { id: "totalParlourCategories", title: "Total Parlour Categories", icon: FolderHeart, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
 ];
 
-const ordersData = [
-  { name: 'Jan', orders: 400 },
-  { name: 'Feb', orders: 300 },
-  { name: 'Mar', orders: 200 },
-  { name: 'Apr', orders: 278 },
-  { name: 'May', orders: 189 },
-  { name: 'Jun', orders: 239 },
-  { name: 'Jul', orders: 349 },
-  { name: 'Aug', orders: 200 },
-  { name: 'Sep', orders: 278 },
-  { name: 'Oct', orders: 189 },
-  { name: 'Nov', orders: 239 },
-  { name: 'Dec', orders: 349 },
-];
-
+interface ChartDataItem {
+  name: string;
+  orders: number;
+}
 
 export default function MAdminDashboardPage() {
   const { isAdminLoggedIn, adminLoading, adminLogout } = useAdminAuth();
   const [statsData, setStatsData] = useState<Record<string, number | string>>({});
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
   useEffect(() => {
     async function fetchAllAdminStats() {
@@ -92,7 +83,7 @@ export default function MAdminDashboardPage() {
       
       const combinedStatsData: Record<string, number | string> = {};
       adminStatConfigs.forEach(config => {
-        combinedStatsData[config.id] = 0; // Initialize all stats to 0
+        combinedStatsData[config.id] = 0; 
       });
 
       let errorMessages: string[] = [];
@@ -219,32 +210,63 @@ export default function MAdminDashboardPage() {
           errorMessages.push("Network error fetching templates.");
         }
 
-        // Process Orders
+        // Process Orders and Chart Data
         if (ordersResponseSettled.status === 'fulfilled') {
             const response = ordersResponseSettled.value;
             if (!response.ok) {
               const errorText = await response.text();
               console.error(`Orders API error! status: ${response.status}, message: ${errorText}`);
               errorMessages.push(`Failed to load orders (Error ${response.status}).`);
+              setChartData([]); // Clear chart data on error
             } else {
               const result = await response.json();
+              let apiOrders: any[] = [];
               if (result.success) {
                 if (result.data && Array.isArray(result.data.orders)) {
-                  combinedStatsData.totalOrders = result.data.orders.length;
-                } else if (Array.isArray(result.data)) { // Fallback if data is directly the array
-                  combinedStatsData.totalOrders = result.data.length;
+                  apiOrders = result.data.orders;
+                  combinedStatsData.totalOrders = apiOrders.length;
+                } else if (Array.isArray(result.data)) { 
+                  apiOrders = result.data;
+                  combinedStatsData.totalOrders = apiOrders.length;
                 } else {
                   console.error("Invalid API response structure for orders (orders array not found):", result);
                   errorMessages.push("Invalid data format for orders.");
+                  setChartData([]);
                 }
+
+                // Process data for the chart
+                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                const monthlyOrders: ChartDataItem[] = monthNames.map(name => ({ name, orders: 0 }));
+
+                apiOrders.forEach(order => {
+                  try {
+                    // Assuming order object has a 'createdAt' or 'orderDate' field
+                    const orderDateField = order.createdAt || order.orderDate || order.date; 
+                    if (orderDateField) {
+                      const orderDate = parseISO(orderDateField); 
+                      const monthIndex = getMonth(orderDate); // 0 for Jan, 1 for Feb, etc.
+                      if (monthIndex >= 0 && monthIndex < 12) {
+                        monthlyOrders[monthIndex].orders += 1;
+                      }
+                    } else {
+                       console.warn("Order object missing a recognizable date field:", order);
+                    }
+                  } catch (e) {
+                    console.warn("Could not parse order date:", order, e);
+                  }
+                });
+                setChartData(monthlyOrders);
+
               } else {
                 console.error("API indicated failure for orders:", result);
                 errorMessages.push(result.message || "Failed to load orders data from API.");
+                setChartData([]);
               }
             }
           } else {
             console.error("Failed to fetch orders:", ordersResponseSettled.reason);
             errorMessages.push("Network error fetching orders.");
+            setChartData([]);
           }
         
         if (errorMessages.length > 0) {
@@ -258,9 +280,10 @@ export default function MAdminDashboardPage() {
         setStatsError(e.message || "An unexpected error occurred while loading dashboard statistics.");
         const defaultErrorStats: Record<string, number | string> = {};
         adminStatConfigs.forEach(config => {
-          defaultErrorStats[config.id] = 0; // Initialize to 0 on major error
+          defaultErrorStats[config.id] = 0; 
         });
         setStatsData(defaultErrorStats);
+        setChartData([]);
       } finally {
         setIsLoadingStats(false);
       }
@@ -269,8 +292,8 @@ export default function MAdminDashboardPage() {
     if (isAdminLoggedIn && !adminLoading) {
       fetchAllAdminStats();
     } else if (!isAdminLoggedIn && !adminLoading) {
-      // If not logged in and not loading, ensure loading stats is also false.
       setIsLoadingStats(false); 
+      setChartData([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdminLoggedIn, adminLoading]);
@@ -384,38 +407,48 @@ export default function MAdminDashboardPage() {
           <div className="flex items-center gap-3">
             <BarChart3 className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="text-xl font-semibold text-foreground">Orders (Last 30 Days)</CardTitle>
+              <CardTitle className="text-xl font-semibold text-foreground">Orders Overview (Monthly)</CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6 h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={ordersData}
-              margin={{
-                top: 5,
-                right: 20,
-                left: -20, 
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
-              <Tooltip
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  borderColor: 'hsl(var(--border))',
-                  borderRadius: 'var(--radius)',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+          {isLoadingStats ? (
+            <div className="flex items-center justify-center h-full">
+              <Skeleton className="h-3/4 w-full" />
+            </div>
+          ) : chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={chartData}
+                margin={{
+                  top: 5,
+                  right: 20,
+                  left: -20, 
+                  bottom: 5,
                 }}
-                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
-                itemStyle={{ color: 'hsl(var(--foreground))' }}
-              />
-              <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
-              <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} name="Orders" />
-            </LineChart>
-          </ResponsiveContainer>
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    borderColor: 'hsl(var(--border))',
+                    borderRadius: 'var(--radius)',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                  }}
+                  labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
+                  itemStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
+                <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} name="Orders" />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">No order data available for the chart.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -437,3 +470,4 @@ export default function MAdminDashboardPage() {
     
 
     
+
