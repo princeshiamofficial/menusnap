@@ -10,7 +10,7 @@ import { SpeedDialFAB } from '@/components/layout/SpeedDialFAB';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith('/madmin');
+  const isAdminRoute = pathname.startsWith('/m-admin'); // Corrected path check
 
   if (isAdminRoute) {
     // For admin routes, madmin/layout.tsx handles everything, including its own auth.
