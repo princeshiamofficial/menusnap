@@ -23,7 +23,8 @@ import {
   CalendarDays,
   BarChart3,
   Layers,
-  UtensilsCrossed // Added UtensilsCrossed icon
+  UtensilsCrossed,
+  Sparkles // Added Sparkles icon
 } from "lucide-react";
 import {
   Select,
@@ -61,7 +62,7 @@ const adminStats: StatCardAdminProps[] = [
   { title: "Total Orders", value: "998,150", icon: ShoppingCart, iconBgClass: "bg-sky-100 dark:bg-sky-900/50", iconTextClass: "text-sky-600 dark:text-sky-400" },
   { title: "Total Templates", value: "750+", icon: Layers, iconBgClass: "bg-blue-100 dark:bg-blue-900/50", iconTextClass: "text-blue-600 dark:text-blue-400" },
   { title: "Total Restaurant Items", value: "1,200+", icon: UtensilsCrossed, iconBgClass: "bg-green-100 dark:bg-green-900/50", iconTextClass: "text-green-600 dark:text-green-400" },
-  { title: "Total Sell Return", value: "0.00", icon: Undo2, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
+  { title: "Total Parlour Items", value: "500+", icon: Sparkles, iconBgClass: "bg-fuchsia-100 dark:bg-fuchsia-900/50", iconTextClass: "text-fuchsia-600 dark:text-fuchsia-400" },
   { title: "Total purchase", value: "129,030.00", icon: Download, iconBgClass: "bg-indigo-100 dark:bg-indigo-900/50", iconTextClass: "text-indigo-600 dark:text-indigo-400" },
   { title: "Purchase due", value: "0.00", icon: AlertTriangle, iconBgClass: "bg-yellow-100 dark:bg-yellow-900/50", iconTextClass: "text-yellow-600 dark:text-yellow-400" },
   { title: "Total Purchase Return", value: "0.00", icon: Redo2, iconBgClass: "bg-rose-100 dark:bg-rose-900/50", iconTextClass: "text-rose-600 dark:text-rose-400" },
