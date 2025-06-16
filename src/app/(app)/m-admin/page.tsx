@@ -22,7 +22,8 @@ import {
   MapPin,
   CalendarDays,
   BarChart3,
-  Layers // Added Layers icon
+  Layers,
+  UtensilsCrossed // Added UtensilsCrossed icon
 } from "lucide-react";
 import {
   Select,
@@ -59,7 +60,7 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
 const adminStats: StatCardAdminProps[] = [
   { title: "Total Orders", value: "998,150", icon: ShoppingCart, iconBgClass: "bg-sky-100 dark:bg-sky-900/50", iconTextClass: "text-sky-600 dark:text-sky-400" },
   { title: "Total Templates", value: "750+", icon: Layers, iconBgClass: "bg-blue-100 dark:bg-blue-900/50", iconTextClass: "text-blue-600 dark:text-blue-400" },
-  { title: "Invoice due", value: "588,685.00", icon: FileText, iconBgClass: "bg-amber-100 dark:bg-amber-900/50", iconTextClass: "text-amber-600 dark:text-amber-400" },
+  { title: "Total Restaurant Items", value: "1,200+", icon: UtensilsCrossed, iconBgClass: "bg-green-100 dark:bg-green-900/50", iconTextClass: "text-green-600 dark:text-green-400" },
   { title: "Total Sell Return", value: "0.00", icon: Undo2, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
   { title: "Total purchase", value: "129,030.00", icon: Download, iconBgClass: "bg-indigo-100 dark:bg-indigo-900/50", iconTextClass: "text-indigo-600 dark:text-indigo-400" },
   { title: "Purchase due", value: "0.00", icon: AlertTriangle, iconBgClass: "bg-yellow-100 dark:bg-yellow-900/50", iconTextClass: "text-yellow-600 dark:text-yellow-400" },
