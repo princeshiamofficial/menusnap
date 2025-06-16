@@ -66,19 +66,19 @@ const adminStats: StatCardAdminProps[] = [
   { title: "Expense", value: "0.00", icon: Landmark, iconBgClass: "bg-red-100 dark:bg-red-900/50", iconTextClass: "text-red-600 dark:text-red-400" },
 ];
 
-const salesData = [
-  { name: 'Jan', sales: 4000 },
-  { name: 'Feb', sales: 3000 },
-  { name: 'Mar', sales: 2000 },
-  { name: 'Apr', sales: 2780 },
-  { name: 'May', sales: 1890 },
-  { name: 'Jun', sales: 2390 },
-  { name: 'Jul', sales: 3490 },
-  { name: 'Aug', sales: 2000 },
-  { name: 'Sep', sales: 2780 },
-  { name: 'Oct', sales: 1890 },
-  { name: 'Nov', sales: 2390 },
-  { name: 'Dec', sales: 3490 },
+const ordersData = [
+  { name: 'Jan', orders: 400 },
+  { name: 'Feb', orders: 300 },
+  { name: 'Mar', orders: 200 },
+  { name: 'Apr', orders: 278 },
+  { name: 'May', orders: 189 },
+  { name: 'Jun', orders: 239 },
+  { name: 'Jul', orders: 349 },
+  { name: 'Aug', orders: 200 },
+  { name: 'Sep', orders: 278 },
+  { name: 'Oct', orders: 189 },
+  { name: 'Nov', orders: 239 },
+  { name: 'Dec', orders: 349 },
 ];
 
 
@@ -170,14 +170,14 @@ export default function MAdminDashboardPage() {
           <div className="flex items-center gap-3">
             <BarChart3 className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="text-xl font-semibold text-foreground">Sales (Last 30 Days)</CardTitle>
+              <CardTitle className="text-xl font-semibold text-foreground">Orders (Last 30 Days)</CardTitle>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6 h-[350px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={salesData}
+              data={ordersData}
               margin={{
                 top: 5,
                 right: 20,
@@ -187,7 +187,7 @@ export default function MAdminDashboardPage() {
             >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value/1000}k`} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
               <Tooltip
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
@@ -199,7 +199,7 @@ export default function MAdminDashboardPage() {
                 itemStyle={{ color: 'hsl(var(--foreground))' }}
               />
               <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
-              <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} name="Sales" />
+              <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} name="Orders" />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
