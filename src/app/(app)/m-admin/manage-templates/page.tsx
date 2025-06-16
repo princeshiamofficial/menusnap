@@ -244,6 +244,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       isTopRated: false,
       isPublished: false,
     },
+    mode: 'onChange',
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -259,10 +260,10 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      form.setValue("imageFile", event.target.files);
+      form.setValue("imageFile", event.target.files, { shouldValidate: true });
     } else {
       setImagePreview(null);
-      form.setValue("imageFile", null as any); 
+      form.setValue("imageFile", null as any, { shouldValidate: true }); 
     }
   };
 
@@ -369,7 +370,11 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
         </DialogClose>
-        <Button type="submit" disabled={form.formState.isSubmitting} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+        <Button 
+          type="submit" 
+          disabled={!form.formState.isValid || form.formState.isSubmitting} 
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
           {form.formState.isSubmitting ? "Adding..." : <><Save className="mr-2 h-4 w-4" /> Add Template</>}
         </Button>
       </DialogFooter>
@@ -414,6 +419,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       isPublished: templateData.isPublished || false,
       imageFile: undefined, 
     },
+    mode: 'onChange',
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -429,10 +435,10 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      form.setValue("imageFile", event.target.files);
+      form.setValue("imageFile", event.target.files, { shouldValidate: true });
     } else {
        setImagePreview(templateData.imageUrl || null); 
-       form.setValue("imageFile", undefined);
+       form.setValue("imageFile", undefined, { shouldValidate: true });
     }
   };
 
@@ -536,7 +542,11 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
         </DialogClose>
-        <Button type="submit" disabled={form.formState.isSubmitting} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+        <Button 
+          type="submit" 
+          disabled={!form.formState.isValid || form.formState.isSubmitting} 
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
           {form.formState.isSubmitting ? "Saving..." : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
         </Button>
       </DialogFooter>
@@ -595,7 +605,7 @@ export default function ManageTemplatesPage(): ReactNode {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     fetchTemplates();
@@ -608,13 +618,13 @@ export default function ManageTemplatesPage(): ReactNode {
   const handleAddTemplateSuccess = useCallback(() => {
     setIsAddTemplateDialogOpen(false);
     fetchTemplates(); 
-  }, [fetchTemplates, setIsAddTemplateDialogOpen]);
+  }, [fetchTemplates]);
 
   const handleEditTemplateSuccess = useCallback(() => {
     setIsEditTemplateDialogOpen(false);
     setEditingTemplateData(null);
     fetchTemplates();
-  }, [fetchTemplates, setIsEditTemplateDialogOpen, setEditingTemplateData]);
+  }, [fetchTemplates]);
   
   const handleOpenEditTemplateDialog = useCallback((id: string) => {
     const templateToEdit = allTemplates.find(t => t.id === id);
@@ -628,12 +638,12 @@ export default function ManageTemplatesPage(): ReactNode {
         variant: "destructive",
       });
     }
-  }, [allTemplates, toast, setEditingTemplateData, setIsEditTemplateDialogOpen]);
+  }, [allTemplates, toast]);
 
   const handleDeleteTemplate = useCallback((id: string, name: string) => {
     setTemplateToDeleteInfo({ id, name });
     setIsDeleteDialogOpen(true);
-  }, [setTemplateToDeleteInfo, setIsDeleteDialogOpen]);
+  }, []);
 
   const executeDeleteTemplate = useCallback(async () => {
     if (!templateToDeleteInfo) return;
@@ -670,7 +680,7 @@ export default function ManageTemplatesPage(): ReactNode {
       setIsDeleteDialogOpen(false);
       setTemplateToDeleteInfo(null);
     }
-  }, [templateToDeleteInfo, toast, setAllTemplates, setIsDeleteDialogOpen, setTemplateToDeleteInfo]);
+  }, [templateToDeleteInfo, toast]);
 
 
   const handleTogglePublish = useCallback((id: string) => {
@@ -680,7 +690,7 @@ export default function ManageTemplatesPage(): ReactNode {
       title: "Status Updated (Client-side)",
       description: `Publish status for template ${id} toggled locally. API integration pending.`,
     });
-  }, [toast, setAllTemplates]);
+  }, [toast]);
 
   const handleSetTopRated = useCallback((id: string) => {
     console.log(`Set top rated for template: ${id}`);
@@ -689,7 +699,7 @@ export default function ManageTemplatesPage(): ReactNode {
       title: "Status Updated (Client-side)",
       description: `Top-rated status for template ${id} toggled locally. API integration pending.`,
     });
-  }, [toast, setAllTemplates]);
+  }, [toast]);
 
   const filteredTemplates = useMemo(() => {
     return allTemplates
@@ -876,3 +886,4 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
+
