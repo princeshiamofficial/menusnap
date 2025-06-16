@@ -91,7 +91,6 @@ export default function MAdminDashboardPage() {
       setStatsError(null);
       
       const combinedStatsData: Record<string, number | string> = {};
-      // Initialize all expected stats with 0
       adminStatConfigs.forEach(config => {
         combinedStatsData[config.id] = 0;
       });
@@ -99,14 +98,18 @@ export default function MAdminDashboardPage() {
       let errorMessages: string[] = [];
 
       try {
-        const [categoriesResponseSettled, menuItemsResponseSettled] = await Promise.allSettled([
+        const [
+            restaurantCategoriesResponseSettled, 
+            menuItemsResponseSettled,
+            parlourCategoriesResponseSettled
+        ] = await Promise.allSettled([
           fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } })
+          fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } }),
+          fetch("https://colorhutbd.xyz/vm/api/parlour-categories.php", { headers: { 'Accept': 'application/json' } })
         ]);
 
-        // Process restaurant categories
-        if (categoriesResponseSettled.status === 'fulfilled') {
-          const response = categoriesResponseSettled.value;
+        if (restaurantCategoriesResponseSettled.status === 'fulfilled') {
+          const response = restaurantCategoriesResponseSettled.value;
           if (!response.ok) {
             const errorText = await response.text();
             console.error(`Restaurant Categories API error! status: ${response.status}, message: ${errorText}`);
@@ -121,11 +124,10 @@ export default function MAdminDashboardPage() {
             }
           }
         } else {
-          console.error("Failed to fetch restaurant categories:", categoriesResponseSettled.reason);
+          console.error("Failed to fetch restaurant categories:", restaurantCategoriesResponseSettled.reason);
           errorMessages.push("Network error fetching restaurant categories.");
         }
 
-        // Process restaurant menu items
         if (menuItemsResponseSettled.status === 'fulfilled') {
           const response = menuItemsResponseSettled.value;
           if (!response.ok) {
@@ -134,7 +136,6 @@ export default function MAdminDashboardPage() {
             errorMessages.push(`Failed to load restaurant items (Error ${response.status}).`);
           } else {
             const result = await response.json();
-            // Assuming the structure is { success: true, data: [...] } for menu items
             if (result.success && Array.isArray(result.data)) { 
               combinedStatsData.totalRestaurantItems = result.data.length;
             } else {
@@ -146,6 +147,26 @@ export default function MAdminDashboardPage() {
           console.error("Failed to fetch restaurant menu items:", menuItemsResponseSettled.reason);
           errorMessages.push("Network error fetching restaurant items.");
         }
+
+        if (parlourCategoriesResponseSettled.status === 'fulfilled') {
+          const response = parlourCategoriesResponseSettled.value;
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Parlour Categories API error! status: ${response.status}, message: ${errorText}`);
+            errorMessages.push(`Failed to load parlour categories (Error ${response.status}).`);
+          } else {
+            const result = await response.json();
+            if (result.success && result.data && Array.isArray(result.data.categories)) {
+              combinedStatsData.totalParlourCategories = result.data.categories.length;
+            } else {
+              console.error("Invalid API response structure for parlour categories:", result);
+              errorMessages.push("Invalid data for parlour categories.");
+            }
+          }
+        } else {
+          console.error("Failed to fetch parlour categories:", parlourCategoriesResponseSettled.reason);
+          errorMessages.push("Network error fetching parlour categories.");
+        }
         
         if (errorMessages.length > 0) {
           setStatsError(errorMessages.join(' '));
@@ -153,10 +174,9 @@ export default function MAdminDashboardPage() {
 
         setStatsData(combinedStatsData);
 
-      } catch (e: any) { // Catch for unexpected errors not caught by Promise.allSettled's individual error handling
+      } catch (e: any) { 
         console.error("Unexpected error fetching admin stats:", e);
         setStatsError(e.message || "An unexpected error occurred while loading dashboard statistics.");
-        // Ensure all stats default to 0 on major error by re-applying defaults
         const defaultErrorStats: Record<string, number | string> = {};
         adminStatConfigs.forEach(config => {
           defaultErrorStats[config.id] = 0;
@@ -322,6 +342,8 @@ export default function MAdminDashboardPage() {
     </div>
   );
 }
+    
+
     
 
     
