@@ -90,32 +90,12 @@ export default function MAdminDashboardPage() {
       setIsLoadingStats(true);
       setStatsError(null);
       
-      let generalStatsResponse: Response | undefined;
       let restaurantCategoriesResponse: Response | undefined;
-      let parsedGeneralStatsData: Record<string, number | string> | null = null;
       let parsedRestaurantCategoriesCount: number | null = null;
+      let combinedStatsData: Record<string, number | string> = {}; // Initialize here
 
       try {
-        [generalStatsResponse, restaurantCategoriesResponse] = await Promise.all([
-          fetch("https://colorhutbd.xyz/vm/api/admin-stats-counts.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } })
-        ]);
-
-        // Process general stats
-        if (generalStatsResponse && !generalStatsResponse.ok) {
-          const errorText = await generalStatsResponse.text();
-          console.error(`Admin Stats API error! status: ${generalStatsResponse.status}, message: ${errorText}`);
-          setStatsError(`Failed to load some statistics (Error ${generalStatsResponse.status}). Some counts might be unavailable.`);
-          // Continue processing other successful fetches if possible
-        } else if (generalStatsResponse) {
-            const generalStatsResult = await generalStatsResponse.json();
-            if (generalStatsResult.success && generalStatsResult.data && typeof generalStatsResult.data === 'object') {
-              parsedGeneralStatsData = generalStatsResult.data;
-            } else {
-              console.error("Invalid API response structure for general admin stats:", generalStatsResult);
-              setStatsError("Received invalid data format for general admin statistics.");
-            }
-        }
+        restaurantCategoriesResponse = await fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } });
         
         // Process restaurant categories
         if (restaurantCategoriesResponse && !restaurantCategoriesResponse.ok) {
@@ -132,20 +112,28 @@ export default function MAdminDashboardPage() {
             }
         }
 
-        let combinedStatsData: Record<string, number | string> = {};
-        if (parsedGeneralStatsData) {
-            combinedStatsData = { ...parsedGeneralStatsData };
-        }
         if (parsedRestaurantCategoriesCount !== null) {
             combinedStatsData.totalRestaurantCategories = parsedRestaurantCategoriesCount;
         }
         
+        // Set default 0 for other stats as their API is removed
+        adminStatConfigs.forEach(config => {
+          if (!combinedStatsData.hasOwnProperty(config.id)) {
+            combinedStatsData[config.id] = 0;
+          }
+        });
+
         setStatsData(combinedStatsData);
 
       } catch (e: any) {
         console.error("Failed to fetch admin stats:", e);
         setStatsError(e.message || "An unexpected error occurred while loading dashboard statistics.");
-        setStatsData({}); 
+        // Ensure all stats default to 0 on major error
+        const defaultErrorStats: Record<string, number | string> = {};
+        adminStatConfigs.forEach(config => {
+          defaultErrorStats[config.id] = 0;
+        });
+        setStatsData(defaultErrorStats); 
       } finally {
         setIsLoadingStats(false);
       }
@@ -306,6 +294,8 @@ export default function MAdminDashboardPage() {
     </div>
   );
 }
+    
+
     
 
     
