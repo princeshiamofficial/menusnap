@@ -22,6 +22,12 @@ const nextConfig: NextConfig = {
         hostname: 'colorhutbd.xyz',
         port: '',
         pathname: '/vm/api/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'erp.colorhutbd.xyz',
+        port: '',
+        pathname: '/file/uploads/**',
       }
     ],
   },

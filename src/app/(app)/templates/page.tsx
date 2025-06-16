@@ -19,7 +19,7 @@ interface ApiTemplate {
   isPublished: boolean;
   tags: string[];
   imageUrl: string;
-  createdAt?: string; // Added for sorting
+  createdAt?: string; 
 }
 
 interface TemplateCardProps {
@@ -32,6 +32,8 @@ interface TemplateCardProps {
   isTopRated?: boolean;
 }
 
+const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
+
 function TemplateCard({
   imageUrl,
   imageHint,
@@ -40,17 +42,20 @@ function TemplateCard({
   tags,
   isTopRated,
 }: TemplateCardProps): ReactNode {
+  const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
+  const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
+
   return (
     <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
       <CardHeader className="p-0 relative">
         <div className="aspect-[4/3] relative group">
           <Image
-            src={imageUrl}
+            src={actualImageUrl}
             alt={title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
-            data-ai-hint={imageHint}
+            data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : imageHint}
           />
           {isTopRated && (
             <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2.5 shadow">
@@ -140,7 +145,7 @@ export default function TemplatesPage(): ReactNode {
           ...t,
           isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
           tags: Array.isArray(t.tags) ? t.tags : [],
-          // Ensure createdAt is present for sorting, use a fallback if necessary
+          imageUrl: t.imageUrl || '', // Ensure imageUrl is at least an empty string
           createdAt: t.createdAt || new Date(Date.now() - Math.random() * 10000000000 * (index + 1)).toISOString(),
         }));
         setTemplates(fetchedTemplates);
@@ -166,19 +171,16 @@ export default function TemplatesPage(): ReactNode {
       (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
     )
     .sort((a, b) => {
-      // Prioritize top-rated templates
       if (a.isTopRated && !b.isTopRated) return -1;
       if (!a.isTopRated && b.isTopRated) return 1;
-
-      // If top-rated status is the same, sort by date (newest first)
       if (a.createdAt && b.createdAt) {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       } else if (a.createdAt) {
-        return -1; // a has date, b doesn't, so a comes first
+        return -1; 
       } else if (b.createdAt) {
-        return 1;  // b has date, a doesn't, so b comes first
+        return 1;  
       }
-      return 0; // If dates are missing or equal, maintain original relative order
+      return 0; 
     });
 
   return (
@@ -250,6 +252,3 @@ export default function TemplatesPage(): ReactNode {
   );
 }
     
-
-    
-

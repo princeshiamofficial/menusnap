@@ -55,18 +55,23 @@ interface TemplateCardProps {
   imageHint?: string;
 }
 
+const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
+
 function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHint }: TemplateCardProps) {
+  const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
+  const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
+
   return (
     <Card className="shadow-xl rounded-xl overflow-hidden w-full max-w-md mx-auto sm:max-w-sm flex flex-col h-full">
       <CardHeader className="p-0 relative">
         <div className="aspect-[4/3] relative">
           <Image
-            src={imageUrl}
+            src={actualImageUrl}
             alt={title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover"
-            data-ai-hint={imageHint || "menu design"}
+            data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : (imageHint || "template design")}
           />
         </div>
         {isTopRated && (
@@ -153,6 +158,7 @@ export default function DashboardPage() {
           ...t,
           isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
           tags: Array.isArray(t.tags) ? t.tags : [],
+          imageUrl: t.imageUrl || '', // Ensure imageUrl is at least an empty string
         }));
 
         const filteredTopRated = fetchedTemplates.filter(

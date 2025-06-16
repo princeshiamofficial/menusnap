@@ -56,6 +56,8 @@ import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
+const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
+
 interface ApiAdminTemplate {
   id: string;
   name: string;
@@ -100,17 +102,19 @@ function AdminTemplateCard({
     return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
   }
 
+  const isDefaultImage = template.imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
+
   return (
     <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full bg-card">
       <CardHeader className="p-0 relative">
         <div className="aspect-[4/3] relative group">
           <Image
-            src={template.imageUrl || `https://placehold.co/600x450.png?text=${encodeURIComponent(template.name)}`}
+            src={template.imageUrl} 
             alt={template.name}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
-            data-ai-hint={getImageHint(template.name)}
+            data-ai-hint={isDefaultImage ? "placeholder abstract" : getImageHint(template.name)}
           />
           {template.isTopRated && (
             <Badge variant="default" className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2 shadow-md">
@@ -766,7 +770,7 @@ export default function ManageTemplatesPage(): ReactNode {
         isTopRated: t.isTopRated === undefined ? false : Boolean(t.isTopRated),
         isPublished: t.isPublished === undefined ? (index % 2 === 0) : Boolean(t.isPublished),
         tags: Array.isArray(t.tags) ? t.tags : ['untagged'],
-        imageUrl: t.imageUrl || `https://placehold.co/600x450.png?text=Template+${index + 1}`,
+        imageUrl: t.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL,
         createdAt: t.createdAt || new Date(Date.now() - Math.random() * 10000000000).toISOString(),
         version: t.version || `${Math.floor(Math.random() * 3) + 1}.0`,
         category: t.category || "General",
