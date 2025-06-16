@@ -346,8 +346,8 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden pt-4">
-      <ScrollArea className="flex-grow min-h-0 pr-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
+      <ScrollArea className="flex-grow min-h-0">
         <div className="space-y-4 p-1">
           <div>
             <Label htmlFor="templateName-add">Template Name*</Label>
@@ -605,8 +605,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden pt-4">
-      <ScrollArea className="flex-grow min-h-0 pr-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
+      <ScrollArea className="flex-grow min-h-0">
         <div className="space-y-4 p-1">
           <div>
             <Label htmlFor={`templateName-edit-${templateData.id}`}>Template Name*</Label>
@@ -1061,4 +1061,3 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
-
