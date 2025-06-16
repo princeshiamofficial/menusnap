@@ -37,7 +37,7 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
         </div>
         <div className="overflow-hidden">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p> {/* Removed ৳ symbol */}
+          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p> 
         </div>
       </CardContent>
     </Card>
@@ -82,13 +82,22 @@ export default function MAdminDashboardPage() {
 
   return (
     <div className="space-y-6 p-4 sm:p-6 md:p-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <Button variant="outline" onClick={adminLogout} className="w-full sm:w-auto">
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-            </Button>
-        </div>
+      <div className="rounded-lg bg-gradient-to-r from-slate-900 via-amber-700 to-primary p-6 shadow-lg text-white">
+        <h2 className="text-3xl font-bold">
+          Welcome Mehan 👋
+        </h2>
+        <p className="mt-1 text-sm text-slate-200">
+          Here's an overview of your business activity.
+        </p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Dashboard</h1>
+          <Button variant="outline" onClick={adminLogout} className="w-full sm:w-auto">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+          </Button>
+      </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {adminStats.map((stat) => (
