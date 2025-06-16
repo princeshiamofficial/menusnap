@@ -2,6 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
@@ -18,7 +19,8 @@ import {
   UtensilsCrossed,
   Sparkles,
   LayoutList, 
-  FolderHeart
+  FolderHeart,
+  AlertTriangle
 } from "lucide-react";
 import {
   Select,
@@ -52,13 +54,13 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
   );
 }
 
-const adminStats: StatCardAdminProps[] = [
-  { title: "Total Orders", value: "998", icon: ShoppingCart, iconBgClass: "bg-sky-100 dark:bg-sky-900/50", iconTextClass: "text-sky-600 dark:text-sky-400" },
-  { title: "Total Templates", value: "750+", icon: Layers, iconBgClass: "bg-blue-100 dark:bg-blue-900/50", iconTextClass: "text-blue-600 dark:text-blue-400" },
-  { title: "Total Restaurant Items", value: "1,200+", icon: UtensilsCrossed, iconBgClass: "bg-green-100 dark:bg-green-900/50", iconTextClass: "text-green-600 dark:text-green-400" },
-  { title: "Total Parlour Items", value: "500+", icon: Sparkles, iconBgClass: "bg-fuchsia-100 dark:bg-fuchsia-900/50", iconTextClass: "text-fuchsia-600 dark:text-fuchsia-400" },
-  { title: "Total Restaurant Categories", value: "50+", icon: LayoutList, iconBgClass: "bg-teal-100 dark:bg-teal-900/50", iconTextClass: "text-teal-600 dark:text-teal-400" },
-  { title: "Total Parlour Categories", value: "25+", icon: FolderHeart, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
+const adminStatConfigs: Omit<StatCardAdminProps, 'value'> & { id: string }[] = [
+  { id: "totalOrders", title: "Total Orders", icon: ShoppingCart, iconBgClass: "bg-sky-100 dark:bg-sky-900/50", iconTextClass: "text-sky-600 dark:text-sky-400" },
+  { id: "totalTemplates", title: "Total Templates", icon: Layers, iconBgClass: "bg-blue-100 dark:bg-blue-900/50", iconTextClass: "text-blue-600 dark:text-blue-400" },
+  { id: "totalRestaurantItems", title: "Total Restaurant Items", icon: UtensilsCrossed, iconBgClass: "bg-green-100 dark:bg-green-900/50", iconTextClass: "text-green-600 dark:text-green-400" },
+  { id: "totalParlourItems", title: "Total Parlour Items", icon: Sparkles, iconBgClass: "bg-fuchsia-100 dark:bg-fuchsia-900/50", iconTextClass: "text-fuchsia-600 dark:text-fuchsia-400" },
+  { id: "totalRestaurantCategories", title: "Total Restaurant Categories", icon: LayoutList, iconBgClass: "bg-teal-100 dark:bg-teal-900/50", iconTextClass: "text-teal-600 dark:text-teal-400" },
+  { id: "totalParlourCategories", title: "Total Parlour Categories", icon: FolderHeart, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
 ];
 
 const ordersData = [
@@ -79,6 +81,85 @@ const ordersData = [
 
 export default function MAdminDashboardPage() {
   const { isAdminLoggedIn, adminLoading, adminLogout } = useAdminAuth();
+  const [statsData, setStatsData] = useState<Record<string, number | string>>({});
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchAllAdminStats() {
+      setIsLoadingStats(true);
+      setStatsError(null);
+      
+      let generalStatsResponse: Response | undefined;
+      let restaurantCategoriesResponse: Response | undefined;
+      let parsedGeneralStatsData: Record<string, number | string> | null = null;
+      let parsedRestaurantCategoriesCount: number | null = null;
+
+      try {
+        [generalStatsResponse, restaurantCategoriesResponse] = await Promise.all([
+          fetch("https://colorhutbd.xyz/vm/api/admin-stats-counts.php", { headers: { 'Accept': 'application/json' } }),
+          fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } })
+        ]);
+
+        // Process general stats
+        if (!generalStatsResponse.ok) {
+          console.error(`Admin Stats API error! status: ${generalStatsResponse.status}, message: ${await generalStatsResponse.text()}`);
+          setStatsError(`Failed to load some statistics (Error ${generalStatsResponse.status}). Some counts might be unavailable.`);
+          // Continue processing other successful fetches if possible
+        } else {
+            const generalStatsResult = await generalStatsResponse.json();
+            if (generalStatsResult.success && generalStatsResult.data && typeof generalStatsResult.data === 'object') {
+              parsedGeneralStatsData = generalStatsResult.data;
+            } else {
+              console.error("Invalid API response structure for general admin stats:", generalStatsResult);
+              setStatsError("Received invalid data format for general admin statistics.");
+            }
+        }
+        
+        // Process restaurant categories
+        if (!restaurantCategoriesResponse.ok) {
+          console.error(`Restaurant Categories API error! status: ${restaurantCategoriesResponse.status}, message: ${await restaurantCategoriesResponse.text()}`);
+          setStatsError(prevError => prevError ? `${prevError} Also failed to load restaurant categories count.` : `Failed to load restaurant categories count (Error ${restaurantCategoriesResponse.status}).`);
+        } else {
+            const restaurantCategoriesResult = await restaurantCategoriesResponse.json();
+            if (restaurantCategoriesResult.success && restaurantCategoriesResult.data && Array.isArray(restaurantCategoriesResult.data.categories)) {
+              parsedRestaurantCategoriesCount = restaurantCategoriesResult.data.categories.length;
+            } else {
+              console.error("Invalid API response structure for restaurant categories:", restaurantCategoriesResult);
+              setStatsError(prevError => prevError ? `${prevError} Received invalid data for restaurant categories.` : "Received invalid data format for restaurant categories count.");
+            }
+        }
+
+        let combinedStatsData: Record<string, number | string> = {};
+        if (parsedGeneralStatsData) {
+            combinedStatsData = { ...parsedGeneralStatsData };
+        }
+        if (parsedRestaurantCategoriesCount !== null) {
+            combinedStatsData.totalRestaurantCategories = parsedRestaurantCategoriesCount;
+        }
+        
+        setStatsData(combinedStatsData);
+
+        // If at least one part of the data was processed but errors occurred for others, statsError will be set.
+        // If all crucial data failed, statsData might be empty or incomplete.
+
+      } catch (e: any) {
+        console.error("Failed to fetch admin stats:", e);
+        setStatsError(e.message || "An unexpected error occurred while loading dashboard statistics.");
+        setStatsData({}); // Clear any partial data
+      } finally {
+        setIsLoadingStats(false);
+      }
+    }
+
+    if (isAdminLoggedIn && !adminLoading) {
+      fetchAllAdminStats();
+    } else if (!isAdminLoggedIn && !adminLoading) {
+      setIsLoadingStats(false); // Not logged in, so not loading stats
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminLoggedIn, adminLoading]);
+
 
   if (adminLoading) {
     return (
@@ -147,18 +228,41 @@ export default function MAdminDashboardPage() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {adminStats.map((stat) => (
-          <StatCardAdmin 
-            key={stat.title}
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            iconBgClass={stat.iconBgClass}
-            iconTextClass={stat.iconTextClass}
-          />
-        ))}
-      </div>
+      {isLoadingStats ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {adminStatConfigs.map((statConfig) => (
+            <Card key={statConfig.id} className="shadow-md rounded-lg bg-card">
+              <CardContent className="p-4 flex items-center space-x-4">
+                <Skeleton className={`h-12 w-12 rounded-full ${statConfig.iconBgClass}`} />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-6 w-1/2" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : statsError ? (
+        <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
+          <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+          <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Statistics</h2>
+          <p className="text-muted-foreground max-w-md">{statsError}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {adminStatConfigs.map((statConfig) => (
+            <StatCardAdmin 
+              key={statConfig.id}
+              title={statConfig.title}
+              value={String(statsData[statConfig.id] ?? '0')}
+              icon={statConfig.icon}
+              iconBgClass={statConfig.iconBgClass}
+              iconTextClass={statConfig.iconTextClass}
+            />
+          ))}
+        </div>
+      )}
+
 
       <Card className="shadow-md rounded-lg mt-8">
         <CardHeader className="bg-card border-b">
@@ -204,4 +308,3 @@ export default function MAdminDashboardPage() {
   );
 }
     
-
