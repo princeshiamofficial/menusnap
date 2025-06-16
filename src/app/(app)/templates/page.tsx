@@ -8,17 +8,18 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Layers, Search, Star, Maximize, AlertTriangle } from "lucide-react"; // Changed UtensilsCrossed to Layers
+import { Layers, Search, Star, Maximize, AlertTriangle } from "lucide-react"; 
 import type { ReactNode } from 'react';
 
 interface ApiTemplate {
   id: string;
-  name: string; // Used as title
+  name: string; 
   description: string;
   isTopRated?: boolean;
   isPublished: boolean;
   tags: string[];
   imageUrl: string;
+  createdAt?: string; // Added for sorting
 }
 
 interface TemplateCardProps {
@@ -135,10 +136,12 @@ export default function TemplatesPage(): ReactNode {
           console.error("Invalid API response structure:", result);
           throw new Error("Invalid data format from API");
         }
-        const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any) => ({
+        const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any, index: number) => ({
           ...t,
           isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
           tags: Array.isArray(t.tags) ? t.tags : [],
+          // Ensure createdAt is present for sorting, use a fallback if necessary
+          createdAt: t.createdAt || new Date(Date.now() - Math.random() * 10000000000 * (index + 1)).toISOString(),
         }));
         setTemplates(fetchedTemplates);
       } catch (e: any) {
@@ -166,7 +169,16 @@ export default function TemplatesPage(): ReactNode {
       // Prioritize top-rated templates
       if (a.isTopRated && !b.isTopRated) return -1;
       if (!a.isTopRated && b.isTopRated) return 1;
-      return 0; // Maintain original order for items with same top-rated status
+
+      // If top-rated status is the same, sort by date (newest first)
+      if (a.createdAt && b.createdAt) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } else if (a.createdAt) {
+        return -1; // a has date, b doesn't, so a comes first
+      } else if (b.createdAt) {
+        return 1;  // b has date, a doesn't, so b comes first
+      }
+      return 0; // If dates are missing or equal, maintain original relative order
     });
 
   return (
@@ -240,3 +252,4 @@ export default function TemplatesPage(): ReactNode {
     
 
     
+
