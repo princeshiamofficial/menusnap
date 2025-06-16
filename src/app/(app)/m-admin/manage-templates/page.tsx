@@ -4,7 +4,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,16 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Layers, 
@@ -62,7 +72,7 @@ interface ApiAdminTemplate {
 interface AdminTemplateCardProps {
   template: ApiAdminTemplate;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, name: string) => void;
   onTogglePublish: (id: string) => void;
   onSetTopRated: (id: string) => void;
 }
@@ -79,9 +89,10 @@ function AdminTemplateCard({
     if (!dateString) return 'N/A';
     try {
       const date = parseISO(dateString);
-      if (isNaN(date.getTime())) return dateString;
+      if (isNaN(date.getTime())) return dateString; // if parseISO results in Invalid Date
       return format(date, "dd/MM/yyyy");
     } catch (e) {
+      // If date-fns parsing fails for any reason, return the original string
       return dateString;
     }
   };
@@ -133,7 +144,7 @@ function AdminTemplateCard({
             <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onEdit(template.id)} aria-label="Edit Template">
               <FileEdit className="h-4 w-4" />
             </Button>
-            <Button variant="destructive" size="icon" className="h-8 w-8 bg-red-600/70 text-white hover:bg-red-700/90 border-red-500/50" onClick={() => onDelete(template.id)} aria-label="Delete Template">
+            <Button variant="destructive" size="icon" className="h-8 w-8 bg-red-600/70 text-white hover:bg-red-700/90 border-red-500/50" onClick={() => onDelete(template.id, template.name)} aria-label="Delete Template">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -543,6 +554,8 @@ export default function ManageTemplatesPage(): ReactNode {
   const [isAddTemplateDialogOpen, setIsAddTemplateDialogOpen] = useState(false);
   const [isEditTemplateDialogOpen, setIsEditTemplateDialogOpen] = useState(false);
   const [editingTemplateData, setEditingTemplateData] = useState<ApiAdminTemplate | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [templateToDeleteInfo, setTemplateToDeleteInfo] = useState<{ id: string, name: string } | null>(null);
   const { toast } = useToast();
 
   const fetchTemplates = async () => {
@@ -618,10 +631,15 @@ export default function ManageTemplatesPage(): ReactNode {
     }
   };
 
-  const handleDeleteTemplate = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this template? This action cannot be undone.")) {
-      return;
-    }
+  const handleDeleteTemplate = (id: string, name: string) => {
+    setTemplateToDeleteInfo({ id, name });
+    setIsDeleteDialogOpen(true);
+  };
+
+  const executeDeleteTemplate = async () => {
+    if (!templateToDeleteInfo) return;
+
+    const { id, name } = templateToDeleteInfo;
     try {
       console.log(`Attempting to delete template with ID: ${id}`);
       const response = await fetch(`https://colorhutbd.xyz/vm/api/templates.php?id=${id}`, {
@@ -636,21 +654,25 @@ export default function ManageTemplatesPage(): ReactNode {
         setAllTemplates(prev => prev.filter(t => t.id !== id));
         toast({
           title: "Success",
-          description: result.message || "Template deleted successfully.",
+          description: result.message || `Template "${name}" deleted successfully.`,
           variant: "default",
         });
       } else {
-        throw new Error(result.message || `Failed to delete template. Status: ${response.status}`);
+        throw new Error(result.message || `Failed to delete template "${name}". Status: ${response.status}`);
       }
     } catch (error: any) {
       console.error(`Failed to delete template ${id}:`, error);
       toast({
         title: "Error",
-        description: error.message || "Could not delete template. Please try again.",
+        description: error.message || `Could not delete template "${name}". Please try again.`,
         variant: "destructive",
       });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setTemplateToDeleteInfo(null);
     }
   };
+
 
   const handleTogglePublish = (id: string) => {
     console.log(`Toggle publish status for template: ${id}`);
@@ -678,19 +700,18 @@ export default function ManageTemplatesPage(): ReactNode {
         (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       )
       .sort((a, b) => {
-        // Prioritize top-rated templates
         if (a.isTopRated && !b.isTopRated) return -1;
         if (!a.isTopRated && b.isTopRated) return 1;
-  
-        // If top-rated status is the same, sort by date (newest first)
-        if (a.createdAt && b.createdAt) {
-          try {
+        try {
+          if (a.createdAt && b.createdAt) {
             return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          } catch (e) { return 0; } // Handle potential invalid date strings
-        } else if (a.createdAt) {
-          return -1; 
-        } else if (b.createdAt) {
-          return 1;  
+          } else if (a.createdAt) {
+            return -1; 
+          } else if (b.createdAt) {
+            return 1;  
+          }
+        } catch (e) {
+            console.warn("Error parsing date for sorting in Manage Templates:", e);
         }
         return 0; 
       });
@@ -782,6 +803,33 @@ export default function ManageTemplatesPage(): ReactNode {
         </Dialog>
       )}
 
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+        setIsDeleteDialogOpen(open);
+        if (!open) setTemplateToDeleteInfo(null);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{templateToDeleteInfo?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsDeleteDialogOpen(false);
+              setTemplateToDeleteInfo(null);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={executeDeleteTemplate} 
+              className={cn(buttonVariants({ variant: "destructive" }))}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Template
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <main>
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -829,12 +877,3 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
-    
-    
-
-
-
-
-    
-
-    
