@@ -102,12 +102,14 @@ export default function MAdminDashboardPage() {
             restaurantCategoriesResponseSettled, 
             menuItemsResponseSettled,
             parlourCategoriesResponseSettled,
-            parlourItemsResponseSettled, // Added parlour items fetch
+            parlourItemsResponseSettled,
+            templatesResponseSettled, // Added templates fetch
         ] = await Promise.allSettled([
           fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/parlour-categories.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/parlour-items.php", { headers: { 'Accept': 'application/json' } }), // Fetch parlour items
+          fetch("https://colorhutbd.xyz/vm/api/parlour-items.php", { headers: { 'Accept': 'application/json' } }),
+          fetch("https://colorhutbd.xyz/vm/api/templates.php", { headers: { 'Accept': 'application/json' } }), // Fetch templates
         ]);
 
         // Process Restaurant Categories
@@ -192,6 +194,27 @@ export default function MAdminDashboardPage() {
         } else {
           console.error("Failed to fetch parlour items:", parlourItemsResponseSettled.reason);
           errorMessages.push("Network error fetching parlour items.");
+        }
+
+        // Process Templates
+        if (templatesResponseSettled.status === 'fulfilled') {
+          const response = templatesResponseSettled.value;
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Templates API error! status: ${response.status}, message: ${errorText}`);
+            errorMessages.push(`Failed to load templates (Error ${response.status}).`);
+          } else {
+            const result = await response.json();
+            if (result.success && result.data && Array.isArray(result.data.templates)) {
+              combinedStatsData.totalTemplates = result.data.templates.length;
+            } else {
+              console.error("Invalid API response structure for templates:", result);
+              errorMessages.push("Invalid data for templates.");
+            }
+          }
+        } else {
+          console.error("Failed to fetch templates:", templatesResponseSettled.reason);
+          errorMessages.push("Network error fetching templates.");
         }
         
         if (errorMessages.length > 0) {
@@ -369,6 +392,8 @@ export default function MAdminDashboardPage() {
     </div>
   );
 }
+    
+
     
 
     
