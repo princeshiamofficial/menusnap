@@ -33,11 +33,11 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
     <Card className="shadow-md rounded-lg bg-card hover:shadow-lg transition-shadow">
       <CardContent className="p-4 flex items-center space-x-4">
         <div className={`p-3 rounded-full ${iconBgClass} flex-shrink-0`}>
-          <Icon className={`h-6 w-6 ${iconTextClass}`} />
+          <Icon className={`h-7 w-7 ${iconTextClass}`} /> {/* Increased icon size slightly */}
         </div>
         <div className="overflow-hidden">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold text-foreground">৳{value}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p> {/* Removed ৳ symbol */}
         </div>
       </CardContent>
     </Card>
