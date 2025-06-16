@@ -47,7 +47,7 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
         </div>
         <div className="overflow-hidden">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}+</p> 
+          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p> 
         </div>
       </CardContent>
     </Card>
