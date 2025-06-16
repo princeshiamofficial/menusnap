@@ -48,6 +48,7 @@ import {
   X,
   Plus,
   Save,
+  UploadCloud,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
@@ -234,6 +235,7 @@ interface AddTemplateFormProps {
 function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const form = useForm<AddTemplateFormValues>({
     resolver: zodResolver(addTemplateFormSchema),
@@ -252,20 +254,81 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
     name: "tags",
   });
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const processAndSetImage = useCallback((file: File | null) => {
     if (file) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+
+      if (!allowedTypes.includes(file.type)) {
+        toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
+        form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); // Clear invalid file
+        setImagePreview(null);
+        return;
+      }
+      if (file.size > maxSize) {
+        toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
+        form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); // Clear invalid file
+        setImagePreview(null);
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      form.setValue("imageFile", event.target.files, { shouldValidate: true });
+
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      form.setValue("imageFile", dataTransfer.files, { shouldValidate: true });
     } else {
       setImagePreview(null);
-      form.setValue("imageFile", null as any, { shouldValidate: true }); 
+      form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true });
     }
+  }, [form, toast]);
+
+
+  const handleImageInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    processAndSetImage(file || null);
   };
+
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(false);
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+      processAndSetImage(files[0]);
+    }
+  }, [processAndSetImage]);
+
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(false);
+  }, []);
+
+  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          processAndSetImage(file);
+          event.preventDefault(); // Prevent pasting text into other inputs if focused
+          break;
+        }
+      }
+    }
+  }, [processAndSetImage]);
+
 
   async function onSubmit(data: AddTemplateFormValues) {
     console.log("Form data submitted (Add):", data);
@@ -297,23 +360,36 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
           <div>
             <Label htmlFor="imageFile-upload-add">Template Image*</Label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md border-border">
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onPaste={handlePaste}
+              tabIndex={0} 
+              className={cn(
+                "mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/80 transition-colors",
+                isDraggingOver ? "border-primary bg-primary/10" : "border-border"
+              )}
+            >
               <div className="space-y-1 text-center">
                 {imagePreview ? (
                   <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" />
                 ) : (
-                  <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
                 )}
                 <div className="flex text-sm text-muted-foreground justify-center">
                   <Label
                     htmlFor="imageFile-upload-add-input"
-                    className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                    className={cn(
+                        "relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+                        "pointer-events-none" // Make label part of the clickable area but not intercept clicks for the hidden input
+                    )}
                   >
-                    <span>Upload an image</span>
-                    <input id="imageFile-upload-add-input" type="file" className="sr-only" onChange={handleImageChange} accept="image/png, image/jpeg, image/webp, image/gif" />
+                    <span>Drag 'n' drop, paste, or click to upload</span>
+                     <input id="imageFile-upload-add-input" type="file" className="sr-only" onChange={handleImageInputChange} accept="image/png, image/jpeg, image/webp, image/gif" />
                   </Label>
                 </div>
-                <p className="text-xs text-muted-foreground">Recommended size: 600x400px, PNG, JPG, GIF, WEBP up to 5MB</p>
+                <p className="text-xs text-muted-foreground">PNG, JPG, GIF, WEBP up to 5MB. Recommended: 600x400px</p>
               </div>
             </div>
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
@@ -408,6 +484,7 @@ interface EditTemplateFormProps {
 function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplateFormProps) {
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(templateData.imageUrl || null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const form = useForm<EditTemplateFormValues>({
     resolver: zodResolver(editTemplateFormSchema),
@@ -427,20 +504,81 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
     name: "tags",
   });
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const processAndSetImage = useCallback((file: File | null) => {
     if (file) {
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+
+      if (!allowedTypes.includes(file.type)) {
+        toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
+        form.setValue("imageFile", undefined, { shouldValidate: true });
+        setImagePreview(templateData.imageUrl || null); // Revert to original
+        return;
+      }
+      if (file.size > maxSize) {
+        toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
+        form.setValue("imageFile", undefined, { shouldValidate: true });
+        setImagePreview(templateData.imageUrl || null); // Revert to original
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      form.setValue("imageFile", event.target.files, { shouldValidate: true });
+
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      form.setValue("imageFile", dataTransfer.files, { shouldValidate: true });
     } else {
-       setImagePreview(templateData.imageUrl || null); 
-       form.setValue("imageFile", undefined, { shouldValidate: true });
+      // If cleared, revert to original image if available, else null
+      setImagePreview(templateData.imageUrl || null);
+      form.setValue("imageFile", undefined, { shouldValidate: true });
     }
+  }, [form, toast, templateData.imageUrl]);
+
+  const handleImageInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    processAndSetImage(file || null);
   };
+
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(false);
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+      processAndSetImage(files[0]);
+    }
+  }, [processAndSetImage]);
+
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(false);
+  }, []);
+
+  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          processAndSetImage(file);
+          event.preventDefault(); 
+          break;
+        }
+      }
+    }
+  }, [processAndSetImage]);
+
 
   async function onSubmit(data: EditTemplateFormValues) {
     console.log("Form data submitted (Edit):", data);
@@ -470,20 +608,33 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
           <div>
             <Label htmlFor={`imageFile-upload-edit-${templateData.id}`}>Template Image</Label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md border-border">
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onPaste={handlePaste}
+              tabIndex={0}
+              className={cn(
+                "mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/80 transition-colors",
+                isDraggingOver ? "border-primary bg-primary/10" : "border-border"
+              )}
+            >
               <div className="space-y-1 text-center">
                 {imagePreview ? (
-                  <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" data-ai-hint="template visual" />
+                  <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" data-ai-hint="template visual"/>
                 ) : (
-                  <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
                 )}
                 <div className="flex text-sm text-muted-foreground justify-center">
                   <Label
                     htmlFor={`imageFile-upload-edit-input-${templateData.id}`}
-                    className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                    className={cn(
+                        "relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+                         "pointer-events-none"
+                    )}
                   >
-                    <span>Upload a new image</span>
-                    <input id={`imageFile-upload-edit-input-${templateData.id}`} type="file" className="sr-only" onChange={handleImageChange} accept="image/png, image/jpeg, image/webp, image/gif" />
+                    <span>Drag 'n' drop, paste, or click to upload new</span>
+                     <input id={`imageFile-upload-edit-input-${templateData.id}`} type="file" className="sr-only" onChange={handleImageInputChange} accept="image/png, image/jpeg, image/webp, image/gif" />
                   </Label>
                 </div>
                 <p className="text-xs text-muted-foreground">Upload a new image or keep the existing one (max 5MB)</p>
