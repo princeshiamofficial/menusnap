@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, ChevronRight, ClipboardList, LayoutList, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, Settings, ChevronRight, ClipboardList, LayoutList, ShoppingCart, LogOut } from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -11,6 +11,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
 
 const adminNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/m-admin', label: 'Admin Dashboard', icon: LayoutDashboard },
@@ -22,6 +23,7 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
 
 export function AdminSidebarNav() {
   const pathname = usePathname();
+  const { adminLogout } = useAdminAuth();
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -74,6 +76,28 @@ export function AdminSidebarNav() {
           </div>
         )}
       </nav>
+      <div className="p-2 border-t border-sidebar-border mt-auto">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              variant="default"
+              className={cn(
+                "w-full justify-start text-sidebar-foreground hover:bg-destructive/80 hover:text-destructive-foreground",
+                "group-data-[collapsible=icon]:justify-center"
+              )}
+              onClick={adminLogout}
+              tooltip={{
+                  children: "Logout",
+                  className: "bg-popover text-popover-foreground border-border shadow-md",
+                  sideOffset: 10
+              }}
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="group-data-[collapsible=icon]:hidden flex-1">Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </div>
     </div>
   );
 }
