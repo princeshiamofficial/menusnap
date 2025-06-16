@@ -48,7 +48,6 @@ import {
   X,
   Plus,
   Save,
-  UploadCloud,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
@@ -261,13 +260,13 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
       if (!allowedTypes.includes(file.type)) {
         toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
-        form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); // Clear invalid file
+        form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); 
         setImagePreview(null);
         return;
       }
       if (file.size > maxSize) {
         toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
-        form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); // Clear invalid file
+        form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); 
         setImagePreview(null);
         return;
       }
@@ -322,7 +321,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         const file = items[i].getAsFile();
         if (file) {
           processAndSetImage(file);
-          event.preventDefault(); // Prevent pasting text into other inputs if focused
+          event.preventDefault(); 
           break;
         }
       }
@@ -359,7 +358,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="imageFile-upload-add">Template Image*</Label>
+            <Label htmlFor="imageFile-upload-add-input">Template Image</Label>
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
@@ -375,21 +374,21 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
                 {imagePreview ? (
                   <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" />
                 ) : (
-                  <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
                 )}
                 <div className="flex text-sm text-muted-foreground justify-center">
                   <Label
                     htmlFor="imageFile-upload-add-input"
                     className={cn(
                         "relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                        "pointer-events-none" // Make label part of the clickable area but not intercept clicks for the hidden input
+                        "pointer-events-none" 
                     )}
                   >
                     <span>Drag 'n' drop, paste, or click to upload</span>
                      <input id="imageFile-upload-add-input" type="file" className="sr-only" onChange={handleImageInputChange} accept="image/png, image/jpeg, image/webp, image/gif" />
                   </Label>
                 </div>
-                <p className="text-xs text-muted-foreground">PNG, JPG, GIF, WEBP up to 5MB. Recommended: 600x400px</p>
+                <p className="text-xs text-muted-foreground">Upload an image for your template (recommended size: 600x400px, max 5MB)</p>
               </div>
             </div>
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
@@ -512,13 +511,13 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       if (!allowedTypes.includes(file.type)) {
         toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
         form.setValue("imageFile", undefined, { shouldValidate: true });
-        setImagePreview(templateData.imageUrl || null); // Revert to original
+        setImagePreview(templateData.imageUrl || null); 
         return;
       }
       if (file.size > maxSize) {
         toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
         form.setValue("imageFile", undefined, { shouldValidate: true });
-        setImagePreview(templateData.imageUrl || null); // Revert to original
+        setImagePreview(templateData.imageUrl || null); 
         return;
       }
 
@@ -532,7 +531,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       dataTransfer.items.add(file);
       form.setValue("imageFile", dataTransfer.files, { shouldValidate: true });
     } else {
-      // If cleared, revert to original image if available, else null
+      
       setImagePreview(templateData.imageUrl || null);
       form.setValue("imageFile", undefined, { shouldValidate: true });
     }
@@ -607,7 +606,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
 
           <div>
-            <Label htmlFor={`imageFile-upload-edit-${templateData.id}`}>Template Image</Label>
+            <Label htmlFor={`imageFile-upload-edit-input-${templateData.id}`}>Template Image</Label>
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
@@ -623,7 +622,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
                 {imagePreview ? (
                   <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" data-ai-hint="template visual"/>
                 ) : (
-                  <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
                 )}
                 <div className="flex text-sm text-muted-foreground justify-center">
                   <Label
@@ -637,7 +636,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
                      <input id={`imageFile-upload-edit-input-${templateData.id}`} type="file" className="sr-only" onChange={handleImageInputChange} accept="image/png, image/jpeg, image/webp, image/gif" />
                   </Label>
                 </div>
-                <p className="text-xs text-muted-foreground">Upload a new image or keep the existing one (max 5MB)</p>
+                <p className="text-xs text-muted-foreground">Upload an image for your template (recommended size: 600x400px, max 5MB)</p>
               </div>
             </div>
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
