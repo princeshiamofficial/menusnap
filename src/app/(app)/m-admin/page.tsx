@@ -84,7 +84,7 @@ export default function MAdminDashboardPage() {
     <div className="space-y-6 p-4 sm:p-6 md:p-8">
       <div className="rounded-lg bg-gradient-to-r from-slate-900 via-amber-700 to-primary p-6 shadow-lg text-white">
         <h2 className="text-3xl font-bold">
-          Welcome Mehan 👋
+          Welcome Admin 👋
         </h2>
         <p className="mt-1 text-sm text-slate-200">
           Here's an overview of your business activity.
