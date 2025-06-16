@@ -102,11 +102,12 @@ export default function MAdminDashboardPage() {
         ]);
 
         // Process general stats
-        if (!generalStatsResponse.ok) {
-          console.error(`Admin Stats API error! status: ${generalStatsResponse.status}, message: ${await generalStatsResponse.text()}`);
+        if (generalStatsResponse && !generalStatsResponse.ok) {
+          const errorText = await generalStatsResponse.text();
+          console.error(`Admin Stats API error! status: ${generalStatsResponse.status}, message: ${errorText}`);
           setStatsError(`Failed to load some statistics (Error ${generalStatsResponse.status}). Some counts might be unavailable.`);
           // Continue processing other successful fetches if possible
-        } else {
+        } else if (generalStatsResponse) {
             const generalStatsResult = await generalStatsResponse.json();
             if (generalStatsResult.success && generalStatsResult.data && typeof generalStatsResult.data === 'object') {
               parsedGeneralStatsData = generalStatsResult.data;
@@ -117,10 +118,11 @@ export default function MAdminDashboardPage() {
         }
         
         // Process restaurant categories
-        if (!restaurantCategoriesResponse.ok) {
-          console.error(`Restaurant Categories API error! status: ${restaurantCategoriesResponse.status}, message: ${await restaurantCategoriesResponse.text()}`);
+        if (restaurantCategoriesResponse && !restaurantCategoriesResponse.ok) {
+          const errorText = await restaurantCategoriesResponse.text();
+          console.error(`Restaurant Categories API error! status: ${restaurantCategoriesResponse.status}, message: ${errorText}`);
           setStatsError(prevError => prevError ? `${prevError} Also failed to load restaurant categories count.` : `Failed to load restaurant categories count (Error ${restaurantCategoriesResponse.status}).`);
-        } else {
+        } else if (restaurantCategoriesResponse) {
             const restaurantCategoriesResult = await restaurantCategoriesResponse.json();
             if (restaurantCategoriesResult.success && restaurantCategoriesResult.data && Array.isArray(restaurantCategoriesResult.data.categories)) {
               parsedRestaurantCategoriesCount = restaurantCategoriesResult.data.categories.length;
@@ -140,13 +142,10 @@ export default function MAdminDashboardPage() {
         
         setStatsData(combinedStatsData);
 
-        // If at least one part of the data was processed but errors occurred for others, statsError will be set.
-        // If all crucial data failed, statsData might be empty or incomplete.
-
       } catch (e: any) {
         console.error("Failed to fetch admin stats:", e);
         setStatsError(e.message || "An unexpected error occurred while loading dashboard statistics.");
-        setStatsData({}); // Clear any partial data
+        setStatsData({}); 
       } finally {
         setIsLoadingStats(false);
       }
@@ -155,7 +154,7 @@ export default function MAdminDashboardPage() {
     if (isAdminLoggedIn && !adminLoading) {
       fetchAllAdminStats();
     } else if (!isAdminLoggedIn && !adminLoading) {
-      setIsLoadingStats(false); // Not logged in, so not loading stats
+      setIsLoadingStats(false); 
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdminLoggedIn, adminLoading]);
@@ -307,4 +306,6 @@ export default function MAdminDashboardPage() {
     </div>
   );
 }
+    
+
     
