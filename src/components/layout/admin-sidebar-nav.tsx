@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Settings, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Settings, ChevronRight } from 'lucide-react'; // Removed Users icon
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 const adminNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/m-admin', label: 'Admin Dashboard', icon: LayoutDashboard },
-  { href: '/m-admin/users', label: 'User Management', icon: Users, hasChevron: true },
+  // { href: '/m-admin/users', label: 'User Management', icon: Users, hasChevron: true }, // Removed User Management
   { href: '/m-admin/settings', label: 'Admin Settings', icon: Settings, hasChevron: true },
 ];
 
