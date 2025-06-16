@@ -17,10 +17,8 @@ import {
   Layers,
   UtensilsCrossed,
   Sparkles,
-  LayoutList, // Added for Restaurant Categories
-  FolderHeart, // Added for Parlour Categories
-  Redo2,
-  Landmark
+  LayoutList, 
+  FolderHeart
 } from "lucide-react";
 import {
   Select,
@@ -61,8 +59,6 @@ const adminStats: StatCardAdminProps[] = [
   { title: "Total Parlour Items", value: "500+", icon: Sparkles, iconBgClass: "bg-fuchsia-100 dark:bg-fuchsia-900/50", iconTextClass: "text-fuchsia-600 dark:text-fuchsia-400" },
   { title: "Total Restaurant Categories", value: "50+", icon: LayoutList, iconBgClass: "bg-teal-100 dark:bg-teal-900/50", iconTextClass: "text-teal-600 dark:text-teal-400" },
   { title: "Total Parlour Categories", value: "25+", icon: FolderHeart, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
-  { title: "Total Purchase Return", value: "0.00", icon: Redo2, iconBgClass: "bg-rose-100 dark:bg-rose-900/50", iconTextClass: "text-rose-600 dark:text-rose-400" },
-  { title: "Expense", value: "0.00", icon: Landmark, iconBgClass: "bg-red-100 dark:bg-red-900/50", iconTextClass: "text-red-600 dark:text-red-400" },
 ];
 
 const ordersData = [
@@ -208,3 +204,4 @@ export default function MAdminDashboardPage() {
   );
 }
     
+
