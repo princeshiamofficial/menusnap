@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -235,6 +235,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<AddTemplateFormValues>({
     resolver: zodResolver(addTemplateFormSchema),
@@ -262,12 +263,14 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
         form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); 
         setImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = ""; // Clear file input
         return;
       }
       if (file.size > maxSize) {
         toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
         form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); 
         setImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = ""; // Clear file input
         return;
       }
 
@@ -283,6 +286,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
     } else {
       setImagePreview(null);
       form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true });
+      if (fileInputRef.current) fileInputRef.current.value = ""; // Clear file input
     }
   }, [form, toast]);
 
@@ -358,17 +362,21 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="imageFile-upload-add-input">Template Image</Label>
+            <Label htmlFor="imageFile-upload-input-add">Template Image</Label>
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onPaste={handlePaste}
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { fileInputRef.current?.click(); e.preventDefault(); }}}
               tabIndex={0} 
               className={cn(
                 "mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/80 transition-colors",
                 isDraggingOver ? "border-primary bg-primary/10" : "border-border"
               )}
+              role="button"
+              aria-label="Upload template image"
             >
               <div className="space-y-1 text-center">
                 {imagePreview ? (
@@ -377,20 +385,24 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
                   <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
                 )}
                 <div className="flex text-sm text-muted-foreground justify-center">
-                  <Label
-                    htmlFor="imageFile-upload-add-input"
-                    className={cn(
-                        "relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                        "pointer-events-none" 
-                    )}
-                  >
-                    <span>Drag 'n' drop, paste, or click to upload</span>
-                     <input id="imageFile-upload-add-input" type="file" className="sr-only" onChange={handleImageInputChange} accept="image/png, image/jpeg, image/webp, image/gif" />
-                  </Label>
+                   <p>
+                    Drag 'n' drop, paste, or{" "}
+                    <span className="font-medium text-primary hover:text-primary/80 underline">
+                      click to upload
+                    </span>
+                  </p>
                 </div>
                 <p className="text-xs text-muted-foreground">Upload an image for your template (recommended size: 600x400px, max 5MB)</p>
               </div>
             </div>
+            <input 
+              id="imageFile-upload-input-add"
+              ref={fileInputRef} 
+              type="file" 
+              className="sr-only" 
+              onChange={handleImageInputChange} 
+              accept="image/png, image/jpeg, image/webp, image/gif" 
+            />
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
           </div>
 
@@ -484,6 +496,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(templateData.imageUrl || null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EditTemplateFormValues>({
     resolver: zodResolver(editTemplateFormSchema),
@@ -512,12 +525,14 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
         toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
         form.setValue("imageFile", undefined, { shouldValidate: true });
         setImagePreview(templateData.imageUrl || null); 
+        if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
       if (file.size > maxSize) {
         toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
         form.setValue("imageFile", undefined, { shouldValidate: true });
         setImagePreview(templateData.imageUrl || null); 
+        if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
 
@@ -531,9 +546,9 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       dataTransfer.items.add(file);
       form.setValue("imageFile", dataTransfer.files, { shouldValidate: true });
     } else {
-      
       setImagePreview(templateData.imageUrl || null);
       form.setValue("imageFile", undefined, { shouldValidate: true });
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [form, toast, templateData.imageUrl]);
 
@@ -606,17 +621,21 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
 
           <div>
-            <Label htmlFor={`imageFile-upload-edit-input-${templateData.id}`}>Template Image</Label>
+            <Label htmlFor={`imageFile-upload-input-edit-${templateData.id}`}>Template Image</Label>
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onPaste={handlePaste}
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { fileInputRef.current?.click(); e.preventDefault(); }}}
               tabIndex={0}
               className={cn(
                 "mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/80 transition-colors",
                 isDraggingOver ? "border-primary bg-primary/10" : "border-border"
               )}
+              role="button"
+              aria-label="Upload new template image"
             >
               <div className="space-y-1 text-center">
                 {imagePreview ? (
@@ -624,21 +643,25 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
                 ) : (
                   <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
                 )}
-                <div className="flex text-sm text-muted-foreground justify-center">
-                  <Label
-                    htmlFor={`imageFile-upload-edit-input-${templateData.id}`}
-                    className={cn(
-                        "relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                         "pointer-events-none"
-                    )}
-                  >
-                    <span>Drag 'n' drop, paste, or click to upload new</span>
-                     <input id={`imageFile-upload-edit-input-${templateData.id}`} type="file" className="sr-only" onChange={handleImageInputChange} accept="image/png, image/jpeg, image/webp, image/gif" />
-                  </Label>
+                 <div className="flex text-sm text-muted-foreground justify-center">
+                   <p>
+                    Drag 'n' drop, paste, or{" "}
+                    <span className="font-medium text-primary hover:text-primary/80 underline">
+                      click to upload
+                    </span>
+                  </p>
                 </div>
                 <p className="text-xs text-muted-foreground">Upload an image for your template (recommended size: 600x400px, max 5MB)</p>
               </div>
             </div>
+             <input 
+              id={`imageFile-upload-input-edit-${templateData.id}`}
+              ref={fileInputRef} 
+              type="file" 
+              className="sr-only" 
+              onChange={handleImageInputChange} 
+              accept="image/png, image/jpeg, image/webp, image/gif" 
+            />
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
           </div>
 
@@ -907,13 +930,15 @@ export default function ManageTemplatesPage(): ReactNode {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">All Templates</h2>
-            {!isLoading && !error ? (
+            {!isLoading && !error && (
               <p className="text-sm text-muted-foreground mt-1">
                 {`${stats.available} templates available • ${stats.published} published`}
               </p>
-            ) : isLoading ? (
+            )}
+            {isLoading && (
                 <Skeleton className="h-4 w-48 mt-1.5" />
-            ) : (
+            )}
+            {!isLoading && error && (
                  <p className="text-sm text-muted-foreground mt-1">Could not load stats.</p>
             )}
           </div>
@@ -1036,4 +1061,3 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
-
