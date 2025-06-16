@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, ChevronRight, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Settings, ChevronRight, ClipboardList, LayoutList } from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 
 const adminNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/m-admin', label: 'Admin Dashboard', icon: LayoutDashboard },
+  { href: '/m-admin/manage-categories', label: 'Manage Categories', icon: LayoutList, hasChevron: true },
   { href: '/m-admin/manage-menu-items', label: 'Manage Menu Items', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/settings', label: 'Admin Settings', icon: Settings, hasChevron: true },
 ];
@@ -75,3 +76,4 @@ export function AdminSidebarNav() {
     </div>
   );
 }
+
