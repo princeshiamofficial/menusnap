@@ -7,7 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Layers, 
   Search, 
@@ -20,11 +32,18 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  Eye
+  Eye,
+  ImageIcon,
+  X,
+  Plus,
+  Save,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 interface ApiAdminTemplate {
   id: string;
@@ -178,11 +197,182 @@ function AdminTemplateSkeletonCard(): ReactNode {
   );
 }
 
+
+const addTemplateFormSchema = z.object({
+  templateName: z.string().min(1, "Template name is required"),
+  description: z.string().min(1, "Description is required"),
+  imageFile: z.custom<FileList>((val) => val instanceof FileList, "Please upload an image")
+    .refine((files) => files.length > 0, `Template image is required.`)
+    .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `Max image size is 5MB.`)
+    .refine(
+      (files) => ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
+      "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
+    ),
+  tags: z.array(z.object({ value: z.string().min(1, "Tag cannot be empty") })).min(1, "At least one tag is required"),
+  isTopRated: z.boolean().default(false),
+  isPublished: z.boolean().default(false),
+});
+
+type AddTemplateFormValues = z.infer<typeof addTemplateFormSchema>;
+
+interface AddTemplateFormProps {
+  onSuccess: () => void;
+  onOpenChange: (open: boolean) => void;
+}
+
+function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
+  const { toast } = useToast();
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const form = useForm<AddTemplateFormValues>({
+    resolver: zodResolver(addTemplateFormSchema),
+    defaultValues: {
+      templateName: "",
+      description: "",
+      tags: [{ value: "" }],
+      isTopRated: false,
+      isPublished: false,
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "tags",
+  });
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      form.setValue("imageFile", event.target.files);
+    } else {
+      setImagePreview(null);
+      form.setValue("imageFile", null as any); // Or new FileList() if that's preferred for null state
+    }
+  };
+
+  async function onSubmit(data: AddTemplateFormValues) {
+    // Placeholder for actual API call
+    console.log("Form data submitted:", data);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    toast({
+      title: "Template Added (Simulated)",
+      description: `Template "${data.templateName}" has been added.`,
+    });
+    onSuccess(); // To refresh list and close dialog
+  }
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <ScrollArea className="max-h-[70vh] pr-4">
+        <div className="space-y-4 p-1">
+          <div>
+            <Label htmlFor="templateName">Template Name*</Label>
+            <Input id="templateName" {...form.register("templateName")} placeholder="Enter template name" />
+            {form.formState.errors.templateName && <p className="text-sm text-destructive mt-1">{form.formState.errors.templateName.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="description">Description*</Label>
+            <Textarea id="description" {...form.register("description")} placeholder="Enter template description" rows={4} />
+            {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="imageFile">Template Image</Label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md border-border">
+              <div className="space-y-1 text-center">
+                {imagePreview ? (
+                  <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" />
+                ) : (
+                  <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                )}
+                <div className="flex text-sm text-muted-foreground justify-center">
+                  <Label
+                    htmlFor="imageFile-upload"
+                    className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                  >
+                    <span>Upload an image</span>
+                    <input id="imageFile-upload" type="file" className="sr-only" onChange={handleImageChange} accept="image/png, image/jpeg, image/webp, image/gif" />
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">Recommended size: 600x400px, PNG, JPG, GIF, WEBP up to 5MB</p>
+              </div>
+            </div>
+            {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
+          </div>
+
+          <div>
+            <Label>Tags*</Label>
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex items-center gap-2 mt-1">
+                <Input
+                  {...form.register(`tags.${index}.value`)}
+                  placeholder={`Tag ${index + 1} (e.g., Restaurant, Cafe)`}
+                />
+                {fields.length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10">
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            {form.formState.errors.tags && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message || (form.formState.errors.tags as any)?.[0]?.value?.message}</p>}
+            
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2">
+              <Plus className="mr-2 h-4 w-4" /> Add Another Tag
+            </Button>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-2">
+            <Controller
+              control={form.control}
+              name="isTopRated"
+              render={({ field }) => (
+                 <Switch id="isTopRated" checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+            <Label htmlFor="isTopRated" className="cursor-pointer">Mark as Top Rated</Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Controller
+              control={form.control}
+              name="isPublished"
+              render={({ field }) => (
+                 <Switch id="isPublished" checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+            <Label htmlFor="isPublished" className="cursor-pointer">Publish to Users</Label>
+          </div>
+        </div>
+      </ScrollArea>
+      <DialogFooter className="pt-4">
+        <DialogClose asChild>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={form.formState.isSubmitting} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          {form.formState.isSubmitting ? "Adding..." : <><Save className="mr-2 h-4 w-4" /> Add Template</>}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+
 export default function ManageTemplatesPage(): ReactNode {
   const [allTemplates, setAllTemplates] = useState<ApiAdminTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddTemplateDialogOpen, setIsAddTemplateDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchTemplates = async () => {
@@ -233,12 +423,9 @@ export default function ManageTemplatesPage(): ReactNode {
     fetchTemplates();
   };
 
-  const handleAddTemplate = () => {
-    console.log("Add new template clicked");
-    toast({
-      title: "Feature Coming Soon",
-      description: "Adding new templates will be available shortly.",
-    });
+  const handleAddTemplateSuccess = () => {
+    setIsAddTemplateDialogOpen(false);
+    fetchTemplates(); // Refresh the list
   };
   
   const handleEditTemplate = (id: string) => {
@@ -339,13 +526,14 @@ export default function ManageTemplatesPage(): ReactNode {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">All Templates</h2>
-            {isLoading && !error ? (
-                 <Skeleton className="h-4 w-48 mt-1" />
-            ) : (
+            {!isLoading && !error ? (
               <p className="text-sm text-muted-foreground mt-1">
-                {error ? "Could not load stats." :
-                  `${stats.available} templates available • ${stats.published} published`}
+                {`${stats.available} templates available • ${stats.published} published`}
               </p>
+            ) : isLoading ? (
+                <Skeleton className="h-4 w-48 mt-1" />
+            ) : (
+                 <p className="text-sm text-muted-foreground mt-1">Could not load stats.</p>
             )}
           </div>
           <div className="flex items-center gap-2 mt-3 sm:mt-0">
@@ -353,13 +541,22 @@ export default function ManageTemplatesPage(): ReactNode {
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button variant="default" onClick={handleAddTemplate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Template
             </Button>
           </div>
         </div>
       </section>
+
+      <Dialog open={isAddTemplateDialogOpen} onOpenChange={setIsAddTemplateDialogOpen}>
+        <DialogContent className="sm:max-w-xl md:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Add New Template</DialogTitle>
+          </DialogHeader>
+          <AddTemplateForm onSuccess={handleAddTemplateSuccess} onOpenChange={setIsAddTemplateDialogOpen} />
+        </DialogContent>
+      </Dialog>
 
       <main>
         {isLoading ? (
@@ -384,7 +581,7 @@ export default function ManageTemplatesPage(): ReactNode {
                 {searchTerm ? "No templates match your search." : "No templates found."}
               </p>
               { !searchTerm && (
-                <Button variant="default" onClick={handleAddTemplate} className="mt-6 bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="mt-6 bg-primary hover:bg-primary/90 text-primary-foreground">
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Add Your First Template
                 </Button>
@@ -410,3 +607,4 @@ export default function ManageTemplatesPage(): ReactNode {
 }
     
     
+
