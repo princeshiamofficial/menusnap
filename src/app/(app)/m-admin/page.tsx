@@ -90,50 +90,78 @@ export default function MAdminDashboardPage() {
       setIsLoadingStats(true);
       setStatsError(null);
       
-      let restaurantCategoriesResponse: Response | undefined;
-      let parsedRestaurantCategoriesCount: number | null = null;
-      let combinedStatsData: Record<string, number | string> = {}; // Initialize here
+      const combinedStatsData: Record<string, number | string> = {};
+      // Initialize all expected stats with 0
+      adminStatConfigs.forEach(config => {
+        combinedStatsData[config.id] = 0;
+      });
+
+      let errorMessages: string[] = [];
 
       try {
-        restaurantCategoriesResponse = await fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } });
-        
+        const [categoriesResponseSettled, menuItemsResponseSettled] = await Promise.allSettled([
+          fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } }),
+          fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } })
+        ]);
+
         // Process restaurant categories
-        if (restaurantCategoriesResponse && !restaurantCategoriesResponse.ok) {
-          const errorText = await restaurantCategoriesResponse.text();
-          console.error(`Restaurant Categories API error! status: ${restaurantCategoriesResponse.status}, message: ${errorText}`);
-          setStatsError(prevError => prevError ? `${prevError} Also failed to load restaurant categories count.` : `Failed to load restaurant categories count (Error ${restaurantCategoriesResponse.status}).`);
-        } else if (restaurantCategoriesResponse) {
-            const restaurantCategoriesResult = await restaurantCategoriesResponse.json();
-            if (restaurantCategoriesResult.success && restaurantCategoriesResult.data && Array.isArray(restaurantCategoriesResult.data.categories)) {
-              parsedRestaurantCategoriesCount = restaurantCategoriesResult.data.categories.length;
+        if (categoriesResponseSettled.status === 'fulfilled') {
+          const response = categoriesResponseSettled.value;
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Restaurant Categories API error! status: ${response.status}, message: ${errorText}`);
+            errorMessages.push(`Failed to load restaurant categories (Error ${response.status}).`);
+          } else {
+            const result = await response.json();
+            if (result.success && result.data && Array.isArray(result.data.categories)) {
+              combinedStatsData.totalRestaurantCategories = result.data.categories.length;
             } else {
-              console.error("Invalid API response structure for restaurant categories:", restaurantCategoriesResult);
-              setStatsError(prevError => prevError ? `${prevError} Received invalid data for restaurant categories.` : "Received invalid data format for restaurant categories count.");
+              console.error("Invalid API response structure for restaurant categories:", result);
+              errorMessages.push("Invalid data for restaurant categories.");
             }
+          }
+        } else {
+          console.error("Failed to fetch restaurant categories:", categoriesResponseSettled.reason);
+          errorMessages.push("Network error fetching restaurant categories.");
         }
 
-        if (parsedRestaurantCategoriesCount !== null) {
-            combinedStatsData.totalRestaurantCategories = parsedRestaurantCategoriesCount;
+        // Process restaurant menu items
+        if (menuItemsResponseSettled.status === 'fulfilled') {
+          const response = menuItemsResponseSettled.value;
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Restaurant Menu Items API error! status: ${response.status}, message: ${errorText}`);
+            errorMessages.push(`Failed to load restaurant items (Error ${response.status}).`);
+          } else {
+            const result = await response.json();
+            // Assuming the structure is { success: true, data: [...] } for menu items
+            if (result.success && Array.isArray(result.data)) { 
+              combinedStatsData.totalRestaurantItems = result.data.length;
+            } else {
+              console.error("Invalid API response structure for restaurant menu items:", result);
+              errorMessages.push("Invalid data for restaurant items.");
+            }
+          }
+        } else {
+          console.error("Failed to fetch restaurant menu items:", menuItemsResponseSettled.reason);
+          errorMessages.push("Network error fetching restaurant items.");
         }
         
-        // Set default 0 for other stats as their API is removed
-        adminStatConfigs.forEach(config => {
-          if (!combinedStatsData.hasOwnProperty(config.id)) {
-            combinedStatsData[config.id] = 0;
-          }
-        });
+        if (errorMessages.length > 0) {
+          setStatsError(errorMessages.join(' '));
+        }
 
         setStatsData(combinedStatsData);
 
-      } catch (e: any) {
-        console.error("Failed to fetch admin stats:", e);
+      } catch (e: any) { // Catch for unexpected errors not caught by Promise.allSettled's individual error handling
+        console.error("Unexpected error fetching admin stats:", e);
         setStatsError(e.message || "An unexpected error occurred while loading dashboard statistics.");
-        // Ensure all stats default to 0 on major error
+        // Ensure all stats default to 0 on major error by re-applying defaults
         const defaultErrorStats: Record<string, number | string> = {};
         adminStatConfigs.forEach(config => {
           defaultErrorStats[config.id] = 0;
         });
-        setStatsData(defaultErrorStats); 
+        setStatsData(defaultErrorStats);
       } finally {
         setIsLoadingStats(false);
       }
@@ -294,6 +322,8 @@ export default function MAdminDashboardPage() {
     </div>
   );
 }
+    
+
     
 
     
