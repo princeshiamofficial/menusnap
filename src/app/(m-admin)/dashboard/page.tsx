@@ -1,5 +1,3 @@
-// This page within the (m-admin) route group is no longer in use
-// and can be deleted. The active admin panel is now at /src/app/(app)/m-admin/
-// This file is kept as a placeholder to prevent routing errors from cached or
-// misconfigured build processes until it can be safely removed.
-// Do not add any default export or React component here.
+// This file is part of the old (m-admin) route group which is no longer in use.
+// It can be considered for deletion.
+// Kept as a placeholder to avoid routing conflicts due to potential caching.
