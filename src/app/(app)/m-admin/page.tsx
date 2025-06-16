@@ -17,7 +17,8 @@ import {
   Download,
   AlertTriangle,
   Redo2,
-  Landmark // Using Landmark for Expense, similar to a bank/financial institution
+  Landmark, // Using Landmark for Expense, similar to a bank/financial institution
+  Smile // Added Smile icon
 } from "lucide-react";
 
 interface StatCardAdminProps {
@@ -83,8 +84,8 @@ export default function MAdminDashboardPage() {
   return (
     <div className="space-y-6 p-4 sm:p-6 md:p-8">
       <div className="rounded-lg bg-gradient-to-r from-slate-900 via-amber-700 to-primary p-6 shadow-lg text-white">
-        <h2 className="text-3xl font-bold">
-          Welcome Admin 👋
+        <h2 className="text-3xl font-bold flex items-center">
+          Welcome Admin <Smile className="ml-2 h-8 w-8" />
         </h2>
         <p className="mt-1 text-sm text-slate-200">
           Here's an overview of your business activity.
