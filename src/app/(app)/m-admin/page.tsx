@@ -30,14 +30,14 @@ interface StatCardAdminProps {
 
 function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }: StatCardAdminProps): ReactNode {
   return (
-    <Card className="shadow-sm rounded-lg bg-card">
-      <CardContent className="p-4 flex items-center space-x-3 sm:space-x-4">
+    <Card className="shadow-md rounded-lg bg-card hover:shadow-lg transition-shadow">
+      <CardContent className="p-4 flex items-center space-x-4">
         <div className={`p-3 rounded-full ${iconBgClass} flex-shrink-0`}>
-          <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${iconTextClass}`} />
+          <Icon className={`h-6 w-6 ${iconTextClass}`} />
         </div>
         <div className="overflow-hidden">
-          <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
-          <p className="text-lg sm:text-xl font-bold text-foreground">৳{value}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold text-foreground">৳{value}</p>
         </div>
       </CardContent>
     </Card>
