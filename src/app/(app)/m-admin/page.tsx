@@ -56,7 +56,7 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
 }
 
 const adminStats: StatCardAdminProps[] = [
-  { title: "Total Sales", value: "998,150.00", icon: ShoppingCart, iconBgClass: "bg-sky-100 dark:bg-sky-900/50", iconTextClass: "text-sky-600 dark:text-sky-400" },
+  { title: "Total Orders", value: "998,150", icon: ShoppingCart, iconBgClass: "bg-sky-100 dark:bg-sky-900/50", iconTextClass: "text-sky-600 dark:text-sky-400" },
   { title: "Net", value: "0.00", icon: DollarSign, iconBgClass: "bg-green-100 dark:bg-green-900/50", iconTextClass: "text-green-600 dark:text-green-400" },
   { title: "Invoice due", value: "588,685.00", icon: FileText, iconBgClass: "bg-amber-100 dark:bg-amber-900/50", iconTextClass: "text-amber-600 dark:text-amber-400" },
   { title: "Total Sell Return", value: "0.00", icon: Undo2, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
