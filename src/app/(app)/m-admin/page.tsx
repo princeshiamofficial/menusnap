@@ -47,7 +47,7 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
         </div>
         <div className="overflow-hidden">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p> 
+          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}+</p> 
         </div>
       </CardContent>
     </Card>
@@ -104,14 +104,14 @@ export default function MAdminDashboardPage() {
             parlourCategoriesResponseSettled,
             parlourItemsResponseSettled,
             templatesResponseSettled,
-            ordersResponseSettled, // Added orders fetch
+            ordersResponseSettled,
         ] = await Promise.allSettled([
           fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/parlour-categories.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/parlour-items.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/templates.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/orders.php", { headers: { 'Accept': 'application/json' } }), // Fetch orders
+          fetch("https://colorhutbd.xyz/vm/api/orders.php", { headers: { 'Accept': 'application/json' } }),
         ]);
 
         // Process Restaurant Categories
