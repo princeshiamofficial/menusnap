@@ -263,14 +263,14 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
         form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); 
         setImagePreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = ""; // Clear file input
+        if (fileInputRef.current) fileInputRef.current.value = ""; 
         return;
       }
       if (file.size > maxSize) {
         toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
         form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); 
         setImagePreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = ""; // Clear file input
+        if (fileInputRef.current) fileInputRef.current.value = ""; 
         return;
       }
 
@@ -286,7 +286,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
     } else {
       setImagePreview(null);
       form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true });
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Clear file input
+      if (fileInputRef.current) fileInputRef.current.value = ""; 
     }
   }, [form, toast]);
 
@@ -346,8 +346,8 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <ScrollArea className="max-h-[70vh] pr-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden pt-4">
+      <ScrollArea className="flex-grow min-h-0 pr-4">
         <div className="space-y-4 p-1">
           <div>
             <Label htmlFor="templateName-add">Template Name*</Label>
@@ -453,7 +453,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
         </div>
       </ScrollArea>
-      <DialogFooter className="pt-4">
+      <DialogFooter className="pt-4 border-t">
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
         </DialogClose>
@@ -605,8 +605,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <ScrollArea className="max-h-[70vh] pr-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden pt-4">
+      <ScrollArea className="flex-grow min-h-0 pr-4">
         <div className="space-y-4 p-1">
           <div>
             <Label htmlFor={`templateName-edit-${templateData.id}`}>Template Name*</Label>
@@ -711,7 +711,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
         </div>
       </ScrollArea>
-      <DialogFooter className="pt-4">
+      <DialogFooter className="pt-4 border-t">
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
         </DialogClose>
@@ -956,7 +956,7 @@ export default function ManageTemplatesPage(): ReactNode {
       </section>
 
       <Dialog open={isAddTemplateDialogOpen} onOpenChange={setIsAddTemplateDialogOpen}>
-        <DialogContent className="sm:max-w-xl md:max-w-2xl">
+        <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)]">
           <DialogHeader>
             <DialogTitle className="text-2xl">Add New Template</DialogTitle>
           </DialogHeader>
@@ -969,7 +969,7 @@ export default function ManageTemplatesPage(): ReactNode {
             setIsEditTemplateDialogOpen(open);
             if (!open) setEditingTemplateData(null);
         }}>
-            <DialogContent className="sm:max-w-xl md:max-w-2xl">
+            <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)]">
             <DialogHeader>
                 <DialogTitle className="text-2xl">
                     Edit Template {editingTemplateData.version ? `(v${editingTemplateData.version})` : ''}
@@ -1061,5 +1061,3 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
-
-    
