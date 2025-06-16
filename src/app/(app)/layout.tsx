@@ -13,19 +13,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const isAdminRoute = pathname.startsWith('/madmin');
 
   if (isAdminRoute) {
-    // For admin routes, the admin-specific layout (madmin/layout.tsx) handles everything.
-    // AppLayout should just pass through children, wrapped in ProtectedRoute for general app auth.
-    // The admin section will use its own AdminAuthProvider.
-    return (
-      <ProtectedRoute>
-        {children}
-      </ProtectedRoute>
-    );
+    // For admin routes, madmin/layout.tsx handles everything, including its own auth.
+    // AppLayout should just pass through the children (which will be MAdminLayout).
+    return <>{children}</>; // Render only children, no wrappers from AppLayout
   }
 
   // For non-admin routes within the (app) group
   return (
-    <ProtectedRoute>
+    <ProtectedRoute> {/* Main app authentication */}
       <SidebarProvider defaultOpen> {/* Default open, collapsible to icon */}
         <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r border-sidebar-border shadow-md bg-sidebar">
           <SidebarNav />
