@@ -671,11 +671,29 @@ export default function ManageTemplatesPage(): ReactNode {
   };
 
   const filteredTemplates = useMemo(() => {
-    return allTemplates.filter(template =>
-      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-    );
+    return allTemplates
+      .filter(template =>
+        template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+      )
+      .sort((a, b) => {
+        // Prioritize top-rated templates
+        if (a.isTopRated && !b.isTopRated) return -1;
+        if (!a.isTopRated && b.isTopRated) return 1;
+  
+        // If top-rated status is the same, sort by date (newest first)
+        if (a.createdAt && b.createdAt) {
+          try {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          } catch (e) { return 0; } // Handle potential invalid date strings
+        } else if (a.createdAt) {
+          return -1; 
+        } else if (b.createdAt) {
+          return 1;  
+        }
+        return 0; 
+      });
   }, [allTemplates, searchTerm]);
 
   const stats = useMemo(() => {
@@ -816,5 +834,7 @@ export default function ManageTemplatesPage(): ReactNode {
 
 
 
+
+    
 
     
