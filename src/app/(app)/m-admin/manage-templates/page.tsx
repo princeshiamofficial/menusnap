@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -21,10 +20,11 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  Eye // For view/maximize icon on image
+  Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
 
 interface ApiAdminTemplate {
   id: string;
@@ -34,9 +34,9 @@ interface ApiAdminTemplate {
   isPublished: boolean;
   tags: string[];
   imageUrl: string;
-  createdAt?: string; // Expecting ISO string or displayable string
+  createdAt?: string;
   version?: string;
-  category?: string; // From existing API structure
+  category?: string;
 }
 
 interface AdminTemplateCardProps {
@@ -58,12 +58,11 @@ function AdminTemplateCard({
   const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
     try {
-      // Attempt to parse if it's ISO, otherwise display as is
       const date = parseISO(dateString);
-      if (isNaN(date.getTime())) return dateString; // If not valid ISO, return original
+      if (isNaN(date.getTime())) return dateString;
       return format(date, "dd/MM/yyyy");
     } catch (e) {
-      return dateString; // Fallback to original string if parsing fails
+      return dateString;
     }
   };
 
@@ -184,6 +183,7 @@ export default function ManageTemplatesPage(): ReactNode {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { toast } = useToast();
 
   const fetchTemplates = async () => {
     setIsLoading(true);
@@ -209,11 +209,11 @@ export default function ManageTemplatesPage(): ReactNode {
         name: t.name || `Untitled Template ${index + 1}`,
         description: t.description || 'No description available.',
         isTopRated: t.isTopRated === undefined ? false : Boolean(t.isTopRated),
-        isPublished: t.isPublished === undefined ? (index % 2 === 0) : Boolean(t.isPublished), // Example: alternate for placeholder
+        isPublished: t.isPublished === undefined ? (index % 2 === 0) : Boolean(t.isPublished),
         tags: Array.isArray(t.tags) ? t.tags : ['untagged'],
         imageUrl: t.imageUrl || `https://placehold.co/600x450.png?text=Template+${index + 1}`,
-        createdAt: t.createdAt || new Date(Date.now() - Math.random() * 10000000000).toISOString(), // Placeholder for createdAt
-        version: t.version || `${Math.floor(Math.random() * 3) + 1}.0`, // Placeholder for version
+        createdAt: t.createdAt || new Date(Date.now() - Math.random() * 10000000000).toISOString(),
+        version: t.version || `${Math.floor(Math.random() * 3) + 1}.0`,
         category: t.category || "General",
       }));
       setAllTemplates(fetchedTemplates);
@@ -234,21 +234,70 @@ export default function ManageTemplatesPage(): ReactNode {
   };
 
   const handleAddTemplate = () => {
-    // Placeholder for add template functionality
     console.log("Add new template clicked");
-    // Typically, this would open a modal or navigate to a form page
+    toast({
+      title: "Feature Coming Soon",
+      description: "Adding new templates will be available shortly.",
+    });
   };
   
-  // Dummy handlers for card actions
-  const handleEditTemplate = (id: string) => console.log(`Edit template: ${id}`);
-  const handleDeleteTemplate = (id: string) => console.log(`Delete template: ${id}`);
+  const handleEditTemplate = (id: string) => {
+    console.log(`Edit template: ${id}`);
+    toast({
+      title: "Feature Coming Soon",
+      description: `Editing template ${id} will be available shortly.`,
+    });
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this template? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      const response = await fetch(`https://colorhutbd.xyz/vm/api/templates.php?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setAllTemplates(prev => prev.filter(t => t.id !== id));
+        toast({
+          title: "Success",
+          description: result.message || "Template deleted successfully.",
+          variant: "default",
+        });
+      } else {
+        throw new Error(result.message || `Failed to delete template. Status: ${response.status}`);
+      }
+    } catch (error: any) {
+      console.error(`Failed to delete template ${id}:`, error);
+      toast({
+        title: "Error",
+        description: error.message || "Could not delete template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTogglePublish = (id: string) => {
     console.log(`Toggle publish status for template: ${id}`);
     setAllTemplates(prev => prev.map(t => t.id === id ? {...t, isPublished: !t.isPublished } : t));
+     toast({
+      title: "Status Updated (Client-side)",
+      description: `Publish status for template ${id} toggled locally. API integration pending.`,
+    });
   };
+
   const handleSetTopRated = (id: string) => {
     console.log(`Set top rated for template: ${id}`);
      setAllTemplates(prev => prev.map(t => t.id === id ? {...t, isTopRated: !t.isTopRated } : t));
+     toast({
+      title: "Status Updated (Client-side)",
+      description: `Top-rated status for template ${id} toggled locally. API integration pending.`,
+    });
   };
 
   const filteredTemplates = useMemo(() => {
@@ -290,8 +339,8 @@ export default function ManageTemplatesPage(): ReactNode {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">All Templates</h2>
-            {isLoading ? (
-              <Skeleton className="h-4 w-48 mt-1" />
+            {isLoading && !error ? (
+                 <Skeleton className="h-4 w-48 mt-1" />
             ) : (
               <p className="text-sm text-muted-foreground mt-1">
                 {error ? "Could not load stats." :
@@ -359,7 +408,5 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
-
     
-
     
