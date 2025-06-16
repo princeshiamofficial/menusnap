@@ -1,14 +1,29 @@
 
 "use client";
 import type { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
-// import { UserNav } from '@/components/layout/user-nav'; // UserNav import removed
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SpeedDialFAB } from '@/components/layout/SpeedDialFAB'; 
 
 export default function AppLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/madmin');
+
+  if (isAdminRoute) {
+    // For admin routes, the admin-specific layout (madmin/layout.tsx) handles everything.
+    // AppLayout should just pass through children, wrapped in ProtectedRoute for general app auth.
+    // The admin section will use its own AdminAuthProvider.
+    return (
+      <ProtectedRoute>
+        {children}
+      </ProtectedRoute>
+    );
+  }
+
+  // For non-admin routes within the (app) group
   return (
     <ProtectedRoute>
       <SidebarProvider defaultOpen> {/* Default open, collapsible to icon */}
@@ -23,17 +38,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </ScrollArea>
         </SidebarInset>
         
-        {/* FABs Area */}
         <SpeedDialFAB /> 
         
-        {/* UserNav removed from here */}
-        {/* 
-        <div className="fixed bottom-4 right-4 z-50"> 
-          <UserNav />
-        </div> 
-        */}
       </SidebarProvider>
     </ProtectedRoute>
   );
 }
-
