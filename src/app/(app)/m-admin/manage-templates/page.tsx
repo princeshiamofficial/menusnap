@@ -402,7 +402,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       tags: templateData.tags ? templateData.tags.map(tag => ({ value: tag })) : [{ value: "" }],
       isTopRated: templateData.isTopRated || false,
       isPublished: templateData.isPublished || false,
-      imageFile: undefined, // Explicitly undefined for optional file
+      imageFile: undefined, 
     },
   });
 
@@ -421,22 +421,13 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       reader.readAsDataURL(file);
       form.setValue("imageFile", event.target.files);
     } else {
-      // If no file is selected, revert to original image if "Clear" was hypothetically used
-      // or keep current preview if it's already a new file preview
-      // For now, if deselected, we could clear preview to indicate new file choice is gone.
-      // However, typical UX would be to just keep existing if no new file is chosen.
-      // Let's ensure if they clear the input, it reverts or keeps the original.
-      // For this setup, `form.setValue("imageFile", undefined)` is fine.
-      // Preview should ideally show original if `imageFile` is undefined.
-       setImagePreview(templateData.imageUrl || null); // Revert to original if selection is cleared
+       setImagePreview(templateData.imageUrl || null); 
        form.setValue("imageFile", undefined);
     }
   };
 
   async function onSubmit(data: EditTemplateFormValues) {
     console.log("Form data submitted (Edit):", data);
-    // In a real app, you'd send this to your API (e.g., PUT request)
-    // If data.imageFile is present, it's a new image. Otherwise, backend keeps old image.
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast({
       title: "Template Updated (Simulated)",
@@ -632,7 +623,6 @@ export default function ManageTemplatesPage(): ReactNode {
       return;
     }
     try {
-      // Simulate API call for now
       console.log(`Attempting to delete template with ID: ${id}`);
       const response = await fetch(`https://colorhutbd.xyz/vm/api/templates.php?id=${id}`, {
         method: 'DELETE',
@@ -805,9 +795,9 @@ export default function ManageTemplatesPage(): ReactNode {
             </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredTemplates.map((template) => (
+            {filteredTemplates.map((template, index) => (
               <AdminTemplateCard
-                key={template.id}
+                key={`${template.id}-${index}`}
                 template={template}
                 onEdit={handleOpenEditTemplateDialog}
                 onDelete={handleDeleteTemplate}
@@ -825,3 +815,6 @@ export default function ManageTemplatesPage(): ReactNode {
     
 
 
+
+
+    
