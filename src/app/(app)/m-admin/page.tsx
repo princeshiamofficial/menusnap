@@ -2,13 +2,13 @@
 "use client";
 
 import type { ReactNode } from 'react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  LayoutDashboard, 
   LogOut,
   ShoppingCart,
   DollarSign,
@@ -18,8 +18,18 @@ import {
   AlertTriangle,
   Redo2,
   Landmark, 
-  Hand 
+  Hand,
+  MapPin,
+  CalendarDays,
+  BarChart3
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface StatCardAdminProps {
   title: string;
@@ -34,11 +44,11 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
     <Card className="shadow-md rounded-lg bg-card hover:shadow-lg transition-shadow">
       <CardContent className="p-4 flex items-center space-x-4">
         <div className={`p-3 rounded-full ${iconBgClass} flex-shrink-0`}>
-          <Icon className={`h-7 w-7 ${iconTextClass}`} /> {/* Increased icon size slightly */}
+          <Icon className={`h-7 w-7 ${iconTextClass}`} />
         </div>
         <div className="overflow-hidden">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p> 
+          <p className="text-2xl sm:text-3xl font-bold text-foreground">৳{value}</p> 
         </div>
       </CardContent>
     </Card>
@@ -55,6 +65,22 @@ const adminStats: StatCardAdminProps[] = [
   { title: "Total Purchase Return", value: "0.00", icon: Redo2, iconBgClass: "bg-rose-100 dark:bg-rose-900/50", iconTextClass: "text-rose-600 dark:text-rose-400" },
   { title: "Expense", value: "0.00", icon: Landmark, iconBgClass: "bg-red-100 dark:bg-red-900/50", iconTextClass: "text-red-600 dark:text-red-400" },
 ];
+
+const salesData = [
+  { name: 'Jan', sales: 4000 },
+  { name: 'Feb', sales: 3000 },
+  { name: 'Mar', sales: 2000 },
+  { name: 'Apr', sales: 2780 },
+  { name: 'May', sales: 1890 },
+  { name: 'Jun', sales: 2390 },
+  { name: 'Jul', sales: 3490 },
+  { name: 'Aug', sales: 2000 },
+  { name: 'Sep', sales: 2780 },
+  { name: 'Oct', sales: 1890 },
+  { name: 'Nov', sales: 2390 },
+  { name: 'Dec', sales: 3490 },
+];
+
 
 export default function MAdminDashboardPage() {
   const { isAdminLoggedIn, adminLoading, adminLogout } = useAdminAuth();
@@ -92,12 +118,38 @@ export default function MAdminDashboardPage() {
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          <Button variant="outline" onClick={adminLogout} className="w-full sm:w-auto">
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
+      <div className="flex flex-wrap items-center gap-4 py-4 px-2 bg-card rounded-lg shadow">
+        <Button variant="outline" className="text-muted-foreground">
+          <MapPin className="mr-2 h-4 w-4" />
+          Select Location
+        </Button>
+        <Select defaultValue="all">
+          <SelectTrigger className="w-auto min-w-[150px] text-muted-foreground">
+            <SelectValue placeholder="All Locations" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Locations</SelectItem>
+            <SelectItem value="loc1">Location 1</SelectItem>
+            <SelectItem value="loc2">Location 2</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-2 ml-auto">
+          <Button variant="outline" className="text-muted-foreground">
+            <CalendarDays className="mr-2 h-4 w-4" />
+            Filter by Date
           </Button>
+          <Select defaultValue="30days">
+            <SelectTrigger className="w-auto min-w-[150px] text-muted-foreground">
+              <SelectValue placeholder="Last 30 Days" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7days">Last 7 Days</SelectItem>
+              <SelectItem value="30days">Last 30 Days</SelectItem>
+              <SelectItem value="90days">Last 90 Days</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -116,24 +168,44 @@ export default function MAdminDashboardPage() {
       <Card className="shadow-md rounded-lg mt-8">
         <CardHeader className="bg-card border-b">
           <div className="flex items-center gap-3">
-            <LayoutDashboard className="h-6 w-6 text-primary" />
+            <BarChart3 className="h-6 w-6 text-primary" />
             <div>
-              <CardTitle className="text-xl font-semibold text-foreground">System Overview</CardTitle>
-              <CardDescription className="text-sm text-muted-foreground pt-1">
-                Additional system information and controls.
-              </CardDescription>
+              <CardTitle className="text-xl font-semibold text-foreground">Sales (Last 30 Days)</CardTitle>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-6">
-          <p className="text-muted-foreground">
-            This section can be used for other administrative tasks, settings, or system status details.
-            Use the sidebar navigation to access different admin modules.
-          </p>
-          {/* You can add more specific content or components here as needed */}
+        <CardContent className="pt-6 h-[350px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={salesData}
+              margin={{
+                top: 5,
+                right: 20,
+                left: -20, // Adjusted for YAxis tick visibility
+                bottom: 5,
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value/1000}k`} />
+              <Tooltip
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--background))', 
+                  borderColor: 'hsl(var(--border))',
+                  borderRadius: 'var(--radius)',
+                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+                }}
+                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
+                itemStyle={{ color: 'hsl(var(--foreground))' }}
+              />
+              <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
+              <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} name="Sales" />
+            </LineChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
+
     </div>
   );
 }
-
+    
