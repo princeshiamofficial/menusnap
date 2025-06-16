@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getMonth, parseISO } from 'date-fns';
+import { getMonth, parseISO, subDays, isAfter } from 'date-fns';
 
 interface StatCardAdminProps {
   title: string;
@@ -69,15 +69,42 @@ interface ChartDataItem {
   orders: number;
 }
 
+interface ApiOrder {
+  id: string;
+  // Define other relevant fields for an order, especially the date field
+  createdAt?: string; // Example date field
+  orderDate?: string; // Alternative date field
+  date?: string; // Another alternative
+  // ... other order properties
+}
+
 export default function MAdminDashboardPage() {
   const { isAdminLoggedIn, adminLoading, adminLogout } = useAdminAuth();
   const [statsData, setStatsData] = useState<Record<string, number | string>>({});
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  
+  const [allApiOrders, setAllApiOrders] = useState<ApiOrder[]>([]);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
+  
+  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+  const [selectedDateRange, setSelectedDateRange] = useState<string>('30days');
 
   useEffect(() => {
     async function fetchAllAdminStats() {
+      if (!isAdminLoggedIn || adminLoading) {
+        setIsLoadingStats(false);
+        setChartData([]);
+        setAllApiOrders([]);
+        // Reset statsData to 0 if not logged in or still loading initial auth status
+        const initialStats: Record<string, number | string> = {};
+        adminStatConfigs.forEach(config => {
+          initialStats[config.id] = 0;
+        });
+        setStatsData(initialStats);
+        return;
+      }
+      
       setIsLoadingStats(true);
       setStatsError(null);
       
@@ -210,69 +237,43 @@ export default function MAdminDashboardPage() {
           errorMessages.push("Network error fetching templates.");
         }
 
-        // Process Orders and Chart Data
+        // Process Orders
         if (ordersResponseSettled.status === 'fulfilled') {
             const response = ordersResponseSettled.value;
             if (!response.ok) {
               const errorText = await response.text();
               console.error(`Orders API error! status: ${response.status}, message: ${errorText}`);
               errorMessages.push(`Failed to load orders (Error ${response.status}).`);
-              setChartData([]); // Clear chart data on error
+              setAllApiOrders([]); 
             } else {
               const result = await response.json();
-              let apiOrders: any[] = [];
+              let fetchedApiOrders: ApiOrder[] = [];
               if (result.success) {
                 if (result.data && Array.isArray(result.data.orders)) {
-                  apiOrders = result.data.orders;
-                  combinedStatsData.totalOrders = apiOrders.length;
+                  fetchedApiOrders = result.data.orders;
                 } else if (Array.isArray(result.data)) { 
-                  apiOrders = result.data;
-                  combinedStatsData.totalOrders = apiOrders.length;
+                  fetchedApiOrders = result.data;
                 } else {
                   console.error("Invalid API response structure for orders (orders array not found):", result);
                   errorMessages.push("Invalid data format for orders.");
-                  setChartData([]);
                 }
-
-                // Process data for the chart
-                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                const monthlyOrders: ChartDataItem[] = monthNames.map(name => ({ name, orders: 0 }));
-
-                apiOrders.forEach(order => {
-                  try {
-                    // Assuming order object has a 'createdAt' or 'orderDate' field
-                    const orderDateField = order.createdAt || order.orderDate || order.date; 
-                    if (orderDateField) {
-                      const orderDate = parseISO(orderDateField); 
-                      const monthIndex = getMonth(orderDate); // 0 for Jan, 1 for Feb, etc.
-                      if (monthIndex >= 0 && monthIndex < 12) {
-                        monthlyOrders[monthIndex].orders += 1;
-                      }
-                    } else {
-                       console.warn("Order object missing a recognizable date field:", order);
-                    }
-                  } catch (e) {
-                    console.warn("Could not parse order date:", order, e);
-                  }
-                });
-                setChartData(monthlyOrders);
-
+                combinedStatsData.totalOrders = fetchedApiOrders.length;
+                setAllApiOrders(fetchedApiOrders);
               } else {
                 console.error("API indicated failure for orders:", result);
                 errorMessages.push(result.message || "Failed to load orders data from API.");
-                setChartData([]);
+                setAllApiOrders([]);
               }
             }
           } else {
             console.error("Failed to fetch orders:", ordersResponseSettled.reason);
             errorMessages.push("Network error fetching orders.");
-            setChartData([]);
+            setAllApiOrders([]);
           }
         
         if (errorMessages.length > 0) {
           setStatsError(errorMessages.join(' '));
         }
-
         setStatsData(combinedStatsData);
 
       } catch (e: any) { 
@@ -283,20 +284,79 @@ export default function MAdminDashboardPage() {
           defaultErrorStats[config.id] = 0; 
         });
         setStatsData(defaultErrorStats);
-        setChartData([]);
+        setAllApiOrders([]);
       } finally {
         setIsLoadingStats(false);
       }
     }
-
-    if (isAdminLoggedIn && !adminLoading) {
-      fetchAllAdminStats();
-    } else if (!isAdminLoggedIn && !adminLoading) {
-      setIsLoadingStats(false); 
-      setChartData([]);
-    }
+    fetchAllAdminStats();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdminLoggedIn, adminLoading]);
+
+
+  // useEffect to update chartData based on allApiOrders and selectedDateRange
+  useEffect(() => {
+    if (!allApiOrders.length && !isLoadingStats) { // Only set empty if not loading and no orders
+        setChartData([]);
+        return;
+    }
+    if (isLoadingStats) return; // Don't process if stats are still loading
+
+    const now = new Date();
+    let filterStartDate: Date | null = null;
+
+    switch (selectedDateRange) {
+        case '7days':
+            filterStartDate = subDays(now, 7);
+            break;
+        case '30days':
+            filterStartDate = subDays(now, 30);
+            break;
+        case '90days':
+            filterStartDate = subDays(now, 90);
+            break;
+        case 'custom': // For now, custom acts like 'all time' for the chart
+            filterStartDate = null;
+            break;
+        default: // 'all time' or unknown
+            filterStartDate = null;
+    }
+
+    const ordersToProcess = filterStartDate
+        ? allApiOrders.filter(order => {
+            const orderDateField = order.createdAt || order.orderDate || order.date;
+            if (!orderDateField) return false;
+            try {
+                const orderDate = parseISO(orderDateField);
+                return isAfter(orderDate, filterStartDate!);
+            } catch {
+                return false; // Invalid date format
+            }
+          })
+        : allApiOrders;
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlyOrders: ChartDataItem[] = monthNames.map(name => ({ name, orders: 0 }));
+
+    ordersToProcess.forEach(order => {
+      try {
+        const orderDateField = order.createdAt || order.orderDate || order.date;
+        if (orderDateField) {
+          const orderDate = parseISO(orderDateField);
+          const monthIndex = getMonth(orderDate);
+          if (monthIndex >= 0 && monthIndex < 12) {
+             monthlyOrders[monthIndex].orders += 1;
+          }
+        } else {
+           console.warn("Order object missing a recognizable date field for chart:", order);
+        }
+      } catch (e) {
+        console.warn("Could not parse order date for chart aggregation:", order, e);
+      }
+    });
+    setChartData(monthlyOrders);
+
+  }, [allApiOrders, selectedDateRange, isLoadingStats]);
 
 
   if (adminLoading) {
@@ -337,7 +397,7 @@ export default function MAdminDashboardPage() {
           <MapPin className="mr-2 h-4 w-4" />
           Select Location
         </Button>
-        <Select defaultValue="all">
+        <Select value={selectedLocation} onValueChange={setSelectedLocation}>
           <SelectTrigger className="w-auto min-w-[150px] text-muted-foreground">
             <SelectValue placeholder="All Locations" />
           </SelectTrigger>
@@ -352,7 +412,7 @@ export default function MAdminDashboardPage() {
             <CalendarDays className="mr-2 h-4 w-4" />
             Filter by Date
           </Button>
-          <Select defaultValue="30days">
+          <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
             <SelectTrigger className="w-auto min-w-[150px] text-muted-foreground">
               <SelectValue placeholder="Last 30 Days" />
             </SelectTrigger>
@@ -360,13 +420,14 @@ export default function MAdminDashboardPage() {
               <SelectItem value="7days">Last 7 Days</SelectItem>
               <SelectItem value="30days">Last 30 Days</SelectItem>
               <SelectItem value="90days">Last 90 Days</SelectItem>
-              <SelectItem value="custom">Custom Range</SelectItem>
+              <SelectItem value="all_time">All Time</SelectItem>
+              <SelectItem value="custom" disabled>Custom Range</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
       
-      {isLoadingStats ? (
+      {isLoadingStats && !statsData.totalOrders ? ( // Show skeletons only on initial load or if all stats are zero from loading
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {adminStatConfigs.map((statConfig) => (
             <Card key={statConfig.id} className="shadow-md rounded-lg bg-card">
@@ -408,15 +469,22 @@ export default function MAdminDashboardPage() {
             <BarChart3 className="h-6 w-6 text-primary" />
             <div>
               <CardTitle className="text-xl font-semibold text-foreground">Orders Overview (Monthly)</CardTitle>
+              <CardDescription>Based on selected date range: {
+                {'7days': 'Last 7 Days', '30days': 'Last 30 Days', '90days': 'Last 90 Days', 'all_time': 'All Time', 'custom': 'Custom Range'}[selectedDateRange] || 'All Time'
+              }</CardDescription>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6 h-[350px]">
-          {isLoadingStats ? (
+          {isLoadingStats && !chartData.length ? ( // Show skeleton only if chart data isn't available due to loading
             <div className="flex items-center justify-center h-full">
               <Skeleton className="h-3/4 w-full" />
             </div>
-          ) : chartData.length > 0 ? (
+          ) : !isLoadingStats && chartData.reduce((acc, curr) => acc + curr.orders, 0) === 0 ? (
+             <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">No order data available for the selected period.</p>
+            </div>
+          ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={chartData}
@@ -444,10 +512,6 @@ export default function MAdminDashboardPage() {
                 <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} name="Orders" />
               </LineChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">No order data available for the chart.</p>
-            </div>
           )}
         </CardContent>
       </Card>
@@ -470,4 +534,5 @@ export default function MAdminDashboardPage() {
     
 
     
+
 
