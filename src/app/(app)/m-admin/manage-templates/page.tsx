@@ -171,9 +171,9 @@ function AdminTemplateSkeletonCard(): ReactNode {
           <Skeleton className="h-5 w-20 rounded-full" />
         </div>
       </CardContent>
-      <CardFooter className="p-4 border-t bg-muted/30">
+      <CardFooter className="p-4 border-t bg-muted/30 flex justify-between">
         <Skeleton className="h-4 w-1/3" />
-        <Skeleton className="h-4 w-1/4 ml-auto" />
+        <Skeleton className="h-4 w-1/4" />
       </CardFooter>
     </Card>
   );
@@ -290,11 +290,14 @@ export default function ManageTemplatesPage(): ReactNode {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">All Templates</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {isLoading ? <Skeleton className="h-4 w-48" /> : 
-                error ? "Could not load stats." :
-                `${stats.available} templates available • ${stats.published} published`}
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-4 w-48 mt-1" />
+            ) : (
+              <p className="text-sm text-muted-foreground mt-1">
+                {error ? "Could not load stats." :
+                  `${stats.available} templates available • ${stats.published} published`}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2 mt-3 sm:mt-0">
             <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
@@ -356,5 +359,7 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
+
+    
 
     
