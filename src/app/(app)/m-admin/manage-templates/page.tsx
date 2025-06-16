@@ -346,7 +346,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow">
       <ScrollArea className="flex-grow min-h-0">
         <div className="space-y-4 p-1">
           <div>
@@ -605,7 +605,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow">
       <ScrollArea className="flex-grow min-h-0">
         <div className="space-y-4 p-1">
           <div>
