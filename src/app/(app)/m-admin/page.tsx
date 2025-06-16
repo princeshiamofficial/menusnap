@@ -103,13 +103,15 @@ export default function MAdminDashboardPage() {
             menuItemsResponseSettled,
             parlourCategoriesResponseSettled,
             parlourItemsResponseSettled,
-            templatesResponseSettled, // Added templates fetch
+            templatesResponseSettled,
+            ordersResponseSettled, // Added orders fetch
         ] = await Promise.allSettled([
           fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/parlour-categories.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/parlour-items.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/templates.php", { headers: { 'Accept': 'application/json' } }), // Fetch templates
+          fetch("https://colorhutbd.xyz/vm/api/templates.php", { headers: { 'Accept': 'application/json' } }),
+          fetch("https://colorhutbd.xyz/vm/api/orders.php", { headers: { 'Accept': 'application/json' } }), // Fetch orders
         ]);
 
         // Process Restaurant Categories
@@ -216,6 +218,34 @@ export default function MAdminDashboardPage() {
           console.error("Failed to fetch templates:", templatesResponseSettled.reason);
           errorMessages.push("Network error fetching templates.");
         }
+
+        // Process Orders
+        if (ordersResponseSettled.status === 'fulfilled') {
+            const response = ordersResponseSettled.value;
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error(`Orders API error! status: ${response.status}, message: ${errorText}`);
+              errorMessages.push(`Failed to load orders (Error ${response.status}).`);
+            } else {
+              const result = await response.json();
+              if (result.success) {
+                if (result.data && Array.isArray(result.data.orders)) {
+                  combinedStatsData.totalOrders = result.data.orders.length;
+                } else if (Array.isArray(result.data)) { // Fallback if data is directly the array
+                  combinedStatsData.totalOrders = result.data.length;
+                } else {
+                  console.error("Invalid API response structure for orders (orders array not found):", result);
+                  errorMessages.push("Invalid data format for orders.");
+                }
+              } else {
+                console.error("API indicated failure for orders:", result);
+                errorMessages.push(result.message || "Failed to load orders data from API.");
+              }
+            }
+          } else {
+            console.error("Failed to fetch orders:", ordersResponseSettled.reason);
+            errorMessages.push("Network error fetching orders.");
+          }
         
         if (errorMessages.length > 0) {
           setStatsError(errorMessages.join(' '));
@@ -392,6 +422,8 @@ export default function MAdminDashboardPage() {
     </div>
   );
 }
+    
+
     
 
     
