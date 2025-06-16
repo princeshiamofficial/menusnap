@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -251,22 +252,20 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       form.setValue("imageFile", event.target.files);
     } else {
       setImagePreview(null);
-      form.setValue("imageFile", null as any); // Or new FileList() if that's preferred for null state
+      form.setValue("imageFile", null as any); 
     }
   };
 
   async function onSubmit(data: AddTemplateFormValues) {
-    // Placeholder for actual API call
-    console.log("Form data submitted:", data);
+    console.log("Form data submitted (Add):", data);
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     toast({
       title: "Template Added (Simulated)",
       description: `Template "${data.templateName}" has been added.`,
     });
-    onSuccess(); // To refresh list and close dialog
+    onSuccess(); 
   }
 
   return (
@@ -274,19 +273,19 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       <ScrollArea className="max-h-[70vh] pr-4">
         <div className="space-y-4 p-1">
           <div>
-            <Label htmlFor="templateName">Template Name*</Label>
-            <Input id="templateName" {...form.register("templateName")} placeholder="Enter template name" />
+            <Label htmlFor="templateName-add">Template Name*</Label>
+            <Input id="templateName-add" {...form.register("templateName")} placeholder="Enter template name" />
             {form.formState.errors.templateName && <p className="text-sm text-destructive mt-1">{form.formState.errors.templateName.message}</p>}
           </div>
 
           <div>
-            <Label htmlFor="description">Description*</Label>
-            <Textarea id="description" {...form.register("description")} placeholder="Enter template description" rows={4} />
+            <Label htmlFor="description-add">Description*</Label>
+            <Textarea id="description-add" {...form.register("description")} placeholder="Enter template description" rows={4} />
             {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
           </div>
 
           <div>
-            <Label htmlFor="imageFile">Template Image</Label>
+            <Label htmlFor="imageFile-upload-add">Template Image*</Label>
             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md border-border">
               <div className="space-y-1 text-center">
                 {imagePreview ? (
@@ -296,11 +295,11 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
                 )}
                 <div className="flex text-sm text-muted-foreground justify-center">
                   <Label
-                    htmlFor="imageFile-upload"
+                    htmlFor="imageFile-upload-add-input"
                     className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
                   >
                     <span>Upload an image</span>
-                    <input id="imageFile-upload" type="file" className="sr-only" onChange={handleImageChange} accept="image/png, image/jpeg, image/webp, image/gif" />
+                    <input id="imageFile-upload-add-input" type="file" className="sr-only" onChange={handleImageChange} accept="image/png, image/jpeg, image/webp, image/gif" />
                   </Label>
                 </div>
                 <p className="text-xs text-muted-foreground">Recommended size: 600x400px, PNG, JPG, GIF, WEBP up to 5MB</p>
@@ -324,8 +323,10 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
                 )}
               </div>
             ))}
-            {form.formState.errors.tags && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message || (form.formState.errors.tags as any)?.[0]?.value?.message}</p>}
-            
+             {form.formState.errors.tags && typeof form.formState.errors.tags.message === 'string' && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
+             {form.formState.errors.tags && Array.isArray(form.formState.errors.tags) && form.formState.errors.tags[0]?.value?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags[0]?.value?.message}</p>}
+
+
             <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2">
               <Plus className="mr-2 h-4 w-4" /> Add Another Tag
             </Button>
@@ -336,10 +337,10 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
               control={form.control}
               name="isTopRated"
               render={({ field }) => (
-                 <Switch id="isTopRated" checked={field.value} onCheckedChange={field.onChange} />
+                 <Switch id="isTopRated-add" checked={field.value} onCheckedChange={field.onChange} />
               )}
             />
-            <Label htmlFor="isTopRated" className="cursor-pointer">Mark as Top Rated</Label>
+            <Label htmlFor="isTopRated-add" className="cursor-pointer">Mark as Top Rated</Label>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -347,10 +348,10 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
               control={form.control}
               name="isPublished"
               render={({ field }) => (
-                 <Switch id="isPublished" checked={field.value} onCheckedChange={field.onChange} />
+                 <Switch id="isPublished-add" checked={field.value} onCheckedChange={field.onChange} />
               )}
             />
-            <Label htmlFor="isPublished" className="cursor-pointer">Publish to Users</Label>
+            <Label htmlFor="isPublished-add" className="cursor-pointer">Publish to Users</Label>
           </div>
         </div>
       </ScrollArea>
@@ -366,6 +367,182 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
   );
 }
 
+const editTemplateFormSchema = z.object({
+  templateName: z.string().min(1, "Template name is required"),
+  description: z.string().min(1, "Description is required"),
+  imageFile: z.custom<FileList>((val) => val === null || val instanceof FileList, "Invalid image file")
+    .optional()
+    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= 5 * 1024 * 1024, `Max image size is 5MB.`)
+    .refine(
+      (files) => !files || files.length === 0 || ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
+      "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
+    ),
+  tags: z.array(z.object({ value: z.string().min(1, "Tag cannot be empty") })).min(1, "At least one tag is required"),
+  isTopRated: z.boolean().default(false),
+  isPublished: z.boolean().default(false),
+});
+
+type EditTemplateFormValues = z.infer<typeof editTemplateFormSchema>;
+
+interface EditTemplateFormProps {
+  templateData: ApiAdminTemplate;
+  onSuccess: () => void;
+  onOpenChange: (open: boolean) => void;
+}
+
+function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplateFormProps) {
+  const { toast } = useToast();
+  const [imagePreview, setImagePreview] = useState<string | null>(templateData.imageUrl || null);
+
+  const form = useForm<EditTemplateFormValues>({
+    resolver: zodResolver(editTemplateFormSchema),
+    defaultValues: {
+      templateName: templateData.name || "",
+      description: templateData.description || "",
+      tags: templateData.tags ? templateData.tags.map(tag => ({ value: tag })) : [{ value: "" }],
+      isTopRated: templateData.isTopRated || false,
+      isPublished: templateData.isPublished || false,
+      imageFile: undefined, // Explicitly undefined for optional file
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "tags",
+  });
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      form.setValue("imageFile", event.target.files);
+    } else {
+      // If no file is selected, revert to original image if "Clear" was hypothetically used
+      // or keep current preview if it's already a new file preview
+      // For now, if deselected, we could clear preview to indicate new file choice is gone.
+      // However, typical UX would be to just keep existing if no new file is chosen.
+      // Let's ensure if they clear the input, it reverts or keeps the original.
+      // For this setup, `form.setValue("imageFile", undefined)` is fine.
+      // Preview should ideally show original if `imageFile` is undefined.
+       setImagePreview(templateData.imageUrl || null); // Revert to original if selection is cleared
+       form.setValue("imageFile", undefined);
+    }
+  };
+
+  async function onSubmit(data: EditTemplateFormValues) {
+    console.log("Form data submitted (Edit):", data);
+    // In a real app, you'd send this to your API (e.g., PUT request)
+    // If data.imageFile is present, it's a new image. Otherwise, backend keeps old image.
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    toast({
+      title: "Template Updated (Simulated)",
+      description: `Template "${data.templateName}" has been updated.`,
+    });
+    onSuccess();
+  }
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <ScrollArea className="max-h-[70vh] pr-4">
+        <div className="space-y-4 p-1">
+          <div>
+            <Label htmlFor={`templateName-edit-${templateData.id}`}>Template Name*</Label>
+            <Input id={`templateName-edit-${templateData.id}`} {...form.register("templateName")} placeholder="Enter template name" />
+            {form.formState.errors.templateName && <p className="text-sm text-destructive mt-1">{form.formState.errors.templateName.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor={`description-edit-${templateData.id}`}>Description*</Label>
+            <Textarea id={`description-edit-${templateData.id}`} {...form.register("description")} placeholder="Enter template description" rows={4} />
+            {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor={`imageFile-upload-edit-${templateData.id}`}>Template Image</Label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md border-border">
+              <div className="space-y-1 text-center">
+                {imagePreview ? (
+                  <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" data-ai-hint="template visual" />
+                ) : (
+                  <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                )}
+                <div className="flex text-sm text-muted-foreground justify-center">
+                  <Label
+                    htmlFor={`imageFile-upload-edit-input-${templateData.id}`}
+                    className="relative cursor-pointer rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                  >
+                    <span>Upload a new image</span>
+                    <input id={`imageFile-upload-edit-input-${templateData.id}`} type="file" className="sr-only" onChange={handleImageChange} accept="image/png, image/jpeg, image/webp, image/gif" />
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground">Upload a new image or keep the existing one (max 5MB)</p>
+              </div>
+            </div>
+            {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
+          </div>
+
+          <div>
+            <Label>Tags*</Label>
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex items-center gap-2 mt-1">
+                <Input
+                  {...form.register(`tags.${index}.value`)}
+                  placeholder={`Tag ${index + 1}`}
+                />
+                {fields.length > 1 && (
+                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10">
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            {form.formState.errors.tags && typeof form.formState.errors.tags.message === 'string' && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
+            {form.formState.errors.tags && Array.isArray(form.formState.errors.tags) && form.formState.errors.tags[0]?.value?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags[0]?.value?.message}</p>}
+
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2">
+              <Plus className="mr-2 h-4 w-4" /> Add Another Tag
+            </Button>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-2">
+            <Controller
+              control={form.control}
+              name="isTopRated"
+              render={({ field }) => (
+                 <Switch id={`isTopRated-edit-${templateData.id}`} checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+            <Label htmlFor={`isTopRated-edit-${templateData.id}`} className="cursor-pointer">Mark as Top Rated</Label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Controller
+              control={form.control}
+              name="isPublished"
+              render={({ field }) => (
+                 <Switch id={`isPublished-edit-${templateData.id}`} checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+            <Label htmlFor={`isPublished-edit-${templateData.id}`} className="cursor-pointer">Publish to Users</Label>
+          </div>
+        </div>
+      </ScrollArea>
+      <DialogFooter className="pt-4">
+        <DialogClose asChild>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+        </DialogClose>
+        <Button type="submit" disabled={form.formState.isSubmitting} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          {form.formState.isSubmitting ? "Saving..." : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
 
 export default function ManageTemplatesPage(): ReactNode {
   const [allTemplates, setAllTemplates] = useState<ApiAdminTemplate[]>([]);
@@ -373,6 +550,8 @@ export default function ManageTemplatesPage(): ReactNode {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddTemplateDialogOpen, setIsAddTemplateDialogOpen] = useState(false);
+  const [isEditTemplateDialogOpen, setIsEditTemplateDialogOpen] = useState(false);
+  const [editingTemplateData, setEditingTemplateData] = useState<ApiAdminTemplate | null>(null);
   const { toast } = useToast();
 
   const fetchTemplates = async () => {
@@ -425,15 +604,27 @@ export default function ManageTemplatesPage(): ReactNode {
 
   const handleAddTemplateSuccess = () => {
     setIsAddTemplateDialogOpen(false);
-    fetchTemplates(); // Refresh the list
+    fetchTemplates(); 
+  };
+
+  const handleEditTemplateSuccess = () => {
+    setIsEditTemplateDialogOpen(false);
+    setEditingTemplateData(null);
+    fetchTemplates();
   };
   
-  const handleEditTemplate = (id: string) => {
-    console.log(`Edit template: ${id}`);
-    toast({
-      title: "Feature Coming Soon",
-      description: `Editing template ${id} will be available shortly.`,
-    });
+  const handleOpenEditTemplateDialog = (id: string) => {
+    const templateToEdit = allTemplates.find(t => t.id === id);
+    if (templateToEdit) {
+      setEditingTemplateData(templateToEdit);
+      setIsEditTemplateDialogOpen(true);
+    } else {
+      toast({
+        title: "Error",
+        description: "Could not find the template to edit.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteTemplate = async (id: string) => {
@@ -441,6 +632,8 @@ export default function ManageTemplatesPage(): ReactNode {
       return;
     }
     try {
+      // Simulate API call for now
+      console.log(`Attempting to delete template with ID: ${id}`);
       const response = await fetch(`https://colorhutbd.xyz/vm/api/templates.php?id=${id}`, {
         method: 'DELETE',
         headers: {
@@ -558,6 +751,29 @@ export default function ManageTemplatesPage(): ReactNode {
         </DialogContent>
       </Dialog>
 
+      {editingTemplateData && (
+        <Dialog open={isEditTemplateDialogOpen} onOpenChange={(open) => {
+            setIsEditTemplateDialogOpen(open);
+            if (!open) setEditingTemplateData(null);
+        }}>
+            <DialogContent className="sm:max-w-xl md:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle className="text-2xl">
+                    Edit Template {editingTemplateData.version ? `(v${editingTemplateData.version})` : ''}
+                </DialogTitle>
+            </DialogHeader>
+            <EditTemplateForm 
+                templateData={editingTemplateData} 
+                onSuccess={handleEditTemplateSuccess} 
+                onOpenChange={(open) => {
+                    setIsEditTemplateDialogOpen(open);
+                    if (!open) setEditingTemplateData(null);
+                }}
+            />
+            </DialogContent>
+        </Dialog>
+      )}
+
       <main>
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -593,7 +809,7 @@ export default function ManageTemplatesPage(): ReactNode {
               <AdminTemplateCard
                 key={template.id}
                 template={template}
-                onEdit={handleEditTemplate}
+                onEdit={handleOpenEditTemplateDialog}
                 onDelete={handleDeleteTemplate}
                 onTogglePublish={handleTogglePublish}
                 onSetTopRated={handleSetTopRated}
@@ -607,4 +823,5 @@ export default function ManageTemplatesPage(): ReactNode {
 }
     
     
+
 
