@@ -252,7 +252,7 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const updateLastUpdatedTime = useCallback(() => {
     setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
-  }, []);
+  }, [setLastUpdated]);
 
   const fetchCategories = useCallback(async (type: CategoryType) => {
     setIsLoading(true);
@@ -290,7 +290,7 @@ export default function ManageCategoriesPage(): ReactNode {
     } finally {
       setIsLoading(false);
     }
-  }, [updateLastUpdatedTime]); // Include stable updateLastUpdatedTime
+  }, [setIsLoading, setError, setAllCategories, updateLastUpdatedTime]);
 
   useEffect(() => {
     fetchCategories(categoryType);
@@ -301,11 +301,10 @@ export default function ManageCategoriesPage(): ReactNode {
   }, [categoryType, fetchCategories]);
 
   const handleAddCategory = async (data: CategoryFormValues) => {
-    // Simulate API call
     console.log("Adding category:", data);
     await new Promise(resolve => setTimeout(resolve, 1000));
     const newCategory: ApiCategory = {
-      id: String(Date.now()), // temp ID
+      id: String(Date.now()), 
       ...data,
       itemCount: 0,
       createdAt: new Date().toISOString(),
@@ -368,7 +367,7 @@ export default function ManageCategoriesPage(): ReactNode {
           (statusFilter === 'hidden' && !category.visibleToUsers);
         return matchesSearch && matchesStatus;
       })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); // Default sort by newest
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [allCategories, searchTerm, statusFilter]);
 
   const stats = useMemo(() => {
@@ -416,7 +415,6 @@ export default function ManageCategoriesPage(): ReactNode {
         </div>
       </header>
 
-      {/* Stat Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         <StatCardAdminPage
           title={`${categoryTypeName} Categories`}
@@ -430,18 +428,17 @@ export default function ManageCategoriesPage(): ReactNode {
           value={isLoading ? <Skeleton className="h-10 w-16 bg-white/30" /> : stats.visible}
           description={`${stats.total > 0 ? ((stats.visible / stats.total) * 100).toFixed(0) : 0}% shown to customers`}
           icon={Eye}
-          className="bg-teal-600" // Teal color
+          className="bg-teal-600"
         />
         <StatCardAdminPage
           title="Average Items"
           value={isLoading ? <Skeleton className="h-10 w-16 bg-white/30" /> : stats.averageItems}
           description="Items per category"
           icon={BarChartBig}
-          className="bg-amber-600" // Yellow-orange color
+          className="bg-amber-600"
         />
       </section>
 
-      {/* Categories Table Section */}
       <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <div>
@@ -482,7 +479,7 @@ export default function ManageCategoriesPage(): ReactNode {
               <SelectItem value="hidden">Hidden</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" disabled> {/* Placeholder for Sort */}
+          <Button variant="outline" disabled>
             <ArrowUpDown className="h-4 w-4 mr-2" />
             Sort
           </Button>
@@ -520,7 +517,7 @@ export default function ManageCategoriesPage(): ReactNode {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px] hidden sm:table-cell"></TableHead> {/* Icon */}
+                  <TableHead className="w-[50px] hidden sm:table-cell"></TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead className="text-center">Items</TableHead>
                   <TableHead>Created</TableHead>
@@ -585,7 +582,6 @@ export default function ManageCategoriesPage(): ReactNode {
         </div>
       </section>
 
-      {/* Add Category Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
           <DialogHeader>
@@ -599,7 +595,6 @@ export default function ManageCategoriesPage(): ReactNode {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Category Dialog */}
       {editingCategoryData && (
          <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
             setIsEditDialogOpen(open);
@@ -622,7 +617,6 @@ export default function ManageCategoriesPage(): ReactNode {
         </Dialog>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
