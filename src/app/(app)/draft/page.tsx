@@ -3,11 +3,12 @@
 
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Search, 
@@ -24,6 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
 
+const STATIC_AVATAR_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
+
 interface DraftItem {
   id: string;
   name: string; 
@@ -31,7 +34,8 @@ interface DraftItem {
   itemCount: number;
   primaryTag: string; // e.g., "restaurant-expresso-based-classics-1749702507341"
   price: number;
-  previewAvatars: string[]; // Initials for avatars
+  // previewAvatars is no longer directly used for content, but its length can indicate how many to show
+  previewAvatars: string[]; 
 }
 
 // Mock Data
@@ -43,7 +47,7 @@ const initialMockDrafts: DraftItem[] = [
     itemCount: 5,
     primaryTag: "restaurant-expresso-based-classics-1749702507341",
     price: 0,
-    previewAvatars: ["CH", "RD", "FV"],
+    previewAvatars: ["CH", "RD", "FV"], // Kept for count logic, not for display
   },
   {
     id: "draft_2",
@@ -96,9 +100,9 @@ function DraftCard({ draft, onRestore, onDelete, onShowDetails }: DraftCardProps
   const formattedCreationDate = isValidDate ? format(createdAtDate, 'EEE, MMM d, hh:mm a') : 'Invalid Date';
   const formattedShortDateBadge = isValidDate ? format(createdAtDate, 'MMM d') : 'N/A';
   
-  const totalAvatarsToShow = draft.previewAvatars.length;
-  const avatarsToDisplay = draft.previewAvatars.slice(0, 3);
-  const remainingAvatars = Math.max(0, draft.itemCount - avatarsToDisplay.length);
+  // Determine how many avatars to show based on itemCount or previewAvatars.length (up to 3)
+  const avatarsToShowCount = Math.min(draft.itemCount > 0 ? 3 : draft.previewAvatars.length, 3);
+  const remainingAvatars = Math.max(0, draft.itemCount - avatarsToShowCount);
 
 
   return (
@@ -138,10 +142,16 @@ function DraftCard({ draft, onRestore, onDelete, onShowDetails }: DraftCardProps
         </div>
         <div className="flex items-center space-x-2">
           <div className="flex -space-x-2">
-            {avatarsToDisplay.map((initial, index) => (
-              <Avatar key={index} className="h-7 w-7 border-2 border-card shadow-sm">
+            {Array.from({ length: avatarsToShowCount }).map((_, index) => (
+              <Avatar key={index} className="h-7 w-7 border-2 border-card shadow-sm bg-muted">
+                <AvatarImage 
+                  src={STATIC_AVATAR_IMAGE_URL} 
+                  alt="Item preview" 
+                  data-ai-hint="item illustration" 
+                  className="object-contain"
+                />
                 <AvatarFallback className="text-xs bg-muted text-muted-foreground">
-                  {initial}
+                  ?
                 </AvatarFallback>
               </Avatar>
             ))}
@@ -215,22 +225,11 @@ function DraftSkeletonCard(): ReactNode {
 export default function DraftPage(): ReactNode {
   const [drafts, setDrafts] = useState<DraftItem[]>(initialMockDrafts);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // Simulate loading for now
+  const [isLoading, setIsLoading] = useState(false); 
   const [error, setError] = useState<string | null>(null);
-
-  // Simulate API call for drafts in future if needed
-  // useEffect(() => {
-  //   setIsLoading(true);
-  //   // Simulate API fetch
-  //   setTimeout(() => {
-  //     setDrafts(initialMockDrafts);
-  //     setIsLoading(false);
-  //   }, 1000);
-  // }, []);
 
   const handleRestoreDraft = (id: string) => {
     console.log("Restore draft:", id);
-    // Add logic to restore draft
   };
 
   const handleDeleteDraft = (id: string) => {
@@ -240,7 +239,6 @@ export default function DraftPage(): ReactNode {
 
   const handleShowDetails = (id: string) => {
     console.log("Show details for draft:", id);
-    // Add logic to show draft details
   };
 
   const filteredDrafts = useMemo(() => {
@@ -248,7 +246,7 @@ export default function DraftPage(): ReactNode {
     return drafts.filter(draft =>
       draft.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       draft.primaryTag.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      format(parseISO(draft.createdAt), 'dd/MM/yyyy').includes(searchTerm)
+      (isValid(parseISO(draft.createdAt)) && format(parseISO(draft.createdAt), 'dd/MM/yyyy').includes(searchTerm))
     );
   }, [drafts, searchTerm]);
 
@@ -308,3 +306,4 @@ export default function DraftPage(): ReactNode {
     </div>
   );
 }
+
