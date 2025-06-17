@@ -76,16 +76,11 @@ export function MenuPreviewDialog({
   const [orderedDialogCategories, setOrderedDialogCategories] = useState<Category[]>(derivedDisplayedCategories);
 
   useEffect(() => {
-    // Update local orderedDialogCategories if the source derivedDisplayedCategories changes
-    // This handles cases where items are removed from selection on the main page,
-    // which might change the categories available in the dialog.
     const newCategoryOrder = derivedDisplayedCategories.map(derivedCat => {
-        // Try to find the category in the current local order to preserve its position
         const existingCat = orderedDialogCategories.find(oc => oc.id === derivedCat.id);
-        return existingCat || derivedCat; // If not found, use the derived one
-    }).filter(cat => derivedDisplayedCategories.some(dc => dc.id === cat.id)); // Ensure only currently valid categories are kept
+        return existingCat || derivedCat; 
+    }).filter(cat => derivedDisplayedCategories.some(dc => dc.id === cat.id)); 
 
-    // Add any newly derived categories that weren't in the local order
     derivedDisplayedCategories.forEach(derivedCat => {
         if (!newCategoryOrder.some(nc => nc.id === derivedCat.id)) {
             newCategoryOrder.push(derivedCat);
@@ -94,7 +89,7 @@ export function MenuPreviewDialog({
     setOrderedDialogCategories(newCategoryOrder);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [derivedDisplayedCategories]); // Only re-run if derivedDisplayedCategories changes
+  }, [derivedDisplayedCategories]); 
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -205,7 +200,7 @@ export function MenuPreviewDialog({
                         />
                         <div className="flex-1">
                           <p className="font-medium text-sm text-foreground">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">{item.id}</p> {/* Using item.id as tagline */}
+                          <p className="text-xs text-muted-foreground">{item.description || 'No description'}</p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
