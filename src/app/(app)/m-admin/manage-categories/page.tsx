@@ -248,6 +248,7 @@ const sortOptionsList: { value: SortOption; label: string }[] = [
   { value: 'oldest', label: 'Oldest First' },
 ];
 
+const ITEMS_PER_PAGE = 10;
 
 export default function ManageCategoriesPage(): ReactNode {
   const [categoryType, setCategoryType] = useState<CategoryType>("restaurant");
@@ -259,6 +260,7 @@ export default function ManageCategoriesPage(): ReactNode {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'visible' | 'hidden'>('all');
   const [sortOption, setSortOption] = useState<SortOption>('name-asc');
+  const [currentPage, setCurrentPage] = useState(1);
 
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -314,10 +316,16 @@ export default function ManageCategoriesPage(): ReactNode {
 
   useEffect(() => {
     fetchCategories(categoryType);
+    setCurrentPage(1); // Reset page when category type changes
   }, [categoryType, fetchCategories]);
+
+  useEffect(() => {
+    setCurrentPage(1); // Reset page when filters change
+  }, [searchTerm, statusFilter, sortOption]);
 
   const handleRefresh = useCallback(() => {
     fetchCategories(categoryType);
+    setCurrentPage(1);
   }, [categoryType, fetchCategories]);
 
   const handleAddCategory = async (data: CategoryFormValues) => {
@@ -420,6 +428,25 @@ export default function ManageCategoriesPage(): ReactNode {
       }
     return categories;
   }, [allCategories, searchTerm, statusFilter, sortOption]);
+
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredAndSortedCategories.length / ITEMS_PER_PAGE);
+  }, [filteredAndSortedCategories.length]);
+
+  const paginatedCategories = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredAndSortedCategories.slice(startIndex, endIndex);
+  }, [filteredAndSortedCategories, currentPage]);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  };
+
 
   const stats = useMemo(() => {
     const total = allCategories.length;
@@ -548,7 +575,7 @@ export default function ManageCategoriesPage(): ReactNode {
         <div className="flex-grow min-h-0"> 
           {isLoading ? (
             <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
                 <div key={i} className="flex items-center space-x-4 p-3 border rounded-md">
                   <Skeleton className="h-10 w-10 rounded-md" />
                   <div className="flex-1 space-y-1">
@@ -567,7 +594,7 @@ export default function ManageCategoriesPage(): ReactNode {
               <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
               <p className="text-lg">Error loading categories: {error}</p>
             </div>
-          ) : filteredAndSortedCategories.length === 0 ? (
+          ) : paginatedCategories.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               <LayoutList className="mx-auto h-12 w-12 mb-4" />
               <p className="text-lg">No categories found.</p>
@@ -587,7 +614,7 @@ export default function ManageCategoriesPage(): ReactNode {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAndSortedCategories.map((category) => (
+                  {paginatedCategories.map((category) => (
                     <TableRow key={category.id}>
                       <TableCell className="hidden sm:table-cell">
                         <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-xl">
@@ -638,9 +665,36 @@ export default function ManageCategoriesPage(): ReactNode {
             </ScrollArea>
           )}
         </div>
-        <div className="flex justify-between items-center mt-4 pt-4 border-t border-border text-sm text-muted-foreground">
-          <p>Showing {filteredAndSortedCategories.length} of {allCategories.length} {categoryTypeName.toLowerCase()} categories.</p>
-          <Button variant="outline" disabled>Export {categoryTypeName} Categories</Button>
+        <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
+          <p>Showing {paginatedCategories.length} of {filteredAndSortedCategories.length} {categoryTypeName.toLowerCase()} categories.</p>
+          <div className="flex items-center space-x-1">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handlePreviousPage} 
+              disabled={currentPage === 1 || isLoading}
+            >
+              Previous
+            </Button>
+            <Button 
+              variant={totalPages === 0 ? "outline" : "default"} 
+              size="sm" 
+              className="w-8 h-8 p-0" 
+              disabled={totalPages === 0 || isLoading}
+              onClick={() => setCurrentPage(1)}
+            >
+              {totalPages > 0 ? currentPage : '-'}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages || totalPages === 0 || isLoading}
+            >
+              Next
+            </Button>
+          </div>
+          <Button variant="outline" size="sm" disabled>Export {categoryTypeName} Categories</Button>
         </div>
       </section>
 
@@ -705,4 +759,5 @@ export default function ManageCategoriesPage(): ReactNode {
     
 
     
+
 
