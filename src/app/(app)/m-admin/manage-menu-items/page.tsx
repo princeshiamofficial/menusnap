@@ -191,9 +191,12 @@ export default function ManageMenuItemsPage(): ReactNode {
   }, [menuType]);
 
   useEffect(() => {
-    let items = selectedCategory
-      ? allMenuItems.filter(item => item.categoryId === selectedCategory.id)
-      : allMenuItems;
+    if (!selectedCategory) {
+        setFilteredMenuItems([]); // Clear items if no category is selected
+        return;
+    }
+
+    let items = allMenuItems.filter(item => item.categoryId === selectedCategory.id);
 
     if (searchTerm) {
       items = items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -219,7 +222,7 @@ export default function ManageMenuItemsPage(): ReactNode {
   };
 
   const handleRefresh = () => {
-    fetchCategoriesAndItems(menuType, true);
+    fetchCategoriesAndItems(menuType, true); // Retain selected category if possible
   };
 
   return (
@@ -345,18 +348,25 @@ export default function ManageMenuItemsPage(): ReactNode {
                 <p className="text-md">Error loading items: {errorItems}</p>
               </div>
             )}
-            {!loadingItems && !errorItems && filteredMenuItems.length === 0 && (
+            {!loadingItems && !errorItems && !selectedCategory && (
+                 <div className="flex-1 flex items-center justify-center text-center py-10 text-muted-foreground bg-card border border-border rounded-lg">
+                    <div>
+                        <PackageSearch className="mx-auto h-12 w-12 mb-4 opacity-70" />
+                        <p className="text-md">Select a category to view its menu items.</p>
+                    </div>
+                </div>
+            )}
+            {!loadingItems && !errorItems && selectedCategory && filteredMenuItems.length === 0 && (
               <div className="text-center py-10 text-muted-foreground bg-card border border-border rounded-lg">
                  <PackageSearch className="mx-auto h-12 w-12 mb-4 opacity-70" />
                 <p className="text-md">
-                  {searchTerm || statusFilter !== 'all' || selectedCategory
-                    ? "No items match your criteria."
+                  {searchTerm || statusFilter !== 'all'
+                    ? "No items match your criteria for this category."
                     : "No menu items available for this category."}
                 </p>
-                {!selectedCategory && <p className="text-sm mt-1">Select a category or check the menu type.</p>}
               </div>
             )}
-            {!loadingItems && !errorItems && filteredMenuItems.length > 0 && (
+            {!loadingItems && !errorItems && selectedCategory && filteredMenuItems.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredMenuItems.map(item => (
                   <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
@@ -421,9 +431,9 @@ export default function ManageMenuItemsPage(): ReactNode {
             )}
           </div>
         </ScrollArea>
-        {filteredMenuItems.length > 0 && (
+        {selectedCategory && filteredMenuItems.length > 0 && (
           <div className="flex justify-start items-center py-3 px-6 border-t border-border bg-card text-sm text-muted-foreground">
-            <p>Showing {filteredMenuItems.length} items.</p>
+            <p>Showing {filteredMenuItems.length} items for "{selectedCategory.name}".</p>
           </div>
         )}
       </main>
