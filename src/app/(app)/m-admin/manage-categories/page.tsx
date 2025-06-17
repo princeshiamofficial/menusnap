@@ -185,7 +185,7 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
   };
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow overflow-hidden">
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow">
       <ScrollArea className="flex-grow min-h-0 p-1">
         <div className="space-y-4">
           <div>
@@ -640,3 +640,6 @@ export default function ManageCategoriesPage(): ReactNode {
     </div>
   );
 }
+
+
+    
