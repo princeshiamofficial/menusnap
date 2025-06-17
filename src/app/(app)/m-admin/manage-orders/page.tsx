@@ -4,6 +4,14 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+import {
   Button,
   buttonVariants
 } from "@/components/ui/button";
@@ -26,6 +34,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal
 } from "@/components/ui/dropdown-menu";
 import {
   Select,
@@ -56,7 +68,8 @@ import {
   CalendarDays,
   Tag,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Edit3 // Added for action menu
 } from "lucide-react";
 import {
   cn
@@ -67,28 +80,6 @@ import {
   isValid as isValidDate
 } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-
-interface StatCardProps {
-  title: string;
-  value: string | number | ReactNode;
-  icon: React.ElementType;
-  bgColorClass: string;
-  iconContainerBgClass?: string;
-}
-
-function OrderStatCard({ title, value, icon: Icon, bgColorClass, iconContainerBgClass }: StatCardProps) {
-  return (
-    <Card className={cn("shadow-md rounded-lg text-white overflow-hidden", bgColorClass)}>
-      <CardContent className="p-4 flex flex-col justify-start">
-        <div className={cn("mb-2 h-10 w-10 rounded-lg flex items-center justify-center self-start", iconContainerBgClass || 'bg-black/20')}>
-          <Icon className="h-5 w-5 text-white" />
-        </div>
-        <div className="text-3xl font-bold mt-1">{value}</div>
-        <p className="text-sm font-medium mt-1 opacity-90">{title}</p>
-      </CardContent>
-    </Card>
-  );
-}
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold";
 
@@ -115,27 +106,29 @@ const statusColors: Record<OrderStatus, string> = {
   "On Hold": "bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-400 border-orange-300 dark:border-orange-600",
 };
 
-const TEMPLATE_BADGE_STYLE = "bg-teal-100 text-teal-700 dark:bg-teal-700/20 dark:text-teal-400 border-teal-300 dark:border-teal-600";
-
-function getTemplateBadgeStyle(_templateName?: string): string {
-  return TEMPLATE_BADGE_STYLE;
-}
-
 type SortOptionOrders =
   | 'newest'
   | 'oldest'
   | 'status-asc'
   | 'status-desc'
   | 'template-asc'
-  | 'template-desc';
+  | 'template-desc'
+  | 'customer-asc'
+  | 'customer-desc'
+  | 'orderId-asc'
+  | 'orderId-desc';
 
 const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
-  { value: 'newest', label: 'Newest First' },
-  { value: 'oldest', label: 'Oldest First' },
-  { value: 'status-asc', label: 'Status (A-Z)' },
-  { value: 'status-desc', label: 'Status (Z-A)' },
+  { value: 'newest', label: 'Date (Newest First)' },
+  { value: 'oldest', label: 'Date (Oldest First)' },
+  { value: 'orderId-asc', label: 'Order ID (Asc)' },
+  { value: 'orderId-desc', label: 'Order ID (Desc)' },
   { value: 'template-asc', label: 'Template (A-Z)' },
   { value: 'template-desc', label: 'Template (Z-A)' },
+  { value: 'customer-asc', label: 'Customer (A-Z)' },
+  { value: 'customer-desc', label: 'Customer (Z-A)' },
+  { value: 'status-asc', label: 'Status (A-Z)' },
+  { value: 'status-desc', label: 'Status (Z-A)' },
 ];
 
 export default function ManageOrdersPage(): ReactNode {
@@ -240,6 +233,12 @@ export default function ManageOrdersPage(): ReactNode {
           try { return new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime(); } catch { return 0; }
         });
         break;
+      case 'orderId-asc':
+        orders.sort((a, b) => a.orderId.localeCompare(b.orderId));
+        break;
+      case 'orderId-desc':
+        orders.sort((a, b) => b.orderId.localeCompare(a.orderId));
+        break;
       case 'status-asc':
         orders.sort((a, b) => a.status.localeCompare(b.status));
         break;
@@ -252,90 +251,60 @@ export default function ManageOrdersPage(): ReactNode {
       case 'template-desc':
         orders.sort((a, b) => (b.templateName || "").localeCompare(a.templateName || ""));
         break;
+      case 'customer-asc':
+        orders.sort((a, b) => (a.customerName || "").localeCompare(b.customerName || ""));
+        break;
+      case 'customer-desc':
+        orders.sort((a, b) => (b.customerName || "").localeCompare(a.customerName || ""));
+        break;
     }
     return orders;
   }, [allOrders, searchTerm, statusFilter, templateFilter, sortOption]);
 
-  const orderStats = useMemo(() => {
-    const stats: Record<OrderStatus | "Total" | "InProgressCombined", number> = {
-      "Total": allOrders.length, "Pending": 0, "Processing": 0, "In Progress": 0, "Shipped": 0, "Delivered": 0, "Cancelled": 0, "Refunded": 0, "On Hold": 0, "InProgressCombined": 0
-    };
-    allOrders.forEach(order => {
-      if (ALL_ORDER_STATUSES.includes(order.status)) {
-        stats[order.status]++;
-      }
-    });
-    stats["InProgressCombined"] = stats["Processing"] + stats["In Progress"];
-    return stats;
-  }, [allOrders]);
-
-  const formatDate = (dateString: string): string => {
+  const formatDate = (dateString: string, includeTime: boolean = true): string => {
     try {
       const date = parseISO(dateString);
-      return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
+      if (!isValidDate(date)) return "Invalid Date";
+      return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
     } catch {
       return "Invalid Date";
     }
   };
 
-  const statCardSkeletons = Array.from({ length: 5 }).map((_, i) => (
-      <Card key={i} className="shadow-md rounded-lg bg-muted/50">
-          <CardContent className="p-4 flex flex-col justify-start">
-              <Skeleton className="mb-2 h-10 w-10 rounded-lg bg-muted" />
-              <Skeleton className="h-9 w-12 mt-1 bg-muted" />
-              <Skeleton className="h-5 w-24 mt-1 bg-muted" />
-          </CardContent>
-      </Card>
-  ));
-
   const orderRowSkeletons = Array.from({ length: 5 }).map((_, i) => (
-      <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-3 sm:gap-4 border-b border-border">
-          <div className="flex-shrink-0 sm:w-48 md:w-56 space-y-1.5">
-              <Skeleton className="h-5 w-3/5" />
-              <Skeleton className="h-4 w-4/5" />
-          </div>
-          <div className="flex flex-wrap items-center gap-2 flex-grow">
-              <Skeleton className="h-6 w-24 rounded-full" />
-              <Skeleton className="h-6 w-32 rounded-full" />
-          </div>
-          <div className="flex items-center gap-2 sm:ml-auto mt-2 sm:mt-0 w-full sm:w-auto">
-              <Skeleton className="h-8 w-[100px] rounded-md" />
-              <Skeleton className="h-8 w-[90px] rounded-md" />
-          </div>
-      </div>
+      <TableRow key={`skeleton-${i}`}>
+          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+          <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+      </TableRow>
   ));
 
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6 h-full flex flex-col">
-      <header>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-          Order Statistics
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">Overview of all customer orders (PHP API)</p>
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            Order Management
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">View and manage all customer orders.</p>
+        </div>
+        <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh Data
+        </Button>
       </header>
-
+      
       <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border flex flex-col flex-grow min-h-0">
-        <div className="pb-4 border-b border-border">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground flex items-center">
-                All Orders
-                <Button variant="ghost" size="icon" onClick={handleRefresh} className="ml-2 h-7 w-7 text-muted-foreground hover:text-primary" disabled={isLoading}>
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                </Button>
-              </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                View and manage customer orders
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-center gap-2 mb-4 pb-4 border-b border-border">
             <div className="relative flex-grow w-full sm:w-auto sm:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search orders..."
+                placeholder="Search by Order ID, Template, or Customer..."
                 className="pl-10 w-full h-9 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -366,32 +335,37 @@ export default function ManageOrdersPage(): ReactNode {
                   ))}
                 </SelectContent>
               </Select>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full sm:w-auto min-w-[90px] h-9 text-sm">
+              <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionOrders)}>
+                <SelectTrigger className="w-full sm:w-auto min-w-[180px] h-9 text-sm">
                     <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                    Sort
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[180px]">
-                  <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuRadioGroup value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionOrders)}>
+                    <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
                     {sortOptionsListOrders.map(option => (
-                      <DropdownMenuRadioItem key={option.value} value={option.value}>
-                        {option.label}
-                      </DropdownMenuRadioItem>
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
                     ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
         </div>
 
-        <div className="flex-grow min-h-0 mt-1">
+        <div className="flex-grow min-h-0">
           {isLoading ? (
-            <div className="divide-y divide-border">{orderRowSkeletons}</div>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Order ID</TableHead>
+                        <TableHead>Template</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>{orderRowSkeletons}</TableBody>
+            </Table>
           ) : error ? (
             <div className="text-center py-10 text-destructive">
               <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
@@ -408,61 +382,79 @@ export default function ManageOrdersPage(): ReactNode {
             </div>
           ) : (
             <ScrollArea className="w-full h-full">
-              <div className="divide-y divide-border">
-                {filteredAndSortedOrders.map((order) => (
-                  <div key={order.id} className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-x-4 gap-y-3 hover:bg-muted/30 transition-colors">
-                    <div className="flex-shrink-0 sm:w-48 md:w-60"> 
-                      <h3 className="text-sm font-semibold text-primary">{order.orderId}</h3>
-                      <p className="text-xs text-muted-foreground flex items-center mt-0.5">
-                        <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" /> {formatDate(order.orderDate)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 flex-grow min-w-0">
-                      <Badge variant="outline" className={cn("text-xs font-medium py-1 px-2.5", statusColors[order.status] || statusColors.Pending)}>
-                        {order.status}
-                      </Badge>
-                      {order.templateName && order.templateName !== 'Unknown Template' && (
-                        <Badge variant="outline" className={cn("text-xs font-medium py-1 px-2.5", getTemplateBadgeStyle(order.templateName))}>
-                          <Tag className="h-3 w-3 mr-1 opacity-70" /> {order.templateName}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px]">Date</TableHead>
+                    <TableHead className="w-[150px]">Order ID</TableHead>
+                    <TableHead>Template</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="w-[120px]">Status</TableHead>
+                    <TableHead className="text-right w-[100px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="text-xs text-muted-foreground">{formatDate(order.orderDate)}</TableCell>
+                      <TableCell className="font-medium text-primary">{order.orderId}</TableCell>
+                      <TableCell>{order.templateName !== 'Unknown Template' ? order.templateName : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
+                      <TableCell>{order.customerName !== 'N/A' ? order.customerName : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn("text-xs py-1 px-2", statusColors[order.status] || statusColors.Pending)}>
+                          {order.status}
                         </Badge>
-                      )}
-                       {order.customerName && order.customerName !== 'N/A' && (
-                        <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
-                          {order.customerName}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
-                      <Button variant="outline" size="sm" className="text-xs h-8 flex-1 sm:flex-initial">
-                        <Eye className="h-3.5 w-3.5 mr-1.5" /> View Details
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="text-xs h-8 flex-1 sm:flex-initial">
-                            Status <MoreVertical className="h-3.5 w-3.5 ml-1.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[180px]">
-                          <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuRadioGroup value={order.status} onValueChange={(newStatus) => handleStatusChange(order.id, newStatus as OrderStatus)}>
-                            {ALL_ORDER_STATUSES.map(s => (
-                              <DropdownMenuRadioItem key={s} value={s}>
-                                {s}
-                              </DropdownMenuRadioItem>
-                            ))}
-                          </DropdownMenuRadioGroup>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Eye className="mr-2 h-4 w-4" /> View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <Edit3 className="mr-2 h-4 w-4" />
+                                    <span>Change Status</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuRadioGroup 
+                                        value={order.status} 
+                                        onValueChange={(newStatus) => handleStatusChange(order.id, newStatus as OrderStatus)}
+                                    >
+                                    {ALL_ORDER_STATUSES.map(s => (
+                                        <DropdownMenuRadioItem key={s} value={s} className="text-xs">
+                                        {s}
+                                        </DropdownMenuRadioItem>
+                                    ))}
+                                    </DropdownMenuRadioGroup>
+                                </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </ScrollArea>
           )}
         </div>
-        <div className="mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
-          Showing {filteredAndSortedOrders.length} of {allOrders.length} orders.
+        <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
+          <p>Showing {filteredAndSortedOrders.length} of {allOrders.length} orders.</p>
+           {/* Basic Pagination UI (no logic yet) */}
+          <div className="flex items-center space-x-1">
+            <Button variant="outline" size="sm" disabled>Previous</Button>
+            <Button variant="outline" size="sm" className="w-8 h-8 p-0" disabled>1</Button>
+            <Button variant="outline" size="sm" disabled>Next</Button>
+          </div>
+          <Button variant="outline" size="sm" disabled>Export Orders</Button>
         </div>
       </section>
     </div>
