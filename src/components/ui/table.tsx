@@ -54,18 +54,24 @@ TableFooter.displayName = "TableFooter"
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
   React.HTMLAttributes<HTMLTableRowElement>
->(({ className, children, ...rest }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-      className
-    )}
-    {...rest}
-  >
-    {children}
-  </tr>
-))
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+>(({ className, children, key, ...rest }, ref) => { 
+  // key is handled by React and not spread.
+  // For this diagnostic step, ...rest is captured but not spread onto the <tr>.
+  // If this fixes the hydration error, one of the props in `rest` was the cause.
+  return (
+    <tr
+      ref={ref}
+      className={cn(
+        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        className
+      )}
+      // Removed {...rest} for diagnostic purposes
+    >
+      {children}
+    </tr>
+  );
+});
 TableRow.displayName = "TableRow"
 
 const TableHead = React.forwardRef<
