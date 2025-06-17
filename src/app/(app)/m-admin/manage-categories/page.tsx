@@ -250,9 +250,9 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const { toast } = useToast();
 
-  const updateLastUpdatedTime = () => {
+  const updateLastUpdatedTime = useCallback(() => {
     setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
-  };
+  }, []);
 
   const fetchCategories = useCallback(async (type: CategoryType) => {
     setIsLoading(true);
@@ -290,7 +290,7 @@ export default function ManageCategoriesPage(): ReactNode {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [updateLastUpdatedTime]); // Include stable updateLastUpdatedTime
 
   useEffect(() => {
     fetchCategories(categoryType);
@@ -646,4 +646,3 @@ export default function ManageCategoriesPage(): ReactNode {
     </div>
   );
 }
-
