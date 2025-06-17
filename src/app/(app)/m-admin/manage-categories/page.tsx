@@ -286,11 +286,12 @@ export default function ManageCategoriesPage(): ReactNode {
     } catch (e: any) {
       console.error(`Failed to fetch ${type} categories:`, e);
       setError(e.message || `Failed to load ${type} categories.`);
-      setAllCategories([]);
+      setAllCategories([]); // Clear categories on error
     } finally {
       setIsLoading(false);
     }
   }, [setIsLoading, setError, setAllCategories, updateLastUpdatedTime]);
+
 
   useEffect(() => {
     fetchCategories(categoryType);
@@ -302,9 +303,10 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const handleAddCategory = async (data: CategoryFormValues) => {
     console.log("Adding category:", data);
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     const newCategory: ApiCategory = {
-      id: String(Date.now()), 
+      id: String(Date.now()), // Temporary ID
       ...data,
       itemCount: 0,
       createdAt: new Date().toISOString(),
@@ -318,6 +320,7 @@ export default function ManageCategoriesPage(): ReactNode {
   const handleEditCategory = async (data: CategoryFormValues) => {
     if (!editingCategoryData) return;
     console.log("Editing category:", editingCategoryData.id, data);
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     setAllCategories(prev => prev.map(cat => cat.id === editingCategoryData.id ? { ...cat, ...data, id: cat.id, itemCount: cat.itemCount, createdAt: cat.createdAt } : cat));
     toast({ title: "Success", description: `Category "${data.name}" updated.` });
@@ -339,6 +342,7 @@ export default function ManageCategoriesPage(): ReactNode {
   const confirmDeleteCategory = async () => {
     if (!categoryToDeleteInfo) return;
     console.log("Deleting category:", categoryToDeleteInfo.id);
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     setAllCategories(prev => prev.filter(cat => cat.id !== categoryToDeleteInfo.id));
     toast({ title: "Success", description: `Category "${categoryToDeleteInfo.name}" deleted.` });
@@ -349,6 +353,7 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const handleToggleVisibility = async (id: string) => {
     console.log("Toggling visibility for category:", id);
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     setAllCategories(prev => prev.map(cat => cat.id === id ? { ...cat, visibleToUsers: !cat.visibleToUsers } : cat));
     const category = allCategories.find(c => c.id === id);
