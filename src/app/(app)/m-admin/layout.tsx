@@ -19,7 +19,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
       )}
       <SidebarInset className="bg-background">
         <ScrollArea className="h-screen">
-          <main className="flex-1"> {/* Removed p-6 sm:p-8 md:p-10 to allow page to control padding */}
+          <main className="flex-1 flex flex-col"> {/* Ensure main is a flex column */}
             {children}
           </main>
         </ScrollArea>
@@ -35,3 +35,4 @@ export default function MAdminLayout({ children }: { children: ReactNode }) {
     </AdminAuthProvider>
   );
 }
+

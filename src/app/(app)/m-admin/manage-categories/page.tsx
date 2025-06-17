@@ -486,7 +486,7 @@ export default function ManageCategoriesPage(): ReactNode {
           </Button>
         </div>
         
-        <div className="flex-grow min-h-0">
+        <div className="flex-grow min-h-0"> {/* This div allows the ScrollArea to take proper height */}
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -515,7 +515,7 @@ export default function ManageCategoriesPage(): ReactNode {
               {searchTerm && <p>Try adjusting your search or filters.</p>}
             </div>
           ) : (
-            <ScrollArea className="max-h-[500px] w-full">
+            <ScrollArea className="w-full h-full"> {/* Allow ScrollArea to take full height of its parent */}
               <Table>
                 <TableHeader>
                   <TableRow>
