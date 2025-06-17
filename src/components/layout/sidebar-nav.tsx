@@ -29,16 +29,16 @@ export function SidebarNav() {
       <div className={cn(
         "flex items-center justify-between border-b border-sidebar-border",
         "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2.5",
-        "group-data-[state=expanded]:p-4 group-data-[state=expanded]:h-[73px]" // Added fixed height for expanded state
+        "group-data-[state=expanded]:p-4 group-data-[state=expanded]:h-[80px]" // Adjusted height
       )}>
         <Link href="/dashboard" passHref legacyBehavior>
           <a className="group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded-sm flex items-center">
-            <div className="relative h-10 w-36 sm:w-40"> {/* Adjusted width, use sm for responsive width */}
+            <div className="relative h-12 w-44 sm:w-48"> {/* Increased logo container size */}
               <Image
                 src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
                 alt="Color Hut Logo"
                 fill
-                sizes="(max-width: 640px) 144px, 160px" // Corresponds to w-36 and w-40
+                sizes="(max-width: 640px) 176px, 192px" // Adjusted sizes
                 className="object-contain"
                 priority 
               />
