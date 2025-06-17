@@ -8,23 +8,18 @@ import {
   Table,
   TableHeader,
   TableBody,
-  // TableRow, // We will use motion.tr instead
   TableHead,
   TableCell,
 } from "@/components/ui/table";
 import {
   Button,
-  // buttonVariants // Not directly used now
 } from "@/components/ui/button";
-// import { Card, CardContent } from "@/components/ui/card"; // StatCards removed
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  // DropdownMenuLabel, // Not used
-  // DropdownMenuSeparator, // Not used
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -43,11 +38,6 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Package, // Placeholder if StatCards were to return
-  Clock3,  // Placeholder
-  Loader2, // Placeholder
-  CheckCircle, // Placeholder
-  XCircle, // Placeholder
   Search,
   ListFilter,
   FileText,
@@ -56,7 +46,7 @@ import {
   Eye,
   ShoppingCart,
   CalendarDays,
-  Tag, // Not directly used for icon, but concept is there for template badge
+  Tag,
   AlertTriangle,
   RefreshCw,
   Edit3
@@ -79,10 +69,12 @@ interface ApiOrder {
   totalAmount?: number;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 const statusColors: Record<OrderStatus, string> = {
   "Pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600",
   "Processing": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600", // Same as Processing for consistency
+  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
   "Shipped": "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/20 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600",
   "Delivered": "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600",
   "Cancelled": "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600",
@@ -127,6 +119,8 @@ export default function ManageOrdersPage(): ReactNode {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [templateFilter, setTemplateFilter] = useState<string>('all');
   const [sortOption, setSortOption] = useState<SortOptionOrders>('newest');
+  
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { toast } = useToast();
 
@@ -174,13 +168,18 @@ export default function ManageOrdersPage(): ReactNode {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, templateFilter, sortOption]);
+
 
   const handleRefresh = useCallback(() => {
     fetchOrders();
+    setCurrentPage(1);
   }, [fetchOrders]);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    console.log(`Updating order ${orderId} to status ${newStatus}`);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     setAllOrders(prevOrders =>
@@ -210,7 +209,6 @@ export default function ManageOrdersPage(): ReactNode {
       return matchesSearch && matchesStatus && matchesTemplate;
     });
 
-    // Sorting logic
     switch (sortOption) {
       case 'newest':
         orders.sort((a, b) => {
@@ -250,6 +248,25 @@ export default function ManageOrdersPage(): ReactNode {
     return orders;
   }, [allOrders, searchTerm, statusFilter, templateFilter, sortOption]);
 
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredAndSortedOrders.length / ITEMS_PER_PAGE);
+  }, [filteredAndSortedOrders.length]);
+
+  const paginatedOrders = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredAndSortedOrders.slice(startIndex, endIndex);
+  }, [filteredAndSortedOrders, currentPage]);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  };
+
+
   const formatDate = (dateString: string, includeTime: boolean = true): string => {
     try {
       const date = parseISO(dateString);
@@ -260,8 +277,7 @@ export default function ManageOrdersPage(): ReactNode {
     }
   };
 
-  // Skeleton for table rows
-  const orderRowSkeletons = Array.from({ length: 5 }).map((_, i) => (
+  const orderRowSkeletons = Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
       <motion.tr 
         key={`skeleton-${i}`} 
         className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
@@ -270,7 +286,7 @@ export default function ManageOrdersPage(): ReactNode {
         transition={{ duration: 0.5, delay: i * 0.05 }}
       >
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-20 whitespace-nowrap" /></TableCell>
           <TableCell><Skeleton className="h-5 w-28" /></TableCell>
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
           <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
@@ -323,7 +339,7 @@ export default function ManageOrdersPage(): ReactNode {
               </Select>
               <Select value={templateFilter} onValueChange={setTemplateFilter}>
                 <SelectTrigger className="w-full sm:w-auto min-w-[150px] h-9 text-sm">
-                  <Tag className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  <FileText className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                   <SelectValue placeholder="All Templates" />
                 </SelectTrigger>
                 <SelectContent>
@@ -381,7 +397,7 @@ export default function ManageOrdersPage(): ReactNode {
                 <RefreshCw className="h-4 w-4 mr-2" /> Try Again
               </Button>
             </motion.div>
-          ) : filteredAndSortedOrders.length === 0 ? (
+          ) : paginatedOrders.length === 0 ? (
             <motion.div 
               className="text-center py-10 text-muted-foreground"
               initial={{ opacity: 0, y: 20 }}
@@ -411,7 +427,7 @@ export default function ManageOrdersPage(): ReactNode {
                 </TableHeader>
                 <TableBody>
                   <AnimatePresence>
-                    {filteredAndSortedOrders.map((order, index) => (
+                    {paginatedOrders.map((order, index) => (
                       <motion.tr
                         key={order.id}
                         className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
@@ -486,16 +502,38 @@ export default function ManageOrdersPage(): ReactNode {
           )}
         </div>
         <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
-          <p>Showing {filteredAndSortedOrders.length} of {allOrders.length} orders.</p>
+          <p>Showing {paginatedOrders.length} of {filteredAndSortedOrders.length} orders.</p>
           <div className="flex items-center space-x-1">
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button variant="outline" size="sm" disabled>Previous</Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handlePreviousPage} 
+                disabled={currentPage === 1 || isLoading}
+              >
+                Previous
+              </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button variant="outline" size="sm" className="w-8 h-8 p-0" disabled>1</Button>
+              <Button 
+                variant={totalPages === 0 ? "outline" : "default"} 
+                size="sm" 
+                className="w-8 h-8 p-0" 
+                disabled={totalPages === 0 || isLoading}
+                onClick={() => setCurrentPage(1)}
+              >
+                {totalPages > 0 ? currentPage : '-'}
+              </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button variant="outline" size="sm" disabled>Next</Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages || totalPages === 0 || isLoading}
+              >
+                Next
+              </Button>
             </motion.div>
           </div>
           <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
@@ -507,4 +545,3 @@ export default function ManageOrdersPage(): ReactNode {
   );
 }
     
-
