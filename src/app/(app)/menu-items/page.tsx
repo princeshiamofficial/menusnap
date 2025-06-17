@@ -12,6 +12,7 @@ import {
   ChevronRight,
   MinusCircle,
   PlusCircle,
+  Send, // Added Send
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTheme } from '@/context/ThemeContext';
+import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog'; // Added import
 
 interface Category {
   id: string;
@@ -80,6 +82,8 @@ export default function MenuItemsPage() {
 
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const { setTheme } = useTheme();
+
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false); // State for dialog
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,7 +142,7 @@ export default function MenuItemsPage() {
           .map((cat: any) => ({
             id: String(cat.id),
             name: String(cat.name || 'Unnamed Category'),
-            icon: String(cat.icon || '📁'),
+            icon: String(cat.icon || 'FileText'), // Default icon if not provided
             itemCount: Number(cat.itemCount || 0),
             status: String(cat.status || 'active'),
             createdAt: String(cat.createdAt || new Date().toISOString()),
@@ -178,11 +182,21 @@ export default function MenuItemsPage() {
             throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
           }
           const menuItemsApiResponse = await menuItemsResponse.json();
-          if (!menuItemsApiResponse.success || !Array.isArray(menuItemsApiResponse.data)) {
-            console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
-            throw new Error("Invalid data format for menu items from API");
+          let rawItemsArray: any[] = [];
+          if (menuItemsApiResponse.success) {
+            if (Array.isArray(menuItemsApiResponse.data)) { // Direct array
+              rawItemsArray = menuItemsApiResponse.data;
+            } else if (menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { // Nested under 'items'
+              rawItemsArray = menuItemsApiResponse.data.items;
+            } else {
+              console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
+              throw new Error("Invalid data format for menu items from API (expected array or data.items array)");
+            }
+          } else {
+            throw new Error(menuItemsApiResponse.message || "Menu Items API request not successful");
           }
-          const fetchedMenuItems: MenuItem[] = menuItemsApiResponse.data
+
+          const fetchedMenuItems: MenuItem[] = rawItemsArray
             .filter((item: any) => item.id !== null && item.id !== undefined)
             .map((item: any) => ({
               id: String(item.id), 
@@ -261,187 +275,209 @@ export default function MenuItemsPage() {
     itemsGridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
   }
 
+  const preparedSelectedItemsForPreview = useMemo(() => {
+    return allMenuItems.filter(item => selectedItems[item.id]);
+  }, [allMenuItems, selectedItems]);
+
+  const handleRemoveItemFromPreview = (itemIdToRemove: string) => {
+    setSelectedItems(prev => {
+      const updated = { ...prev };
+      delete updated[itemIdToRemove]; // Or set to false: updated[itemIdToRemove] = false;
+      return updated;
+    });
+  };
+
 
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
-      <aside className="w-72 bg-card border-r border-border flex flex-col">
-        <div className="p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
-        </div>
-        <ScrollArea className="flex-1">
-          {loadingCategories && <p className="p-4 text-sm text-muted-foreground">Loading categories...</p>}
-          {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
-          {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">No categories found for {selectedMenuType} menu.</p>
-          )}
-          {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
-            <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
-              {orderedCategories.map(category => (
-                <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
-                      selectedCategory?.id === category.id 
-                      ? 'bg-muted font-semibold text-foreground'
-                      : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
-                    }`}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    <span className="mr-2 text-sm">{category.icon}</span>
-                    <span className="flex-1 text-left truncate">{category.name}</span>
-                    <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
-                  </Button>
-                </Reorder.Item>
-              ))}
-            </Reorder.Group>
-          )}
-        </ScrollArea>
-      </aside>
-
-      <main className="flex-1 flex flex-col bg-background overflow-hidden">
-        <div className="py-6 px-6 border-b border-border bg-card flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
-          <div className="flex items-center gap-3">
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search menu item"
-                className="pl-10 text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select value={selectedMenuType} onValueChange={setSelectedMenuType}>
-              <SelectTrigger className="w-[180px] text-sm">
-                <SelectValue placeholder="Select menu type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="restaurant">Restaurant Menu</SelectItem>
-                <SelectItem value="parlour">Parlour Menu</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" className="text-sm">
-              <Save className="h-4 w-4 mr-2" />
-              Save as Draft
-            </Button>
-            <Button variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Eye className="h-4 w-4 mr-2" />
-              Show Preview
-            </Button>
+    <>
+      <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
+        <aside className="w-72 bg-card border-r border-border flex flex-col">
+          <div className="p-4 border-b border-border">
+            <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
           </div>
-        </div>
+          <ScrollArea className="flex-1">
+            {loadingCategories && <p className="p-4 text-sm text-muted-foreground">Loading categories...</p>}
+            {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
+            {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
+              <p className="p-4 text-sm text-muted-foreground">No categories found for {selectedMenuType} menu.</p>
+            )}
+            {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
+              <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
+                {orderedCategories.map(category => (
+                  <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
+                        selectedCategory?.id === category.id 
+                        ? 'bg-muted font-semibold text-foreground'
+                        : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                      }`}
+                      onClick={() => setSelectedCategory(category)}
+                    >
+                      <span className="mr-2 text-sm">{category.icon}</span>
+                      <span className="flex-1 text-left truncate">{category.name}</span>
+                      <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
+                    </Button>
+                  </Reorder.Item>
+                ))}
+              </Reorder.Group>
+            )}
+          </ScrollArea>
+        </aside>
 
-        <div className="flex-1 flex flex-col overflow-hidden py-6 px-6">
-          {selectedCount > 0 && (
-            <div className="mb-4">
-              <Badge variant="default" className="bg-orange-500 hover:bg-orange-600 text-white">
-                {selectedCount} selected
-              </Badge>
+        <main className="flex-1 flex flex-col bg-background overflow-hidden">
+          <div className="py-6 px-6 border-b border-border bg-card flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
+            <div className="flex items-center gap-3">
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search menu item"
+                  className="pl-10 text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Select value={selectedMenuType} onValueChange={setSelectedMenuType}>
+                <SelectTrigger className="w-[180px] text-sm">
+                  <SelectValue placeholder="Select menu type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="restaurant">Restaurant Menu</SelectItem>
+                  <SelectItem value="parlour">Parlour Menu</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" className="text-sm">
+                <Save className="h-4 w-4 mr-2" />
+                Save as Draft
+              </Button>
+              <Button variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}>
+                <Eye className="h-4 w-4 mr-2" />
+                Show Preview ({selectedCount})
+              </Button>
             </div>
-          )}
-          
-          {loadingMenuItems && (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-muted-foreground">Loading menu items...</p>
-            </div>
-          )}
-          {errorMenuItems && (
-            <div className="flex-1 flex items-center justify-center">
-              <p className="text-destructive">Error loading menu items: {errorMenuItems}</p>
-            </div>
-          )}
+          </div>
 
-          {!loadingMenuItems && !errorMenuItems && selectedCategory && (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex items-center gap-2 mb-4">
-                {selectedCategory.icon && <span className="text-xl">{selectedCategory.icon}</span>}
-                <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
-                <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
-                  {selectedCategory?.itemCount ?? currentMenuItems.length}
+          <div className="flex-1 flex flex-col overflow-hidden py-6 px-6">
+            {selectedCount > 0 && (
+              <div className="mb-4">
+                <Badge variant="default" className="bg-orange-500 hover:bg-orange-600 text-white">
+                  {selectedCount} selected
                 </Badge>
               </div>
-              
-              <ScrollArea className="flex-1 -mx-1">
-                <div className={cn("grid gap-4 px-1", itemsGridClass)}>
-                  {currentMenuItems.length > 0 ? (
-                    currentMenuItems.map(item => (
-                        <Card 
-                          key={item.id} 
-                          className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-4">
-                              <Checkbox
-                                id={`item-${item.id}`}
-                                checked={!!selectedItems[String(item.id)]}
-                                onCheckedChange={() => handleSelectItem(String(item.id))}
-                                aria-label={`Select ${item.name}`}
-                                className="mt-1" 
-                              />
-                              {item.iconPlaceholder && (
-                                 <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
-                                   {/* Placeholder for icon, e.g., first letter or generic icon */}
-                                 </div>
-                              )}
-                              <div className="flex-1"> 
-                                <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
-                                  {item.name}
-                                </label>
-                                {item.description && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {item.description}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-                                ৳{(item.price ?? 0).toLocaleString()}
-                              </div>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
-                                onClick={() => item.subItems && item.subItems.length > 0 && toggleSubItems(String(item.id))}
-                                disabled={!item.subItems || item.subItems.length === 0}
-                              >
-                                {item.subItems && item.subItems.length > 0 ? (
-                                  expandedSubItems[String(item.id)] ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />
-                                ) : (
-                                  <ChevronRight className="h-5 w-5 opacity-30" />
-                                )}
-                              </Button>
-                            </div>
-                            {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
-                              <div className="mt-3 pl-10 space-y-2">
-                                {item.subItems.map(subItem => (
-                                  <div key={subItem.id} className="flex justify-between items-center text-xs">
-                                    <span className="text-muted-foreground">{subItem.name}</span>
-                                    <span className="text-muted-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))
-                  ) : (
-                    <div className="text-center py-10 col-span-full">
-                      <p className="text-muted-foreground text-sm">
-                        {searchTerm ? "No items match your search." : "No items in this category."}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
-          )}
-          {!loadingCategories && !selectedCategory && !loadingMenuItems && !errorMenuItems && (
+            )}
+            
+            {loadingMenuItems && (
               <div className="flex-1 flex items-center justify-center">
-                  <p className="text-muted-foreground">Select a category to see menu items.</p>
+                <p className="text-muted-foreground">Loading menu items...</p>
               </div>
-           )}
-        </div>
-      </main>
-    </div>
+            )}
+            {errorMenuItems && (
+              <div className="flex-1 flex items-center justify-center">
+                <p className="text-destructive">Error loading menu items: {errorMenuItems}</p>
+              </div>
+            )}
+
+            {!loadingMenuItems && !errorMenuItems && selectedCategory && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex items-center gap-2 mb-4">
+                  {selectedCategory.icon && <span className="text-xl">{selectedCategory.icon}</span>}
+                  <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
+                  <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
+                    {selectedCategory?.itemCount ?? currentMenuItems.length}
+                  </Badge>
+                </div>
+                
+                <ScrollArea className="flex-1 -mx-1">
+                  <div className={cn("grid gap-4 px-1", itemsGridClass)}>
+                    {currentMenuItems.length > 0 ? (
+                      currentMenuItems.map(item => (
+                          <Card 
+                            key={item.id} 
+                            className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-4">
+                                <Checkbox
+                                  id={`item-${item.id}`}
+                                  checked={!!selectedItems[String(item.id)]}
+                                  onCheckedChange={() => handleSelectItem(String(item.id))}
+                                  aria-label={`Select ${item.name}`}
+                                  className="mt-1" 
+                                />
+                                {item.iconPlaceholder && (
+                                   <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
+                                     {/* Placeholder for icon, e.g., first letter or generic icon */}
+                                   </div>
+                                )}
+                                <div className="flex-1"> 
+                                  <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
+                                    {item.name}
+                                  </label>
+                                  {item.description && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
+                                  ৳{(item.price ?? 0).toLocaleString()}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
+                                  onClick={() => item.subItems && item.subItems.length > 0 && toggleSubItems(String(item.id))}
+                                  disabled={!item.subItems || item.subItems.length === 0}
+                                >
+                                  {item.subItems && item.subItems.length > 0 ? (
+                                    expandedSubItems[String(item.id)] ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />
+                                  ) : (
+                                    <ChevronRight className="h-5 w-5 opacity-30" />
+                                  )}
+                                </Button>
+                              </div>
+                              {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
+                                <div className="mt-3 pl-10 space-y-2">
+                                  {item.subItems.map(subItem => (
+                                    <div key={subItem.id} className="flex justify-between items-center text-xs">
+                                      <span className="text-muted-foreground">{subItem.name}</span>
+                                      <span className="text-muted-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))
+                    ) : (
+                      <div className="text-center py-10 col-span-full">
+                        <p className="text-muted-foreground text-sm">
+                          {searchTerm ? "No items match your search." : "No items in this category."}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+            {!loadingCategories && !selectedCategory && !loadingMenuItems && !errorMenuItems && (
+                <div className="flex-1 flex items-center justify-center">
+                    <p className="text-muted-foreground">Select a category to see menu items.</p>
+                </div>
+             )}
+          </div>
+        </main>
+      </div>
+      <MenuPreviewDialog
+        isOpen={isPreviewDialogOpen}
+        onOpenChange={setIsPreviewDialogOpen}
+        selectedItems={preparedSelectedItemsForPreview}
+        allCategories={apiCategories}
+        onRemoveItem={handleRemoveItemFromPreview}
+      />
+    </>
   );
 }
+
