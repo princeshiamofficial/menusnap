@@ -77,7 +77,7 @@ interface MenuItemAdmin {
   image?: string | null;
 }
 
-const ITEMS_PER_PAGE_ITEMS = 10; // Show 10 items, which will be 5 rows in a 2-column layout
+const SKELETON_ITEM_COUNT = 6; // Number of skeletons to show during loading
 
 export default function ManageMenuItemsPage(): ReactNode {
   const [menuType, setMenuType] = useState<MenuType>("restaurant");
@@ -96,7 +96,6 @@ export default function ManageMenuItemsPage(): ReactNode {
   const [loadingItems, setLoadingItems] = useState(false); 
   const [errorItems, setErrorItems] = useState<string | null>(null);
   
-  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
 
   const fetchCategoriesAndItems = useCallback(async (currentMenuType: MenuType, retainSelectedCategory: boolean = false) => {
@@ -183,7 +182,6 @@ export default function ManageMenuItemsPage(): ReactNode {
     } finally {
       setLoadingCategories(false);
       setLoadingItems(false);
-      setCurrentPage(1);
     }
   }, [selectedCategory?.id]);
 
@@ -204,24 +202,11 @@ export default function ManageMenuItemsPage(): ReactNode {
       items = items.filter(item => item.status.toLowerCase() === statusFilter);
     }
     setFilteredMenuItems(items);
-    setCurrentPage(1);
   }, [allMenuItems, selectedCategory, searchTerm, statusFilter]);
 
   const totalAllItemsCount = useMemo(() => {
     return allCategories.reduce((sum, cat) => sum + cat.itemCount, 0);
   }, [allCategories]);
-
-  const paginatedMenuItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE_ITEMS;
-    return filteredMenuItems.slice(startIndex, startIndex + ITEMS_PER_PAGE_ITEMS);
-  }, [filteredMenuItems, currentPage]);
-
-  const totalPages = useMemo(() => {
-    return Math.ceil(filteredMenuItems.length / ITEMS_PER_PAGE_ITEMS);
-  }, [filteredMenuItems.length]);
-
-  // const handlePreviousPage = () => setCurrentPage(prev => Math.max(1, prev - 1)); // Kept for potential future use
-  // const handleNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1)); // Kept for potential future use
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
@@ -339,7 +324,7 @@ export default function ManageMenuItemsPage(): ReactNode {
           <div className="p-6">
             {loadingItems && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Array.from({ length: ITEMS_PER_PAGE_ITEMS }).map((_, i) => (
+                {Array.from({ length: SKELETON_ITEM_COUNT }).map((_, i) => (
                   <div key={i} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="flex-1 space-y-1.5">
@@ -360,7 +345,7 @@ export default function ManageMenuItemsPage(): ReactNode {
                 <p className="text-md">Error loading items: {errorItems}</p>
               </div>
             )}
-            {!loadingItems && !errorItems && paginatedMenuItems.length === 0 && (
+            {!loadingItems && !errorItems && filteredMenuItems.length === 0 && (
               <div className="text-center py-10 text-muted-foreground bg-card border border-border rounded-lg">
                  <PackageSearch className="mx-auto h-12 w-12 mb-4 opacity-70" />
                 <p className="text-md">
@@ -371,9 +356,9 @@ export default function ManageMenuItemsPage(): ReactNode {
                 {!selectedCategory && <p className="text-sm mt-1">Select a category or check the menu type.</p>}
               </div>
             )}
-            {!loadingItems && !errorItems && paginatedMenuItems.length > 0 && (
+            {!loadingItems && !errorItems && filteredMenuItems.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {paginatedMenuItems.map(item => (
+                {filteredMenuItems.map(item => (
                   <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
                     <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
                       {item.image ? (
@@ -436,14 +421,9 @@ export default function ManageMenuItemsPage(): ReactNode {
             )}
           </div>
         </ScrollArea>
-        {totalPages > 0 && (
-          <div className="flex justify-between items-center py-3 px-6 border-t border-border bg-card text-sm text-muted-foreground">
-            <p>Showing {paginatedMenuItems.length} of {filteredMenuItems.length} items.</p>
-            <div className="flex items-center space-x-1">
-              {/* Previous button removed as per user request */}
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled>{currentPage}</Button>
-              {/* Next button removed as per user request */}
-            </div>
+        {filteredMenuItems.length > 0 && (
+          <div className="flex justify-start items-center py-3 px-6 border-t border-border bg-card text-sm text-muted-foreground">
+            <p>Showing {filteredMenuItems.length} items.</p>
           </div>
         )}
       </main>
