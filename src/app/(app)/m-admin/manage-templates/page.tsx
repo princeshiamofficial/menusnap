@@ -223,7 +223,7 @@ const addTemplateFormSchema = z.object({
       (files) => ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
       "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
     ),
-  tags: z.array(z.object({ value: z.string().min(1, "Tag cannot be empty") })).min(1, "At least one tag is required"),
+  tags: z.array(z.object({ value: z.string().min(1, "Tag cannot be empty") })).min(1, "At least one tag is required").max(3, "You can add a maximum of 3 tags"),
   isTopRated: z.boolean().default(false),
   isPublished: z.boolean().default(false),
 });
@@ -416,11 +416,11 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
                 )}
               </div>
             ))}
-             {form.formState.errors.tags && typeof form.formState.errors.tags.message === 'string' && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
-             {form.formState.errors.tags && Array.isArray(form.formState.errors.tags) && form.formState.errors.tags[0]?.value?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags[0]?.value?.message}</p>}
+             {form.formState.errors.tags?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
+             {form.formState.errors.tags && !form.formState.errors.tags.message && Array.isArray(form.formState.errors.tags) && form.formState.errors.tags[0]?.value?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags[0]?.value?.message}</p>}
 
 
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2" disabled={fields.length >= 3}>
               <Plus className="mr-2 h-4 w-4" /> Add Another Tag
             </Button>
           </div>
@@ -474,7 +474,7 @@ const editTemplateFormSchema = z.object({
       (files) => !files || files.length === 0 || ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
       "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
     ),
-  tags: z.array(z.object({ value: z.string().min(1, "Tag cannot be empty") })).min(1, "At least one tag is required"),
+  tags: z.array(z.object({ value: z.string().min(1, "Tag cannot be empty") })).min(1, "At least one tag is required").max(3, "You can add a maximum of 3 tags"),
   isTopRated: z.boolean().default(false),
   isPublished: z.boolean().default(false),
 });
@@ -666,10 +666,11 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
                 )}
               </div>
             ))}
-            {form.formState.errors.tags && typeof form.formState.errors.tags.message === 'string' && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
-            {form.formState.errors.tags && Array.isArray(form.formState.errors.tags) && form.formState.errors.tags[0]?.value?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags[0]?.value?.message}</p>}
+            {form.formState.errors.tags?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
+            {form.formState.errors.tags && !form.formState.errors.tags.message && Array.isArray(form.formState.errors.tags) && form.formState.errors.tags[0]?.value?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags[0]?.value?.message}</p>}
 
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2">
+
+            <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2" disabled={fields.length >= 3}>
               <Plus className="mr-2 h-4 w-4" /> Add Another Tag
             </Button>
           </div>
