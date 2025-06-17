@@ -76,20 +76,41 @@ export function MenuPreviewDialog({
   const [orderedDialogCategories, setOrderedDialogCategories] = useState<Category[]>(derivedDisplayedCategories);
 
   useEffect(() => {
-    const newCategoryOrder = derivedDisplayedCategories.map(derivedCat => {
-        const existingCat = orderedDialogCategories.find(oc => oc.id === derivedCat.id);
-        return existingCat || derivedCat; 
-    }).filter(cat => derivedDisplayedCategories.some(dc => dc.id === cat.id)); 
+    // This effect ensures that if the derivedDisplayedCategories prop changes (e.g. items are added/removed
+    // externally, changing which categories are relevant), the local order reflects this.
+    // It tries to preserve the existing order for categories that are still present.
+    
+    // Create a map of existing ordered categories for quick lookup
+    const existingOrderMap = new Map(orderedDialogCategories.map(cat => [cat.id, cat]));
+    
+    // Build the new order:
+    // 1. Start with categories from derivedDisplayedCategories that were already in orderedDialogCategories, preserving their relative order.
+    // 2. Add any new categories from derivedDisplayedCategories that weren't in the old order.
+    const newOrder: Category[] = [];
+    const addedIds = new Set<string>();
 
+    // First, add categories that are in both, maintaining the derived order as primary
     derivedDisplayedCategories.forEach(derivedCat => {
-        if (!newCategoryOrder.some(nc => nc.id === derivedCat.id)) {
-            newCategoryOrder.push(derivedCat);
+        if(existingOrderMap.has(derivedCat.id)){
+            newOrder.push(existingOrderMap.get(derivedCat.id)!); // Push the one from map to keep reordered instance
+            addedIds.add(derivedCat.id);
         }
     });
-    setOrderedDialogCategories(newCategoryOrder);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [derivedDisplayedCategories]); 
+    // Then add any categories from derivedDisplayedCategories that are new
+     derivedDisplayedCategories.forEach(derivedCat => {
+        if(!addedIds.has(derivedCat.id)){
+            newOrder.push(derivedCat);
+            addedIds.add(derivedCat.id);
+        }
+    });
+
+    // Filter out categories that are no longer in derivedDisplayedCategories
+    const finalOrderedCategories = newOrder.filter(cat => derivedDisplayedCategories.some(dc => dc.id === cat.id));
+
+    setOrderedDialogCategories(finalOrderedCategories);
+
+  }, [derivedDisplayedCategories]); // Removed orderedDialogCategories from deps to avoid loop based on self-update
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -200,7 +221,9 @@ export function MenuPreviewDialog({
                         />
                         <div className="flex-1">
                           <p className="font-medium text-sm text-foreground">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">{item.description || 'No description'}</p>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground">{item.description}</p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
