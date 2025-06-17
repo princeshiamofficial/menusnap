@@ -162,7 +162,7 @@ export default function ManageOrdersPage(): ReactNode {
       if (result.success) {
         if (result.data && Array.isArray(result.data.orders)) {
           rawOrdersArray = result.data.orders;
-        } else if (Array.isArray(result.data)) { // Fallback if orders are directly in data
+        } else if (Array.isArray(result.data)) { 
           rawOrdersArray = result.data;
         } else {
           console.error('Invalid data format for orders: "orders" array not found in data.', result);
@@ -173,13 +173,13 @@ export default function ManageOrdersPage(): ReactNode {
       }
 
       const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any): ApiOrder => ({
-        id: String(order.id || Math.random().toString(36).substring(7)), // Prefers the top-level id from the order object in the array
-        orderId: String(order.orderId || order.id || 'N/A'), // Uses order.orderId or falls back to order.id for display
+        id: String(order.id || Math.random().toString(36).substring(7)), 
+        orderId: String(order.orderId || order.id || 'N/A'), 
         orderDate: String(order.orderDate || order.createdAt || order.date || new Date().toISOString()),
         status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : "Pending",
         templateName: order.template?.name ? String(order.template.name) : "Unknown Template",
         customerName: order.customer?.name ? String(order.customer.name) : "N/A",
-        totalAmount: parseFloat(order.totalAmount || order.total) || 0, // Added fallback to order.total
+        totalAmount: parseFloat(order.totalAmount || order.total) || 0,
       }));
       setAllOrders(fetchedOrders);
     } catch (e: any) {
@@ -315,18 +315,6 @@ export default function ManageOrdersPage(): ReactNode {
         <p className="text-sm text-muted-foreground mt-1">Overview of all customer orders (PHP API)</p>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
-        {isLoading ? statCardSkeletons : (
-          <>
-            <OrderStatCard title="Total Orders" value={orderStats.Total} icon={Package} bgColorClass="bg-sky-500" iconContainerBgClass="bg-sky-600" />
-            <OrderStatCard title="Pending Orders" value={orderStats.Pending} icon={Clock3} bgColorClass="bg-yellow-400" iconContainerBgClass="bg-yellow-500" />
-            <OrderStatCard title="In Progress" value={orderStats.InProgressCombined} icon={Loader2} bgColorClass="bg-purple-500" iconContainerBgClass="bg-purple-600" />
-            <OrderStatCard title="Delivered Orders" value={orderStats.Delivered} icon={CheckCircle} bgColorClass="bg-green-500" iconContainerBgClass="bg-green-600" />
-            <OrderStatCard title="Cancelled Orders" value={orderStats.Cancelled} icon={XCircle} bgColorClass="bg-red-500" iconContainerBgClass="bg-red-600" />
-          </>
-        )}
-      </section>
-
       <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border flex flex-col flex-grow min-h-0">
         <div className="pb-4 border-b border-border">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
@@ -423,7 +411,7 @@ export default function ManageOrdersPage(): ReactNode {
               <div className="divide-y divide-border">
                 {filteredAndSortedOrders.map((order) => (
                   <div key={order.id} className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-x-4 gap-y-3 hover:bg-muted/30 transition-colors">
-                    <div className="flex-shrink-0 sm:w-48 md:w-60"> {/* Increased width for Order ID & Date */}
+                    <div className="flex-shrink-0 sm:w-48 md:w-60"> 
                       <h3 className="text-sm font-semibold text-primary">{order.orderId}</h3>
                       <p className="text-xs text-muted-foreground flex items-center mt-0.5">
                         <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" /> {formatDate(order.orderDate)}
@@ -481,3 +469,4 @@ export default function ManageOrdersPage(): ReactNode {
   );
 }
     
+
