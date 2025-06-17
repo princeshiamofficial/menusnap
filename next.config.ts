@@ -19,9 +19,9 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'colorhutbd.xyz',
+        hostname: 'colorhutbd.xyz', // Updated to be more general
         port: '',
-        pathname: '/vm/api/uploads/**',
+        pathname: '/**', // Allows any path on this domain
       },
       {
         protocol: 'https',

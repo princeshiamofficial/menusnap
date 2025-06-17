@@ -74,10 +74,12 @@ interface MenuItemAdmin {
   status: 'Active' | 'Inactive'; // Based on visibleToUsers
   addedDate: string; // ISO string for createdAt
   categoryId: string;
-  image?: string | null;
+  // image field is no longer used for display, but kept for data structure consistency
+  image?: string | null; 
 }
 
 const SKELETON_ITEM_COUNT = 6; // Number of skeletons to show during loading
+const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 
 export default function ManageMenuItemsPage(): ReactNode {
   const [menuType, setMenuType] = useState<MenuType>("restaurant");
@@ -167,7 +169,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         status: (item.visibleToUsers === '1' || item.visibleToUsers === true || item.status === 'active') ? 'Active' : 'Inactive',
         addedDate: item.createdAt || new Date().toISOString(),
         categoryId: String(item.category),
-        image: item.image || null,
+        image: item.image || null, // Keep for data structure, but not used for display
       }));
       setAllMenuItems(fetchedMenuItems);
 
@@ -192,7 +194,7 @@ export default function ManageMenuItemsPage(): ReactNode {
 
   useEffect(() => {
     if (!selectedCategory) {
-        setFilteredMenuItems([]); // Clear items if no category is selected
+        setFilteredMenuItems([]); 
         return;
     }
 
@@ -222,7 +224,7 @@ export default function ManageMenuItemsPage(): ReactNode {
   };
 
   const handleRefresh = () => {
-    fetchCategoriesAndItems(menuType, true); // Retain selected category if possible
+    fetchCategoriesAndItems(menuType, true); 
   };
 
   return (
@@ -235,7 +237,7 @@ export default function ManageMenuItemsPage(): ReactNode {
               "w-full justify-start items-center text-md h-10 mb-2 font-semibold",
               !selectedCategory ? 'bg-muted text-foreground' : 'text-foreground'
             )}
-            onClick={() => setSelectedCategory(null)}
+            onClick={() => setSelectedCategory(null)} // Allows "All Items" view conceptually
           >
             All Items
             <Badge variant="secondary" className="ml-auto bg-muted text-muted-foreground">{totalAllItemsCount}</Badge>
@@ -370,19 +372,15 @@ export default function ManageMenuItemsPage(): ReactNode {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredMenuItems.map(item => (
                   <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
-                      {item.image ? (
-                        <Image 
-                          src={item.image} 
-                          alt={item.name} 
-                          width={40} 
-                          height={40} 
-                          className="h-full w-full object-cover rounded-full" 
-                          data-ai-hint="food item"
-                        />
-                      ) : (
-                        <Utensils className="h-5 w-5"/>
-                      )}
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                      <Image 
+                        src={STATIC_ITEM_IMAGE_URL} 
+                        alt={item.name} 
+                        width={40} 
+                        height={40} 
+                        className="h-full w-full object-contain" // Use object-contain for SVGs
+                        data-ai-hint="item illustration"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -440,4 +438,3 @@ export default function ManageMenuItemsPage(): ReactNode {
     </div>
   );
 }
-
