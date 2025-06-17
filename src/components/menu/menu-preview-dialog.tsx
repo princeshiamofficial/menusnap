@@ -2,8 +2,9 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
+import { Reorder } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { X, ChevronLeft, Send, Users, FileText } from 'lucide-react';
+import { X, ChevronLeft, Send, Users, FileText, GripVertical } from 'lucide-react';
 
 // Interfaces matching MenuItemsPage for consistency
 interface Category {
@@ -67,6 +68,18 @@ export function MenuPreviewDialog({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
+  const derivedDisplayedCategories = useMemo(() => {
+    const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
+    return allCategories.filter(cat => categoryIdsInSelection.has(cat.id));
+  }, [selectedItems, allCategories]);
+
+  const [orderedDialogCategories, setOrderedDialogCategories] = useState<Category[]>(derivedDisplayedCategories);
+
+  useEffect(() => {
+    setOrderedDialogCategories(derivedDisplayedCategories);
+  }, [derivedDisplayedCategories]);
+
+
   const itemsGroupedByCategory = useMemo(() => {
     const grouped: Record<string, MenuItem[]> = {};
     selectedItems.forEach(item => {
@@ -78,17 +91,12 @@ export function MenuPreviewDialog({
     return grouped;
   }, [selectedItems]);
 
-  const displayedCategories = useMemo(() => {
-    const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
-    return allCategories.filter(cat => categoryIdsInSelection.has(cat.id));
-  }, [selectedItems, allCategories]);
-
   const categoriesToDisplayInMainPanel = useMemo(() => {
     if (activeCategoryId) {
-      return displayedCategories.filter(cat => cat.id === activeCategoryId);
+      return orderedDialogCategories.filter(cat => cat.id === activeCategoryId);
     }
-    return displayedCategories;
-  }, [activeCategoryId, displayedCategories]);
+    return orderedDialogCategories;
+  }, [activeCategoryId, orderedDialogCategories]);
 
 
   return (
@@ -128,27 +136,29 @@ export function MenuPreviewDialog({
                 onClick={() => setActiveCategoryId(null)}
                 title="All Items"
               >
-                <FileText className="h-4 w-4" /> {/* Keeping a default Lucide icon for "All Items" */}
-                {!isSidebarCollapsed && <span className="ml-2 truncate">All Items</span>}
+                <FileText className="h-4 w-4 shrink-0" />
+                {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
               </Button>
-              {displayedCategories.map(category => {
-                return (
-                  <Button
-                    key={category.id}
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start text-sm mb-1 h-9",
-                      activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
-                      isSidebarCollapsed ? "justify-center px-0" : "px-2"
-                    )}
-                    onClick={() => setActiveCategoryId(category.id)}
-                    title={category.name}
-                  >
-                    <span className={cn("text-base w-4 h-4 flex items-center justify-center", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
-                    {!isSidebarCollapsed && <span className="truncate">{category.name}</span>}
-                  </Button>
-                );
-              })}
+              <Reorder.Group axis="y" values={orderedDialogCategories} onReorder={setOrderedDialogCategories} className="space-y-1">
+                {orderedDialogCategories.map(category => (
+                  <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start text-sm mb-0 h-9 flex items-center", // Ensure flex and items-center
+                        activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
+                        isSidebarCollapsed ? "justify-center px-0" : "px-2"
+                      )}
+                      onClick={() => setActiveCategoryId(category.id)}
+                      title={category.name}
+                    >
+                      <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
+                      {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{category.name}</span>}
+                      {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0" />}
+                    </Button>
+                  </Reorder.Item>
+                ))}
+              </Reorder.Group>
             </ScrollArea>
           </div>
 
@@ -217,3 +227,4 @@ export function MenuPreviewDialog({
     </Dialog>
   );
 }
+
