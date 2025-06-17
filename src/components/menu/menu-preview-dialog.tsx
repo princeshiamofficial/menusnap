@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { X, ChevronLeft, Send, Users, Trash2, FileText, Coffee, Beef } from 'lucide-react'; // Placeholder icons
+import { X, ChevronLeft, Send, Users, FileText } from 'lucide-react';
 
 // Interfaces matching MenuItemsPage for consistency
 interface Category {
@@ -56,21 +56,6 @@ interface MenuPreviewDialogProps {
 }
 
 const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
-
-// Helper to get Lucide icon component from string
-const getIconComponent = (iconName: string): React.ElementType => {
-  const iconMap: Record<string, React.ElementType> = {
-    "default": FileText, // Default icon
-    "expresso": Coffee, // Example, map your icon strings to components
-    "dhakaiya": Beef,   // Example
-    "filetext": FileText,
-    "coffee": Coffee,
-    "beef": Beef,
-    // Add more mappings as needed from your category.icon strings
-  };
-  return iconMap[iconName.toLowerCase()] || FileText;
-};
-
 
 export function MenuPreviewDialog({
   isOpen,
@@ -143,11 +128,10 @@ export function MenuPreviewDialog({
                 onClick={() => setActiveCategoryId(null)}
                 title="All Items"
               >
-                <FileText className="h-4 w-4" />
+                <FileText className="h-4 w-4" /> {/* Keeping a default Lucide icon for "All Items" */}
                 {!isSidebarCollapsed && <span className="ml-2 truncate">All Items</span>}
               </Button>
               {displayedCategories.map(category => {
-                const IconComponent = getIconComponent(category.icon);
                 return (
                   <Button
                     key={category.id}
@@ -160,8 +144,8 @@ export function MenuPreviewDialog({
                     onClick={() => setActiveCategoryId(category.id)}
                     title={category.name}
                   >
-                    <IconComponent className="h-4 w-4" />
-                    {!isSidebarCollapsed && <span className="ml-2 truncate">{category.name}</span>}
+                    <span className={cn("text-base w-4 h-4 flex items-center justify-center", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
+                    {!isSidebarCollapsed && <span className="truncate">{category.name}</span>}
                   </Button>
                 );
               })}
@@ -171,14 +155,13 @@ export function MenuPreviewDialog({
           {/* Right Content Panel */}
           <ScrollArea className="flex-1 p-6 bg-background">
             {categoriesToDisplayInMainPanel.map(category => {
-              const IconComponent = getIconComponent(category.icon);
               const items = itemsGroupedByCategory[category.id] || [];
               if (items.length === 0) return null;
 
               return (
                 <div key={category.id} className="mb-8">
                   <div className="flex items-center mb-4">
-                    <IconComponent className="h-5 w-5 mr-2 text-primary" />
+                    <span className="text-xl mr-2 text-primary">{category.icon}</span>
                     <h3 className="text-lg font-semibold text-foreground">{category.name}</h3>
                     <Badge variant="secondary" className="ml-2 text-xs">{items.length}</Badge>
                   </div>
