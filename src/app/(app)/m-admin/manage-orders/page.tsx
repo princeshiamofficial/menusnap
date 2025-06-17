@@ -21,6 +21,7 @@ import {
 import {
   Input
 } from "@/components/ui/input";
+// Table components are not directly used for order list, but kept for consistency if ever needed.
 import {
   Table,
   TableHeader,
@@ -28,7 +29,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from "@/components/ui/table"; // Though not a table, using for structure consistency if expanded
+} from "@/components/ui/table"; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +68,8 @@ import {
   ShoppingCart,
   CalendarDays,
   Tag,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import {
   cn
@@ -112,13 +114,12 @@ const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress
 
 interface ApiOrder {
   id: string;
-  orderId: string; // The display ID like ORD-XXXX
-  orderDate: string; // ISO string or parsable date string
+  orderId: string; 
+  orderDate: string; 
   status: OrderStatus;
-  templateName?: string; // Optional, might not be on all orders
+  templateName?: string; 
   customerName?: string;
   totalAmount?: number;
-  // items: OrderItem[]; 
 }
 
 const statusColors: Record<OrderStatus, string> = {
@@ -189,15 +190,24 @@ export default function ManageOrdersPage(): ReactNode {
       if (!response.ok) throw new Error(`API error! status: ${response.status}`);
       const result = await response.json();
 
-      if (!result.success || !Array.isArray(result.data)) {
-        console.error('Invalid API response structure for orders:', result);
-        throw new Error('Invalid data format from API for orders.');
+      let rawOrdersArray: any[] = [];
+      if (result.success) {
+        if (result.data && Array.isArray(result.data.orders)) {
+            rawOrdersArray = result.data.orders;
+        } else if (Array.isArray(result.data)) {
+            rawOrdersArray = result.data;
+        } else {
+            console.error('Invalid data format for orders: "orders" array not found in data.', result);
+            throw new Error('Invalid data format from API for orders.');
+        }
+      } else {
+         throw new Error(result.message || 'API request for orders was not successful.');
       }
       
-      const fetchedOrders: ApiOrder[] = result.data.map((order: any): ApiOrder => ({
+      const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any): ApiOrder => ({
         id: String(order.id),
         orderId: String(order.orderId || order.id), 
-        orderDate: String(order.orderDate || order.createdAt || new Date().toISOString()),
+        orderDate: String(order.orderDate || order.createdAt || order.date || new Date().toISOString()),
         status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : "Pending",
         templateName: order.templateName || undefined,
         customerName: order.customerName || 'N/A',
@@ -338,13 +348,17 @@ export default function ManageOrdersPage(): ReactNode {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Button variant="outline" onClick={handleRefresh} disabled={isLoading} className="shrink-0">
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}>
               <SelectTrigger className="w-full sm:w-auto min-w-[150px]">
                 <ListFilter className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 {ALL_ORDER_STATUSES.map(status => (
                   <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}
@@ -401,7 +415,9 @@ export default function ManageOrdersPage(): ReactNode {
             <div className="text-center py-10 text-destructive">
               <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
               <p className="text-lg">Error loading orders: {error}</p>
-              <Button variant="outline" onClick={handleRefresh} className="mt-4">Try Again</Button>
+              <Button variant="outline" onClick={handleRefresh} className="mt-4">
+                <RefreshCw className="h-4 w-4 mr-2" /> Try Again
+              </Button>
             </div>
           ) : filteredAndSortedOrders.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
@@ -460,6 +476,11 @@ export default function ManageOrdersPage(): ReactNode {
                              {order.customerName}
                            </Badge>
                         )}
+                         {order.totalAmount && order.totalAmount > 0 && (
+                            <Badge variant="secondary" className="text-xs font-normal">
+                                Amount: {order.totalAmount.toFixed(2)}
+                            </Badge>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -476,3 +497,4 @@ export default function ManageOrdersPage(): ReactNode {
   );
 }
     
+
