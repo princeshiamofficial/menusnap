@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTheme } from '@/context/ThemeContext';
-import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog'; // Added import
+import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog'; 
 
 interface Category {
   id: string;
@@ -83,7 +83,7 @@ export default function MenuItemsPage() {
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const { setTheme } = useTheme();
 
-  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false); // State for dialog
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -282,7 +282,7 @@ export default function MenuItemsPage() {
   const handleRemoveItemFromPreview = (itemIdToRemove: string) => {
     setSelectedItems(prev => {
       const updated = { ...prev };
-      delete updated[itemIdToRemove]; // Or set to false: updated[itemIdToRemove] = false;
+      delete updated[itemIdToRemove]; 
       return updated;
     });
   };
