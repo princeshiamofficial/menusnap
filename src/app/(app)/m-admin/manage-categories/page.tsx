@@ -286,7 +286,7 @@ export default function ManageCategoriesPage(): ReactNode {
     } catch (e: any) {
       console.error(`Failed to fetch ${type} categories:`, e);
       setError(e.message || `Failed to load ${type} categories.`);
-      setAllCategories([]); // Clear categories on error
+      setAllCategories([]); 
     } finally {
       setIsLoading(false);
     }
@@ -303,10 +303,9 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const handleAddCategory = async (data: CategoryFormValues) => {
     console.log("Adding category:", data);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     const newCategory: ApiCategory = {
-      id: String(Date.now()), // Temporary ID
+      id: String(Date.now()), 
       ...data,
       itemCount: 0,
       createdAt: new Date().toISOString(),
@@ -320,7 +319,6 @@ export default function ManageCategoriesPage(): ReactNode {
   const handleEditCategory = async (data: CategoryFormValues) => {
     if (!editingCategoryData) return;
     console.log("Editing category:", editingCategoryData.id, data);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     setAllCategories(prev => prev.map(cat => cat.id === editingCategoryData.id ? { ...cat, ...data, id: cat.id, itemCount: cat.itemCount, createdAt: cat.createdAt } : cat));
     toast({ title: "Success", description: `Category "${data.name}" updated.` });
@@ -342,7 +340,6 @@ export default function ManageCategoriesPage(): ReactNode {
   const confirmDeleteCategory = async () => {
     if (!categoryToDeleteInfo) return;
     console.log("Deleting category:", categoryToDeleteInfo.id);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     setAllCategories(prev => prev.filter(cat => cat.id !== categoryToDeleteInfo.id));
     toast({ title: "Success", description: `Category "${categoryToDeleteInfo.name}" deleted.` });
@@ -353,7 +350,6 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const handleToggleVisibility = async (id: string) => {
     console.log("Toggling visibility for category:", id);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     setAllCategories(prev => prev.map(cat => cat.id === id ? { ...cat, visibleToUsers: !cat.visibleToUsers } : cat));
     const category = allCategories.find(c => c.id === id);
@@ -444,7 +440,7 @@ export default function ManageCategoriesPage(): ReactNode {
         />
       </section>
 
-      <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border">
+      <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border flex flex-col">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground">{categoryTypeName} Categories</h2>
@@ -489,98 +485,100 @@ export default function ManageCategoriesPage(): ReactNode {
             Sort
           </Button>
         </div>
-
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center space-x-4 p-3 border rounded-md">
-                <Skeleton className="h-10 w-10 rounded-md" />
-                <div className="flex-1 space-y-1">
-                  <Skeleton className="h-4 w-3/5" />
-                  <Skeleton className="h-3 w-4/5" />
+        
+        <div className="flex-grow min-h-0">
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4 p-3 border rounded-md">
+                  <Skeleton className="h-10 w-10 rounded-md" />
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-4 w-3/5" />
+                    <Skeleton className="h-3 w-4/5" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
                 </div>
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-8 w-8 rounded-full" />
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-10 text-destructive">
-            <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-            <p className="text-lg">Error loading categories: {error}</p>
-          </div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">
-            <LayoutList className="mx-auto h-12 w-12 mb-4" />
-            <p className="text-lg">No categories found.</p>
-            {searchTerm && <p>Try adjusting your search or filters.</p>}
-          </div>
-        ) : (
-          <ScrollArea className="max-h-[500px] w-full">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px] hidden sm:table-cell"></TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-center">Items</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCategories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell className="hidden sm:table-cell">
-                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-xl">
-                        {category.icon}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-foreground">{category.name}</div>
-                      {category.description && <div className="text-xs text-muted-foreground line-clamp-1">{category.description}</div>}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="secondary" className="bg-muted text-muted-foreground">{category.itemCount} items</Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(category.createdAt)}</TableCell>
-                    <TableCell>
-                      <Badge variant={category.visibleToUsers ? "default" : "outline"}
-                        className={cn(category.visibleToUsers ? "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600" : "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600")}>
-                        {category.visibleToUsers ? <Eye className="h-3.5 w-3.5 mr-1.5" /> : <EyeOff className="h-3.5 w-3.5 mr-1.5" />}
-                        {category.visibleToUsers ? "Visible" : "Hidden"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(category)}>
-                            <Edit3 className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleToggleVisibility(category.id)}>
-                            {category.visibleToUsers ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                            {category.visibleToUsers ? "Set as Hidden" : "Set as Visible"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDeleteCategory(category.id, category.name)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-10 text-destructive">
+              <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
+              <p className="text-lg">Error loading categories: {error}</p>
+            </div>
+          ) : filteredCategories.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              <LayoutList className="mx-auto h-12 w-12 mb-4" />
+              <p className="text-lg">No categories found.</p>
+              {searchTerm && <p>Try adjusting your search or filters.</p>}
+            </div>
+          ) : (
+            <ScrollArea className="max-h-[500px] w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px] hidden sm:table-cell"></TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-center">Items</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        )}
+                </TableHeader>
+                <TableBody>
+                  {filteredCategories.map((category) => (
+                    <TableRow key={category.id}>
+                      <TableCell className="hidden sm:table-cell">
+                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-xl">
+                          {category.icon}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-foreground">{category.name}</div>
+                        {category.description && <div className="text-xs text-muted-foreground line-clamp-1">{category.description}</div>}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary" className="bg-muted text-muted-foreground">{category.itemCount} items</Badge>
+                      </TableCell>
+                      <TableCell>{formatDate(category.createdAt)}</TableCell>
+                      <TableCell>
+                        <Badge variant={category.visibleToUsers ? "default" : "outline"}
+                          className={cn(category.visibleToUsers ? "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600" : "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600")}>
+                          {category.visibleToUsers ? <Eye className="h-3.5 w-3.5 mr-1.5" /> : <EyeOff className="h-3.5 w-3.5 mr-1.5" />}
+                          {category.visibleToUsers ? "Visible" : "Hidden"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDialog(category)}>
+                              <Edit3 className="mr-2 h-4 w-4" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleVisibility(category.id)}>
+                              {category.visibleToUsers ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                              {category.visibleToUsers ? "Set as Hidden" : "Set as Visible"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleDeleteCategory(category.id, category.name)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          )}
+        </div>
         <div className="flex justify-between items-center mt-4 pt-4 border-t border-border text-sm text-muted-foreground">
           <p>Showing {filteredCategories.length} of {allCategories.length} {categoryTypeName.toLowerCase()} categories.</p>
           <Button variant="outline" disabled>Export {categoryTypeName} Categories</Button>
@@ -645,6 +643,4 @@ export default function ManageCategoriesPage(): ReactNode {
     </div>
   );
 }
-
-
     
