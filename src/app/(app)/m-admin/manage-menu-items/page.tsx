@@ -3,6 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import Image from 'next/image';
 import {
   Button,
   buttonVariants
@@ -76,7 +77,7 @@ interface MenuItemAdmin {
   image?: string | null;
 }
 
-const ITEMS_PER_PAGE_ITEMS = 15;
+const ITEMS_PER_PAGE_ITEMS = 10; // Show 10 items, which will be 5 rows in a 2-column layout
 
 export default function ManageMenuItemsPage(): ReactNode {
   const [menuType, setMenuType] = useState<MenuType>("restaurant");
@@ -92,7 +93,7 @@ export default function ManageMenuItemsPage(): ReactNode {
   
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
-  const [loadingItems, setLoadingItems] = useState(false); // Only true when explicitly fetching items
+  const [loadingItems, setLoadingItems] = useState(false); 
   const [errorItems, setErrorItems] = useState<string | null>(null);
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -119,7 +120,6 @@ export default function ManageMenuItemsPage(): ReactNode {
         fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
       ]);
 
-      // Process Categories
       if (!categoriesResponse.ok) throw new Error(`Categories API error! status: ${categoriesResponse.status}`);
       const categoriesResult = await categoriesResponse.json();
       if (!categoriesResult.success || !categoriesResult.data || !Array.isArray(categoriesResult.data.categories)) {
@@ -145,7 +145,6 @@ export default function ManageMenuItemsPage(): ReactNode {
         setSelectedCategory(null);
       }
 
-      // Process Menu Items
       if (!menuItemsResponse.ok) throw new Error(`Menu Items API error! status: ${menuItemsResponse.status}`);
       const menuItemsResult = await menuItemsResponse.json();
 
@@ -153,7 +152,7 @@ export default function ManageMenuItemsPage(): ReactNode {
       if (menuItemsResult.success) {
         if (Array.isArray(menuItemsResult.data)) {
           rawItemsArray = menuItemsResult.data;
-        } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) { // Alternative structure
+        } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) {
           rawItemsArray = menuItemsResult.data.items;
         } else {
           throw new Error('Invalid data format for menu items.');
@@ -191,12 +190,12 @@ export default function ManageMenuItemsPage(): ReactNode {
   useEffect(() => {
     fetchCategoriesAndItems(menuType);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuType]); // Removed fetchCategoriesAndItems from deps to avoid loop with retainSelectedCategory
+  }, [menuType]);
 
   useEffect(() => {
     let items = selectedCategory
       ? allMenuItems.filter(item => item.categoryId === selectedCategory.id)
-      : allMenuItems; // Show all items if "All Items" (null category) is selected
+      : allMenuItems;
 
     if (searchTerm) {
       items = items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -235,12 +234,11 @@ export default function ManageMenuItemsPage(): ReactNode {
   };
 
   const handleRefresh = () => {
-    fetchCategoriesAndItems(menuType, true); // Retain selected category
+    fetchCategoriesAndItems(menuType, true);
   };
 
   return (
     <div className="flex h-[calc(100vh-theme(spacing.16)-1px)] bg-muted/30">
-      {/* Categories Sidebar */}
       <aside className="w-72 bg-card border-r border-border flex flex-col">
         <div className="p-4 border-b border-border">
           <Button
@@ -249,7 +247,7 @@ export default function ManageMenuItemsPage(): ReactNode {
               "w-full justify-start items-center text-md h-10 mb-2 font-semibold",
               !selectedCategory ? 'bg-muted text-foreground' : 'text-foreground'
             )}
-            onClick={() => setSelectedCategory(null)} // Select "All Items"
+            onClick={() => setSelectedCategory(null)}
           >
             All Items
             <Badge variant="secondary" className="ml-auto bg-muted text-muted-foreground">{totalAllItemsCount}</Badge>
@@ -292,7 +290,6 @@ export default function ManageMenuItemsPage(): ReactNode {
         </ScrollArea>
       </aside>
 
-      {/* Menu Items Content Area */}
       <main className="flex-1 flex flex-col bg-background overflow-hidden">
         <div className="py-3 px-6 border-b border-border bg-card flex items-center justify-between gap-2">
           <div className="relative flex-grow max-w-xs">
@@ -339,21 +336,23 @@ export default function ManageMenuItemsPage(): ReactNode {
         </div>
         
         <ScrollArea className="flex-1 bg-background">
-          <div className="p-6 space-y-3">
+          <div className="p-6">
             {loadingItems && (
-              Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="flex-1 space-y-1.5">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-3 w-1/4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: ITEMS_PER_PAGE_ITEMS }).map((_, i) => (
+                  <div key={i} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                    <Skeleton className="h-5 w-12" />
+                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-8 w-8" />
+                    <Skeleton className="h-8 w-8" />
                   </div>
-                  <Skeleton className="h-5 w-12" />
-                  <Skeleton className="h-8 w-8" />
-                  <Skeleton className="h-8 w-8" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
-              ))
+                ))}
+              </div>
             )}
             {!loadingItems && errorItems && (
               <div className="text-center py-10 text-destructive bg-card border border-destructive/20 rounded-lg">
@@ -372,55 +371,69 @@ export default function ManageMenuItemsPage(): ReactNode {
                 {!selectedCategory && <p className="text-sm mt-1">Select a category or check the menu type.</p>}
               </div>
             )}
-            {!loadingItems && !errorItems && paginatedMenuItems.map(item => (
-              <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                  {/* Placeholder for image - could use item.image if available or first letter */}
-                  {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover rounded-full" /> : <Utensils className="h-5 w-5"/>}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                    <Badge 
-                      variant={item.status === 'Active' ? 'default' : 'outline'}
-                      className={cn(
-                        "text-xs px-1.5 py-0.5",
-                        item.status === 'Active' 
-                        ? 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600' 
-                        : 'bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600'
+            {!loadingItems && !errorItems && paginatedMenuItems.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {paginatedMenuItems.map(item => (
+                  <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0">
+                      {item.image ? (
+                        <Image 
+                          src={item.image} 
+                          alt={item.name} 
+                          width={40} 
+                          height={40} 
+                          className="h-full w-full object-cover rounded-full" 
+                          data-ai-hint="food item"
+                        />
+                      ) : (
+                        <Utensils className="h-5 w-5"/>
                       )}
-                    >
-                      {item.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Added {formatDate(item.addedDate)}</p>
-                </div>
-                <div className="text-sm font-semibold text-foreground whitespace-nowrap">
-                  ৳{item.price.toLocaleString()}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" className="h-8 w-auto px-2 text-muted-foreground hover:text-foreground">
-                    <Edit3 className="h-4 w-4 mr-1" /> Edit
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-8 w-auto px-2 text-destructive hover:bg-destructive/10">
-                    <Trash2 className="h-4 w-4 mr-1" /> Delete
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                        <MoreHorizontal className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                        <Badge 
+                          variant={item.status === 'Active' ? 'default' : 'outline'}
+                          className={cn(
+                            "text-xs px-1.5 py-0.5",
+                            item.status === 'Active' 
+                            ? 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600' 
+                            : 'bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600'
+                          )}
+                        >
+                          {item.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Added {formatDate(item.addedDate)}</p>
+                    </div>
+                    <div className="text-sm font-semibold text-foreground whitespace-nowrap">
+                      ৳{item.price.toLocaleString()}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" className="h-8 w-auto px-2 text-muted-foreground hover:text-foreground">
+                        <Edit3 className="h-4 w-4 mr-1" /> Edit
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Toggle Status</DropdownMenuItem>
-                      <DropdownMenuItem>Feature Item</DropdownMenuItem>
-                      <DropdownMenuSeparator/>
-                      <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">Duplicate Item</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                      <Button variant="ghost" size="sm" className="h-8 w-auto px-2 text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-4 w-4 mr-1" /> Delete
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>Toggle Status</DropdownMenuItem>
+                          <DropdownMenuItem>Feature Item</DropdownMenuItem>
+                          <DropdownMenuSeparator/>
+                          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">Duplicate Item</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </ScrollArea>
         {totalPages > 0 && (
