@@ -384,7 +384,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
             >
               <div className="space-y-1 text-center">
                 {imagePreview ? (
-                  <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" />
+                  <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" data-ai-hint="template visual"/>
                 ) : (
                   <ImageIcon className="mx-auto h-24 w-24 text-muted-foreground/80" />
                 )}
@@ -1047,3 +1047,4 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
+
