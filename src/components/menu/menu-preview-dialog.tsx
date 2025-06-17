@@ -24,7 +24,7 @@ import { X, ChevronLeft, Send, Users, FileText, GripVertical } from 'lucide-reac
 interface Category {
   id: string;
   name: string;
-  icon: string; // Emoji or Lucide icon name string
+  icon: string; 
   itemCount?: number;
 }
 
@@ -76,8 +76,25 @@ export function MenuPreviewDialog({
   const [orderedDialogCategories, setOrderedDialogCategories] = useState<Category[]>(derivedDisplayedCategories);
 
   useEffect(() => {
-    setOrderedDialogCategories(derivedDisplayedCategories);
-  }, [derivedDisplayedCategories]);
+    // Update local orderedDialogCategories if the source derivedDisplayedCategories changes
+    // This handles cases where items are removed from selection on the main page,
+    // which might change the categories available in the dialog.
+    const newCategoryOrder = derivedDisplayedCategories.map(derivedCat => {
+        // Try to find the category in the current local order to preserve its position
+        const existingCat = orderedDialogCategories.find(oc => oc.id === derivedCat.id);
+        return existingCat || derivedCat; // If not found, use the derived one
+    }).filter(cat => derivedDisplayedCategories.some(dc => dc.id === cat.id)); // Ensure only currently valid categories are kept
+
+    // Add any newly derived categories that weren't in the local order
+    derivedDisplayedCategories.forEach(derivedCat => {
+        if (!newCategoryOrder.some(nc => nc.id === derivedCat.id)) {
+            newCategoryOrder.push(derivedCat);
+        }
+    });
+    setOrderedDialogCategories(newCategoryOrder);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [derivedDisplayedCategories]); // Only re-run if derivedDisplayedCategories changes
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -145,7 +162,7 @@ export function MenuPreviewDialog({
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start text-sm mb-0 h-9 flex items-center", // Ensure flex and items-center
+                        "w-full justify-start text-sm mb-0 h-9 flex items-center", 
                         activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
                         isSidebarCollapsed ? "justify-center px-0" : "px-2"
                       )}
@@ -179,12 +196,12 @@ export function MenuPreviewDialog({
                     {items.map(item => (
                       <div key={item.id} className="flex items-center p-3 border rounded-lg bg-card shadow-sm">
                         <Image
-                          src={item.image || STATIC_ITEM_IMAGE_URL}
+                          src={STATIC_ITEM_IMAGE_URL}
                           alt={item.name}
                           width={48}
                           height={48}
-                          className="h-12 w-12 rounded-md object-cover mr-4 bg-muted"
-                          data-ai-hint="menu item food"
+                          className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
+                          data-ai-hint="item illustration"
                         />
                         <div className="flex-1">
                           <p className="font-medium text-sm text-foreground">{item.name}</p>
