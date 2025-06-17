@@ -388,15 +388,6 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
                 ) : (
                   <ImageIcon className="mx-auto h-24 w-24 text-muted-foreground/80" />
                 )}
-                <div className="flex text-sm text-muted-foreground justify-center">
-                   <p>
-                    Drag 'n' drop, paste, or{" "}
-                    <span className="font-medium text-primary hover:text-primary/80 underline">
-                      click to upload
-                    </span>
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground">Upload an image for your template (recommended size: 600x400px, max 5MB)</p>
               </div>
             </div>
             <input 
@@ -647,15 +638,6 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
                 ) : (
                   <ImageIcon className="mx-auto h-24 w-24 text-muted-foreground/80" />
                 )}
-                 <div className="flex text-sm text-muted-foreground justify-center">
-                   <p>
-                    Drag 'n' drop, paste, or{" "}
-                    <span className="font-medium text-primary hover:text-primary/80 underline">
-                      click to upload
-                    </span>
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground">Upload an image for your template (recommended size: 600x400px, max 5MB)</p>
               </div>
             </div>
              <input 
@@ -1065,4 +1047,3 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
-
