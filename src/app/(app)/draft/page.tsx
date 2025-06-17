@@ -19,23 +19,31 @@ import {
   CalendarDays,
   Tag,
   ChevronRight,
+  ChevronDown,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  Square
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
 
 const STATIC_AVATAR_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 
+interface DraftSubItem {
+  id: string;
+  name: string;
+  price: number;
+}
+
 interface DraftItem {
   id: string;
   name: string; 
   createdAt: string; // ISO string
   itemCount: number;
-  primaryTag: string; // e.g., "restaurant-expresso-based-classics-1749702507341"
-  price: number;
-  // previewAvatars is no longer directly used for content, but its length can indicate how many to show
+  primaryTag: string; 
+  price: number; 
   previewAvatars: string[]; 
+  items?: DraftSubItem[]; 
 }
 
 // Mock Data
@@ -47,46 +55,63 @@ const initialMockDrafts: DraftItem[] = [
     itemCount: 5,
     primaryTag: "restaurant-expresso-based-classics-1749702507341",
     price: 0,
-    previewAvatars: ["CH", "RD", "FV"], // Kept for count logic, not for display
+    previewAvatars: ["CH", "RD", "FV"],
+    items: [
+      { id: "item_1_1", name: "Ristretto", price: 0 },
+      { id: "item_1_2", name: "Long Black", price: 0 },
+      { id: "item_1_3", name: "Mocha", price: 0 },
+      { id: "item_1_4", name: "Chicken Dhakaiya Chaap", price: 0 },
+      { id: "item_1_5", name: "Beef Dhakaiya Chaap", price: 0 },
+    ]
   },
   {
     id: "draft_2",
     name: "Menu Selection",
     createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
-    itemCount: 8,
+    itemCount: 3,
     primaryTag: "parlour-sweet-treats-1749702507555",
     price: 1200,
     previewAvatars: ["SC", "IC", "MK"],
+    items: [
+      { id: "item_2_1", name: "Chocolate Sundae", price: 400 },
+      { id: "item_2_2", name: "Vanilla Milkshake", price: 350 },
+      { id: "item_2_3", name: "Strawberry Ice Cream", price: 450 },
+    ]
   },
   {
     id: "draft_3",
     name: "Quick Lunch Ideas",
     createdAt: new Date(Date.now() - 65 * 60 * 1000).toISOString(), // 1 hour 5 mins ago
-    itemCount: 3,
+    itemCount: 2,
     primaryTag: "cafe-light-bites-1749702507888",
     price: 750,
-    previewAvatars: ["SW", "SL", "DR"],
+    previewAvatars: ["SW", "SL"],
+    items: [
+      { id: "item_3_1", name: "Club Sandwich", price: 400 },
+      { id: "item_3_2", name: "Caesar Salad", price: 350 },
+    ]
   },
    {
     id: "draft_4",
     name: "Dinner Specials",
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    itemCount: 12,
+    itemCount: 0, // No items for this draft to test empty state
     primaryTag: "fine-dining-main-course-1749702507999",
     price: 3500,
-    previewAvatars: ["ST", "PT", "WN"],
+    previewAvatars: [],
   },
 ];
 
 
 interface DraftCardProps {
   draft: DraftItem;
+  isExpanded: boolean;
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
-  onShowDetails: (id: string) => void;
+  onToggleExpand: (id: string) => void;
 }
 
-function DraftCard({ draft, onRestore, onDelete, onShowDetails }: DraftCardProps): ReactNode {
+function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: DraftCardProps): ReactNode {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     setHasMounted(true);
@@ -100,7 +125,6 @@ function DraftCard({ draft, onRestore, onDelete, onShowDetails }: DraftCardProps
   const formattedCreationDate = isValidDate ? format(createdAtDate, 'EEE, MMM d, hh:mm a') : 'Invalid Date';
   const formattedShortDateBadge = isValidDate ? format(createdAtDate, 'MMM d') : 'N/A';
   
-  // Determine how many avatars to show based on itemCount or previewAvatars.length (up to 3)
   const avatarsToShowCount = Math.min(draft.itemCount > 0 ? 3 : draft.previewAvatars.length, 3);
   const remainingAvatars = Math.max(0, draft.itemCount - avatarsToShowCount);
 
@@ -156,10 +180,36 @@ function DraftCard({ draft, onRestore, onDelete, onShowDetails }: DraftCardProps
           {remainingAvatars > 0 && (
             <span className="text-xs font-medium text-muted-foreground ml-1">+{remainingAvatars}</span>
           )}
-          <Button variant="link" className="text-xs h-auto p-0 text-primary hover:text-primary/80" onClick={() => onShowDetails(draft.id)}>
-            Show details <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
+          <Button 
+            variant="link" 
+            className="text-xs h-auto p-0 text-primary hover:text-primary/80" 
+            onClick={() => onToggleExpand(draft.id)}
+            disabled={!draft.items || draft.items.length === 0}
+          >
+            {isExpanded ? "Hide details" : "Show details"}
+            {isExpanded ? <ChevronDown className="h-3.5 w-3.5 ml-0.5" /> : <ChevronRight className="h-3.5 w-3.5 ml-0.5" />}
           </Button>
         </div>
+        {isExpanded && draft.items && draft.items.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-border">
+            <ul className="space-y-2">
+              {draft.items.map((item) => (
+                <li key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
+                  <div className="flex items-center">
+                    <Square className="h-4 w-4 text-muted-foreground mr-2 opacity-50" />
+                    <span className="text-foreground">{item.name}</span>
+                  </div>
+                  <span className="text-muted-foreground font-medium">৳{item.price.toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+         {isExpanded && (!draft.items || draft.items.length === 0) && (
+           <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
+             No item details available for this draft.
+           </div>
+         )}
       </CardContent>
       <CardFooter className="bg-muted/30 px-5 py-3 flex justify-between items-center border-t border-border">
         <p className="text-xs text-muted-foreground">Created on {formattedCreationDate}</p>
@@ -223,6 +273,7 @@ export default function DraftPage(): ReactNode {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false); 
   const [error, setError] = useState<string | null>(null);
+  const [expandedDrafts, setExpandedDrafts] = useState<Record<string, boolean>>({});
 
   const handleRestoreDraft = (id: string) => {
     console.log("Restore draft:", id);
@@ -231,10 +282,15 @@ export default function DraftPage(): ReactNode {
   const handleDeleteDraft = (id: string) => {
     console.log("Delete draft:", id);
     setDrafts(prevDrafts => prevDrafts.filter(draft => draft.id !== id));
+    setExpandedDrafts(prev => {
+      const newExpanded = {...prev};
+      delete newExpanded[id];
+      return newExpanded;
+    });
   };
 
-  const handleShowDetails = (id: string) => {
-    console.log("Show details for draft:", id);
+  const handleToggleExpand = (id: string) => {
+    setExpandedDrafts(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
   const filteredDrafts = useMemo(() => {
@@ -292,9 +348,10 @@ export default function DraftPage(): ReactNode {
             <DraftCard
               key={draft.id}
               draft={draft}
+              isExpanded={!!expandedDrafts[draft.id]}
               onRestore={handleRestoreDraft}
               onDelete={handleDeleteDraft}
-              onShowDetails={handleShowDetails}
+              onToggleExpand={handleToggleExpand}
             />
           ))
         )}
