@@ -3,34 +3,28 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Table,
   TableHeader,
   TableBody,
-  TableRow,
+  // TableRow, // We will use motion.tr instead
   TableHead,
   TableCell,
 } from "@/components/ui/table";
 import {
   Button,
-  buttonVariants
+  // buttonVariants // Not directly used now
 } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
-  Badge
-} from "@/components/ui/badge";
-import {
-  Input
-} from "@/components/ui/input";
+// import { Card, CardContent } from "@/components/ui/card"; // StatCards removed
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  // DropdownMenuLabel, // Not used
+  // DropdownMenuSeparator, // Not used
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -46,18 +40,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ScrollArea
-} from '@/components/ui/scroll-area';
-import {
-  Skeleton
-} from "@/components/ui/skeleton";
-import {
-  Package,
-  Clock3,
-  Loader2,
-  CheckCircle,
-  XCircle,
+  Package, // Placeholder if StatCards were to return
+  Clock3,  // Placeholder
+  Loader2, // Placeholder
+  CheckCircle, // Placeholder
+  XCircle, // Placeholder
   Search,
   ListFilter,
   FileText,
@@ -66,19 +56,13 @@ import {
   Eye,
   ShoppingCart,
   CalendarDays,
-  Tag,
+  // Tag, // Not directly used for icon, but concept is there for template badge
   AlertTriangle,
   RefreshCw,
-  Edit3 // Added for action menu
+  Edit3
 } from "lucide-react";
-import {
-  cn
-} from "@/lib/utils";
-import {
-  format,
-  parseISO,
-  isValid as isValidDate
-} from 'date-fns';
+import { cn } from "@/lib/utils";
+import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold";
@@ -98,13 +82,16 @@ interface ApiOrder {
 const statusColors: Record<OrderStatus, string> = {
   "Pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600",
   "Processing": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
+  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600", // Same as Processing for consistency
   "Shipped": "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/20 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600",
   "Delivered": "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600",
   "Cancelled": "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600",
   "Refunded": "bg-gray-100 text-gray-700 dark:bg-gray-700/20 dark:text-gray-400 border-gray-300 dark:border-gray-600",
   "On Hold": "bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-400 border-orange-300 dark:border-orange-600",
 };
+
+const templateBadgeStyle = "bg-teal-100 text-teal-700 dark:bg-teal-700/20 dark:text-teal-400 border-teal-300 dark:border-teal-600";
+
 
 type SortOptionOrders =
   | 'newest'
@@ -194,6 +181,7 @@ export default function ManageOrdersPage(): ReactNode {
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     console.log(`Updating order ${orderId} to status ${newStatus}`);
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     setAllOrders(prevOrders =>
       prevOrders.map(order =>
@@ -222,6 +210,7 @@ export default function ManageOrdersPage(): ReactNode {
       return matchesSearch && matchesStatus && matchesTemplate;
     });
 
+    // Sorting logic
     switch (sortOption) {
       case 'newest':
         orders.sort((a, b) => {
@@ -271,15 +260,22 @@ export default function ManageOrdersPage(): ReactNode {
     }
   };
 
+  // Skeleton for table rows
   const orderRowSkeletons = Array.from({ length: 5 }).map((_, i) => (
-      <TableRow key={`skeleton-${i}`}>
+      <motion.tr 
+        key={`skeleton-${i}`} 
+        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: i * 0.05 }}
+      >
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
           <TableCell><Skeleton className="h-5 w-20" /></TableCell>
           <TableCell><Skeleton className="h-5 w-28" /></TableCell>
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
           <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
           <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
-      </TableRow>
+      </motion.tr>
   ));
 
 
@@ -292,10 +288,12 @@ export default function ManageOrdersPage(): ReactNode {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">View and manage all customer orders.</p>
         </div>
-        <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Data
-        </Button>
+        <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+          <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh Data
+          </Button>
+        </motion.div>
       </header>
       
       <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border flex flex-col flex-grow min-h-0">
@@ -355,92 +353,132 @@ export default function ManageOrdersPage(): ReactNode {
           {isLoading ? (
             <Table>
                 <TableHeader>
-                    <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Order ID</TableHead>
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                        <TableHead className="w-[180px]">Date</TableHead>
+                        <TableHead className="w-[150px]">Order ID</TableHead>
                         <TableHead>Template</TableHead>
                         <TableHead>Customer</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
+                        <TableHead className="w-[120px]">Status</TableHead>
+                        <TableHead className="text-right w-[100px]">Action</TableHead>
+                    </motion.tr>
                 </TableHeader>
-                <TableBody>{orderRowSkeletons}</TableBody>
+                <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
             </Table>
           ) : error ? (
-            <div className="text-center py-10 text-destructive">
+            <motion.div 
+              className="text-center py-10 text-destructive"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
               <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
               <p className="text-lg">Error loading orders: {error}</p>
               <Button variant="outline" onClick={handleRefresh} className="mt-4">
                 <RefreshCw className="h-4 w-4 mr-2" /> Try Again
               </Button>
-            </div>
+            </motion.div>
           ) : filteredAndSortedOrders.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">
+            <motion.div 
+              className="text-center py-10 text-muted-foreground"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
               <ShoppingCart className="mx-auto h-12 w-12 mb-4 opacity-50" />
               <p className="text-lg">No orders found.</p>
               {searchTerm && <p>Try adjusting your search or filters.</p>}
-            </div>
+            </motion.div>
           ) : (
             <ScrollArea className="w-full h-full">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <motion.tr 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                  >
                     <TableHead className="w-[180px]">Date</TableHead>
                     <TableHead className="w-[150px]">Order ID</TableHead>
                     <TableHead>Template</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead className="w-[120px]">Status</TableHead>
                     <TableHead className="text-right w-[100px]">Action</TableHead>
-                  </TableRow>
+                  </motion.tr>
                 </TableHeader>
                 <TableBody>
-                  {filteredAndSortedOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="text-xs text-muted-foreground">{formatDate(order.orderDate)}</TableCell>
-                      <TableCell className="font-medium text-primary">{order.orderId}</TableCell>
-                      <TableCell>{order.templateName !== 'Unknown Template' ? order.templateName : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
-                      <TableCell>{order.customerName !== 'N/A' ? order.customerName : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("text-xs py-1 px-2", statusColors[order.status] || statusColors.Pending)}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" /> View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                    <Edit3 className="mr-2 h-4 w-4" />
-                                    <span>Change Status</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuRadioGroup 
-                                        value={order.status} 
-                                        onValueChange={(newStatus) => handleStatusChange(order.id, newStatus as OrderStatus)}
-                                    >
-                                    {ALL_ORDER_STATUSES.map(s => (
-                                        <DropdownMenuRadioItem key={s} value={s} className="text-xs">
-                                        {s}
-                                        </DropdownMenuRadioItem>
-                                    ))}
-                                    </DropdownMenuRadioGroup>
-                                </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                            </DropdownMenuSub>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  <AnimatePresence>
+                    {filteredAndSortedOrders.map((order, index) => (
+                      <motion.tr
+                        key={order.id}
+                        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, transition: {duration: 0.15}}}
+                        transition={{ duration: 0.3, delay: index * 0.03 }}
+                      >
+                        <TableCell className="text-xs text-muted-foreground">
+                            <div className="flex items-center">
+                                <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70"/>
+                                {formatDate(order.orderDate)}
+                            </div>
+                        </TableCell>
+                        <TableCell className="font-medium text-primary hover:underline cursor-pointer">{order.orderId}</TableCell>
+                        <TableCell>
+                          {order.templateName !== 'Unknown Template' ? (
+                            <Badge variant="outline" className={cn("text-xs py-1 px-2 font-normal", templateBadgeStyle)}>
+                                {order.templateName}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground italic">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{order.customerName !== 'N/A' ? order.customerName : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={cn("text-xs py-1 px-2", statusColors[order.status] || statusColors.Pending)}>
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <Eye className="mr-2 h-4 w-4" /> View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuSub>
+                                  <DropdownMenuSubTrigger>
+                                      <Edit3 className="mr-2 h-4 w-4" />
+                                      <span>Change Status</span>
+                                  </DropdownMenuSubTrigger>
+                                  <DropdownMenuPortal>
+                                  <DropdownMenuSubContent>
+                                      <DropdownMenuRadioGroup 
+                                          value={order.status} 
+                                          onValueChange={(newStatus) => handleStatusChange(order.id, newStatus as OrderStatus)}
+                                      >
+                                      {ALL_ORDER_STATUSES.map(s => (
+                                          <DropdownMenuRadioItem key={s} value={s} className="text-xs">
+                                          {s}
+                                          </DropdownMenuRadioItem>
+                                      ))}
+                                      </DropdownMenuRadioGroup>
+                                  </DropdownMenuSubContent>
+                                  </DropdownMenuPortal>
+                              </DropdownMenuSub>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
                 </TableBody>
               </Table>
             </ScrollArea>
@@ -448,17 +486,23 @@ export default function ManageOrdersPage(): ReactNode {
         </div>
         <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
           <p>Showing {filteredAndSortedOrders.length} of {allOrders.length} orders.</p>
-           {/* Basic Pagination UI (no logic yet) */}
           <div className="flex items-center space-x-1">
-            <Button variant="outline" size="sm" disabled>Previous</Button>
-            <Button variant="outline" size="sm" className="w-8 h-8 p-0" disabled>1</Button>
-            <Button variant="outline" size="sm" disabled>Next</Button>
+            <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+              <Button variant="outline" size="sm" disabled>Previous</Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+              <Button variant="outline" size="sm" className="w-8 h-8 p-0" disabled>1</Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+              <Button variant="outline" size="sm" disabled>Next</Button>
+            </motion.div>
           </div>
-          <Button variant="outline" size="sm" disabled>Export Orders</Button>
+          <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+            <Button variant="outline" size="sm" disabled>Export Orders</Button>
+          </motion.div>
         </div>
       </section>
     </div>
   );
 }
     
-
