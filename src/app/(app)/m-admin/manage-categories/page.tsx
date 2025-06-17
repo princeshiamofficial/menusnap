@@ -124,7 +124,7 @@ interface ApiCategory {
 
 interface StatCardAdminPageProps {
   title: string;
-  value: string | number;
+  value: string | number | ReactNode;
   description: string;
   icon: React.ElementType;
   className?: string;
@@ -144,7 +144,7 @@ function StatCardAdminPage({
           <h3 className="text-sm font-medium uppercase tracking-wider opacity-90">{title}</h3>
           <Icon className="h-7 w-7 opacity-80" />
         </div>
-        <p className="text-4xl font-bold mb-1.5">{value}</p>
+        <div className="text-4xl font-bold mb-1.5">{value}</div>
         <p className="text-xs opacity-90">{description}</p>
       </CardContent>
     </Card>
