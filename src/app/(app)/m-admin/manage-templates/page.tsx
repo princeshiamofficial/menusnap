@@ -295,10 +295,10 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
   }, [form, toast]);
 
 
-  const handleImageInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     processAndSetImage(file || null);
-  };
+  }, [processAndSetImage]);
 
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -386,7 +386,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
                 {imagePreview ? (
                   <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" />
                 ) : (
-                  <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <ImageIcon className="mx-auto h-24 w-24 text-muted-foreground/80" />
                 )}
                 <div className="flex text-sm text-muted-foreground justify-center">
                    <p>
@@ -556,10 +556,10 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
     }
   }, [form, toast, templateData.imageUrl]);
 
-  const handleImageInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     processAndSetImage(file || null);
-  };
+  }, [processAndSetImage]);
 
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -645,7 +645,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
                 {imagePreview ? (
                   <Image src={imagePreview} alt="Image preview" width={200} height={150} className="mx-auto h-40 w-auto object-contain rounded-md" data-ai-hint="template visual"/>
                 ) : (
-                  <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <ImageIcon className="mx-auto h-24 w-24 text-muted-foreground/80" />
                 )}
                  <div className="flex text-sm text-muted-foreground justify-center">
                    <p>
@@ -1065,3 +1065,4 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
+
