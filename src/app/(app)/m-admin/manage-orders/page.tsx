@@ -162,7 +162,7 @@ export default function ManageOrdersPage(): ReactNode {
       if (result.success) {
         if (result.data && Array.isArray(result.data.orders)) {
           rawOrdersArray = result.data.orders;
-        } else if (Array.isArray(result.data)) {
+        } else if (Array.isArray(result.data)) { // Fallback if orders are directly in data
           rawOrdersArray = result.data;
         } else {
           console.error('Invalid data format for orders: "orders" array not found in data.', result);
@@ -173,13 +173,13 @@ export default function ManageOrdersPage(): ReactNode {
       }
 
       const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any): ApiOrder => ({
-        id: String(order.id || Math.random().toString(36).substring(7)),
-        orderId: String(order.orderId || order.id || 'N/A'),
+        id: String(order.id || Math.random().toString(36).substring(7)), // Prefers the top-level id from the order object in the array
+        orderId: String(order.orderId || order.id || 'N/A'), // Uses order.orderId or falls back to order.id for display
         orderDate: String(order.orderDate || order.createdAt || order.date || new Date().toISOString()),
         status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : "Pending",
-        templateName: order.templateName ? String(order.templateName) : "Unknown Template",
-        customerName: String(order.customerName || 'N/A'),
-        totalAmount: parseFloat(order.totalAmount) || 0,
+        templateName: order.template?.name ? String(order.template.name) : "Unknown Template",
+        customerName: order.customer?.name ? String(order.customer.name) : "N/A",
+        totalAmount: parseFloat(order.totalAmount || order.total) || 0, // Added fallback to order.total
       }));
       setAllOrders(fetchedOrders);
     } catch (e: any) {
@@ -438,6 +438,11 @@ export default function ManageOrdersPage(): ReactNode {
                           <Tag className="h-3 w-3 mr-1 opacity-70" /> {order.templateName}
                         </Badge>
                       )}
+                       {order.customerName && order.customerName !== 'N/A' && (
+                        <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
+                          {order.customerName}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
                       <Button variant="outline" size="sm" className="text-xs h-8 flex-1 sm:flex-initial">
@@ -475,6 +480,4 @@ export default function ManageOrdersPage(): ReactNode {
     </div>
   );
 }
-
-
     
