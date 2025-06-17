@@ -56,7 +56,7 @@ import {
   Eye,
   ShoppingCart,
   CalendarDays,
-  // Tag, // Not directly used for icon, but concept is there for template badge
+  Tag, // Not directly used for icon, but concept is there for template badge
   AlertTriangle,
   RefreshCw,
   Edit3
@@ -159,7 +159,7 @@ export default function ManageOrdersPage(): ReactNode {
         status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : "Pending",
         templateName: order.template?.name ? String(order.template.name) : "Unknown Template",
         customerName: order.customer?.name ? String(order.customer.name) : "N/A",
-        totalAmount: parseFloat(order.totalAmount || order.total) || 0,
+        totalAmount: parseFloat(order.totalAmount || order.total || 0),
       }));
       setAllOrders(fetchedOrders);
     } catch (e: any) {
@@ -323,7 +323,7 @@ export default function ManageOrdersPage(): ReactNode {
               </Select>
               <Select value={templateFilter} onValueChange={setTemplateFilter}>
                 <SelectTrigger className="w-full sm:w-auto min-w-[150px] h-9 text-sm">
-                  <FileText className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  <Tag className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                   <SelectValue placeholder="All Templates" />
                 </SelectTrigger>
                 <SelectContent>
@@ -426,10 +426,11 @@ export default function ManageOrdersPage(): ReactNode {
                                 {formatDate(order.orderDate)}
                             </div>
                         </TableCell>
-                        <TableCell className="font-medium text-primary hover:underline cursor-pointer">{order.orderId}</TableCell>
+                        <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap">{order.orderId}</TableCell>
                         <TableCell>
                           {order.templateName !== 'Unknown Template' ? (
                             <Badge variant="outline" className={cn("text-xs py-1 px-2 font-normal", templateBadgeStyle)}>
+                                <Tag className="h-3 w-3 mr-1 opacity-80"/>
                                 {order.templateName}
                             </Badge>
                           ) : (
@@ -506,3 +507,4 @@ export default function ManageOrdersPage(): ReactNode {
   );
 }
     
+
