@@ -154,7 +154,7 @@ function StatCardAdminPage({
 const categoryFormSchema = z.object({
   name: z.string().min(1, "Category name is required").max(100, "Name must be 100 characters or less"),
   description: z.string().max(250, "Description must be 250 characters or less").optional().nullable(),
-  icon: z.string().min(1, "Icon is required (e.g., emoji or text)").max(10, "Icon must be 10 characters or less"), // Simple text/emoji for now
+  icon: z.string().min(1, "Icon is required (e.g., emoji or text)").max(10, "Icon must be 10 characters or less"),
   visibleToUsers: z.boolean().default(true),
 });
 
@@ -181,7 +181,7 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
 
   const handleSubmit = async (data: CategoryFormValues) => {
     await onSubmit(data);
-    form.reset(); // Reset form after successful submission
+    form.reset(); 
   };
 
   return (
@@ -231,6 +231,23 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
   );
 }
 
+type SortOption =
+  | 'name-asc'
+  | 'name-desc'
+  | 'items-desc'
+  | 'items-asc'
+  | 'newest'
+  | 'oldest';
+
+const sortOptionsList: { value: SortOption; label: string }[] = [
+  { value: 'name-asc', label: 'Name (A-Z)' },
+  { value: 'name-desc', label: 'Name (Z-A)' },
+  { value: 'items-desc', label: 'Most Items' },
+  { value: 'items-asc', label: 'Fewest Items' },
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
+];
+
 
 export default function ManageCategoriesPage(): ReactNode {
   const [categoryType, setCategoryType] = useState<CategoryType>("restaurant");
@@ -241,6 +258,8 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'visible' | 'hidden'>('all');
+  const [sortOption, setSortOption] = useState<SortOption>('name-asc');
+
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -358,8 +377,8 @@ export default function ManageCategoriesPage(): ReactNode {
   };
 
 
-  const filteredCategories = useMemo(() => {
-    return allCategories
+  const filteredAndSortedCategories = useMemo(() => {
+    let categories = allCategories
       .filter(category => {
         const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -367,9 +386,40 @@ export default function ManageCategoriesPage(): ReactNode {
           (statusFilter === 'visible' && category.visibleToUsers) ||
           (statusFilter === 'hidden' && !category.visibleToUsers);
         return matchesSearch && matchesStatus;
-      })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [allCategories, searchTerm, statusFilter]);
+      });
+
+      switch (sortOption) {
+        case 'name-asc':
+          categories = categories.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'name-desc':
+          categories = categories.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case 'items-desc':
+          categories = categories.sort((a, b) => b.itemCount - a.itemCount);
+          break;
+        case 'items-asc':
+          categories = categories.sort((a, b) => a.itemCount - b.itemCount);
+          break;
+        case 'newest':
+          categories = categories.sort((a, b) => {
+              try {
+                  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              } catch { return 0; }
+          });
+          break;
+        case 'oldest':
+          categories = categories.sort((a, b) => {
+              try {
+                  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+              } catch { return 0; }
+          });
+          break;
+        default:
+          categories = categories.sort((a, b) => a.name.localeCompare(b.name));
+      }
+    return categories;
+  }, [allCategories, searchTerm, statusFilter, sortOption]);
 
   const stats = useMemo(() => {
     const total = allCategories.length;
@@ -480,13 +530,22 @@ export default function ManageCategoriesPage(): ReactNode {
               <SelectItem value="hidden">Hidden</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" disabled>
-            <ArrowUpDown className="h-4 w-4 mr-2" />
-            Sort
-          </Button>
+          <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+                <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Sort by..." />
+            </SelectTrigger>
+            <SelectContent>
+                {sortOptionsList.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
         </div>
         
-        <div className="flex-grow min-h-0"> {/* This div allows the ScrollArea to take proper height */}
+        <div className="flex-grow min-h-0"> 
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -508,14 +567,14 @@ export default function ManageCategoriesPage(): ReactNode {
               <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
               <p className="text-lg">Error loading categories: {error}</p>
             </div>
-          ) : filteredCategories.length === 0 ? (
+          ) : filteredAndSortedCategories.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground">
               <LayoutList className="mx-auto h-12 w-12 mb-4" />
               <p className="text-lg">No categories found.</p>
               {searchTerm && <p>Try adjusting your search or filters.</p>}
             </div>
           ) : (
-            <ScrollArea className="w-full h-full"> {/* Allow ScrollArea to take full height of its parent */}
+            <ScrollArea className="w-full h-full">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -528,7 +587,7 @@ export default function ManageCategoriesPage(): ReactNode {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCategories.map((category) => (
+                  {filteredAndSortedCategories.map((category) => (
                     <TableRow key={category.id}>
                       <TableCell className="hidden sm:table-cell">
                         <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center text-xl">
@@ -580,7 +639,7 @@ export default function ManageCategoriesPage(): ReactNode {
           )}
         </div>
         <div className="flex justify-between items-center mt-4 pt-4 border-t border-border text-sm text-muted-foreground">
-          <p>Showing {filteredCategories.length} of {allCategories.length} {categoryTypeName.toLowerCase()} categories.</p>
+          <p>Showing {filteredAndSortedCategories.length} of {allCategories.length} {categoryTypeName.toLowerCase()} categories.</p>
           <Button variant="outline" disabled>Export {categoryTypeName} Categories</Button>
         </div>
       </section>
@@ -646,3 +705,4 @@ export default function ManageCategoriesPage(): ReactNode {
     
 
     
+
