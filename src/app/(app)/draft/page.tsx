@@ -132,9 +132,6 @@ function DraftCard({ draft, onRestore, onDelete, onShowDetails }: DraftCardProps
             <Tag className="h-3 w-3 mr-1.5 opacity-80"/>
             {draft.primaryTag}
           </Badge>
-          <Badge variant="secondary" className="bg-muted text-muted-foreground font-semibold py-1 px-2.5 text-xs">
-            ৳{draft.price.toLocaleString()}
-          </Badge>
           <Badge variant="outline" className="border-border text-muted-foreground font-medium py-1 px-2.5 text-xs">
             <CalendarDays className="h-3 w-3 mr-1.5 opacity-70"/>
             {formattedShortDateBadge}
@@ -200,7 +197,6 @@ function DraftSkeletonCard(): ReactNode {
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Skeleton className="h-6 w-56 rounded-full" />
-          <Skeleton className="h-6 w-16 rounded-full" />
           <Skeleton className="h-6 w-20 rounded-full" />
         </div>
         <div className="flex items-center space-x-2">
