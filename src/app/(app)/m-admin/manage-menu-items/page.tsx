@@ -220,8 +220,8 @@ export default function ManageMenuItemsPage(): ReactNode {
     return Math.ceil(filteredMenuItems.length / ITEMS_PER_PAGE_ITEMS);
   }, [filteredMenuItems.length]);
 
-  const handlePreviousPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
-  const handleNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  // const handlePreviousPage = () => setCurrentPage(prev => Math.max(1, prev - 1)); // Kept for potential future use
+  // const handleNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1)); // Kept for potential future use
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
@@ -440,9 +440,9 @@ export default function ManageMenuItemsPage(): ReactNode {
           <div className="flex justify-between items-center py-3 px-6 border-t border-border bg-card text-sm text-muted-foreground">
             <p>Showing {paginatedMenuItems.length} of {filteredMenuItems.length} items.</p>
             <div className="flex items-center space-x-1">
-              <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1 || loadingItems} className="h-8">Previous</Button>
+              {/* Previous button removed as per user request */}
               <Button variant="outline" size="icon" className="h-8 w-8" disabled>{currentPage}</Button>
-              <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages || loadingItems} className="h-8">Next</Button>
+              {/* Next button removed as per user request */}
             </div>
           </div>
         )}
