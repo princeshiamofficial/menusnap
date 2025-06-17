@@ -10,10 +10,6 @@ import {
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   Badge
@@ -21,15 +17,6 @@ import {
 import {
   Input
 } from "@/components/ui/input";
-// Table components are not directly used for order list, but kept for consistency if ever needed.
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from "@/components/ui/table"; 
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,31 +64,27 @@ import {
 import {
   format,
   parseISO,
-  isValid
+  isValid as isValidDate
 } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 
 interface StatCardProps {
   title: string;
-  value: string | number;
+  value: string | number | ReactNode;
   icon: React.ElementType;
   bgColorClass: string;
-  iconColorClass: string;
-  description?: string;
+  iconContainerBgClass?: string;
 }
 
-function OrderStatCard({ title, value, icon: Icon, bgColorClass, iconColorClass, description }: StatCardProps) {
+function OrderStatCard({ title, value, icon: Icon, bgColorClass, iconContainerBgClass }: StatCardProps) {
   return (
-    <Card className={cn("shadow-lg rounded-xl text-white overflow-hidden", bgColorClass)}>
-      <CardContent className="p-5 sm:p-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-medium uppercase tracking-wider opacity-90">{title}</h3>
-          <div className={cn("p-2 rounded-full bg-white/20", iconColorClass)}>
-            <Icon className="h-6 w-6" />
-          </div>
+    <Card className={cn("shadow-md rounded-lg text-white overflow-hidden", bgColorClass)}>
+      <CardContent className="p-4 flex flex-col justify-start">
+        <div className={cn("mb-2 h-10 w-10 rounded-lg flex items-center justify-center self-start", iconContainerBgClass || 'bg-black/20')}>
+          <Icon className="h-5 w-5 text-white" />
         </div>
-        <div className="text-4xl font-bold mb-1">{value}</div>
-        {description && <p className="text-xs opacity-80">{description}</p>}
+        <div className="text-3xl font-bold mt-1">{value}</div>
+        <p className="text-sm font-medium mt-1 opacity-90">{title}</p>
       </CardContent>
     </Card>
   );
@@ -111,21 +94,20 @@ type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Deliv
 
 const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold"];
 
-
 interface ApiOrder {
   id: string;
-  orderId: string; 
-  orderDate: string; 
+  orderId: string;
+  orderDate: string;
   status: OrderStatus;
-  templateName?: string; 
+  templateName?: string;
   customerName?: string;
   totalAmount?: number;
 }
 
 const statusColors: Record<OrderStatus, string> = {
   "Pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600",
-  "Processing": "bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-400 border-blue-300 dark:border-blue-600",
-  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
+  "Processing": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
+  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600", // Same as Processing as per image
   "Shipped": "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/20 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600",
   "Delivered": "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600",
   "Cancelled": "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600",
@@ -133,25 +115,11 @@ const statusColors: Record<OrderStatus, string> = {
   "On Hold": "bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-400 border-orange-300 dark:border-orange-600",
 };
 
-const templateColors: string[] = [
-  "bg-sky-100 text-sky-700 dark:bg-sky-700/20 dark:text-sky-400 border-sky-300 dark:border-sky-600",
-  "bg-teal-100 text-teal-700 dark:bg-teal-700/20 dark:text-teal-400 border-teal-300 dark:border-teal-600",
-  "bg-emerald-100 text-emerald-700 dark:bg-emerald-700/20 dark:text-emerald-400 border-emerald-300 dark:border-emerald-600",
-  "bg-rose-100 text-rose-700 dark:bg-rose-700/20 dark:text-rose-400 border-rose-300 dark:border-rose-600",
-  "bg-pink-100 text-pink-700 dark:bg-pink-700/20 dark:text-pink-400 border-pink-300 dark:border-pink-600",
-  "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-700/20 dark:text-fuchsia-400 border-fuchsia-300 dark:border-fuchsia-600",
-];
-const templateNameToColorMap = new Map<string, string>();
-let colorIndex = 0;
+const TEMPLATE_BADGE_STYLE = "bg-teal-100 text-teal-700 dark:bg-teal-700/20 dark:text-teal-400 border-teal-300 dark:border-teal-600";
 
-function getTemplateColor(templateName: string): string {
-  if (!templateNameToColorMap.has(templateName)) {
-    templateNameToColorMap.set(templateName, templateColors[colorIndex % templateColors.length]);
-    colorIndex++;
-  }
-  return templateNameToColorMap.get(templateName) as string;
+function getTemplateBadgeStyle(_templateName?: string): string {
+  return TEMPLATE_BADGE_STYLE;
 }
-
 
 type SortOptionOrders =
   | 'newest'
@@ -174,7 +142,7 @@ export default function ManageOrdersPage(): ReactNode {
   const [allOrders, setAllOrders] = useState<ApiOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [templateFilter, setTemplateFilter] = useState<string>('all');
@@ -193,24 +161,24 @@ export default function ManageOrdersPage(): ReactNode {
       let rawOrdersArray: any[] = [];
       if (result.success) {
         if (result.data && Array.isArray(result.data.orders)) {
-            rawOrdersArray = result.data.orders;
+          rawOrdersArray = result.data.orders;
         } else if (Array.isArray(result.data)) {
-            rawOrdersArray = result.data;
+          rawOrdersArray = result.data;
         } else {
-            console.error('Invalid data format for orders: "orders" array not found in data.', result);
-            throw new Error('Invalid data format from API for orders.');
+          console.error('Invalid data format for orders: "orders" array not found in data.', result);
+          throw new Error('Invalid data format from API for orders.');
         }
       } else {
-         throw new Error(result.message || 'API request for orders was not successful.');
+        throw new Error(result.message || 'API request for orders was not successful.');
       }
-      
+
       const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any): ApiOrder => ({
-        id: String(order.id),
-        orderId: String(order.orderId || order.id), 
+        id: String(order.id || Math.random().toString(36).substring(7)),
+        orderId: String(order.orderId || order.id || 'N/A'),
         orderDate: String(order.orderDate || order.createdAt || order.date || new Date().toISOString()),
         status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : "Pending",
-        templateName: order.templateName || undefined,
-        customerName: order.customerName || 'N/A',
+        templateName: order.templateName ? String(order.templateName) : "Unknown Template",
+        customerName: String(order.customerName || 'N/A'),
         totalAmount: parseFloat(order.totalAmount) || 0,
       }));
       setAllOrders(fetchedOrders);
@@ -230,11 +198,10 @@ export default function ManageOrdersPage(): ReactNode {
   const handleRefresh = useCallback(() => {
     fetchOrders();
   }, [fetchOrders]);
-  
+
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    // Simulate API call for status update
     console.log(`Updating order ${orderId} to status ${newStatus}`);
-    await new Promise(resolve => setTimeout(resolve, 500)); 
+    await new Promise(resolve => setTimeout(resolve, 500));
     setAllOrders(prevOrders =>
       prevOrders.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
@@ -242,7 +209,7 @@ export default function ManageOrdersPage(): ReactNode {
     );
     toast({
       title: "Status Updated",
-      description: `Order ${allOrders.find(o=>o.id === orderId)?.orderId || orderId} status changed to ${newStatus}.`,
+      description: `Order ${allOrders.find(o => o.id === orderId)?.orderId || orderId} status changed to ${newStatus}.`,
     });
   };
 
@@ -265,12 +232,12 @@ export default function ManageOrdersPage(): ReactNode {
     switch (sortOption) {
       case 'newest':
         orders.sort((a, b) => {
-            try { return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime(); } catch { return 0; }
+          try { return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime(); } catch { return 0; }
         });
         break;
       case 'oldest':
         orders.sort((a, b) => {
-            try { return new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime(); } catch { return 0; }
+          try { return new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime(); } catch { return 0; }
         });
         break;
       case 'status-asc':
@@ -290,127 +257,153 @@ export default function ManageOrdersPage(): ReactNode {
   }, [allOrders, searchTerm, statusFilter, templateFilter, sortOption]);
 
   const orderStats = useMemo(() => {
-    const stats: Record<OrderStatus | "Total", number> = {
-      "Total": allOrders.length, "Pending": 0, "Processing": 0, "In Progress": 0, "Shipped": 0, "Delivered": 0, "Cancelled": 0, "Refunded": 0, "On Hold": 0,
+    const stats: Record<OrderStatus | "Total" | "InProgressCombined", number> = {
+      "Total": allOrders.length, "Pending": 0, "Processing": 0, "In Progress": 0, "Shipped": 0, "Delivered": 0, "Cancelled": 0, "Refunded": 0, "On Hold": 0, "InProgressCombined": 0
     };
     allOrders.forEach(order => {
-      if (stats[order.status] !== undefined) {
+      if (ALL_ORDER_STATUSES.includes(order.status)) {
         stats[order.status]++;
       }
     });
+    stats["InProgressCombined"] = stats["Processing"] + stats["In Progress"];
     return stats;
   }, [allOrders]);
-  
+
   const formatDate = (dateString: string): string => {
     try {
       const date = parseISO(dateString);
-      return isValid(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
+      return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
     } catch {
       return "Invalid Date";
     }
   };
 
+  const statCardSkeletons = Array.from({ length: 5 }).map((_, i) => (
+      <Card key={i} className="shadow-md rounded-lg bg-muted/50">
+          <CardContent className="p-4 flex flex-col justify-start">
+              <Skeleton className="mb-2 h-10 w-10 rounded-lg bg-muted" />
+              <Skeleton className="h-9 w-12 mt-1 bg-muted" />
+              <Skeleton className="h-5 w-24 mt-1 bg-muted" />
+          </CardContent>
+      </Card>
+  ));
+
+  const orderRowSkeletons = Array.from({ length: 5 }).map((_, i) => (
+      <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-3 sm:gap-4 border-b border-border">
+          <div className="flex-shrink-0 sm:w-48 md:w-56 space-y-1.5">
+              <Skeleton className="h-5 w-3/5" />
+              <Skeleton className="h-4 w-4/5" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2 flex-grow">
+              <Skeleton className="h-6 w-24 rounded-full" />
+              <Skeleton className="h-6 w-32 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2 sm:ml-auto mt-2 sm:mt-0 w-full sm:w-auto">
+              <Skeleton className="h-8 w-[100px] rounded-md" />
+              <Skeleton className="h-8 w-[90px] rounded-md" />
+          </div>
+      </div>
+  ));
+
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6 h-full flex flex-col">
       <header>
-        <h1 className="text-3xl font-bold text-foreground flex items-center">
-          <ShoppingCart className="h-8 w-8 mr-3 text-primary" />
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
           Order Statistics
         </h1>
-        <p className="text-muted-foreground mt-1">Overview of all customer orders (PHP API)</p>
+        <p className="text-sm text-muted-foreground mt-1">Overview of all customer orders (PHP API)</p>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
-        <OrderStatCard title="Total Orders" value={isLoading ? <Skeleton className="h-9 w-12 bg-white/30" /> : orderStats.Total} icon={Package} bgColorClass="bg-sky-600" iconColorClass="text-sky-100" />
-        <OrderStatCard title="Pending Orders" value={isLoading ? <Skeleton className="h-9 w-12 bg-white/30" /> : orderStats.Pending} icon={Clock3} bgColorClass="bg-yellow-500" iconColorClass="text-yellow-100" />
-        <OrderStatCard title="In Progress" value={isLoading ? <Skeleton className="h-9 w-12 bg-white/30" /> : orderStats["In Progress"]} icon={Loader2} bgColorClass="bg-purple-500" iconColorClass="text-purple-100" />
-        <OrderStatCard title="Delivered Orders" value={isLoading ? <Skeleton className="h-9 w-12 bg-white/30" /> : orderStats.Delivered} icon={CheckCircle} bgColorClass="bg-green-500" iconColorClass="text-green-100" />
-        <OrderStatCard title="Cancelled Orders" value={isLoading ? <Skeleton className="h-9 w-12 bg-white/30" /> : orderStats.Cancelled} icon={XCircle} bgColorClass="bg-red-500" iconColorClass="text-red-100" />
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5">
+        {isLoading ? statCardSkeletons : (
+          <>
+            <OrderStatCard title="Total Orders" value={orderStats.Total} icon={Package} bgColorClass="bg-sky-500" iconContainerBgClass="bg-sky-600" />
+            <OrderStatCard title="Pending Orders" value={orderStats.Pending} icon={Clock3} bgColorClass="bg-yellow-400" iconContainerBgClass="bg-yellow-500" />
+            <OrderStatCard title="In Progress" value={orderStats.InProgressCombined} icon={Loader2} bgColorClass="bg-purple-500" iconContainerBgClass="bg-purple-600" />
+            <OrderStatCard title="Delivered Orders" value={orderStats.Delivered} icon={CheckCircle} bgColorClass="bg-green-500" iconContainerBgClass="bg-green-600" />
+            <OrderStatCard title="Cancelled Orders" value={orderStats.Cancelled} icon={XCircle} bgColorClass="bg-red-500" iconContainerBgClass="bg-red-600" />
+          </>
+        )}
       </section>
 
       <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border flex flex-col flex-grow min-h-0">
         <div className="pb-4 border-b border-border">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-              <h2 className="text-xl font-semibold text-foreground">All Orders</h2>
-              <p className="text-sm text-muted-foreground mt-1 sm:mt-0">
-                View and manage customer orders.
+            <div>
+              <h2 className="text-xl font-semibold text-foreground flex items-center">
+                All Orders
+                <Button variant="ghost" size="icon" onClick={handleRefresh} className="ml-2 h-7 w-7 text-muted-foreground hover:text-primary" disabled={isLoading}>
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                View and manage customer orders
               </p>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-grow sm:flex-grow-0 sm:min-w-[250px] lg:min-w-[300px]">
+          <div className="flex flex-col sm:flex-row items-center gap-2">
+            <div className="relative flex-grow w-full sm:w-auto sm:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search orders by ID, customer, template..."
-                className="pl-10 w-full"
+                placeholder="Search orders..."
+                className="pl-10 w-full h-9 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="outline" onClick={handleRefresh} disabled={isLoading} className="shrink-0">
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}>
-              <SelectTrigger className="w-full sm:w-auto min-w-[150px]">
-                <ListFilter className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {ALL_ORDER_STATUSES.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={templateFilter} onValueChange={setTemplateFilter}>
-              <SelectTrigger className="w-full sm:w-auto min-w-[180px]">
-                <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="All Templates" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Templates</SelectItem>
-                {uniqueTemplateNames.map(name => (
-                  <SelectItem key={name} value={name}>{name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionOrders)}>
-              <SelectTrigger className="w-full sm:w-auto min-w-[170px]">
-                  <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="Sort by..." />
-              </SelectTrigger>
-              <SelectContent>
-                  {sortOptionsListOrders.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                      </SelectItem>
+            <div className="flex w-full sm:w-auto items-center gap-2 mt-2 sm:mt-0">
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}>
+                <SelectTrigger className="w-full sm:w-auto min-w-[130px] h-9 text-sm">
+                  <ListFilter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {ALL_ORDER_STATUSES.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
-              </SelectContent>
-            </Select>
+                </SelectContent>
+              </Select>
+              <Select value={templateFilter} onValueChange={setTemplateFilter}>
+                <SelectTrigger className="w-full sm:w-auto min-w-[150px] h-9 text-sm">
+                  <FileText className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  <SelectValue placeholder="All Templates" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Templates</SelectItem>
+                  {uniqueTemplateNames.map(name => (
+                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full sm:w-auto min-w-[90px] h-9 text-sm">
+                    <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[180px]">
+                  <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuRadioGroup value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionOrders)}>
+                    {sortOptionsListOrders.map(option => (
+                      <DropdownMenuRadioItem key={option.value} value={option.value}>
+                        {option.label}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
-        
-        <div className="flex-grow min-h-0 mt-4"> 
+
+        <div className="flex-grow min-h-0 mt-1">
           {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Card key={i} className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-5 w-40" />
-                      <Skeleton className="h-4 w-48" />
-                    </div>
-                    <Skeleton className="h-8 w-24 rounded-md" />
-                  </div>
-                  <div className="flex items-center gap-2 mt-3">
-                    <Skeleton className="h-6 w-24 rounded-full" />
-                    <Skeleton className="h-6 w-32 rounded-full" />
-                  </div>
-                </Card>
-              ))}
-            </div>
+            <div className="divide-y divide-border">{orderRowSkeletons}</div>
           ) : error ? (
             <div className="text-center py-10 text-destructive">
               <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
@@ -427,63 +420,49 @@ export default function ManageOrdersPage(): ReactNode {
             </div>
           ) : (
             <ScrollArea className="w-full h-full">
-              <div className="space-y-3 pr-2">
+              <div className="divide-y divide-border">
                 {filteredAndSortedOrders.map((order) => (
-                  <Card key={order.id} className="shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                        <div className="mb-2 sm:mb-0">
-                          <h3 className="text-md font-semibold text-primary">{order.orderId}</h3>
-                          <p className="text-xs text-muted-foreground flex items-center">
-                            <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" /> {formatDate(order.orderDate)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="text-xs h-8">
-                                <Eye className="h-3.5 w-3.5 mr-1.5" /> View Details
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-xs h-8">
-                                    Status: {order.status} <MoreVertical className="h-3.5 w-3.5 ml-1.5" />
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuRadioGroup value={order.status} onValueChange={(newStatus) => handleStatusChange(order.id, newStatus as OrderStatus)}>
-                                    {ALL_ORDER_STATUSES.map(s => (
-                                    <DropdownMenuRadioItem key={s} value={s}>
-                                        {s}
-                                    </DropdownMenuRadioItem>
-                                    ))}
-                                </DropdownMenuRadioGroup>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                      </div>
-                      <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className={cn("text-xs font-medium", statusColors[order.status] || statusColors.Pending)}>
-                          {order.status}
+                  <div key={order.id} className="flex flex-col sm:flex-row items-start sm:items-center p-4 gap-x-4 gap-y-3 hover:bg-muted/30 transition-colors">
+                    <div className="flex-shrink-0 sm:w-48 md:w-60"> {/* Increased width for Order ID & Date */}
+                      <h3 className="text-sm font-semibold text-primary">{order.orderId}</h3>
+                      <p className="text-xs text-muted-foreground flex items-center mt-0.5">
+                        <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" /> {formatDate(order.orderDate)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 flex-grow min-w-0">
+                      <Badge variant="outline" className={cn("text-xs font-medium py-1 px-2.5", statusColors[order.status] || statusColors.Pending)}>
+                        {order.status}
+                      </Badge>
+                      {order.templateName && order.templateName !== 'Unknown Template' && (
+                        <Badge variant="outline" className={cn("text-xs font-medium py-1 px-2.5", getTemplateBadgeStyle(order.templateName))}>
+                          <Tag className="h-3 w-3 mr-1 opacity-70" /> {order.templateName}
                         </Badge>
-                        {order.templateName && (
-                          <Badge variant="outline" className={cn("text-xs font-medium", getTemplateColor(order.templateName))}>
-                            <Tag className="h-3 w-3 mr-1.5 opacity-70" /> {order.templateName}
-                          </Badge>
-                        )}
-                        {order.customerName && order.customerName !== 'N/A' && (
-                           <Badge variant="secondary" className="text-xs font-normal">
-                             {order.customerName}
-                           </Badge>
-                        )}
-                         {order.totalAmount && order.totalAmount > 0 && (
-                            <Badge variant="secondary" className="text-xs font-normal">
-                                Amount: {order.totalAmount.toFixed(2)}
-                            </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 sm:ml-auto w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
+                      <Button variant="outline" size="sm" className="text-xs h-8 flex-1 sm:flex-initial">
+                        <Eye className="h-3.5 w-3.5 mr-1.5" /> View Details
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-xs h-8 flex-1 sm:flex-initial">
+                            Status <MoreVertical className="h-3.5 w-3.5 ml-1.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[180px]">
+                          <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuRadioGroup value={order.status} onValueChange={(newStatus) => handleStatusChange(order.id, newStatus as OrderStatus)}>
+                            {ALL_ORDER_STATUSES.map(s => (
+                              <DropdownMenuRadioItem key={s} value={s}>
+                                {s}
+                              </DropdownMenuRadioItem>
+                            ))}
+                          </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
@@ -496,5 +475,3 @@ export default function ManageOrdersPage(): ReactNode {
     </div>
   );
 }
-    
-
