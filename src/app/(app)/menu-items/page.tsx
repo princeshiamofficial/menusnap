@@ -126,9 +126,12 @@ export default function MenuItemsPage() {
         ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
         : 'https://colorhutbd.xyz/vm/api/categories.php';
       
-      const menuItemsApiUrl = selectedMenuType === 'parlour'
+      let menuItemsApiUrl = selectedMenuType === 'parlour'
         ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
         : 'https://colorhutbd.xyz/vm/api/menu-items.php';
+      
+      // Append visibleOnly=true for customer-facing item selection
+      menuItemsApiUrl += '?visibleOnly=true';
 
       try {
         const fetchPromises: [Promise<Response>, Promise<Response>] = [
@@ -211,24 +214,25 @@ export default function MenuItemsPage() {
             throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
           }
           const menuItemsApiResponse = await menuItemsResponse.json();
+          // The menu-items.php API returns the array directly, not nested under 'data' or 'data.items'
           let rawItemsArray: any[] = [];
-          if (menuItemsApiResponse.success) {
-            if (Array.isArray(menuItemsApiResponse.data)) { 
+          if (Array.isArray(menuItemsApiResponse)) { 
+              rawItemsArray = menuItemsApiResponse;
+          } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { // Fallback for general structure
               rawItemsArray = menuItemsApiResponse.data;
-            } else if (menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { 
+          } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { // Another fallback
               rawItemsArray = menuItemsApiResponse.data.items;
-            } else {
-              console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
-              throw new Error("Invalid data format for menu items from API (expected array or data.items array)");
-            }
-          } else {
-            throw new Error(menuItemsApiResponse.message || "Menu Items API request not successful");
           }
+          else {
+              console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
+              throw new Error("Invalid data format for menu items from API (expected direct array)");
+          }
+
 
           const fetchedMenuItems: MenuItem[] = rawItemsArray
             .filter((item: any) => item.id !== null && item.id !== undefined)
             .map((item: any) => ({
-              id: String(item.id), 
+              id: String(item.id), // Ensure ID is a string
               name: String(item.name || 'Unnamed Item'),
               price: parseFloat(item.price) || 0,
               category: String(item.category || 'uncategorized'), // Ensure category ID is a string
@@ -244,7 +248,7 @@ export default function MenuItemsPage() {
                 ? item.subItems
                     .filter((sub: any) => sub.id !== null && sub.id !== undefined)
                     .map((sub: any) => ({
-                      id: String(sub.id),
+                      id: String(sub.id), // Ensure sub-item ID is a string
                       name: String(sub.name || 'Unnamed Sub-item'),
                       price: parseFloat(sub.price) || 0,
                     })) 
