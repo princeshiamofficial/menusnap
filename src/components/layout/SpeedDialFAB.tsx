@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { MessagesSquare, X, Phone, MessageCircle } from 'lucide-react';
 
@@ -46,7 +46,7 @@ const contactOptionsList: ContactOption[] = [
 const helpText = "Need Help?";
 const helpTextCharacters = Array.from(helpText);
 
-const containerVariants = {
+const textContainerVariants = {
   hidden: { opacity: 0 },
   visible: (i = 1) => ({
     opacity: 1,
@@ -54,6 +54,7 @@ const containerVariants = {
   }),
   exit: {
     opacity: 0,
+    y: 10,
     transition: { duration: 0.2 }
   }
 };
@@ -77,15 +78,76 @@ const characterVariants = {
 
 export function SpeedDialFAB(): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
+  const [showHelpTextVisual, setShowHelpTextVisual] = useState(true);
+  const fabControls = useAnimation();
+  const fabIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const helpTextCycleTimers = useRef<{ visible?: NodeJS.Timeout, hidden?: NodeJS.Timeout }>({});
+
+  useEffect(() => {
+    // FAB pop animation logic
+    const animateFAB = async () => {
+      await fabControls.start({ // Base breathing animation
+        scale: [1, 1.05, 1],
+        transition: { duration: 1.5, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }
+      });
+    };
+    animateFAB();
+
+    if (fabIntervalRef.current) clearInterval(fabIntervalRef.current);
+    fabIntervalRef.current = setInterval(async () => {
+      if (!isOpen) { // Check isOpen from the outer scope, not a stale closure
+        await fabControls.start({ // Pop animation
+          scale: [1, 1.15, 1],
+          transition: { duration: 0.6, ease: "easeInOut" }
+        });
+        // After pop, restart base breathing, but current logic will resume it from the main animateFAB call.
+        // Or explicitly restart: animateFAB(); 
+      }
+    }, 10000);
+
+    return () => {
+      if (fabIntervalRef.current) clearInterval(fabIntervalRef.current);
+      fabControls.stop();
+    };
+  }, [fabControls, isOpen]); // Added isOpen to dependencies to re-evaluate interval if FAB state changes
+
+  useEffect(() => {
+    // Clear existing timers when dependencies change
+    if (helpTextCycleTimers.current.visible) clearTimeout(helpTextCycleTimers.current.visible);
+    if (helpTextCycleTimers.current.hidden) clearTimeout(helpTextCycleTimers.current.hidden);
+
+    if (isOpen) {
+      setShowHelpTextVisual(false); // Immediately hide if FAB opens
+    } else {
+      // FAB is closed, manage the cycle
+      if (showHelpTextVisual) {
+        // Text is visible, set timer to hide it
+        helpTextCycleTimers.current.visible = setTimeout(() => {
+          setShowHelpTextVisual(false);
+        }, 10000); // Visible for 10s
+      } else {
+        // Text is hidden, set timer to show it
+        helpTextCycleTimers.current.hidden = setTimeout(() => {
+          setShowHelpTextVisual(true);
+        }, 15000); // Hidden for 15s
+      }
+    }
+
+    return () => {
+      if (helpTextCycleTimers.current.visible) clearTimeout(helpTextCycleTimers.current.visible);
+      if (helpTextCycleTimers.current.hidden) clearTimeout(helpTextCycleTimers.current.hidden);
+    };
+  }, [isOpen, showHelpTextVisual]);
+
 
   return (
     <div className="fixed bottom-6 right-4 flex flex-col items-end z-50">
       {/* "Need Help?" Text with Typing Animation */}
       <AnimatePresence>
-        {!isOpen && (
+        {showHelpTextVisual && !isOpen && (
           <motion.div
             className="mb-2 px-3 py-1.5 bg-card text-card-foreground text-sm font-medium rounded-full shadow-lg border border-border flex overflow-hidden"
-            variants={containerVariants}
+            variants={textContainerVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
@@ -145,19 +207,10 @@ export function SpeedDialFAB(): ReactNode {
         aria-expanded={isOpen}
         aria-label={isOpen ? "Close contact options" : "Open contact options"}
         whileHover={{ scale: 1.1 }}
-        animate={{
-          scale: [1, 1.05, 1], 
-        }}
-        transition={{
-          duration: 1.5,
-          ease: "easeInOut",
-          repeat: Infinity,
-          repeatType: "mirror",
-        }}
+        animate={fabControls} // Use animation controls
       >
         {isOpen ? <X className="h-8 w-8" /> : <MessagesSquare className="h-8 w-8" />}
       </motion.button>
     </div>
   );
 }
-
