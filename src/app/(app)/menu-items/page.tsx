@@ -14,7 +14,7 @@ import {
   MinusCircle,
   PlusCircle,
   Send, 
-  FileText as DefaultCategoryIcon, // Using FileText as a default icon
+  FileText as DefaultCategoryIcon,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts'; 
 
-// Interface for items saved within a draft
 interface DraftSubItem {
   id: string;
   name: string;
@@ -44,7 +43,6 @@ interface DraftSubItem {
   categoryId: string; 
 }
 
-// Interface for the overall draft structure
 interface DraftItem {
   id: string;
   name: string;
@@ -131,7 +129,7 @@ export default function MenuItemsPage() {
         ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
         : 'https://colorhutbd.xyz/vm/api/menu-items.php';
       
-      menuItemsApiUrl += '?visibleOnly=true';
+      menuItemsApiUrl += '?visibleOnly=true'; // Ensure only visible items are fetched
 
       try {
         const fetchPromises: [Promise<Response>, Promise<Response>] = [
@@ -215,16 +213,18 @@ export default function MenuItemsPage() {
           }
           const menuItemsApiResponse = await menuItemsResponse.json();
           let rawItemsArray: any[] = [];
+          
+          // The API response for menu-items.php is a direct array, not nested under 'data'
           if (Array.isArray(menuItemsApiResponse)) { 
               rawItemsArray = menuItemsApiResponse;
-          } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { 
+          } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { // Handle parlour (nested)
               rawItemsArray = menuItemsApiResponse.data;
-          } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { 
+          } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) {  // Handle parlour if nested under items
               rawItemsArray = menuItemsApiResponse.data.items;
           }
           else {
               console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
-              throw new Error("Invalid data format for menu items from API (expected direct array)");
+              throw new Error("Invalid data format for menu items from API");
           }
 
 
@@ -586,7 +586,7 @@ export default function MenuItemsPage() {
                                      <DefaultCategoryIcon className="h-5 w-5" />
                                    </div>
                                 )}
-                                <div className="flex-1"> 
+                                <div className="flex-1 min-w-0"> 
                                   <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
                                     {item.name}
                                   </label>
@@ -599,27 +599,25 @@ export default function MenuItemsPage() {
                                 <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
                                   ৳{(item.price ?? 0).toLocaleString()}
                                 </div>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
-                                  onClick={() => item.subItems && item.subItems.length > 0 && toggleSubItems(String(item.id))}
-                                  disabled={!item.subItems || item.subItems.length === 0}
-                                  aria-expanded={!!expandedSubItems[String(item.id)]}
-                                  aria-controls={`subitems-${item.id}`}
-                                >
-                                  {item.subItems && item.subItems.length > 0 ? (
-                                    expandedSubItems[String(item.id)] ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />
-                                  ) : (
-                                    <ChevronRight className="h-5 w-5 opacity-30" />
-                                  )}
-                                </Button>
+                                {item.subItems && item.subItems.length > 0 && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
+                                    onClick={() => toggleSubItems(String(item.id))}
+                                    aria-expanded={!!expandedSubItems[String(item.id)]}
+                                    aria-controls={`subitems-${item.id}`}
+                                    aria-label={expandedSubItems[String(item.id)] ? "Hide variations" : "Show variations"}
+                                  >
+                                    {expandedSubItems[String(item.id)] ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
+                                  </Button>
+                                )}
                               </div>
                               {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
-                                <div id={`subitems-${item.id}`} className="mt-3 pl-10 space-y-2 border-l border-dashed ml-2 pl-4">
-                                  <h4 className="text-xs font-semibold text-muted-foreground mb-1">Variations:</h4>
+                                <div id={`subitems-${item.id}`} className="mt-3 pl-10 space-y-2 border-l border-dashed ml-2 py-2">
+                                  <h4 className="text-xs font-semibold text-muted-foreground mb-1 pl-4">Variations:</h4>
                                   {item.subItems.map(subItem => (
-                                    <div key={subItem.id} className="flex justify-between items-center text-xs py-1">
+                                    <div key={subItem.id} className="flex justify-between items-center text-xs pl-4 pr-2 py-1 hover:bg-muted/50 rounded-r-md">
                                       <span className="text-foreground">{subItem.name}</span>
                                       <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
                                     </div>
