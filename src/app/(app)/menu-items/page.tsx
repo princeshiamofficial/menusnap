@@ -333,7 +333,7 @@ export default function MenuItemsPage() {
       
       localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
       toast({ title: "Draft Saved!", description: "Your menu selection has been saved." });
-      setSelectedItems({}); // Optionally clear selection after saving
+      // setSelectedItems({}); // Removed this line to keep items selected
     } catch (error) {
       console.error("Error saving draft to localStorage:", error);
       toast({ title: "Error", description: "Could not save draft. LocalStorage might be full or disabled.", variant: "destructive" });
