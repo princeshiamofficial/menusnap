@@ -14,6 +14,7 @@ import {
   MinusCircle,
   PlusCircle,
   Send, 
+  FileText as DefaultCategoryIcon, // Using FileText as a default icon
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,7 @@ interface DraftSubItem {
   id: string;
   name: string;
   price: number;
-  categoryId: string; // Added categoryId
+  categoryId: string; 
 }
 
 // Interface for the overall draft structure
@@ -49,10 +50,10 @@ interface DraftItem {
   name: string;
   createdAt: string; 
   itemCount: number;
-  primaryTag: string; // e.g., "restaurant-appetizers-timestamp" or "parlour-drinks-timestamp"
-  price: number; // Total price of items in the draft
-  previewAvatars: string[]; // For avatar display on draft card
-  items?: DraftSubItem[]; // The actual items with their details
+  primaryTag: string; 
+  price: number; 
+  previewAvatars: string[]; 
+  items?: DraftSubItem[]; 
 }
 
 
@@ -77,7 +78,7 @@ interface MenuItem {
   id: string;
   name: string;
   price: number;
-  category: string; // This is the category ID
+  category: string; 
   description?: string;
   image?: string;
   status?: string;
@@ -130,7 +131,6 @@ export default function MenuItemsPage() {
         ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
         : 'https://colorhutbd.xyz/vm/api/menu-items.php';
       
-      // Append visibleOnly=true for customer-facing item selection
       menuItemsApiUrl += '?visibleOnly=true';
 
       try {
@@ -172,7 +172,7 @@ export default function MenuItemsPage() {
           .map((cat: any) => ({
             id: String(cat.id),
             name: String(cat.name || 'Unnamed Category'),
-            icon: String(cat.icon || 'FileText'), 
+            icon: String(cat.icon || '📁'), 
             itemCount: Number(cat.itemCount || 0),
             status: String(cat.status || 'active'),
             createdAt: String(cat.createdAt || new Date().toISOString()),
@@ -214,13 +214,12 @@ export default function MenuItemsPage() {
             throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
           }
           const menuItemsApiResponse = await menuItemsResponse.json();
-          // The menu-items.php API returns the array directly, not nested under 'data' or 'data.items'
           let rawItemsArray: any[] = [];
           if (Array.isArray(menuItemsApiResponse)) { 
               rawItemsArray = menuItemsApiResponse;
-          } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { // Fallback for general structure
+          } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { 
               rawItemsArray = menuItemsApiResponse.data;
-          } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { // Another fallback
+          } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { 
               rawItemsArray = menuItemsApiResponse.data.items;
           }
           else {
@@ -232,10 +231,10 @@ export default function MenuItemsPage() {
           const fetchedMenuItems: MenuItem[] = rawItemsArray
             .filter((item: any) => item.id !== null && item.id !== undefined)
             .map((item: any) => ({
-              id: String(item.id), // Ensure ID is a string
+              id: String(item.id), 
               name: String(item.name || 'Unnamed Item'),
               price: parseFloat(item.price) || 0,
-              category: String(item.category || 'uncategorized'), // Ensure category ID is a string
+              category: String(item.category || 'uncategorized'), 
               description: String(item.description || ''),
               image: item.image,
               status: String(item.status || 'active'),
@@ -248,7 +247,7 @@ export default function MenuItemsPage() {
                 ? item.subItems
                     .filter((sub: any) => sub.id !== null && sub.id !== undefined)
                     .map((sub: any) => ({
-                      id: String(sub.id), // Ensure sub-item ID is a string
+                      id: String(sub.id), 
                       name: String(sub.name || 'Unnamed Sub-item'),
                       price: parseFloat(sub.price) || 0,
                     })) 
@@ -285,9 +284,7 @@ export default function MenuItemsPage() {
 
     if (!draftIdToRestore || (!allMenuItems.length && !loadingMenuItems) || (!apiCategories.length && !loadingCategories) ) {
       if (draftIdToRestore && (!loadingMenuItems || !loadingCategories)) {
-          // Data is loaded (or finished loading with empty results) but draft not processed, clear the flag
           localStorage.removeItem('draftToRestoreId');
-          // console.log("Cleared draftToRestoreId because data loaded and it wasn't processed.");
       }
       return;
     }
@@ -321,14 +318,14 @@ export default function MenuItemsPage() {
 
 
       if (draftCategorySlug && draftCategorySlug !== 'general') {
-        const targetCategory = apiCategories.find( // Ensure we're checking against the potentially filtered apiCategories
+        const targetCategory = apiCategories.find(
           cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug
         );
         if (targetCategory) {
           setSelectedCategory(targetCategory);
         } else {
           toast({ title: "Warning", description: `Category for "${draftCategorySlug}" not found or not visible. Selecting first available.`, variant: "default" });
-          setSelectedCategory(apiCategories[0] || null); // apiCategories is already filtered for visibility
+          setSelectedCategory(apiCategories[0] || null); 
         }
       } else {
          setSelectedCategory(apiCategories[0] || null); 
@@ -338,7 +335,6 @@ export default function MenuItemsPage() {
       if (draftToRestore.items && draftToRestore.items.length > 0) {
         const itemIdsToSelect = draftToRestore.items.map(subItem => subItem.id);
         const newSelectedItemsState = itemIdsToSelect.reduce((acc, itemId) => {
-          // Ensure item exists in current allMenuItems before selecting
           if (allMenuItems.some(menuItem => menuItem.id === itemId)) {
             acc[itemId] = true;
           } else {
@@ -389,7 +385,7 @@ export default function MenuItemsPage() {
   }, [selectedItems]);
 
   const toggleSubItems = (itemId: string) => {
-    setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+    setExpandedSubItems(prev => ({ ...prev, [String(itemId)]: !prev[String(itemId)] }));
   };
 
   const handleSaveDraft = useCallback(() => {
@@ -410,7 +406,7 @@ export default function MenuItemsPage() {
       id: item.id,
       name: item.name,
       price: item.price,
-      categoryId: item.category, // Save the category ID
+      categoryId: item.category, 
     }));
 
     const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
@@ -493,7 +489,7 @@ export default function MenuItemsPage() {
                       }`}
                       onClick={() => setSelectedCategory(category)}
                     >
-                      <span className="mr-2 text-sm">{category.icon}</span>
+                      <span className="mr-2 text-sm">{category.icon || <DefaultCategoryIcon className="h-4 w-4" />}</span>
                       <span className="flex-1 text-left truncate">{category.name}</span>
                       <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
                     </Button>
@@ -561,7 +557,7 @@ export default function MenuItemsPage() {
             {!loadingMenuItems && !errorMenuItems && selectedCategory && (
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex items-center gap-2 mb-4">
-                  {selectedCategory.icon && <span className="text-xl">{selectedCategory.icon}</span>}
+                  {selectedCategory.icon ? <span className="text-xl">{selectedCategory.icon}</span> : <DefaultCategoryIcon className="h-5 w-5 text-primary" />}
                   <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
                   <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
                     {selectedCategory?.itemCount ?? currentMenuItems.length}
@@ -586,7 +582,8 @@ export default function MenuItemsPage() {
                                   className="mt-1" 
                                 />
                                 {item.iconPlaceholder && (
-                                   <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
+                                   <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0 text-muted-foreground">
+                                     <DefaultCategoryIcon className="h-5 w-5" />
                                    </div>
                                 )}
                                 <div className="flex-1"> 
@@ -594,7 +591,7 @@ export default function MenuItemsPage() {
                                     {item.name}
                                   </label>
                                   {item.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                                       {item.description}
                                     </p>
                                   )}
@@ -608,6 +605,8 @@ export default function MenuItemsPage() {
                                   className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
                                   onClick={() => item.subItems && item.subItems.length > 0 && toggleSubItems(String(item.id))}
                                   disabled={!item.subItems || item.subItems.length === 0}
+                                  aria-expanded={!!expandedSubItems[String(item.id)]}
+                                  aria-controls={`subitems-${item.id}`}
                                 >
                                   {item.subItems && item.subItems.length > 0 ? (
                                     expandedSubItems[String(item.id)] ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />
@@ -617,11 +616,12 @@ export default function MenuItemsPage() {
                                 </Button>
                               </div>
                               {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
-                                <div className="mt-3 pl-10 space-y-2">
+                                <div id={`subitems-${item.id}`} className="mt-3 pl-10 space-y-2 border-l border-dashed ml-2 pl-4">
+                                  <h4 className="text-xs font-semibold text-muted-foreground mb-1">Variations:</h4>
                                   {item.subItems.map(subItem => (
-                                    <div key={subItem.id} className="flex justify-between items-center text-xs">
-                                      <span className="text-muted-foreground">{subItem.name}</span>
-                                      <span className="text-muted-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
+                                    <div key={subItem.id} className="flex justify-between items-center text-xs py-1">
+                                      <span className="text-foreground">{subItem.name}</span>
+                                      <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -658,3 +658,4 @@ export default function MenuItemsPage() {
     </>
   );
 }
+
