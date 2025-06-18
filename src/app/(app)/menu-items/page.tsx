@@ -176,17 +176,19 @@ export default function MenuItemsPage() {
             description: String(cat.description || ''),
             visibleToUsers: cat.visibleToUsers !== undefined ? Boolean(cat.visibleToUsers) : true,
           }));
+        
+        const visibleCategories = fetchedApiCategories.filter(cat => cat.visibleToUsers);
 
-        setApiCategories(fetchedApiCategories);
-        setOrderedCategories(fetchedApiCategories);
+        setApiCategories(visibleCategories);
+        setOrderedCategories(visibleCategories);
 
-        if (fetchedApiCategories.length > 0) {
+        if (visibleCategories.length > 0) {
             let categoryToSelect: Category | null = null;
             if (prevSelectedCategoryId) {
-                categoryToSelect = fetchedApiCategories.find(c => c.id === prevSelectedCategoryId) || null;
+                categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
             }
             if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) {
-                 categoryToSelect = fetchedApiCategories[0];
+                 categoryToSelect = visibleCategories[0];
             }
             setSelectedCategory(categoryToSelect);
         } else {
@@ -315,14 +317,14 @@ export default function MenuItemsPage() {
 
 
       if (draftCategorySlug && draftCategorySlug !== 'general') {
-        const targetCategory = apiCategories.find(
+        const targetCategory = apiCategories.find( // Ensure we're checking against the potentially filtered apiCategories
           cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug
         );
         if (targetCategory) {
           setSelectedCategory(targetCategory);
         } else {
-          toast({ title: "Warning", description: `Category for "${draftCategorySlug}" not found. Selecting first available.`, variant: "default" });
-          setSelectedCategory(apiCategories[0] || null);
+          toast({ title: "Warning", description: `Category for "${draftCategorySlug}" not found or not visible. Selecting first available.`, variant: "default" });
+          setSelectedCategory(apiCategories[0] || null); // apiCategories is already filtered for visibility
         }
       } else {
          setSelectedCategory(apiCategories[0] || null); 
@@ -472,7 +474,7 @@ export default function MenuItemsPage() {
             {loadingCategories && <p className="p-4 text-sm text-muted-foreground">Loading categories...</p>}
             {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
             {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
-              <p className="p-4 text-sm text-muted-foreground">No categories found for {selectedMenuType} menu.</p>
+              <p className="p-4 text-sm text-muted-foreground">No visible categories found for {selectedMenuType} menu.</p>
             )}
             {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
               <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">

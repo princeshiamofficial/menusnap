@@ -65,6 +65,7 @@ interface CategoryAdmin {
   name: string;
   icon: string;
   itemCount: number;
+  visibleToUsers: boolean; // Added for filtering
 }
 
 interface MenuItemAdmin {
@@ -126,19 +127,23 @@ export default function ManageMenuItemsPage(): ReactNode {
       if (!categoriesResult.success || !categoriesResult.data || !Array.isArray(categoriesResult.data.categories)) {
         throw new Error('Invalid data format for categories.');
       }
-      const fetchedCategories: CategoryAdmin[] = categoriesResult.data.categories.map((cat: any): CategoryAdmin => ({
+      const fetchedCategoriesRaw: CategoryAdmin[] = categoriesResult.data.categories.map((cat: any): CategoryAdmin => ({
         id: String(cat.id),
         name: String(cat.name || 'Unnamed Category'),
         icon: String(cat.icon || '📁'),
         itemCount: parseInt(cat.itemCount) || 0,
+        visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers), // Parse visibility
       }));
-      setAllCategories(fetchedCategories);
-      setOrderedCategories(fetchedCategories);
+      
+      const visibleAdminCategories = fetchedCategoriesRaw.filter(cat => cat.visibleToUsers);
 
-      if (fetchedCategories.length > 0) {
-        let categoryToSelect = fetchedCategories[0];
+      setAllCategories(visibleAdminCategories);
+      setOrderedCategories(visibleAdminCategories);
+
+      if (visibleAdminCategories.length > 0) {
+        let categoryToSelect = visibleAdminCategories[0];
         if (prevSelectedCategoryId) {
-            const foundCat = fetchedCategories.find(c => c.id === prevSelectedCategoryId);
+            const foundCat = visibleAdminCategories.find(c => c.id === prevSelectedCategoryId);
             if (foundCat) categoryToSelect = foundCat;
         }
         setSelectedCategory(categoryToSelect);
@@ -210,6 +215,7 @@ export default function ManageMenuItemsPage(): ReactNode {
   }, [allMenuItems, selectedCategory, searchTerm, statusFilter]);
 
   const totalAllItemsCount = useMemo(() => {
+    // Count items only from categories that are visible (already filtered in allCategories)
     return allCategories.reduce((sum, cat) => sum + cat.itemCount, 0);
   }, [allCategories]);
 
@@ -252,7 +258,7 @@ export default function ManageMenuItemsPage(): ReactNode {
           )}
           {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
           {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">No categories found for {menuType}.</p>
+            <p className="p-4 text-sm text-muted-foreground">No visible categories found for {menuType}.</p>
           )}
           {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
              <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-1">
