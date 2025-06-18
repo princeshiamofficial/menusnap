@@ -2,7 +2,8 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useState, useMemo, useEffect, useCallback } from 'react'; // Added useCallback
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation'; // Added useRouter
 import { Reorder } from "framer-motion";
 import {
   Search,
@@ -30,9 +31,10 @@ import {
 } from "@/components/ui/select";
 import { useTheme } from '@/context/ThemeContext';
 import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog'; 
-import { useToast } from "@/hooks/use-toast"; // Added useToast
+import { useToast } from "@/hooks/use-toast";
 
-// Define Draft types locally (ideally move to a shared types file later)
+const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts'; // Added for loading drafts
+
 interface DraftSubItem {
   id: string;
   name: string;
@@ -42,7 +44,7 @@ interface DraftSubItem {
 interface DraftItem {
   id: string;
   name: string;
-  createdAt: string; // ISO string
+  createdAt: string; 
   itemCount: number;
   primaryTag: string;
   price: number;
@@ -102,7 +104,8 @@ export default function MenuItemsPage() {
 
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const { setTheme } = useTheme();
-  const { toast } = useToast(); // Initialize useToast
+  const { toast } = useToast();
+  const router = useRouter(); // Initialize useRouter
 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false); 
 
@@ -179,8 +182,10 @@ export default function MenuItemsPage() {
             if (prevSelectedCategoryId) {
                 categoryToSelect = fetchedApiCategories.find(c => c.id === prevSelectedCategoryId) || null;
             }
-            if (!categoryToSelect) {
-                categoryToSelect = fetchedApiCategories[0];
+            // Do not automatically select the first category if restoring
+            // This will be handled by the restore draft logic
+            if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) {
+                 categoryToSelect = fetchedApiCategories[0];
             }
             setSelectedCategory(categoryToSelect);
         } else {
@@ -267,6 +272,90 @@ export default function MenuItemsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMenuType, setTheme]); 
 
+
+  // Effect to handle restoring a draft
+  useEffect(() => {
+    const draftIdToRestore = localStorage.getItem('draftToRestoreId');
+
+    if (!draftIdToRestore || !allMenuItems.length || !apiCategories.length) {
+      // If categories/items haven't loaded yet, or no draft to restore, do nothing.
+      // The effect will re-run when they load if draftIdToRestore is still set.
+      return;
+    }
+
+    const allDraftsString = localStorage.getItem(DRAFTS_STORAGE_KEY);
+    if (!allDraftsString) {
+      localStorage.removeItem('draftToRestoreId');
+      toast({ title: "Error", description: "Could not find drafts to restore.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const allDrafts: DraftItem[] = JSON.parse(allDraftsString);
+      const draftToRestore = allDrafts.find(d => d.id === draftIdToRestore);
+
+      if (!draftToRestore) {
+        localStorage.removeItem('draftToRestoreId');
+        toast({ title: "Error", description: `Draft with ID ${draftIdToRestore} not found.`, variant: "destructive" });
+        return;
+      }
+
+      const draftMenuType = draftToRestore.primaryTag.split('-')[0].toLowerCase();
+      if (draftMenuType !== selectedMenuType) {
+        // Menu type needs to be changed. Set it, and this effect will run again
+        // once the new data for that menu type is loaded.
+        // The 'draftToRestoreId' remains in localStorage for the next pass.
+        setSelectedMenuType(draftMenuType);
+        return; 
+      }
+
+      // If we reach here, the menu type is correct, and data should be loaded.
+      // Proceed with selecting category and items.
+
+      const tagParts = draftToRestore.primaryTag.split('-');
+      // Assuming format: menuType-categorySlug-timestamp
+      // Handle cases where category slug might have multiple parts due to hyphens in original name
+      const draftCategorySlug = tagParts.slice(1, -1).join('-');
+
+      if (draftCategorySlug && draftCategorySlug !== 'general') {
+        const targetCategory = apiCategories.find(
+          cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug
+        );
+        if (targetCategory) {
+          setSelectedCategory(targetCategory);
+        } else {
+          toast({ title: "Warning", description: `Category for "${draftCategorySlug}" not found. Items will be selected without focusing a category.` });
+          setSelectedCategory(null); // Or keep current if preferred
+        }
+      } else {
+         setSelectedCategory(apiCategories[0] || null); // Fallback to first category or null if no categories
+      }
+      
+
+      if (draftToRestore.items && draftToRestore.items.length > 0) {
+        const itemIdsToSelect = draftToRestore.items.map(subItem => subItem.id);
+        const newSelectedItemsState = itemIdsToSelect.reduce((acc, itemId) => {
+          acc[itemId] = true;
+          return acc;
+        }, {} as Record<string, boolean>);
+        setSelectedItems(newSelectedItemsState);
+        toast({ title: "Draft Restored", description: `${itemIdsToSelect.length} items have been selected.` });
+      } else {
+        setSelectedItems({});
+        toast({ title: "Draft Restored", description: "No items were in the selected draft to restore." });
+      }
+
+      localStorage.removeItem('draftToRestoreId');
+
+    } catch (error) {
+      console.error("Error restoring draft:", error);
+      localStorage.removeItem('draftToRestoreId');
+      toast({ title: "Error", description: "Failed to parse or restore draft data.", variant: "destructive" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, [allMenuItems, apiCategories, selectedMenuType]); // Dependencies carefully chosen
+
+
   const currentMenuItems = useMemo(() => {
     if (!selectedCategory || !allMenuItems.length) return [];
     return allMenuItems
@@ -324,7 +413,6 @@ export default function MenuItemsPage() {
       items: draftSubItems,
     };
 
-    const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
     try {
       const existingDraftsJSON = localStorage.getItem(DRAFTS_STORAGE_KEY);
       const existingDrafts: DraftItem[] = existingDraftsJSON ? JSON.parse(existingDraftsJSON) : [];
@@ -333,7 +421,6 @@ export default function MenuItemsPage() {
       
       localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
       toast({ title: "Draft Saved!", description: "Your menu selection has been saved." });
-      // setSelectedItems({}); // Removed this line to keep items selected
     } catch (error) {
       console.error("Error saving draft to localStorage:", error);
       toast({ title: "Error", description: "Could not save draft. LocalStorage might be full or disabled.", variant: "destructive" });
@@ -423,7 +510,7 @@ export default function MenuItemsPage() {
                   <SelectItem value="parlour">Parlour Menu</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="text-sm" onClick={handleSaveDraft}> {/* Updated onClick */}
+              <Button variant="outline" className="text-sm" onClick={handleSaveDraft}>
                 <Save className="h-4 w-4 mr-2" />
                 Save as Draft
               </Button>
@@ -554,3 +641,4 @@ export default function MenuItemsPage() {
     </>
   );
 }
+

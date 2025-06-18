@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation'; // Added useRouter
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +25,7 @@ import {
   AlertTriangle,
   Square,
   Utensils, 
-  Sparkles, // Added Sparkles icon
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
@@ -63,7 +64,11 @@ const extractMenuTypeFromTag = (tag: string): string => {
   const parts = tag.split('-');
   if (parts.length > 0) {
     const type = parts[0];
-    return type.charAt(0).toUpperCase() + type.slice(1); // Capitalize first letter
+    // Capitalize first letter, ensure it's one of the known types or fallback
+    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+    if (capitalizedType === "Restaurant" || capitalizedType === "Parlour") {
+      return capitalizedType;
+    }
   }
   return 'Unknown Type';
 };
@@ -209,7 +214,7 @@ function DraftSkeletonCard(): ReactNode {
       </CardHeader>
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Skeleton className="h-6 w-24 rounded-full" /> {/* Adjusted width for shorter tag */}
+          <Skeleton className="h-6 w-24 rounded-full" />
           <Skeleton className="h-6 w-20 rounded-full" />
         </div>
         <div className="flex items-center space-x-2">
@@ -238,6 +243,7 @@ export default function DraftPage(): ReactNode {
   const [error, setError] = useState<string | null>(null);
   const [expandedDrafts, setExpandedDrafts] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+  const router = useRouter(); 
 
   useEffect(() => {
     setIsLoading(true);
@@ -246,14 +252,14 @@ export default function DraftPage(): ReactNode {
       const storedDrafts = localStorage.getItem(DRAFTS_STORAGE_KEY);
       if (storedDrafts) {
         const parsedDrafts: DraftItem[] = JSON.parse(storedDrafts);
-        // Ensure items is an array, default to empty if not present or not an array
         const validatedDrafts = parsedDrafts.map(draft => ({
           ...draft,
-          items: Array.isArray(draft.items) ? draft.items : []
+          items: Array.isArray(draft.items) ? draft.items : [],
+          previewAvatars: Array.isArray(draft.previewAvatars) ? draft.previewAvatars : [],
         }));
         setDrafts(validatedDrafts);
       } else {
-        setDrafts([]); // No drafts found
+        setDrafts([]); 
       }
     } catch (e: any) {
       console.error("Error loading drafts from localStorage:", e);
@@ -270,27 +276,34 @@ export default function DraftPage(): ReactNode {
   }, [toast]);
 
   const handleRestoreDraft = (id: string) => {
-    console.log("Restore draft:", id);
-    toast({ title: "Action Needed", description: "Restore functionality is not yet implemented." });
+    try {
+      localStorage.setItem('draftToRestoreId', id);
+      router.push('/menu-items');
+      toast({ title: "Restoring Draft...", description: "You will be redirected to the Menu Items page." });
+    } catch (e) {
+      console.error("Error setting item in localStorage for draft restoration:", e);
+      toast({ title: "Error", description: "Could not initiate draft restoration.", variant: "destructive" });
+    }
   };
 
   const handleDeleteDraft = (id: string) => {
     const draftName = drafts.find(d => d.id === id)?.name || "Draft";
-    setDrafts(prevDrafts => prevDrafts.filter(draft => draft.id !== id));
-    setExpandedDrafts(prev => {
-      const newExpanded = {...prev};
-      delete newExpanded[id];
-      return newExpanded;
-    });
-
+    
     try {
       const storedDrafts = localStorage.getItem(DRAFTS_STORAGE_KEY);
+      let updatedDrafts: DraftItem[] = [];
       if (storedDrafts) {
         const parsedDrafts: DraftItem[] = JSON.parse(storedDrafts);
-        const updatedDrafts = parsedDrafts.filter(draft => draft.id !== id);
+        updatedDrafts = parsedDrafts.filter(draft => draft.id !== id);
         localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(updatedDrafts));
-        toast({ title: "Draft Deleted", description: `"${draftName}" has been removed.` });
       }
+      setDrafts(prevDrafts => prevDrafts.filter(draft => draft.id !== id));
+      setExpandedDrafts(prev => {
+        const newExpanded = {...prev};
+        delete newExpanded[id];
+        return newExpanded;
+      });
+      toast({ title: "Draft Deleted", description: `"${draftName}" has been removed.` });
     } catch (e) {
       console.error("Error deleting draft from localStorage:", e);
       toast({ title: "Error", description: "Could not remove draft from storage.", variant: "destructive" });
@@ -305,7 +318,7 @@ export default function DraftPage(): ReactNode {
     if (!searchTerm) return drafts;
     return drafts.filter(draft =>
       draft.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      extractMenuTypeFromTag(draft.primaryTag).toLowerCase().includes(searchTerm.toLowerCase()) || // Search by displayed type
+      extractMenuTypeFromTag(draft.primaryTag).toLowerCase().includes(searchTerm.toLowerCase()) || 
       (isValid(parseISO(draft.createdAt)) && format(parseISO(draft.createdAt), 'dd/MM/yyyy').includes(searchTerm))
     );
   }, [drafts, searchTerm]);
