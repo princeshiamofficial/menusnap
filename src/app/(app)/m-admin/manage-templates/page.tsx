@@ -368,8 +368,9 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         return;
     }
 
+    const templateId = slugify(data.templateName) + '-' + Date.now().toString(36);
     const templatePayload = {
-      id: slugify(data.templateName) + '-' + Date.now().toString(36),
+      id: templateId,
       name: data.templateName,
       description: data.description,
       isTopRated: data.isTopRated,
@@ -881,9 +882,10 @@ export default function ManageTemplatesPage(): ReactNode {
       const uniqueFetchedTemplates: ApiAdminTemplate[] = [];
       const seenIds = new Set<string>();
       for (const t of fetchedTemplatesSource) {
-        if (!seenIds.has(t.id)) {
-          uniqueFetchedTemplates.push(t);
-          seenIds.add(t.id);
+        const templateIdString = String(t.id); // Ensure id is treated as a string for Set
+        if (!seenIds.has(templateIdString)) {
+          uniqueFetchedTemplates.push({ ...t, id: templateIdString }); // Store with string ID
+          seenIds.add(templateIdString);
         }
       }
       setAllTemplates(uniqueFetchedTemplates);
@@ -1195,9 +1197,9 @@ export default function ManageTemplatesPage(): ReactNode {
             </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredTemplates.map((template, index) => (
+            {filteredTemplates.map((template) => (
               <AdminTemplateCard
-                key={`${template.id}-${index}`}
+                key={template.id}
                 template={template}
                 onEdit={handleOpenEditTemplateDialog}
                 onDelete={handleDeleteTemplate}
@@ -1212,3 +1214,4 @@ export default function ManageTemplatesPage(): ReactNode {
   );
 }
 
+    
