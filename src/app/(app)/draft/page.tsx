@@ -168,9 +168,6 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
                 </div>
               ))}
             </div>
-            <div className="text-right mt-3 font-semibold text-foreground">
-                Total Price: ৳{draft.price.toLocaleString()}
-            </div>
           </div>
         )}
          {isExpanded && (!draft.items || draft.items.length === 0) && (
