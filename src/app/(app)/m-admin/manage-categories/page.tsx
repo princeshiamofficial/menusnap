@@ -299,7 +299,7 @@ export default function ManageCategoriesPage(): ReactNode {
         id: String(cat.id),
         name: String(cat.name || 'Unnamed Category'),
         description: cat.description || null,
-        icon: String(cat.icon || '📁'),
+        icon: String(cat.icon || (type === 'parlour' ? '✨' : '📁')),
         itemCount: parseInt(cat.itemCount) || 0,
         visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers),
         createdAt: cat.createdAt || new Date().toISOString(),
@@ -359,7 +359,7 @@ export default function ManageCategoriesPage(): ReactNode {
       
       toast({ title: "Success", description: result.message || `Category "${data.name}" added.` });
       setIsAddDialogOpen(false);
-      fetchCategories(categoryType); // Re-fetch to get the latest list including the new one
+      fetchCategories(categoryType); 
     } catch (error: any) {
       toast({ title: "Error Adding Category", description: error.message, variant: "destructive" });
     }
@@ -845,6 +845,7 @@ export default function ManageCategoriesPage(): ReactNode {
     
 
     
+
 
 
 
