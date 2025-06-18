@@ -22,7 +22,8 @@ import {
   ChevronDown,
   FileText,
   AlertTriangle,
-  Square
+  Square,
+  Utensils, // Generic icon for type
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
@@ -56,6 +57,16 @@ interface DraftCardProps {
   onToggleExpand: (id: string) => void;
 }
 
+const extractMenuTypeFromTag = (tag: string): string => {
+  if (!tag) return 'Unknown Type';
+  const parts = tag.split('-');
+  if (parts.length > 0) {
+    const type = parts[0];
+    return type.charAt(0).toUpperCase() + type.slice(1); // Capitalize first letter
+  }
+  return 'Unknown Type';
+};
+
 function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: DraftCardProps): ReactNode {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
@@ -72,6 +83,8 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
   
   const avatarsToShowCount = Math.min(draft.itemCount > 0 ? 3 : draft.previewAvatars.length, 3);
   const remainingAvatars = Math.max(0, draft.itemCount - avatarsToShowCount);
+
+  const menuTypeDisplay = extractMenuTypeFromTag(draft.primaryTag);
 
 
   return (
@@ -98,8 +111,8 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Badge variant="default" className="bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-700/20 dark:text-orange-400 dark:border-orange-600 font-normal py-1 px-2.5 text-xs">
-            <Tag className="h-3 w-3 mr-1.5 opacity-80"/>
-            {draft.primaryTag}
+            <Utensils className="h-3 w-3 mr-1.5 opacity-80"/>
+            {menuTypeDisplay}
           </Badge>
           <Badge variant="outline" className="border-border text-muted-foreground font-medium py-1 px-2.5 text-xs">
             <CalendarDays className="h-3 w-3 mr-1.5 opacity-70"/>
@@ -194,7 +207,7 @@ function DraftSkeletonCard(): ReactNode {
       </CardHeader>
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Skeleton className="h-6 w-56 rounded-full" />
+          <Skeleton className="h-6 w-24 rounded-full" /> {/* Adjusted width for shorter tag */}
           <Skeleton className="h-6 w-20 rounded-full" />
         </div>
         <div className="flex items-center space-x-2">
@@ -279,8 +292,6 @@ export default function DraftPage(): ReactNode {
     } catch (e) {
       console.error("Error deleting draft from localStorage:", e);
       toast({ title: "Error", description: "Could not remove draft from storage.", variant: "destructive" });
-      // Optionally, refetch from localStorage to ensure consistency if save fails
-      // fetchDrafts(); 
     }
   };
 
@@ -292,7 +303,7 @@ export default function DraftPage(): ReactNode {
     if (!searchTerm) return drafts;
     return drafts.filter(draft =>
       draft.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      draft.primaryTag.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      extractMenuTypeFromTag(draft.primaryTag).toLowerCase().includes(searchTerm.toLowerCase()) || // Search by displayed type
       (isValid(parseISO(draft.createdAt)) && format(parseISO(draft.createdAt), 'dd/MM/yyyy').includes(searchTerm))
     );
   }, [drafts, searchTerm]);
