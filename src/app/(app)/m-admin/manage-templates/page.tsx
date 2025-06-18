@@ -339,10 +339,9 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
 
   async function onSubmit(data: AddTemplateFormValues) {
-    form.clearErrors(); // Clear previous errors
+    form.clearErrors(); 
     let uploadedImageUrl = "";
 
-    // 1. Upload image
     if (data.imageFile && data.imageFile.length > 0) {
       const imageFileToUpload = data.imageFile[0];
       const imageFormData = new FormData();
@@ -369,21 +368,19 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         return;
     }
 
-    // 2. Add template
     const templatePayload = {
-      id: slugify(data.templateName) + '-' + Date.now().toString(36), // Ensure unique ID
+      id: slugify(data.templateName) + '-' + Date.now().toString(36),
       name: data.templateName,
       description: data.description,
       isTopRated: data.isTopRated,
       isPublished: data.isPublished,
       tags: data.tags.map(tag => tag.value),
       imageUrl: uploadedImageUrl,
-      // 'items' field is omitted as it's not in the form
     };
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -653,7 +650,6 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
     form.clearErrors();
     let finalImageUrl = templateData.imageUrl;
 
-    // 1. Upload new image if provided
     if (data.imageFile && data.imageFile.length > 0) {
       const imageFileToUpload = data.imageFile[0];
       const imageFormData = new FormData();
@@ -676,9 +672,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       }
     }
 
-    // 2. Update template
     const templatePayload = {
-      id: templateData.id, // Use existing ID for update
+      id: templateData.id, 
       name: data.templateName,
       description: data.description,
       isTopRated: data.isTopRated,
@@ -688,22 +683,19 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
     };
 
     try {
-      // Assuming POST with an existing ID updates the template, as per common patterns
-      // when a specific PUT endpoint isn't provided.
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST", 
+        method: "PUT", 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
       const templateResult = await templateResponse.json();
 
       if (!templateResponse.ok || !templateResult.success) {
-        // Attempt to parse backend error message, if available
         let backendErrorMessage = "Failed to update template.";
         if (templateResult && templateResult.message) {
             backendErrorMessage = templateResult.message;
         } else if (templateResult && templateResult.data && typeof templateResult.data === 'string') {
-            backendErrorMessage = templateResult.data; // Some APIs return error messages in data field
+            backendErrorMessage = templateResult.data; 
         } else if (templateResponse.statusText) {
             backendErrorMessage = `Failed to update template. Status: ${templateResponse.status} ${templateResponse.statusText}`;
         }
@@ -975,7 +967,7 @@ export default function ManageTemplatesPage(): ReactNode {
 
     try {
         const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-            method: "POST", // Assuming POST with ID updates
+            method: "PUT", 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedTemplate),
         });
@@ -1001,7 +993,7 @@ export default function ManageTemplatesPage(): ReactNode {
     
     try {
         const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-            method: "POST", // Assuming POST with ID updates
+            method: "PUT", 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedTemplate),
         });
@@ -1190,9 +1182,9 @@ export default function ManageTemplatesPage(): ReactNode {
             </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredTemplates.map((template, index) => (
+            {filteredTemplates.map((template) => (
               <AdminTemplateCard
-                key={`${template.id}-${index}`}
+                key={template.id}
                 template={template}
                 onEdit={handleOpenEditTemplateDialog}
                 onDelete={handleDeleteTemplate}
@@ -1206,3 +1198,4 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
+
