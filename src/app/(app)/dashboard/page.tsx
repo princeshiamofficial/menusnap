@@ -83,38 +83,44 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
   const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
 
   return (
-    <Card className="shadow-xl rounded-xl overflow-hidden w-full max-w-md mx-auto sm:max-w-sm flex flex-col h-full">
-      <CardHeader className="p-0 relative">
-        <div className="aspect-[4/3] relative">
-          <Image
-            src={actualImageUrl}
-            alt={title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover"
-            data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : (imageHint || "template design")}
-          />
-        </div>
-        {isTopRated && (
-          <Badge variant="default" className="absolute top-3 right-3 bg-primary text-primary-foreground">
-            <Star className="h-3 w-3 mr-1 fill-current" />
-            TOP RATED
-          </Badge>
-        )}
-      </CardHeader>
-      <CardContent className="p-4 flex-grow">
-        <CardTitle className="text-xl font-semibold mb-1">{title}</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground mb-3 min-h-[40px]">{description}</CardDescription>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {tags.map(tag => (
-            <Badge key={tag} variant="secondary" className="bg-muted text-muted-foreground">{tag}</Badge>
-          ))}
-        </div>
-      </CardContent>
-      <CardFooter className="p-4 bg-muted/50 mt-auto">
-        <Button variant="secondary" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90">View Template</Button>
-      </CardFooter>
-    </Card>
+    <motion.div
+      className="w-full max-w-md mx-auto sm:max-w-sm h-full"
+      whileHover={{ scale: 1.03, y: -4 }}
+      transition={{ type: "spring", stiffness: 300, damping: 15 }}
+    >
+      <Card className="shadow-xl rounded-xl overflow-hidden w-full flex flex-col h-full">
+        <CardHeader className="p-0 relative">
+          <div className="aspect-[4/3] relative">
+            <Image
+              src={actualImageUrl}
+              alt={title}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover"
+              data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : (imageHint || "template design")}
+            />
+          </div>
+          {isTopRated && (
+            <Badge variant="default" className="absolute top-3 right-3 bg-primary text-primary-foreground">
+              <Star className="h-3 w-3 mr-1 fill-current" />
+              TOP RATED
+            </Badge>
+          )}
+        </CardHeader>
+        <CardContent className="p-4 flex-grow">
+          <CardTitle className="text-xl font-semibold mb-1">{title}</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground mb-3 min-h-[40px]">{description}</CardDescription>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {tags.map(tag => (
+              <Badge key={tag} variant="secondary" className="bg-muted text-muted-foreground">{tag}</Badge>
+            ))}
+          </div>
+        </CardContent>
+        <CardFooter className="p-4 bg-muted/50 mt-auto">
+          <Button variant="secondary" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90">View Template</Button>
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
 }
 
