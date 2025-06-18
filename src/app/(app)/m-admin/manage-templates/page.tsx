@@ -380,7 +380,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST", // Changed back to POST
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -684,7 +684,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST", // Changed back to POST
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -863,7 +863,7 @@ export default function ManageTemplatesPage(): ReactNode {
         throw new Error("Invalid data format from API");
       }
       
-      const fetchedTemplates: ApiAdminTemplate[] = result.data.templates.map((t: any, index: number) => ({
+      const fetchedTemplatesSource: ApiAdminTemplate[] = result.data.templates.map((t: any, index: number) => ({
         id: String(t.id),
         name: t.name || `Untitled Template ${index + 1}`,
         description: t.description || 'No description available.',
@@ -875,7 +875,17 @@ export default function ManageTemplatesPage(): ReactNode {
         version: t.version || `${Math.floor(Math.random() * 3) + 1}.0`,
         category: t.category || "General",
       }));
-      setAllTemplates(fetchedTemplates);
+
+      const uniqueFetchedTemplates: ApiAdminTemplate[] = [];
+      const seenIds = new Set<string>();
+      for (const t of fetchedTemplatesSource) {
+        if (!seenIds.has(t.id)) {
+          uniqueFetchedTemplates.push(t);
+          seenIds.add(t.id);
+        }
+      }
+      setAllTemplates(uniqueFetchedTemplates);
+
     } catch (e: any) {
       console.error("Failed to fetch templates:", e);
       setError(e.message || "Failed to load templates. Please try again later.");
