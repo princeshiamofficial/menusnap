@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, FileArchive, BookOpenCheck, FileText, Building2, Globe2, Star, AlertTriangle } from "lucide-react";
+import { motion, animate } from "framer-motion";
 
 interface StatCardProps {
   title: string;
@@ -20,6 +21,26 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, icon: Icon, bgColorClass, textColorClass, iconColorClass }: StatCardProps) {
+  const [animatedValue, setAnimatedValue] = useState("0");
+
+  useEffect(() => {
+    const numericTarget = parseInt(value.replace(/,/g, ''), 10);
+    if (isNaN(numericTarget)) {
+      setAnimatedValue(value); // Fallback if parsing fails
+      return;
+    }
+
+    const controls = animate(0, numericTarget, {
+      duration: 1.5,
+      ease: "easeOut",
+      onUpdate: (latest) => {
+        setAnimatedValue(Math.round(latest).toLocaleString());
+      },
+    });
+
+    return () => controls.stop();
+  }, [value]);
+
   return (
     <Card className={`${bgColorClass} ${textColorClass} shadow-lg rounded-xl overflow-hidden`}>
       <CardContent className="p-4 sm:p-6 flex items-center gap-4">
@@ -27,7 +48,7 @@ function StatCard({ title, value, icon: Icon, bgColorClass, textColorClass, icon
           <Icon className="h-6 w-6 sm:h-8 sm:w-8" />
         </div>
         <div>
-          <p className="text-2xl sm:text-3xl font-bold">{value}+</p>
+          <p className="text-2xl sm:text-3xl font-bold">{animatedValue}+</p>
           <p className="text-xs sm:text-sm opacity-90">{title}</p>
         </div>
       </CardContent>
@@ -177,10 +198,10 @@ export default function DashboardPage() {
   }, []);
 
   const stats = [
-    { title: "Designs", value: "12,365", icon: FileArchive, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
-    { title: "Customers", value: "4,332", icon: Users, bgColorClass: "bg-primary", textColorClass: "text-primary-foreground", iconColorClass: "text-white" },
-    { title: "Menu Book Production", value: "57,650", icon: BookOpenCheck, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
-    { title: "Menu Card Production", value: "43,456", icon: FileText, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
+    { title: "Designs", value: "12365", icon: FileArchive, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
+    { title: "Customers", value: "4332", icon: Users, bgColorClass: "bg-primary", textColorClass: "text-primary-foreground", iconColorClass: "text-white" },
+    { title: "Menu Book Production", value: "57650", icon: BookOpenCheck, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
+    { title: "Menu Card Production", value: "43456", icon: FileText, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
     { title: "Our Coverage Thana", value: "639", icon: Building2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
     { title: "Our Coverage County", value: "13", icon: Globe2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
   ];
@@ -255,3 +276,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
