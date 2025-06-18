@@ -348,6 +348,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       imageFormData.append("file", imageFileToUpload);
 
       try {
+        form.formState.isSubmitting = true;
         const uploadResponse = await fetch("https://colorhutbd.xyz/vm/api/upload.php", {
           method: "POST",
           body: imageFormData,
@@ -360,6 +361,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       } catch (error: any) {
         toast({ title: "Image Upload Error", description: error.message, variant: "destructive" });
         form.setError("imageFile", { type: "manual", message: error.message || "Failed to upload image."});
+        form.formState.isSubmitting = false;
         return; 
       }
     } else {
@@ -376,11 +378,12 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       isPublished: data.isPublished,
       tags: data.tags.map(tag => tag.value),
       imageUrl: uploadedImageUrl,
+      items: [], // API expects items, send empty array
     };
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST",
+        method: "POST", // Using POST for add
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -393,6 +396,8 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       onSuccess();
     } catch (error: any) {
       toast({ title: "Template Add Error", description: error.message, variant: "destructive" });
+    } finally {
+      form.formState.isSubmitting = false;
     }
   }
 
@@ -447,7 +452,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
               onChange={handleImageInputChange} 
               accept="image/png, image/jpeg, image/webp, image/gif" 
             />
-            {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
+            {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message as string}</p>}
           </div>
 
           <div>
@@ -524,7 +529,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 const editTemplateFormSchema = z.object({
   templateName: z.string().min(1, "Template name is required"),
   description: z.string().min(1, "Description is required"),
-  imageFile: z.custom<FileList>((val) => val === null || val instanceof FileList, "Invalid image file")
+  imageFile: z.custom<FileList>((val) => val === null || val === undefined || val instanceof FileList, "Invalid image file")
     .optional()
     .refine((files) => !files || files.length === 0 || files?.[0]?.size <= 5 * 1024 * 1024, `Max image size is 5MB.`)
     .refine(
@@ -656,6 +661,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       imageFormData.append("file", imageFileToUpload);
 
       try {
+        form.formState.isSubmitting = true;
         const uploadResponse = await fetch("https://colorhutbd.xyz/vm/api/upload.php", {
           method: "POST",
           body: imageFormData,
@@ -668,6 +674,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       } catch (error: any) {
         toast({ title: "Image Upload Error", description: error.message, variant: "destructive" });
         form.setError("imageFile", { type: "manual", message: error.message || "Failed to upload new image."});
+        form.formState.isSubmitting = false;
         return;
       }
     }
@@ -680,11 +687,12 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       isPublished: data.isPublished,
       tags: data.tags.map(tag => tag.value),
       imageUrl: finalImageUrl,
+      items: templateData.tags, // API expects items, send existing tags as placeholder or adjust API
     };
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST",
+        method: "POST", // Using POST for edit as per user request
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -705,6 +713,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       onSuccess();
     } catch (error: any) {
       toast({ title: "Template Update Error", description: error.message, variant: "destructive" });
+    } finally {
+      form.formState.isSubmitting = false;
     }
   }
 
@@ -758,7 +768,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
               onChange={handleImageInputChange} 
               accept="image/png, image/jpeg, image/webp, image/gif" 
             />
-            {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message}</p>}
+            {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message as string}</p>}
           </div>
 
           <div>
@@ -864,7 +874,7 @@ export default function ManageTemplatesPage(): ReactNode {
       }
       
       const fetchedTemplatesSource: ApiAdminTemplate[] = result.data.templates.map((t: any, index: number) => ({
-        id: String(t.id),
+        id: String(t.id), // Ensure id is a string
         name: t.name || `Untitled Template ${index + 1}`,
         description: t.description || 'No description available.',
         isTopRated: t.isTopRated === undefined ? false : Boolean(t.isTopRated),
@@ -876,12 +886,15 @@ export default function ManageTemplatesPage(): ReactNode {
         category: t.category || "General",
       }));
 
+      // De-duplicate based on template ID
       const uniqueFetchedTemplates: ApiAdminTemplate[] = [];
       const seenIds = new Set<string>();
       for (const t of fetchedTemplatesSource) {
         if (!seenIds.has(t.id)) {
           uniqueFetchedTemplates.push(t);
           seenIds.add(t.id);
+        } else {
+          console.warn(`Duplicate template ID skipped during fetch: ${t.id}`);
         }
       }
       setAllTemplates(uniqueFetchedTemplates);
@@ -889,6 +902,7 @@ export default function ManageTemplatesPage(): ReactNode {
     } catch (e: any) {
       console.error("Failed to fetch templates:", e);
       setError(e.message || "Failed to load templates. Please try again later.");
+      setAllTemplates([]); // Clear templates on error
     } finally {
       setIsLoading(false);
     }
