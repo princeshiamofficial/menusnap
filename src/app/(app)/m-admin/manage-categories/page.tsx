@@ -119,7 +119,7 @@ interface ApiCategory {
   itemCount: number;
   visibleToUsers: boolean;
   createdAt: string;
-  status?: string; // API provides 'status', but we'll primarily use visibleToUsers
+  status?: string; 
 }
 
 interface StatCardAdminPageProps {
@@ -181,7 +181,8 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
 
   const handleSubmit = async (data: CategoryFormValues) => {
     await onSubmit(data);
-    form.reset(); 
+    // form.reset(); // Resetting form here might clear too early if submission fails and dialog stays open.
+                 // Consider resetting form only on successful dialog close or successful submission.
   };
 
   return (
@@ -217,7 +218,7 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
       </ScrollArea>
       <DialogFooter className="pt-4 border-t mt-auto">
         <DialogClose asChild>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }}>Cancel</Button>
         </DialogClose>
         <Button
           type="submit"
@@ -271,6 +272,10 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const { toast } = useToast();
 
+  const getApiUrl = (type: CategoryType) => type === 'parlour'
+    ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
+    : 'https://colorhutbd.xyz/vm/api/categories.php';
+
   const updateLastUpdatedTime = useCallback(() => {
     setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
   }, [setLastUpdated]);
@@ -278,9 +283,7 @@ export default function ManageCategoriesPage(): ReactNode {
   const fetchCategories = useCallback(async (type: CategoryType) => {
     setIsLoading(true);
     setError(null);
-    const apiUrl = type === 'parlour'
-      ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
-      : 'https://colorhutbd.xyz/vm/api/categories.php';
+    const apiUrl = getApiUrl(type);
 
     try {
       const response = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
@@ -311,16 +314,16 @@ export default function ManageCategoriesPage(): ReactNode {
     } finally {
       setIsLoading(false);
     }
-  }, [setIsLoading, setError, setAllCategories, updateLastUpdatedTime]);
+  }, [updateLastUpdatedTime]);
 
 
   useEffect(() => {
     fetchCategories(categoryType);
-    setCurrentPage(1); // Reset page when category type changes
+    setCurrentPage(1); 
   }, [categoryType, fetchCategories]);
 
   useEffect(() => {
-    setCurrentPage(1); // Reset page when filters change
+    setCurrentPage(1); 
   }, [searchTerm, statusFilter, sortOption]);
 
   const handleRefresh = useCallback(() => {
@@ -329,29 +332,71 @@ export default function ManageCategoriesPage(): ReactNode {
   }, [categoryType, fetchCategories]);
 
   const handleAddCategory = async (data: CategoryFormValues) => {
-    console.log("Adding category:", data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const newCategory: ApiCategory = {
-      id: String(Date.now()), 
+    const newCategoryId = String(Date.now());
+    const newCategoryPayload = {
+      id: newCategoryId,
       ...data,
-      itemCount: 0,
+      itemCount: 0, 
       createdAt: new Date().toISOString(),
+      status: data.visibleToUsers ? 'active' : 'inactive',
     };
-    setAllCategories(prev => [newCategory, ...prev]);
-    toast({ title: "Success", description: `Category "${data.name}" added.` });
-    setIsAddDialogOpen(false);
-    updateLastUpdatedTime();
+    
+    try {
+      const response = await fetch(getApiUrl(categoryType), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(newCategoryPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Failed to add category. Status: ${response.status}`);
+      }
+      
+      toast({ title: "Success", description: result.message || `Category "${data.name}" added.` });
+      setIsAddDialogOpen(false);
+      fetchCategories(categoryType); // Re-fetch to get the latest list including the new one
+    } catch (error: any) {
+      toast({ title: "Error Adding Category", description: error.message, variant: "destructive" });
+    }
   };
 
   const handleEditCategory = async (data: CategoryFormValues) => {
     if (!editingCategoryData) return;
-    console.log("Editing category:", editingCategoryData.id, data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setAllCategories(prev => prev.map(cat => cat.id === editingCategoryData.id ? { ...cat, ...data, id: cat.id, itemCount: cat.itemCount, createdAt: cat.createdAt } : cat));
-    toast({ title: "Success", description: `Category "${data.name}" updated.` });
-    setIsEditDialogOpen(false);
-    setEditingCategoryData(null);
-    updateLastUpdatedTime();
+
+    const updatedCategoryPayload = {
+      ...editingCategoryData, 
+      ...data, 
+      status: data.visibleToUsers ? 'active' : 'inactive',
+    };
+    
+    try {
+      const response = await fetch(getApiUrl(categoryType), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(updatedCategoryPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Failed to update category. Status: ${response.status}`);
+      }
+      
+      toast({ title: "Success", description: result.message || `Category "${data.name}" updated.` });
+      setIsEditDialogOpen(false);
+      setEditingCategoryData(null);
+      fetchCategories(categoryType);
+    } catch (error: any) {
+      toast({ title: "Error Updating Category", description: error.message, variant: "destructive" });
+    }
   };
   
   const openEditDialog = (category: ApiCategory) => {
@@ -366,22 +411,63 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const confirmDeleteCategory = async () => {
     if (!categoryToDeleteInfo) return;
-    console.log("Deleting category:", categoryToDeleteInfo.id);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setAllCategories(prev => prev.filter(cat => cat.id !== categoryToDeleteInfo.id));
-    toast({ title: "Success", description: `Category "${categoryToDeleteInfo.name}" deleted.` });
-    setIsDeleteDialogOpen(false);
-    setCategoryToDeleteInfo(null);
-    updateLastUpdatedTime();
+    try {
+      const response = await fetch(`${getApiUrl(categoryType)}?id=${categoryToDeleteInfo.id}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Failed to delete category. Status: ${response.status}`);
+      }
+
+      toast({ title: "Success", description: result.message || `Category "${categoryToDeleteInfo.name}" deleted.` });
+      setIsDeleteDialogOpen(false);
+      setCategoryToDeleteInfo(null);
+      fetchCategories(categoryType);
+    } catch (error: any) {
+      toast({ title: "Error Deleting Category", description: error.message, variant: "destructive" });
+      setIsDeleteDialogOpen(false);
+      setCategoryToDeleteInfo(null);
+    }
   };
 
   const handleToggleVisibility = async (id: string) => {
-    console.log("Toggling visibility for category:", id);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setAllCategories(prev => prev.map(cat => cat.id === id ? { ...cat, visibleToUsers: !cat.visibleToUsers } : cat));
-    const category = allCategories.find(c => c.id === id);
-    toast({ title: "Status Updated", description: `Visibility for "${category?.name}" ${category?.visibleToUsers ? 'hidden' : 'visible'}.` });
-    updateLastUpdatedTime();
+    const categoryToUpdate = allCategories.find(cat => cat.id === id);
+    if (!categoryToUpdate) {
+      toast({ title: "Error", description: "Category not found.", variant: "destructive" });
+      return;
+    }
+
+    const updatedCategoryPayload = {
+      ...categoryToUpdate,
+      visibleToUsers: !categoryToUpdate.visibleToUsers,
+      status: !categoryToUpdate.visibleToUsers ? 'active' : 'inactive',
+    };
+    
+    try {
+      const response = await fetch(getApiUrl(categoryType), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(updatedCategoryPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Failed to update visibility. Status: ${response.status}`);
+      }
+      
+      toast({ title: "Status Updated", description: `Visibility for "${categoryToUpdate.name}" ${updatedCategoryPayload.visibleToUsers ? 'set to visible' : 'set to hidden'}.` });
+      fetchCategories(categoryType);
+    } catch (error: any) {
+      toast({ title: "Error Updating Visibility", description: error.message, variant: "destructive" });
+    }
   };
 
 
@@ -759,5 +845,6 @@ export default function ManageCategoriesPage(): ReactNode {
     
 
     
+
 
 
