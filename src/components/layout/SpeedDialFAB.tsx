@@ -43,37 +43,63 @@ const contactOptionsList: ContactOption[] = [
   },
 ];
 
+const helpText = "Need Help?";
+const helpTextCharacters = Array.from(helpText);
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: (i = 1) => ({
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.2 * i },
+  }),
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.2 }
+  }
+};
+
+const characterVariants = {
+  hidden: {
+    opacity: 0,
+    y: 10,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      damping: 12,
+      stiffness: 200,
+    },
+  },
+};
+
+
 export function SpeedDialFAB(): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className="fixed bottom-6 right-4 flex flex-col items-end z-50">
-      {/* "Need Help?" Text */}
+      {/* "Need Help?" Text with Typing Animation */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
-            className="mb-2 px-3 py-1.5 bg-card text-card-foreground text-sm font-medium rounded-full shadow-lg border border-border"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{
-              opacity: 1,
-              y: [0, -4, 0], // Increased y-axis bobbing for more eye-catching effect
-            }}
-            exit={{ opacity: 0, y: 10, transition: { duration: 0.2 } }}
-            transition={{
-              // General transition for initial appearance (opacity, initial y from 10 to 0)
-              duration: 0.3,
-              delay: 0.1,
-              ease: "easeOut",
-              // Specific transition for the y-property's keyframe animation (looping)
-              y: {
-                duration: 1.8, // Slightly adjusted duration for the new bob amplitude
-                repeat: Infinity,
-                repeatType: "mirror",
-                ease: "easeInOut",
-              }
-            }}
+            className="mb-2 px-3 py-1.5 bg-card text-card-foreground text-sm font-medium rounded-full shadow-lg border border-border flex overflow-hidden"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            aria-hidden={true}
           >
-            Need Help?
+            {helpTextCharacters.map((char, index) => (
+              <motion.span
+                key={`${char}-${index}`}
+                variants={characterVariants}
+                className="inline-block"
+              >
+                {char === " " ? "\u00A0" : char} {/* Render space as non-breaking space for layout */}
+              </motion.span>
+            ))}
           </motion.div>
         )}
       </AnimatePresence>
@@ -134,3 +160,4 @@ export function SpeedDialFAB(): ReactNode {
     </div>
   );
 }
+
