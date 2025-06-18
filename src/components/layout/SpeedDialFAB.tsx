@@ -30,7 +30,7 @@ const contactOptionsList: ContactOption[] = [
     IconComponent: MessagesSquare,
     iconColor: 'text-white', 
     bgColor: 'bg-blue-500 hover:bg-blue-600', 
-    action: () => { console.log('Messenger clicked'); window.open('https://m.me/YOUR_FACEBOOK_PAGE_OR_USER_ID', '_blank'); },
+    action: () => { console.log('Messenger clicked'); window.open('https://www.facebook.com/messages/t/100335266150128', '_blank'); },
     ariaLabel: 'Chat on Messenger' 
   },
   { 
