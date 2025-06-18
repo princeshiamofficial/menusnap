@@ -102,7 +102,7 @@ interface CategoryAdmin {
 }
 
 interface SubMenuItemAdmin {
-  id?: string; // Optional: ID for existing sub-items from backend
+  id?: string; 
   name: string;
   price: number;
 }
@@ -127,12 +127,12 @@ const menuItemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100, "Name must be 100 characters or less"),
   price: z.coerce.number().min(0, "Price must be a non-negative number. If using variations, this can be 0."),
   description: z.string().max(500, "Description must be 500 characters or less").optional().nullable(),
-  visibleToUsers: z.boolean().default(true),
+  visibleToUsers: z.boolean().default(true), // Not in UI, but part of data model
   subItems: z.array(
     z.object({
       id: z.string().optional(),
       name: z.string().min(1, "Variation name is required."),
-      price: z.coerce.number().min(0, "Variation price must be non-negative.")
+      price: z.coerce.number().min(0, "Variation price must be non-negative.") 
     })
   ).optional(),
 });
@@ -145,9 +145,10 @@ interface MenuItemFormProps {
   onSubmit: (data: MenuItemFormValues) => Promise<void>;
   onOpenChange: (open: boolean) => void;
   isEditMode: boolean;
+  categoryName?: string; // For dialog title
 }
 
-function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuItemFormProps) {
+function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categoryName }: MenuItemFormProps) {
   const form = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemFormSchema),
     defaultValues: {
@@ -169,13 +170,17 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
   const [newSubItemPrice, setNewSubItemPrice] = useState('');
 
   const handleAddSubItemClick = () => {
-    const priceVal = parseFloat(newSubItemPrice);
-    if (newSubItemName.trim() && !isNaN(priceVal) && priceVal >= 0) {
-      append({ name: newSubItemName.trim(), price: priceVal });
+    form.clearErrors("subItems.root"); 
+    const nameVal = newSubItemName.trim();
+    const priceStr = newSubItemPrice.trim();
+    const priceVal = priceStr === '' ? 0 : parseFloat(priceStr); // Default to 0 if empty
+
+    if (nameVal && !isNaN(priceVal) && priceVal >= 0) {
+      append({ name: nameVal, price: priceVal });
       setNewSubItemName('');
       setNewSubItemPrice('');
     } else {
-      if (!newSubItemName.trim()) form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+      if (!nameVal) form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
       if (isNaN(priceVal) || priceVal < 0) form.setError("subItems.root", { type: "manual", message: "Variation price must be a valid non-negative number." });
     }
   };
@@ -187,7 +192,12 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
   
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow">
-      <ScrollArea className="flex-grow min-h-0 p-1">
+      <DialogHeader className="px-6 py-4 border-b">
+         <DialogTitle className="text-xl">
+            {isEditMode ? `Edit ${initialData?.name || 'Menu Item'}` : `Add New ${categoryName ? categoryName + ' Item' : 'Menu Item'}`}
+        </DialogTitle>
+      </DialogHeader>
+      <ScrollArea className="flex-grow min-h-0 px-6 py-4">
         <div className="space-y-4">
           <div>
             <Label htmlFor="item-name">Item name</Label>
@@ -196,7 +206,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
           </div>
           <div>
             <Label htmlFor="item-price">Base Price</Label>
-            <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price (can be 0 if using variations)" step="0.01"/>
+            <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price (0 if only variations)" step="0.01"/>
             {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
           </div>
           <div>
@@ -220,17 +230,17 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
                 <Label htmlFor="new-subitem-name" className="sr-only">Variation Name</Label>
                 <Input 
                   id="new-subitem-name"
-                  placeholder="Variation name (e.g., Small, Regular)"
+                  placeholder="Variation name (e.g., Small)"
                   value={newSubItemName}
                   onChange={(e) => setNewSubItemName(e.target.value)}
                 />
               </div>
-              <div className="w-32 space-y-1">
+              <div className="w-40 space-y-1"> {/* Increased width for placeholder text */}
                 <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
                 <Input 
                   id="new-subitem-price"
                   type="number"
-                  placeholder="Price"
+                  placeholder="Price (optional, 0 if empty)"
                   value={newSubItemPrice}
                   onChange={(e) => setNewSubItemPrice(e.target.value)}
                   step="0.01"
@@ -241,6 +251,12 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
               </Button>
             </div>
             {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
+             {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
+              <div key={index}>
+                {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
+                {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
+              </div>
+            ))}
           </div>
 
           {fields.length > 0 && (
@@ -252,7 +268,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
                   variant="link" 
                   size="sm" 
                   className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs" 
-                  onClick={() => remove()} // remove() without index clears all
+                  onClick={() => remove()} 
                 >
                   Clear All
                 </Button>
@@ -263,7 +279,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
                     <div className="flex items-center gap-2 flex-grow">
                        <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
                        <span className="text-xs text-muted-foreground">-</span>
-                       <span className="text-sm font-medium text-foreground">৳{form.watch(`subItems.${index}.price`)?.toLocaleString()}</span>
+                       <span className="text-sm font-medium text-foreground">৳{(form.watch(`subItems.${index}.price`) ?? 0).toLocaleString()}</span>
                     </div>
                     <Button 
                       type="button" 
@@ -283,7 +299,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
 
         </div>
       </ScrollArea>
-      <DialogFooter className="pt-6 border-t mt-auto">
+      <DialogFooter className="px-6 py-4 border-t mt-auto">
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }}>Cancel</Button>
         </DialogClose>
@@ -292,7 +308,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuI
           disabled={form.formState.isSubmitting}
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Adding...") : (isEditMode ? "Save Changes" : "Add Item")}
+          {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Adding...") : <><Save className="h-4 w-4 mr-2"/>{isEditMode ? "Save Changes" : "Add Item"}</>}
         </Button>
       </DialogFooter>
     </form>
@@ -376,16 +392,16 @@ export default function ManageMenuItemsPage(): ReactNode {
         if (currentMenuType === 'restaurant' && Array.isArray(menuItemsResult)) {
             rawItemsArray = menuItemsResult;
         } else if (menuItemsResult.success) {
-            if (Array.isArray(menuItemsResult.data)) { // For parlour items which are nested under data
+            if (Array.isArray(menuItemsResult.data)) { 
                 rawItemsArray = menuItemsResult.data;
-            } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) { // Parlour items v2 (items key)
+            } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) { 
                 rawItemsArray = menuItemsResult.data.items;
-            } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.menuItems)) { // Parlour items v3 (menuItems key)
+            } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.menuItems)) { 
                  rawItemsArray = menuItemsResult.data.menuItems;
             } else {
                 throw new Error('Invalid data format for menu items (expected array under "data", "data.items", or "data.menuItems" for parlour, or direct array for restaurant).');
             }
-        } else if (Array.isArray(menuItemsResult)){ // Fallback for restaurant if not success but is array
+        } else if (Array.isArray(menuItemsResult)){ 
              rawItemsArray = menuItemsResult;
         }
          else {
@@ -397,7 +413,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         name: String(item.name || 'Unnamed Item'),
         price: parseFloat(item.price) || 0,
         description: item.description || null,
-        status: (item.visibleToUsers === '1' || item.visibleToUsers === true || item.status === 'active' || item.status === 'Active') ? 'Active' : 'Inactive',
+        status: (String(item.status).toLowerCase() === 'active' || item.visibleToUsers === true || item.visibleToUsers === '1') ? 'Active' : 'Inactive',
         addedDate: item.createdAt || item.addedDate || new Date().toISOString(),
         categoryId: String(item.category || item.categoryId),
         visibleToUsers: item.visibleToUsers === undefined ? true : Boolean(item.visibleToUsers),
@@ -491,16 +507,15 @@ export default function ManageMenuItemsPage(): ReactNode {
         toast({ title: "Error", description: "No category selected to add the item to.", variant: "destructive" });
         return;
     }
-    // The backend API for POST menu-items.php generates the ID if not provided.
-    // So, we don't send an 'id' field from the client for new items.
+    
     const payload = { 
         name: formData.name,
         price: formData.price,
         description: formData.description,
         categoryId: selectedCategory.id,
-        status: formData.visibleToUsers ? 'Active' : 'Inactive',
-        visibleToUsers: formData.visibleToUsers,
-        subItems: formData.subItems ? formData.subItems.map(si => ({name: si.name, price: si.price})) : [], // Send subItems without client-generated IDs
+        status: formData.visibleToUsers ? 'Active' : 'Inactive', // Derived from visibleToUsers
+        visibleToUsers: formData.visibleToUsers, // This is in the form schema but not UI
+        subItems: formData.subItems ? formData.subItems.map(si => ({name: si.name, price: si.price})) : [],
     };
         
     try {
@@ -536,10 +551,10 @@ export default function ManageMenuItemsPage(): ReactNode {
         name: formData.name,
         price: formData.price,
         description: formData.description,
-        categoryId: editingItemData.categoryId, // Category doesn't change on edit
-        status: formData.visibleToUsers ? 'Active' : 'Inactive',
-        visibleToUsers: formData.visibleToUsers,
-        subItems: formData.subItems ? formData.subItems.map(si => ({id: si.id, name: si.name, price: si.price})) : [], // Send subItems with their IDs if they exist
+        categoryId: editingItemData.categoryId,
+        status: formData.visibleToUsers ? 'Active' : 'Inactive', // Derived
+        visibleToUsers: formData.visibleToUsers, // from form schema
+        subItems: formData.subItems ? formData.subItems.map(si => ({id: si.id, name: si.name, price: si.price})) : [],
     };
     try {
       const response = await fetch(getMenuItemsApiUrl(menuType), {
@@ -809,16 +824,12 @@ export default function ManageMenuItemsPage(): ReactNode {
       </main>
 
       <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
-        <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
-          <DialogHeader>
-            <DialogTitle className="text-xl">
-              Add New {selectedCategory?.name ? `${selectedCategory.name} Item` : `${menuType.charAt(0).toUpperCase() + menuType.slice(1)} Item`}
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
           <MenuItemForm 
             onSubmit={handleAddMenuItem} 
             onOpenChange={setIsAddItemDialogOpen}
             isEditMode={false}
+            categoryName={selectedCategory?.name}
           />
         </DialogContent>
       </Dialog>
@@ -828,12 +839,7 @@ export default function ManageMenuItemsPage(): ReactNode {
             setIsEditItemDialogOpen(open);
             if (!open) setEditingItemData(null);
           }}>
-          <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
-            <DialogHeader>
-              <DialogTitle className="text-xl">
-                Edit {editingItemData?.name || 'Menu Item'}
-              </DialogTitle>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
             <MenuItemForm 
               initialData={editingItemData}
               onSubmit={handleEditMenuItem} 
@@ -842,6 +848,7 @@ export default function ManageMenuItemsPage(): ReactNode {
                 if (!open) setEditingItemData(null);
               }}
               isEditMode={true}
+              categoryName={selectedCategory?.name}
             />
           </DialogContent>
         </Dialog>
