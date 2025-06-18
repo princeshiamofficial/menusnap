@@ -23,7 +23,8 @@ import {
   FileText,
   AlertTriangle,
   Square,
-  Utensils, // Generic icon for type
+  Utensils, 
+  Sparkles, // Added Sparkles icon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
@@ -85,6 +86,7 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
   const remainingAvatars = Math.max(0, draft.itemCount - avatarsToShowCount);
 
   const menuTypeDisplay = extractMenuTypeFromTag(draft.primaryTag);
+  const MenuTypeIcon = menuTypeDisplay === 'Parlour' ? Sparkles : Utensils;
 
 
   return (
@@ -111,7 +113,7 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Badge variant="default" className="bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-700/20 dark:text-orange-400 dark:border-orange-600 font-normal py-1 px-2.5 text-xs">
-            <Utensils className="h-3 w-3 mr-1.5 opacity-80"/>
+            <MenuTypeIcon className="h-3 w-3 mr-1.5 opacity-80"/>
             {menuTypeDisplay}
           </Badge>
           <Badge variant="outline" className="border-border text-muted-foreground font-medium py-1 px-2.5 text-xs">
