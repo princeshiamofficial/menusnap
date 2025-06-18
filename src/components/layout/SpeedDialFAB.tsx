@@ -54,9 +54,24 @@ export function SpeedDialFAB(): ReactNode {
           <motion.div
             className="mb-2 px-3 py-1.5 bg-card text-card-foreground text-sm font-medium rounded-full shadow-lg border border-border"
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={{
+              opacity: 1,
+              y: [0, -4, 0], // Keyframes for y-axis bobbing
+            }}
             exit={{ opacity: 0, y: 10, transition: { duration: 0.2 } }}
-            transition={{ duration: 0.3, delay: 0.1, ease: "easeOut" }}
+            transition={{
+              // General transition for initial appearance (opacity, initial y from 10 to 0)
+              duration: 0.3,
+              delay: 0.1,
+              ease: "easeOut",
+              // Specific transition for the y-property's keyframe animation (looping)
+              y: {
+                duration: 1.8, // Duration of one bob cycle
+                repeat: Infinity,
+                repeatType: "mirror",
+                ease: "easeInOut",
+              }
+            }}
           >
             Need Help?
           </motion.div>
@@ -76,7 +91,7 @@ export function SpeedDialFAB(): ReactNode {
             key={option.name}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: isOpen ? 1 : 0, y: isOpen ? 0 : 20 }}
-            transition={{ duration: 0.2, delay: isOpen ? index * 0.05 : 0, ease: "easeOut" }}
+            transition={{ duration: 0.2, delay: isOpen ? index * 0.05 : (contactOptionsList.length - index - 1) * 0.03, ease: "easeOut" }}
           >
             <Button
               onClick={option.action}
@@ -119,4 +134,3 @@ export function SpeedDialFAB(): ReactNode {
     </div>
   );
 }
-
