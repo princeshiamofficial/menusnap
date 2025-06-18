@@ -104,7 +104,7 @@ interface CategoryAdmin {
 interface SubMenuItemAdmin {
   id?: string; 
   name: string;
-  price: number;
+  price?: number; // Optional price
 }
 
 interface MenuItemAdmin {
@@ -127,12 +127,12 @@ const menuItemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100, "Name must be 100 characters or less"),
   price: z.coerce.number().min(0, "Price must be a non-negative number. If using variations, this can be 0."),
   description: z.string().max(500, "Description must be 500 characters or less").optional().nullable(),
-  visibleToUsers: z.boolean().default(true),
+  visibleToUsers: z.boolean().default(true), // Not in UI, but managed in data
   subItems: z.array(
     z.object({
       id: z.string().optional(),
       name: z.string().min(1, "Variation name is required."),
-      price: z.number().nonnegative("Price must be a non-negative number.").optional(),
+      price: z.number().nonnegative("Price must be a non-negative number.").optional(), // Price is optional
     })
   ).optional(),
 });
@@ -145,7 +145,7 @@ interface MenuItemFormProps {
   onSubmit: (data: MenuItemFormValues) => Promise<void>;
   onOpenChange: (open: boolean) => void;
   isEditMode: boolean;
-  categoryName?: string; // For dialog title
+  categoryName?: string; 
 }
 
 function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categoryName }: MenuItemFormProps) {
@@ -159,7 +159,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
       subItems: initialData?.subItems?.map(si => ({ 
         id: si.id, 
         name: si.name, 
-        price: si.price // API provides number, should be fine
+        price: si.price
       })) || [],
     },
     mode: 'onChange',
@@ -293,10 +293,14 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
                     <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
                       <div className="flex items-center gap-2 flex-grow">
                          <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
-                         <span className="text-xs text-muted-foreground">-</span>
-                         <span className="text-sm font-medium text-foreground whitespace-nowrap">
-                            {typeof currentPrice === 'number' ? `৳${currentPrice.toLocaleString()}` : ''}
-                         </span>
+                         {typeof currentPrice === 'number' && (
+                           <>
+                             <span className="text-xs text-muted-foreground">-</span>
+                             <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                                ৳{currentPrice.toLocaleString()}
+                             </span>
+                           </>
+                         )}
                       </div>
                       <Button 
                         type="button" 
@@ -398,7 +402,6 @@ export default function ManageMenuItemsPage(): ReactNode {
       }));
       
       const visibleAdminCategories = fetchedCategoriesRaw.filter(cat => cat.visibleToUsers);
-
       setAllCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 })));
       setOrderedCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 })));
 
@@ -436,7 +439,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         categoryId: String(item.category || item.categoryId),
         visibleToUsers: item.visibleToUsers === undefined ? true : Boolean(item.visibleToUsers),
         image: item.image || null, 
-        subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({id: String(si.id), name: String(si.name), price: parseFloat(si.price) || 0})) : [],
+        subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({id: String(si.id), name: String(si.name), price: si.price !== null && si.price !== undefined ? parseFloat(si.price) : undefined})) : [],
       }));
       setAllMenuItems(fetchedMenuItems);
 
@@ -531,10 +534,14 @@ export default function ManageMenuItemsPage(): ReactNode {
         name: formData.name,
         price: formData.price,
         description: formData.description,
-        categoryId: selectedCategory.id,
+        category: selectedCategory.id, // Changed from categoryId
         status: formData.visibleToUsers ? 'Active' : 'Inactive', 
         visibleToUsers: formData.visibleToUsers, 
-        subItems: formData.subItems ? formData.subItems.map(si => ({name: si.name, price: si.price ?? 0})) : [],
+        subItems: formData.subItems ? formData.subItems.map(si => {
+            const subItemPayload: any = { name: si.name };
+            if (si.price !== undefined) subItemPayload.price = si.price;
+            return subItemPayload;
+        }) : [],
     };
         
     try {
@@ -544,7 +551,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         body: JSON.stringify(payload),
       });
       const result = await response.json();
-      if (!response.ok || (result && result.success === false) || (result && result.item === undefined && result.success !== true)) {
+      if (!response.ok || !result || !result.item) {
         throw new Error(result.message || `Failed to add menu item. Status: ${response.status}`);
       }
       toast({ title: "Success", description: result.message || `Item "${formData.name}" added to ${selectedCategory?.name || 'category'}.` });
@@ -570,10 +577,15 @@ export default function ManageMenuItemsPage(): ReactNode {
         name: formData.name,
         price: formData.price,
         description: formData.description,
-        categoryId: editingItemData.categoryId,
+        category: editingItemData.categoryId, // Changed from categoryId
         status: formData.visibleToUsers ? 'Active' : 'Inactive', 
         visibleToUsers: formData.visibleToUsers, 
-        subItems: formData.subItems ? formData.subItems.map(si => ({id: si.id, name: si.name, price: si.price ?? 0})) : [],
+        subItems: formData.subItems ? formData.subItems.map(si => {
+            const subItemPayload: any = { name: si.name };
+            if (si.id) subItemPayload.id = si.id;
+            if (si.price !== undefined) subItemPayload.price = si.price;
+            return subItemPayload;
+        }) : [],
     };
     try {
       const response = await fetch(getMenuItemsApiUrl(menuType), {
@@ -582,7 +594,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         body: JSON.stringify(payload), 
       });
       const result = await response.json();
-      if (!response.ok || (result && result.success === false) || (result && result.item === undefined && result.success !== true) ) {
+      if (!response.ok || !result || !result.item ) {
         throw new Error(result.message || `Failed to update item. Status: ${response.status}`);
       }
       toast({ title: "Success", description: result.message || `Item "${formData.name}" updated.` });
@@ -897,4 +909,3 @@ export default function ManageMenuItemsPage(): ReactNode {
   );
 }
     
-
