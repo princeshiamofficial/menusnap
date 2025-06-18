@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react'; // Added useCallback
 import { Reorder } from "framer-motion";
 import {
   Search,
@@ -12,7 +12,7 @@ import {
   ChevronRight,
   MinusCircle,
   PlusCircle,
-  Send, // Added Send
+  Send, 
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,26 @@ import {
 } from "@/components/ui/select";
 import { useTheme } from '@/context/ThemeContext';
 import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog'; 
+import { useToast } from "@/hooks/use-toast"; // Added useToast
+
+// Define Draft types locally (ideally move to a shared types file later)
+interface DraftSubItem {
+  id: string;
+  name: string;
+  price: number;
+}
+
+interface DraftItem {
+  id: string;
+  name: string;
+  createdAt: string; // ISO string
+  itemCount: number;
+  primaryTag: string;
+  price: number;
+  previewAvatars: string[];
+  items?: DraftSubItem[];
+}
+
 
 interface Category {
   id: string;
@@ -82,6 +102,7 @@ export default function MenuItemsPage() {
 
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const { setTheme } = useTheme();
+  const { toast } = useToast(); // Initialize useToast
 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false); 
 
@@ -142,7 +163,7 @@ export default function MenuItemsPage() {
           .map((cat: any) => ({
             id: String(cat.id),
             name: String(cat.name || 'Unnamed Category'),
-            icon: String(cat.icon || 'FileText'), // Default icon if not provided
+            icon: String(cat.icon || 'FileText'), 
             itemCount: Number(cat.itemCount || 0),
             status: String(cat.status || 'active'),
             createdAt: String(cat.createdAt || new Date().toISOString()),
@@ -184,9 +205,9 @@ export default function MenuItemsPage() {
           const menuItemsApiResponse = await menuItemsResponse.json();
           let rawItemsArray: any[] = [];
           if (menuItemsApiResponse.success) {
-            if (Array.isArray(menuItemsApiResponse.data)) { // Direct array
+            if (Array.isArray(menuItemsApiResponse.data)) { 
               rawItemsArray = menuItemsApiResponse.data;
-            } else if (menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { // Nested under 'items'
+            } else if (menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { 
               rawItemsArray = menuItemsApiResponse.data.items;
             } else {
               console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
@@ -265,6 +286,60 @@ export default function MenuItemsPage() {
   const toggleSubItems = (itemId: string) => {
     setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   };
+
+  const handleSaveDraft = useCallback(() => {
+    if (selectedCount === 0) {
+      toast({
+        title: "No Items Selected",
+        description: "Please select at least one item to save a draft.",
+        variant: "default", 
+      });
+      return;
+    }
+
+    const actualSelectedMenuItems: MenuItem[] = allMenuItems.filter(
+      (item) => selectedItems[item.id]
+    );
+
+    const draftSubItems: DraftSubItem[] = actualSelectedMenuItems.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+    }));
+
+    const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
+
+    const previewAvatarsArray = actualSelectedMenuItems
+      .slice(0, 3)
+      .map(item => item.name.substring(0, 2).toUpperCase());
+
+    const newDraft: DraftItem = {
+      id: `draft_${Date.now()}`,
+      name: `Menu Selection ${new Date().toLocaleDateString()}`,
+      createdAt: new Date().toISOString(),
+      itemCount: actualSelectedMenuItems.length,
+      primaryTag: `${selectedMenuType}-${selectedCategory ? selectedCategory.name.toLowerCase().replace(/\s+/g, '-') : 'general'}-${Date.now()}`,
+      price: totalPrice,
+      previewAvatars: previewAvatarsArray,
+      items: draftSubItems,
+    };
+
+    const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
+    try {
+      const existingDraftsJSON = localStorage.getItem(DRAFTS_STORAGE_KEY);
+      const existingDrafts: DraftItem[] = existingDraftsJSON ? JSON.parse(existingDraftsJSON) : [];
+      
+      existingDrafts.unshift(newDraft); 
+      
+      localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
+      toast({ title: "Draft Saved!", description: "Your menu selection has been saved." });
+      setSelectedItems({}); // Optionally clear selection after saving
+    } catch (error) {
+      console.error("Error saving draft to localStorage:", error);
+      toast({ title: "Error", description: "Could not save draft. LocalStorage might be full or disabled.", variant: "destructive" });
+    }
+  }, [selectedCount, allMenuItems, selectedItems, selectedMenuType, selectedCategory, toast]);
+
 
   let itemsGridClass = 'grid-cols-1';
   if (currentMenuItems.length === 1) {
@@ -348,7 +423,7 @@ export default function MenuItemsPage() {
                   <SelectItem value="parlour">Parlour Menu</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="text-sm">
+              <Button variant="outline" className="text-sm" onClick={handleSaveDraft}> {/* Updated onClick */}
                 <Save className="h-4 w-4 mr-2" />
                 Save as Draft
               </Button>
@@ -408,7 +483,6 @@ export default function MenuItemsPage() {
                                 />
                                 {item.iconPlaceholder && (
                                    <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0">
-                                     {/* Placeholder for icon, e.g., first letter or generic icon */}
                                    </div>
                                 )}
                                 <div className="flex-1"> 
@@ -480,4 +554,3 @@ export default function MenuItemsPage() {
     </>
   );
 }
-
