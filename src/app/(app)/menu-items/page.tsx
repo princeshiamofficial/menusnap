@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import { Reorder } from "framer-motion";
 import {
   Search,
@@ -13,7 +13,7 @@ import {
   ChevronRight,
   MinusCircle,
   PlusCircle,
-  Send, 
+  Send,
   FileText as DefaultCategoryIcon,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -31,27 +31,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTheme } from '@/context/ThemeContext';
-import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog'; 
+import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog';
 import { useToast } from "@/hooks/use-toast";
 
-const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts'; 
+const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 
 interface DraftSubItem {
   id: string;
   name: string;
   price: number;
-  categoryId: string; 
+  categoryId: string;
 }
 
 interface DraftItem {
   id: string;
   name: string;
-  createdAt: string; 
+  createdAt: string;
   itemCount: number;
-  primaryTag: string; 
-  price: number; 
-  previewAvatars: string[]; 
-  items?: DraftSubItem[]; 
+  primaryTag: string;
+  price: number;
+  previewAvatars: string[];
+  items?: DraftSubItem[];
 }
 
 
@@ -76,7 +76,7 @@ interface MenuItem {
   id: string;
   name: string;
   price: number;
-  category: string; 
+  category: string;
   description?: string;
   image?: string;
   status?: string;
@@ -96,7 +96,7 @@ export default function MenuItemsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
-  
+
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
 
@@ -107,16 +107,16 @@ export default function MenuItemsPage() {
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const { setTheme } = useTheme();
   const { toast } = useToast();
-  const router = useRouter(); 
+  const router = useRouter();
 
-  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false); 
+  const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoadingCategories(true);
       setErrorCategories(null);
-      setLoadingMenuItems(true); 
-      setErrorMenuItems(null);  
+      setLoadingMenuItems(true);
+      setErrorMenuItems(null);
 
       let categoriesResponse: Response | undefined;
       let menuItemsResponse: Response | undefined;
@@ -124,19 +124,21 @@ export default function MenuItemsPage() {
       const categoriesApiUrl = selectedMenuType === 'parlour'
         ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
         : 'https://colorhutbd.xyz/vm/api/categories.php';
-      
+
       let menuItemsApiUrl = selectedMenuType === 'parlour'
         ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
         : 'https://colorhutbd.xyz/vm/api/menu-items.php';
-      
-      menuItemsApiUrl += '?visibleOnly=true'; // Ensure only visible items are fetched
+
+      // Ensure only visible items are fetched for the customer-facing page
+      menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
+
 
       try {
         const fetchPromises: [Promise<Response>, Promise<Response>] = [
           fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } }),
           fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
         ];
-        
+
         const responses = await Promise.all(fetchPromises);
         categoriesResponse = responses[0];
         menuItemsResponse = responses[1];
@@ -151,10 +153,10 @@ export default function MenuItemsPage() {
         setAllMenuItems([]);
         setLoadingCategories(false);
         setLoadingMenuItems(false);
-        return; 
+        return;
       }
 
-      const prevSelectedCategoryId = selectedCategory?.id; 
+      const prevSelectedCategoryId = selectedCategory?.id;
       try {
         if (!categoriesResponse || !categoriesResponse.ok) {
           throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
@@ -164,20 +166,20 @@ export default function MenuItemsPage() {
           console.error("Invalid API response structure for categories:", categoriesApiResponse);
           throw new Error("Invalid data format for categories from API");
         }
-        
+
         const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories
           .filter((cat: any) => cat.id !== null && cat.id !== undefined)
           .map((cat: any) => ({
             id: String(cat.id),
             name: String(cat.name || 'Unnamed Category'),
-            icon: String(cat.icon || '📁'), 
+            icon: String(cat.icon || '📁'),
             itemCount: Number(cat.itemCount || 0),
             status: String(cat.status || 'active'),
             createdAt: String(cat.createdAt || new Date().toISOString()),
             description: String(cat.description || ''),
             visibleToUsers: cat.visibleToUsers !== undefined ? Boolean(cat.visibleToUsers) : true,
           }));
-        
+
         const visibleCategories = fetchedApiCategories.filter(cat => cat.visibleToUsers);
 
         setApiCategories(visibleCategories);
@@ -208,18 +210,17 @@ export default function MenuItemsPage() {
 
       if (menuItemsResponse) {
         try {
-          if (!menuItemsResponse.ok) { 
+          if (!menuItemsResponse.ok) {
             throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
           }
           const menuItemsApiResponse = await menuItemsResponse.json();
           let rawItemsArray: any[] = [];
-          
-          // The API response for menu-items.php is a direct array, not nested under 'data'
-          if (Array.isArray(menuItemsApiResponse)) { 
+
+          if (Array.isArray(menuItemsApiResponse)) {
               rawItemsArray = menuItemsApiResponse;
-          } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { // Handle parlour (nested)
+          } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) {
               rawItemsArray = menuItemsApiResponse.data;
-          } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) {  // Handle parlour if nested under items
+          } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) {
               rawItemsArray = menuItemsApiResponse.data.items;
           }
           else {
@@ -231,10 +232,10 @@ export default function MenuItemsPage() {
           const fetchedMenuItems: MenuItem[] = rawItemsArray
             .filter((item: any) => item.id !== null && item.id !== undefined)
             .map((item: any) => ({
-              id: String(item.id), 
+              id: String(item.id),
               name: String(item.name || 'Unnamed Item'),
               price: parseFloat(item.price) || 0,
-              category: String(item.category || 'uncategorized'), 
+              category: String(item.category || 'uncategorized'),
               description: String(item.description || ''),
               image: item.image,
               status: String(item.status || 'active'),
@@ -243,14 +244,14 @@ export default function MenuItemsPage() {
               createdAt: String(item.createdAt || new Date().toISOString()),
               updatedAt: String(item.updatedAt || new Date().toISOString()),
               iconPlaceholder: !item.image,
-              subItems: Array.isArray(item.subItems) 
+              subItems: Array.isArray(item.subItems)
                 ? item.subItems
                     .filter((sub: any) => sub.id !== null && sub.id !== undefined)
                     .map((sub: any) => ({
-                      id: String(sub.id), 
+                      id: String(sub.id),
                       name: String(sub.name || 'Unnamed Sub-item'),
                       price: parseFloat(sub.price) || 0,
-                    })) 
+                    }))
                 : [],
             }));
           setAllMenuItems(fetchedMenuItems);
@@ -276,7 +277,7 @@ export default function MenuItemsPage() {
       setTheme('default');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMenuType, setTheme]); 
+  }, [selectedMenuType, setTheme]);
 
 
   useEffect(() => {
@@ -306,11 +307,11 @@ export default function MenuItemsPage() {
         toast({ title: "Error", description: `Draft with ID ${draftIdToRestore} not found.`, variant: "destructive" });
         return;
       }
-      
+
       const draftMenuType = draftToRestore.primaryTag.split('-')[0].toLowerCase();
       if (draftMenuType !== selectedMenuType) {
         setSelectedMenuType(draftMenuType);
-        return; 
+        return;
       }
 
       const tagParts = draftToRestore.primaryTag.split('-');
@@ -325,12 +326,12 @@ export default function MenuItemsPage() {
           setSelectedCategory(targetCategory);
         } else {
           toast({ title: "Warning", description: `Category for "${draftCategorySlug}" not found or not visible. Selecting first available.`, variant: "default" });
-          setSelectedCategory(apiCategories[0] || null); 
+          setSelectedCategory(apiCategories[0] || null);
         }
       } else {
-         setSelectedCategory(apiCategories[0] || null); 
+         setSelectedCategory(apiCategories[0] || null);
       }
-      
+
 
       if (draftToRestore.items && draftToRestore.items.length > 0) {
         const itemIdsToSelect = draftToRestore.items.map(subItem => subItem.id);
@@ -364,8 +365,8 @@ export default function MenuItemsPage() {
       localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: "Failed to parse or restore draft data.", variant: "destructive" });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [allMenuItems, apiCategories, selectedMenuType, loadingMenuItems, loadingCategories]); 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allMenuItems, apiCategories, selectedMenuType, loadingMenuItems, loadingCategories]);
 
 
   const currentMenuItems = useMemo(() => {
@@ -379,7 +380,7 @@ export default function MenuItemsPage() {
   const handleSelectItem = (itemId: string) => {
     setSelectedItems(prev => ({ ...prev, [String(itemId)]: !prev[String(itemId)] }));
   };
-  
+
   const selectedCount = useMemo(() => {
     return Object.values(selectedItems).filter(Boolean).length;
   }, [selectedItems]);
@@ -393,7 +394,7 @@ export default function MenuItemsPage() {
       toast({
         title: "No Items Selected",
         description: "Please select at least one item to save a draft.",
-        variant: "default", 
+        variant: "default",
       });
       return;
     }
@@ -406,7 +407,7 @@ export default function MenuItemsPage() {
       id: item.id,
       name: item.name,
       price: item.price,
-      categoryId: item.category, 
+      categoryId: item.category,
     }));
 
     const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
@@ -429,9 +430,9 @@ export default function MenuItemsPage() {
     try {
       const existingDraftsJSON = localStorage.getItem(DRAFTS_STORAGE_KEY);
       const existingDrafts: DraftItem[] = existingDraftsJSON ? JSON.parse(existingDraftsJSON) : [];
-      
-      existingDrafts.unshift(newDraft); 
-      
+
+      existingDrafts.unshift(newDraft);
+
       localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
       toast({ title: "Draft Saved!", description: "Your menu selection has been saved." });
     } catch (error) {
@@ -457,7 +458,7 @@ export default function MenuItemsPage() {
   const handleRemoveItemFromPreview = (itemIdToRemove: string) => {
     setSelectedItems(prev => {
       const updated = { ...prev };
-      delete updated[itemIdToRemove]; 
+      delete updated[itemIdToRemove];
       return updated;
     });
   };
@@ -483,7 +484,7 @@ export default function MenuItemsPage() {
                     <Button
                       variant="ghost"
                       className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
-                        selectedCategory?.id === category.id 
+                        selectedCategory?.id === category.id
                         ? 'bg-muted font-semibold text-foreground'
                         : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
                       }`}
@@ -542,7 +543,7 @@ export default function MenuItemsPage() {
                 </Badge>
               </div>
             )}
-            
+
             {loadingMenuItems && (
               <div className="flex-1 flex items-center justify-center">
                 <p className="text-muted-foreground">Loading menu items...</p>
@@ -563,13 +564,13 @@ export default function MenuItemsPage() {
                     {selectedCategory?.itemCount ?? currentMenuItems.length}
                   </Badge>
                 </div>
-                
+
                 <ScrollArea className="flex-1 -mx-1">
                   <div className={cn("grid gap-4 px-1", itemsGridClass)}>
                     {currentMenuItems.length > 0 ? (
                       currentMenuItems.map(item => (
-                          <Card 
-                            key={item.id} 
+                          <Card
+                            key={item.id}
                             className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
                           >
                             <CardContent className="p-4">
@@ -579,14 +580,14 @@ export default function MenuItemsPage() {
                                   checked={!!selectedItems[String(item.id)]}
                                   onCheckedChange={() => handleSelectItem(String(item.id))}
                                   aria-label={`Select ${item.name}`}
-                                  className="mt-1" 
+                                  className="mt-1"
                                 />
                                 {item.iconPlaceholder && (
                                    <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0 text-muted-foreground">
                                      <DefaultCategoryIcon className="h-5 w-5" />
                                    </div>
                                 )}
-                                <div className="flex-1 min-w-0"> 
+                                <div className="flex-1 min-w-0">
                                   <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
                                     {item.name}
                                   </label>
@@ -600,9 +601,9 @@ export default function MenuItemsPage() {
                                   ৳{(item.price ?? 0).toLocaleString()}
                                 </div>
                                 {item.subItems && item.subItems.length > 0 && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
                                     className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
                                     onClick={() => toggleSubItems(String(item.id))}
                                     aria-expanded={!!expandedSubItems[String(item.id)]}
@@ -614,14 +615,22 @@ export default function MenuItemsPage() {
                                 )}
                               </div>
                               {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
-                                <div id={`subitems-${item.id}`} className="mt-3 pl-10 space-y-2 border-l border-dashed ml-2 py-2">
-                                  <h4 className="text-xs font-semibold text-muted-foreground mb-1 pl-4">Variations:</h4>
-                                  {item.subItems.map(subItem => (
-                                    <div key={subItem.id} className="flex justify-between items-center text-xs pl-4 pr-2 py-1 hover:bg-muted/50 rounded-r-md">
-                                      <span className="text-foreground">{subItem.name}</span>
-                                      <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
-                                    </div>
-                                  ))}
+                                <div
+                                  id={`subitems-${item.id}`}
+                                  className="mt-3 pl-8 pr-2 py-2 space-y-1.5 bg-muted/30 rounded-md border-l-2 border-primary/50 ml-6"
+                                >
+                                  <h4 className="text-xs font-medium text-muted-foreground px-2">Variations:</h4>
+                                  <div className="space-y-1">
+                                    {item.subItems.map(subItem => (
+                                      <div
+                                        key={subItem.id}
+                                        className="flex justify-between items-center text-xs px-2 py-1 hover:bg-muted/60 rounded"
+                                      >
+                                        <span className="text-foreground">{subItem.name}</span>
+                                        <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                             </CardContent>
