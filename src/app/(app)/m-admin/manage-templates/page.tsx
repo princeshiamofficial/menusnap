@@ -380,7 +380,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST",
+        method: "POST", // Changed back to POST
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -684,7 +684,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST", 
+        method: "POST", // Changed back to POST
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -967,7 +967,7 @@ export default function ManageTemplatesPage(): ReactNode {
 
     try {
         const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-            method: "POST", // Changed back to POST as per previous instruction
+            method: "POST", 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedTemplate),
         });
@@ -993,7 +993,7 @@ export default function ManageTemplatesPage(): ReactNode {
     
     try {
         const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-            method: "POST", // Changed back to POST as per previous instruction
+            method: "POST", 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedTemplate),
         });
@@ -1182,9 +1182,9 @@ export default function ManageTemplatesPage(): ReactNode {
             </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredTemplates.map((template) => (
+            {filteredTemplates.map((template, index) => (
               <AdminTemplateCard
-                key={template.id}
+                key={`${template.id}-${index}`}
                 template={template}
                 onEdit={handleOpenEditTemplateDialog}
                 onDelete={handleDeleteTemplate}
