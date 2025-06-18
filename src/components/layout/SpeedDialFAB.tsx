@@ -22,7 +22,7 @@ const contactOptionsList: ContactOption[] = [
     IconComponent: MessageCircle, 
     iconColor: 'text-white', 
     bgColor: 'bg-green-500 hover:bg-green-600', 
-    action: () => { console.log('WhatsApp clicked'); window.open('https://wa.me/YOUR_INTERNATIONAL_WHATSAPP_NUMBER_HERE', '_blank'); },
+    action: () => { console.log('WhatsApp clicked'); window.open('https://wa.me/8801919760626', '_blank'); },
     ariaLabel: 'Chat on WhatsApp'
   },
   { 
