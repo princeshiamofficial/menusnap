@@ -15,8 +15,9 @@ import {
   Label
 } from "@/components/ui/label";
 import {
-  Switch
-} from "@/components/ui/switch";
+  Textarea // Added for description
+} from "@/components/ui/textarea";
+// Switch removed from here as it's not in the new form design
 import {
   Badge
 } from "@/components/ui/badge";
@@ -71,7 +72,7 @@ import {
   PackageSearch,
   GripVertical,
   Save,
-  DollarSign,
+  // DollarSign removed as it's not in the new design
   ListChecks
 } from "lucide-react";
 import {
@@ -103,6 +104,7 @@ interface MenuItemAdmin {
   id: string;
   name: string;
   price: number;
+  description?: string | null; // Added description
   status: 'Active' | 'Inactive'; 
   addedDate: string; 
   categoryId: string;
@@ -116,109 +118,73 @@ const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 const menuItemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100, "Name must be 100 characters or less"),
   price: z.coerce.number().min(0, "Price must be a positive number"),
-  categoryId: z.string().min(1, "Category is required"),
-  visibleToUsers: z.boolean().default(true),
-  // id is not part of the form validation for new items, but will be present for edits
+  description: z.string().max(500, "Description must be 500 characters or less").optional().nullable(),
+  visibleToUsers: z.boolean().default(true), // Kept for data handling, UI switch removed
 });
 
-type MenuItemFormValues = z.infer<typeof menuItemFormSchema> & { id?: string };
+// This type is for the form's own values
+type MenuItemFormValues = z.infer<typeof menuItemFormSchema>;
 
 
 interface MenuItemFormProps {
-  initialData?: MenuItemAdmin;
-  categories: CategoryAdmin[];
-  menuType: MenuType;
+  initialData?: Partial<MenuItemAdmin>; // Making it partial as not all fields might be directly from item
   onSubmit: (data: MenuItemFormValues) => Promise<void>;
   onOpenChange: (open: boolean) => void;
   isEditMode: boolean;
 }
 
-function MenuItemForm({ initialData, categories, menuType, onSubmit, onOpenChange, isEditMode }: MenuItemFormProps) {
+function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode }: MenuItemFormProps) {
   const form = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemFormSchema),
     defaultValues: {
       name: initialData?.name || "",
       price: initialData?.price || 0,
-      categoryId: initialData?.categoryId || (categories.length > 0 ? categories[0].id : ""),
+      description: initialData?.description || "",
       visibleToUsers: initialData ? initialData.status === 'Active' : true,
-      id: initialData?.id,
     },
     mode: 'onChange',
   });
 
   const handleSubmit = async (data: MenuItemFormValues) => {
-    const payload = { ...data, id: initialData?.id }; // Ensure ID is included for edits
-    await onSubmit(payload);
+    await onSubmit(data);
   };
   
-  const currentCategoryName = categories.find(c => c.id === form.watch('categoryId'))?.name || "Select category";
-
-
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow">
       <ScrollArea className="flex-grow min-h-0 p-1">
         <div className="space-y-4">
           <div>
-            <Label htmlFor="item-name">Item Name*</Label>
-            <Input id="item-name" {...form.register("name")} placeholder="e.g., Special Pizza, Coffee" />
+            <Label htmlFor="item-name">Item name</Label>
+            <Input id="item-name" {...form.register("name")} placeholder="Enter item name" />
             {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
           </div>
           <div>
-            <Label htmlFor="item-price">Price (৳)*</Label>
-            <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="item-price" type="number" {...form.register("price")} placeholder="0.00" className="pl-8" step="0.01"/>
-            </div>
+            <Label htmlFor="item-price">Price</Label>
+            <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter price" step="0.01"/>
             {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
           </div>
           <div>
-            <Label htmlFor="item-category">Category*</Label>
-            <Controller
-              control={form.control}
-              name="categoryId"
-              render={({ field }) => (
-                <Select 
-                    onValueChange={field.onChange} 
-                    value={field.value}
-                    disabled={isEditMode} // Disable category change in edit mode for simplicity
-                >
-                  <SelectTrigger id="item-category" disabled={isEditMode}>
-                    <SelectValue placeholder={currentCategoryName} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+            <Label htmlFor="item-description">Description (optional)</Label>
+            <Textarea 
+              id="item-description" 
+              {...form.register("description")} 
+              placeholder="Enter item description" 
+              rows={3} 
             />
-            {form.formState.errors.categoryId && <p className="text-sm text-destructive mt-1">{form.formState.errors.categoryId.message}</p>}
-          </div>
-          <div className="flex items-center space-x-2 pt-2">
-            <Controller
-              control={form.control}
-              name="visibleToUsers"
-              render={({ field }) => (
-                <Switch id="item-visible" checked={field.value} onCheckedChange={field.onChange} />
-              )}
-            />
-            <Label htmlFor="item-visible" className="cursor-pointer">Visible to Customers (Active)</Label>
+            {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
           </div>
         </div>
       </ScrollArea>
-      <DialogFooter className="pt-4 border-t mt-auto">
+      <DialogFooter className="pt-6 border-t mt-auto">
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }}>Cancel</Button>
         </DialogClose>
         <Button
           type="submit"
-          disabled={!form.formState.isValid || form.formState.isSubmitting}
+          disabled={form.formState.isSubmitting} // Correctly use read-only isSubmitting
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Adding...") : <><Save className="mr-2 h-4 w-4" /> {isEditMode ? "Save Changes" : "Add Item"}</>}
+          {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Adding...") : (isEditMode ? "Save Changes" : "Add Item")}
         </Button>
       </DialogFooter>
     </form>
@@ -274,7 +240,7 @@ export default function ManageMenuItemsPage(): ReactNode {
     try {
       const [categoriesResponse, menuItemsResponse] = await Promise.all([
         fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } }),
-        fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } }) // Fetch all items, not visibleOnly for admin
+        fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
       ]);
 
       if (!categoriesResponse.ok) throw new Error(`Categories API error! status: ${categoriesResponse.status}`);
@@ -282,23 +248,70 @@ export default function ManageMenuItemsPage(): ReactNode {
       if (!categoriesResult.success || !categoriesResult.data || !Array.isArray(categoriesResult.data.categories)) {
         throw new Error('Invalid data format for categories.');
       }
-      const fetchedCategoriesRaw: CategoryAdmin[] = categoriesResult.data.categories.map((cat: any): CategoryAdmin => ({
+      const fetchedCategoriesRaw: Omit<CategoryAdmin, 'itemCount'>[] = categoriesResult.data.categories.map((cat: any): Omit<CategoryAdmin, 'itemCount'> => ({
         id: String(cat.id),
         name: String(cat.name || 'Unnamed Category'),
         icon: String(cat.icon || '📁'),
-        itemCount: parseInt(cat.itemCount) || 0,
         visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers), 
       }));
       
       const visibleAdminCategories = fetchedCategoriesRaw.filter(cat => cat.visibleToUsers);
 
-      setAllCategories(visibleAdminCategories);
-      setOrderedCategories(visibleAdminCategories);
+      setAllCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 }))); // Initialize itemCount
+      setOrderedCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 })));
 
-      if (visibleAdminCategories.length > 0) {
-        let categoryToSelect = visibleAdminCategories[0];
+
+      if (!menuItemsResponse.ok) throw new Error(`Menu Items API error! status: ${menuItemsResponse.status}`);
+      const menuItemsResult = await menuItemsResponse.json();
+
+      let rawItemsArray: any[] = [];
+        if (currentMenuType === 'restaurant' && Array.isArray(menuItemsResult)) {
+            rawItemsArray = menuItemsResult;
+        } else if (menuItemsResult.success) {
+            if (Array.isArray(menuItemsResult.data)) {
+                rawItemsArray = menuItemsResult.data;
+            } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) {
+                rawItemsArray = menuItemsResult.data.items;
+            } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.menuItems)) { // for parlour items
+                rawItemsArray = menuItemsResult.data.menuItems;
+            } else {
+                throw new Error('Invalid data format for menu items.');
+            }
+        } else {
+            throw new Error(menuItemsResult.message || 'API request for menu items was not successful.');
+        }
+      
+      const fetchedMenuItems: MenuItemAdmin[] = rawItemsArray.map((item: any): MenuItemAdmin => ({
+        id: String(item.id),
+        name: String(item.name || 'Unnamed Item'),
+        price: parseFloat(item.price) || 0,
+        description: item.description || null,
+        status: (item.visibleToUsers === '1' || item.visibleToUsers === true || item.status === 'active' || item.status === 'Active') ? 'Active' : 'Inactive',
+        addedDate: item.createdAt || item.addedDate || new Date().toISOString(),
+        categoryId: String(item.category || item.categoryId),
+        visibleToUsers: item.visibleToUsers === undefined ? true : Boolean(item.visibleToUsers),
+        image: item.image || null, 
+      }));
+      setAllMenuItems(fetchedMenuItems);
+
+      // Update category item counts based on fetched menu items
+      const categoryCounts = fetchedMenuItems.reduce((acc, item) => {
+        acc[item.categoryId] = (acc[item.categoryId] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const updatedCategories = visibleAdminCategories.map(cat => ({
+        ...cat,
+        itemCount: categoryCounts[cat.id] || 0
+      }));
+
+      setAllCategories(updatedCategories);
+      setOrderedCategories(updatedCategories);
+      
+      if (updatedCategories.length > 0) {
+        let categoryToSelect = updatedCategories[0];
         if (prevSelectedCategoryId) {
-            const foundCat = visibleAdminCategories.find(c => c.id === prevSelectedCategoryId);
+            const foundCat = updatedCategories.find(c => c.id === prevSelectedCategoryId);
             if (foundCat) categoryToSelect = foundCat;
         }
         setSelectedCategory(categoryToSelect);
@@ -306,35 +319,6 @@ export default function ManageMenuItemsPage(): ReactNode {
         setSelectedCategory(null);
       }
 
-      if (!menuItemsResponse.ok) throw new Error(`Menu Items API error! status: ${menuItemsResponse.status}`);
-      const menuItemsResult = await menuItemsResponse.json();
-
-      let rawItemsArray: any[] = [];
-      if (Array.isArray(menuItemsResult)) { // Direct array for restaurant items
-          rawItemsArray = menuItemsResult;
-      } else if (menuItemsResult.success) { // Standard structure for parlour items or other successful responses
-        if (Array.isArray(menuItemsResult.data)) {
-          rawItemsArray = menuItemsResult.data;
-        } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) {
-          rawItemsArray = menuItemsResult.data.items;
-        } else {
-          throw new Error('Invalid data format for menu items.');
-        }
-      } else {
-        throw new Error(menuItemsResult.message || 'API request for menu items was not successful.');
-      }
-      
-      const fetchedMenuItems: MenuItemAdmin[] = rawItemsArray.map((item: any): MenuItemAdmin => ({
-        id: String(item.id),
-        name: String(item.name || 'Unnamed Item'),
-        price: parseFloat(item.price) || 0,
-        status: (item.visibleToUsers === '1' || item.visibleToUsers === true || item.status === 'active') ? 'Active' : 'Inactive',
-        addedDate: item.createdAt || new Date().toISOString(),
-        categoryId: String(item.category),
-        visibleToUsers: item.visibleToUsers === undefined ? true : Boolean(item.visibleToUsers),
-        image: item.image || null, 
-      }));
-      setAllMenuItems(fetchedMenuItems);
 
     } catch (e: any) {
       console.error("Failed to fetch data:", e);
@@ -391,21 +375,29 @@ export default function ManageMenuItemsPage(): ReactNode {
   };
 
 
-  const handleAddMenuItem = async (data: MenuItemFormValues) => {
-    // Backend generates ID for new items
-    const { id, ...payloadWithoutId } = data;
+  const handleAddMenuItem = async (formData: MenuItemFormValues) => {
+    if (!selectedCategory) {
+        toast({ title: "Error", description: "No category selected to add the item to.", variant: "destructive" });
+        return;
+    }
+    const payload = { 
+        ...formData, 
+        categoryId: selectedCategory.id,
+        status: formData.visibleToUsers ? 'Active' : 'Inactive' // Map visibleToUsers to status
+    };
+    // ID is generated by backend for new items
     
     try {
       const response = await fetch(getMenuItemsApiUrl(menuType), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payloadWithoutId),
+        body: JSON.stringify(payload),
       });
       const result = await response.json();
-      if (!response.ok || (result && result.success === false)) { // Check for explicit success false
+      if (!response.ok || (result && result.success === false) || (result && result.item === undefined && result.success !== true)) {
         throw new Error(result.message || `Failed to add menu item. Status: ${response.status}`);
       }
-      toast({ title: "Success", description: result.message || `Item "${data.name}" added to ${selectedCategory?.name || 'category'}.` });
+      toast({ title: "Success", description: result.message || `Item "${formData.name}" added to ${selectedCategory?.name || 'category'}.` });
       setIsAddItemDialogOpen(false);
       fetchCategoriesAndItems(menuType, true);
     } catch (error: any) {
@@ -418,22 +410,28 @@ export default function ManageMenuItemsPage(): ReactNode {
     setIsEditItemDialogOpen(true);
   };
 
-  const handleEditMenuItem = async (data: MenuItemFormValues) => {
-    if (!data.id) {
-      toast({ title: "Error", description: "Item ID is missing for update.", variant: "destructive" });
+  const handleEditMenuItem = async (formData: MenuItemFormValues) => {
+    if (!editingItemData) {
+      toast({ title: "Error", description: "No item selected for editing.", variant: "destructive" });
       return;
     }
+    const payload = { 
+        ...formData, 
+        id: editingItemData.id, 
+        categoryId: editingItemData.categoryId,
+        status: formData.visibleToUsers ? 'Active' : 'Inactive' // Map visibleToUsers to status
+    };
     try {
       const response = await fetch(getMenuItemsApiUrl(menuType), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(data), // Send full data including ID
+        body: JSON.stringify(payload), 
       });
       const result = await response.json();
-      if (!response.ok || (result && result.success === false)) {
+      if (!response.ok || (result && result.success === false) || (result && result.item === undefined && result.success !== true) ) {
         throw new Error(result.message || `Failed to update item. Status: ${response.status}`);
       }
-      toast({ title: "Success", description: result.message || `Item "${data.name}" updated.` });
+      toast({ title: "Success", description: result.message || `Item "${formData.name}" updated.` });
       setIsEditItemDialogOpen(false);
       setEditingItemData(null);
       fetchCategoriesAndItems(menuType, true);
@@ -455,9 +453,9 @@ export default function ManageMenuItemsPage(): ReactNode {
         headers: { 'Accept': 'application/json' },
       });
       const result = await response.json();
-      if (!response.ok || (result && result.success === false && response.status !== 404) ) { // Allow 404 if item was already deleted
+      if (!response.ok || (result && result.success === false && response.status !== 404) ) {
          if (response.status === 404 && result.message && result.message.toLowerCase().includes('not found')) {
-            // Treat as success if backend confirms not found, means it's effectively deleted
+            // Treat as success if backend confirms not found
          } else {
             throw new Error(result.message || `Failed to delete item. Status: ${response.status}`);
          }
@@ -568,14 +566,14 @@ export default function ManageMenuItemsPage(): ReactNode {
                 size="sm" 
                 className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
                 onClick={() => {
-                    if (orderedCategories.length > 0) {
-                        setEditingItemData(null); // Clear any editing data
+                    if (selectedCategory && orderedCategories.length > 0) {
+                        setEditingItemData(null); 
                         setIsAddItemDialogOpen(true);
                     } else {
-                        toast({title: "Cannot Add Item", description: "Please add a category first.", variant: "default"});
+                        toast({title: "Cannot Add Item", description: "Please select a category first.", variant: "default"});
                     }
                 }}
-                disabled={orderedCategories.length === 0}
+                disabled={!selectedCategory || orderedCategories.length === 0}
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Item
@@ -589,7 +587,7 @@ export default function ManageMenuItemsPage(): ReactNode {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {Array.from({ length: SKELETON_ITEM_COUNT }).map((_, i) => (
                   <div key={i} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm">
-                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-10 w-10 rounded-md" /> {/* Updated for non-circular image */}
                     <div className="flex-1 space-y-1.5">
                       <Skeleton className="h-4 w-2/3" />
                       <Skeleton className="h-3 w-1/2" />
@@ -628,7 +626,7 @@ export default function ManageMenuItemsPage(): ReactNode {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredMenuItems.map(item => (
                   <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                       <Image 
                         src={STATIC_ITEM_IMAGE_URL} 
                         alt={item.name} 
@@ -694,11 +692,11 @@ export default function ManageMenuItemsPage(): ReactNode {
       <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
         <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Add New Menu Item</DialogTitle>
+            <DialogTitle className="text-xl">
+              Add New {selectedCategory?.name || menuType} Item
+            </DialogTitle>
           </DialogHeader>
           <MenuItemForm 
-            categories={orderedCategories}
-            menuType={menuType}
             onSubmit={handleAddMenuItem} 
             onOpenChange={setIsAddItemDialogOpen}
             isEditMode={false}
@@ -714,12 +712,12 @@ export default function ManageMenuItemsPage(): ReactNode {
           }}>
           <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
             <DialogHeader>
-              <DialogTitle className="text-2xl">Edit Menu Item</DialogTitle>
+              <DialogTitle className="text-xl">
+                Edit {editingItemData?.name || 'Menu Item'}
+              </DialogTitle>
             </DialogHeader>
             <MenuItemForm 
               initialData={editingItemData}
-              categories={orderedCategories}
-              menuType={menuType}
               onSubmit={handleEditMenuItem} 
               onOpenChange={(open) => {
                 setIsEditItemDialogOpen(open);
@@ -755,4 +753,4 @@ export default function ManageMenuItemsPage(): ReactNode {
     </div>
   );
 }
-
+    
