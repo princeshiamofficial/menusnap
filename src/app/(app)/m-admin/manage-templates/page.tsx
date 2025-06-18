@@ -212,6 +212,7 @@ function AdminTemplateSkeletonCard(): ReactNode {
   );
 }
 
+const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
 const addTemplateFormSchema = z.object({
   templateName: z.string().min(1, "Template name is required"),
@@ -338,16 +339,66 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
 
   async function onSubmit(data: AddTemplateFormValues) {
-    console.log("Form data submitted (Add):", data);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    form.clearErrors(); // Clear previous errors
+    let uploadedImageUrl = "";
 
-    toast({
-      title: "Template Added (Simulated)",
-      description: `Template "${data.templateName}" has been added.`,
-    });
-    onSuccess(); 
+    // 1. Upload image
+    if (data.imageFile && data.imageFile.length > 0) {
+      const imageFileToUpload = data.imageFile[0];
+      const imageFormData = new FormData();
+      imageFormData.append("file", imageFileToUpload);
+
+      try {
+        const uploadResponse = await fetch("https://colorhutbd.xyz/vm/api/upload.php", {
+          method: "POST",
+          body: imageFormData,
+        });
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResponse.ok || !uploadResult.success || !uploadResult.data.url) {
+          throw new Error(uploadResult.message || "Image upload failed");
+        }
+        uploadedImageUrl = uploadResult.data.url;
+      } catch (error: any) {
+        toast({ title: "Image Upload Error", description: error.message, variant: "destructive" });
+        form.setError("imageFile", { type: "manual", message: error.message || "Failed to upload image."});
+        return; 
+      }
+    } else {
+        toast({ title: "Image Required", description: "Please select an image for the template.", variant: "destructive" });
+        form.setError("imageFile", { type: "manual", message: "Template image is required."});
+        return;
+    }
+
+    // 2. Add template
+    const templatePayload = {
+      id: slugify(data.templateName) + '-' + Date.now().toString(36), // Ensure unique ID
+      name: data.templateName,
+      description: data.description,
+      isTopRated: data.isTopRated,
+      isPublished: data.isPublished,
+      tags: data.tags.map(tag => tag.value),
+      imageUrl: uploadedImageUrl,
+      // 'items' field is omitted as it's not in the form
+    };
+
+    try {
+      const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(templatePayload),
+      });
+      const templateResult = await templateResponse.json();
+
+      if (!templateResponse.ok || !templateResult.success) {
+        throw new Error(templateResult.message || `Failed to add template. Status: ${templateResponse.status}`);
+      }
+      toast({ title: "Template Added", description: `Template "${data.templateName}" created successfully.` });
+      onSuccess();
+    } catch (error: any) {
+      toast({ title: "Template Add Error", description: error.message, variant: "destructive" });
+    }
   }
+
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow">
@@ -377,7 +428,8 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
               tabIndex={0} 
               className={cn(
                 "mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/80 transition-colors",
-                isDraggingOver ? "border-primary bg-primary/10" : "border-border"
+                isDraggingOver ? "border-primary bg-primary/10" : "border-border",
+                form.formState.errors.imageFile ? "border-destructive" : ""
               )}
               role="button"
               aria-label="Upload template image"
@@ -402,12 +454,13 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
 
           <div>
-            <Label>Tags*</Label>
+            <Label>Tags* (Max 3)</Label>
             {fields.map((field, index) => (
               <div key={field.id} className="flex items-center gap-2 mt-1">
                 <Input
                   {...form.register(`tags.${index}.value`)}
                   placeholder={`Tag ${index + 1} (e.g., Restaurant, Cafe)`}
+                  className={form.formState.errors.tags?.[index]?.value ? "border-destructive" : ""}
                 />
                 {fields.length > 1 && (
                   <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10">
@@ -417,8 +470,15 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
               </div>
             ))}
              {form.formState.errors.tags?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
-             {form.formState.errors.tags && !form.formState.errors.tags.message && Array.isArray(form.formState.errors.tags) && form.formState.errors.tags[0]?.value?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags[0]?.value?.message}</p>}
-
+             { form.formState.errors.tags && !form.formState.errors.tags.message &&
+                Array.isArray(form.formState.errors.tags) &&
+                form.formState.errors.tags.map((tagError, index) =>
+                  tagError?.value?.message ? (
+                    <p key={index} className="text-sm text-destructive mt-1">
+                      Tag {index + 1}: {tagError.value.message}
+                    </p>
+                  ) : null
+                )}
 
             <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2" disabled={fields.length >= 3}>
               <Plus className="mr-2 h-4 w-4" /> Add Another Tag
@@ -454,7 +514,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         </DialogClose>
         <Button 
           type="submit" 
-          disabled={!form.formState.isValid || form.formState.isSubmitting} 
+          disabled={form.formState.isSubmitting} 
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {form.formState.isSubmitting ? "Adding..." : <><Save className="mr-2 h-4 w-4" /> Add Template</>}
@@ -590,13 +650,70 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
 
   async function onSubmit(data: EditTemplateFormValues) {
-    console.log("Form data submitted (Edit):", data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: "Template Updated (Simulated)",
-      description: `Template "${data.templateName}" has been updated.`,
-    });
-    onSuccess();
+    form.clearErrors();
+    let finalImageUrl = templateData.imageUrl;
+
+    // 1. Upload new image if provided
+    if (data.imageFile && data.imageFile.length > 0) {
+      const imageFileToUpload = data.imageFile[0];
+      const imageFormData = new FormData();
+      imageFormData.append("file", imageFileToUpload);
+
+      try {
+        const uploadResponse = await fetch("https://colorhutbd.xyz/vm/api/upload.php", {
+          method: "POST",
+          body: imageFormData,
+        });
+        const uploadResult = await uploadResponse.json();
+        if (!uploadResponse.ok || !uploadResult.success || !uploadResult.data.url) {
+          throw new Error(uploadResult.message || "New image upload failed");
+        }
+        finalImageUrl = uploadResult.data.url;
+      } catch (error: any) {
+        toast({ title: "Image Upload Error", description: error.message, variant: "destructive" });
+        form.setError("imageFile", { type: "manual", message: error.message || "Failed to upload new image."});
+        return;
+      }
+    }
+
+    // 2. Update template
+    const templatePayload = {
+      id: templateData.id, // Use existing ID for update
+      name: data.templateName,
+      description: data.description,
+      isTopRated: data.isTopRated,
+      isPublished: data.isPublished,
+      tags: data.tags.map(tag => tag.value),
+      imageUrl: finalImageUrl,
+    };
+
+    try {
+      // Assuming POST with an existing ID updates the template, as per common patterns
+      // when a specific PUT endpoint isn't provided.
+      const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
+        method: "POST", 
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(templatePayload),
+      });
+      const templateResult = await templateResponse.json();
+
+      if (!templateResponse.ok || !templateResult.success) {
+        // Attempt to parse backend error message, if available
+        let backendErrorMessage = "Failed to update template.";
+        if (templateResult && templateResult.message) {
+            backendErrorMessage = templateResult.message;
+        } else if (templateResult && templateResult.data && typeof templateResult.data === 'string') {
+            backendErrorMessage = templateResult.data; // Some APIs return error messages in data field
+        } else if (templateResponse.statusText) {
+            backendErrorMessage = `Failed to update template. Status: ${templateResponse.status} ${templateResponse.statusText}`;
+        }
+        throw new Error(backendErrorMessage);
+      }
+      toast({ title: "Template Updated", description: `Template "${data.templateName}" updated successfully.` });
+      onSuccess();
+    } catch (error: any) {
+      toast({ title: "Template Update Error", description: error.message, variant: "destructive" });
+    }
   }
 
   return (
@@ -616,7 +733,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
 
           <div>
-            <Label htmlFor={`imageFile-upload-input-edit-${templateData.id}`}>Template Image</Label>
+            <Label htmlFor={`imageFile-upload-input-edit-${templateData.id}`}>Template Image (Optional: Upload to change)</Label>
             <div
               onDrop={handleDrop}
               onDragOver={handleDragOver}
@@ -627,7 +744,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
               tabIndex={0}
               className={cn(
                 "mt-1 flex flex-col items-center justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md cursor-pointer hover:border-primary/80 transition-colors",
-                isDraggingOver ? "border-primary bg-primary/10" : "border-border"
+                isDraggingOver ? "border-primary bg-primary/10" : "border-border",
+                form.formState.errors.imageFile ? "border-destructive" : ""
               )}
               role="button"
               aria-label="Upload new template image"
@@ -652,12 +770,13 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
 
           <div>
-            <Label>Tags*</Label>
+            <Label>Tags* (Max 3)</Label>
             {fields.map((field, index) => (
               <div key={field.id} className="flex items-center gap-2 mt-1">
                 <Input
                   {...form.register(`tags.${index}.value`)}
                   placeholder={`Tag ${index + 1}`}
+                  className={form.formState.errors.tags?.[index]?.value ? "border-destructive" : ""}
                 />
                 {fields.length > 1 && (
                   <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10">
@@ -667,8 +786,14 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
               </div>
             ))}
             {form.formState.errors.tags?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
-            {form.formState.errors.tags && !form.formState.errors.tags.message && Array.isArray(form.formState.errors.tags) && form.formState.errors.tags[0]?.value?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags[0]?.value?.message}</p>}
-
+            {form.formState.errors.tags && !form.formState.errors.tags.message && Array.isArray(form.formState.errors.tags) &&
+                form.formState.errors.tags.map((tagError, index) =>
+                  tagError?.value?.message ? (
+                    <p key={index} className="text-sm text-destructive mt-1">
+                      Tag {index + 1}: {tagError.value.message}
+                    </p>
+                  ) : null
+                )}
 
             <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2" disabled={fields.length >= 3}>
               <Plus className="mr-2 h-4 w-4" /> Add Another Tag
@@ -704,7 +829,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
         </DialogClose>
         <Button 
           type="submit" 
-          disabled={!form.formState.isValid || form.formState.isSubmitting} 
+          disabled={form.formState.isSubmitting} 
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {form.formState.isSubmitting ? "Saving..." : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
@@ -810,7 +935,6 @@ export default function ManageTemplatesPage(): ReactNode {
 
     const { id, name } = templateToDeleteInfo;
     try {
-      console.log(`Attempting to delete template with ID: ${id}`);
       const response = await fetch(`https://colorhutbd.xyz/vm/api/templates.php?id=${id}`, {
         method: 'DELETE',
         headers: {
@@ -843,23 +967,57 @@ export default function ManageTemplatesPage(): ReactNode {
   }, [templateToDeleteInfo, toast]);
 
 
-  const handleTogglePublish = useCallback((id: string) => {
-    console.log(`Toggle publish status for template: ${id}`);
-    setAllTemplates(prev => prev.map(t => t.id === id ? {...t, isPublished: !t.isPublished } : t));
-     toast({
-      title: "Status Updated (Client-side)",
-      description: `Publish status for template ${id} toggled locally. API integration pending.`,
-    });
-  }, [toast]);
+  const handleTogglePublish = useCallback(async (id: string) => {
+    const template = allTemplates.find(t => t.id === id);
+    if (!template) return;
 
-  const handleSetTopRated = useCallback((id: string) => {
-    console.log(`Set top rated for template: ${id}`);
-     setAllTemplates(prev => prev.map(t => t.id === id ? {...t, isTopRated: !t.isTopRated } : t));
-     toast({
-      title: "Status Updated (Client-side)",
-      description: `Top-rated status for template ${id} toggled locally. API integration pending.`,
-    });
-  }, [toast]);
+    const updatedTemplate = { ...template, isPublished: !template.isPublished };
+
+    try {
+        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
+            method: "POST", // Assuming POST with ID updates
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedTemplate),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Failed to update publish status.");
+        }
+        setAllTemplates(prev => prev.map(t => (t.id === id ? updatedTemplate : t)));
+        toast({
+            title: "Status Updated",
+            description: `Template "${template.name}" is now ${updatedTemplate.isPublished ? "published" : "unpublished"}.`,
+        });
+    } catch (error: any) {
+        toast({ title: "Update Error", description: error.message, variant: "destructive" });
+    }
+  }, [allTemplates, toast]);
+
+  const handleSetTopRated = useCallback(async (id: string) => {
+    const template = allTemplates.find(t => t.id === id);
+    if (!template) return;
+
+    const updatedTemplate = { ...template, isTopRated: !template.isTopRated };
+    
+    try {
+        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
+            method: "POST", // Assuming POST with ID updates
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedTemplate),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Failed to update top-rated status.");
+        }
+        setAllTemplates(prev => prev.map(t => (t.id === id ? updatedTemplate : t)));
+        toast({
+            title: "Status Updated",
+            description: `Template "${template.name}" ${updatedTemplate.isTopRated ? "is now" : "is no longer"} top-rated.`,
+        });
+    } catch (error:any) {
+        toast({ title: "Update Error", description: error.message, variant: "destructive" });
+    }
+  }, [allTemplates, toast]);
 
   const filteredTemplates = useMemo(() => {
     return allTemplates
@@ -1048,4 +1206,3 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
-
