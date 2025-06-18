@@ -127,12 +127,12 @@ const menuItemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100, "Name must be 100 characters or less"),
   price: z.coerce.number().min(0, "Price must be a non-negative number. If using variations, this can be 0."),
   description: z.string().max(500, "Description must be 500 characters or less").optional().nullable(),
-  visibleToUsers: z.boolean().default(true), // Not in UI, but part of data model
+  visibleToUsers: z.boolean().default(true),
   subItems: z.array(
     z.object({
       id: z.string().optional(),
       name: z.string().min(1, "Variation name is required."),
-      price: z.coerce.number().min(0, "Variation price must be non-negative.") 
+      price: z.number().nonnegative("Price must be a non-negative number.").optional(),
     })
   ).optional(),
 });
@@ -156,7 +156,11 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
       price: initialData?.price || 0,
       description: initialData?.description || "",
       visibleToUsers: initialData ? initialData.status === 'Active' : true,
-      subItems: initialData?.subItems?.map(si => ({ id: si.id, name: si.name, price: si.price })) || [],
+      subItems: initialData?.subItems?.map(si => ({ 
+        id: si.id, 
+        name: si.name, 
+        price: si.price // API provides number, should be fine
+      })) || [],
     },
     mode: 'onChange',
   });
@@ -173,16 +177,25 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
     form.clearErrors("subItems.root"); 
     const nameVal = newSubItemName.trim();
     const priceStr = newSubItemPrice.trim();
-    const priceVal = priceStr === '' ? 0 : parseFloat(priceStr); // Default to 0 if empty
 
-    if (nameVal && !isNaN(priceVal) && priceVal >= 0) {
-      append({ name: nameVal, price: priceVal });
-      setNewSubItemName('');
-      setNewSubItemPrice('');
-    } else {
-      if (!nameVal) form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
-      if (isNaN(priceVal) || priceVal < 0) form.setError("subItems.root", { type: "manual", message: "Variation price must be a valid non-negative number." });
+    if (!nameVal) {
+      form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+      return;
     }
+    
+    let priceVal: number | undefined = undefined;
+    if (priceStr !== '') {
+      const parsedPrice = parseFloat(priceStr);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        form.setError("subItems.root", { type: "manual", message: "Variation price must be a valid non-negative number if provided." });
+        return;
+      }
+      priceVal = parsedPrice;
+    }
+
+    append({ name: nameVal, price: priceVal });
+    setNewSubItemName('');
+    setNewSubItemPrice('');
   };
 
 
@@ -235,12 +248,12 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
                   onChange={(e) => setNewSubItemName(e.target.value)}
                 />
               </div>
-              <div className="w-40 space-y-1"> {/* Increased width for placeholder text */}
+              <div className="w-40 space-y-1">
                 <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
                 <Input 
                   id="new-subitem-price"
                   type="number"
-                  placeholder="Price (optional, 0 if empty)"
+                  placeholder="Price (optional)"
                   value={newSubItemPrice}
                   onChange={(e) => setNewSubItemPrice(e.target.value)}
                   step="0.01"
@@ -274,25 +287,30 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
                 </Button>
               </div>
               <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto">
-                {fields.map((field, index) => (
-                  <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
-                    <div className="flex items-center gap-2 flex-grow">
-                       <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
-                       <span className="text-xs text-muted-foreground">-</span>
-                       <span className="text-sm font-medium text-foreground">৳{(form.watch(`subItems.${index}.price`) ?? 0).toLocaleString()}</span>
+                {fields.map((field, index) => {
+                  const currentPrice = form.watch(`subItems.${index}.price`);
+                  return (
+                    <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
+                      <div className="flex items-center gap-2 flex-grow">
+                         <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
+                         <span className="text-xs text-muted-foreground">-</span>
+                         <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                            {typeof currentPrice === 'number' ? `৳${currentPrice.toLocaleString()}` : ''}
+                         </span>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => remove(index)} 
+                        className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
+                        aria-label={`Remove ${form.watch(`subItems.${index}.name`)} variation`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button 
-                      type="button" 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => remove(index)} 
-                      className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
-                      aria-label={`Remove ${form.watch(`subItems.${index}.name`)} variation`}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -459,6 +477,7 @@ export default function ManageMenuItemsPage(): ReactNode {
       setLoadingCategories(false);
       setLoadingItems(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory?.id]);
 
   useEffect(() => {
@@ -513,9 +532,9 @@ export default function ManageMenuItemsPage(): ReactNode {
         price: formData.price,
         description: formData.description,
         categoryId: selectedCategory.id,
-        status: formData.visibleToUsers ? 'Active' : 'Inactive', // Derived from visibleToUsers
-        visibleToUsers: formData.visibleToUsers, // This is in the form schema but not UI
-        subItems: formData.subItems ? formData.subItems.map(si => ({name: si.name, price: si.price})) : [],
+        status: formData.visibleToUsers ? 'Active' : 'Inactive', 
+        visibleToUsers: formData.visibleToUsers, 
+        subItems: formData.subItems ? formData.subItems.map(si => ({name: si.name, price: si.price ?? 0})) : [],
     };
         
     try {
@@ -552,9 +571,9 @@ export default function ManageMenuItemsPage(): ReactNode {
         price: formData.price,
         description: formData.description,
         categoryId: editingItemData.categoryId,
-        status: formData.visibleToUsers ? 'Active' : 'Inactive', // Derived
-        visibleToUsers: formData.visibleToUsers, // from form schema
-        subItems: formData.subItems ? formData.subItems.map(si => ({id: si.id, name: si.name, price: si.price})) : [],
+        status: formData.visibleToUsers ? 'Active' : 'Inactive', 
+        visibleToUsers: formData.visibleToUsers, 
+        subItems: formData.subItems ? formData.subItems.map(si => ({id: si.id, name: si.name, price: si.price ?? 0})) : [],
     };
     try {
       const response = await fetch(getMenuItemsApiUrl(menuType), {
@@ -878,3 +897,4 @@ export default function ManageMenuItemsPage(): ReactNode {
   );
 }
     
+
