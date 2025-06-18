@@ -26,8 +26,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
 
 const STATIC_AVATAR_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
+const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 
 interface DraftSubItem {
   id: string;
@@ -45,63 +47,6 @@ interface DraftItem {
   previewAvatars: string[]; 
   items?: DraftSubItem[]; 
 }
-
-// Mock Data
-const initialMockDrafts: DraftItem[] = [
-  {
-    id: "draft_1",
-    name: "Menu Selection",
-    createdAt: new Date().toISOString(),
-    itemCount: 5,
-    primaryTag: "restaurant-expresso-based-classics-1749702507341",
-    price: 0,
-    previewAvatars: ["CH", "RD", "FV"],
-    items: [
-      { id: "item_1_1", name: "Ristretto", price: 0 },
-      { id: "item_1_2", name: "Long Black", price: 0 },
-      { id: "item_1_3", name: "Mocha", price: 0 },
-      { id: "item_1_4", name: "Chicken Dhakaiya Chaap", price: 0 },
-      { id: "item_1_5", name: "Beef Dhakaiya Chaap", price: 0 },
-    ]
-  },
-  {
-    id: "draft_2",
-    name: "Menu Selection",
-    createdAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
-    itemCount: 3,
-    primaryTag: "parlour-sweet-treats-1749702507555",
-    price: 1200,
-    previewAvatars: ["SC", "IC", "MK"],
-    items: [
-      { id: "item_2_1", name: "Chocolate Sundae", price: 400 },
-      { id: "item_2_2", name: "Vanilla Milkshake", price: 350 },
-      { id: "item_2_3", name: "Strawberry Ice Cream", price: 450 },
-    ]
-  },
-  {
-    id: "draft_3",
-    name: "Quick Lunch Ideas",
-    createdAt: new Date(Date.now() - 65 * 60 * 1000).toISOString(), // 1 hour 5 mins ago
-    itemCount: 2,
-    primaryTag: "cafe-light-bites-1749702507888",
-    price: 750,
-    previewAvatars: ["SW", "SL"],
-    items: [
-      { id: "item_3_1", name: "Club Sandwich", price: 400 },
-      { id: "item_3_2", name: "Caesar Salad", price: 350 },
-    ]
-  },
-   {
-    id: "draft_4",
-    name: "Dinner Specials",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    itemCount: 0, // No items for this draft to test empty state
-    primaryTag: "fine-dining-main-course-1749702507999",
-    price: 3500,
-    previewAvatars: [],
-  },
-];
-
 
 interface DraftCardProps {
   draft: DraftItem;
@@ -134,7 +79,7 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
       <CardHeader className="pb-3 pt-4 px-5">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-semibold text-primary">{`${draft.name} ${formattedTitleDate}`}</h3>
+            <h3 className="text-xl font-semibold text-primary">{`${draft.name}`}</h3>
             <div className="flex items-center space-x-3 text-xs text-muted-foreground mt-1">
               <span className="flex items-center"><Clock className="h-3.5 w-3.5 mr-1" /> {relativeTime}</span>
               <span className="flex items-center"><ListChecks className="h-3.5 w-3.5 mr-1" /> {draft.itemCount} items</span>
@@ -172,7 +117,7 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
                   className="object-contain"
                 />
                 <AvatarFallback className="text-xs bg-muted text-muted-foreground">
-                  ?
+                  {draft.previewAvatars[index] || '?'}
                 </AvatarFallback>
               </Avatar>
             ))}
@@ -203,6 +148,9 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
                 </li>
               ))}
             </ul>
+            <div className="text-right mt-3 font-semibold text-foreground">
+                Total Price: ৳{draft.price.toLocaleString()}
+            </div>
           </div>
         )}
          {isExpanded && (!draft.items || draft.items.length === 0) && (
@@ -269,24 +217,71 @@ function DraftSkeletonCard(): ReactNode {
 
 
 export default function DraftPage(): ReactNode {
-  const [drafts, setDrafts] = useState<DraftItem[]>(initialMockDrafts);
+  const [drafts, setDrafts] = useState<DraftItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(true); 
   const [error, setError] = useState<string | null>(null);
   const [expandedDrafts, setExpandedDrafts] = useState<Record<string, boolean>>({});
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const storedDrafts = localStorage.getItem(DRAFTS_STORAGE_KEY);
+      if (storedDrafts) {
+        const parsedDrafts: DraftItem[] = JSON.parse(storedDrafts);
+        // Ensure items is an array, default to empty if not present or not an array
+        const validatedDrafts = parsedDrafts.map(draft => ({
+          ...draft,
+          items: Array.isArray(draft.items) ? draft.items : []
+        }));
+        setDrafts(validatedDrafts);
+      } else {
+        setDrafts([]); // No drafts found
+      }
+    } catch (e: any) {
+      console.error("Error loading drafts from localStorage:", e);
+      setError("Failed to load drafts. They might be corrupted.");
+      setDrafts([]);
+      toast({
+        title: "Error Loading Drafts",
+        description: "Could not retrieve drafts from local storage. Data might be corrupted.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   const handleRestoreDraft = (id: string) => {
     console.log("Restore draft:", id);
+    toast({ title: "Action Needed", description: "Restore functionality is not yet implemented." });
   };
 
   const handleDeleteDraft = (id: string) => {
-    console.log("Delete draft:", id);
+    const draftName = drafts.find(d => d.id === id)?.name || "Draft";
     setDrafts(prevDrafts => prevDrafts.filter(draft => draft.id !== id));
     setExpandedDrafts(prev => {
       const newExpanded = {...prev};
       delete newExpanded[id];
       return newExpanded;
     });
+
+    try {
+      const storedDrafts = localStorage.getItem(DRAFTS_STORAGE_KEY);
+      if (storedDrafts) {
+        const parsedDrafts: DraftItem[] = JSON.parse(storedDrafts);
+        const updatedDrafts = parsedDrafts.filter(draft => draft.id !== id);
+        localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(updatedDrafts));
+        toast({ title: "Draft Deleted", description: `"${draftName}" has been removed.` });
+      }
+    } catch (e) {
+      console.error("Error deleting draft from localStorage:", e);
+      toast({ title: "Error", description: "Could not remove draft from storage.", variant: "destructive" });
+      // Optionally, refetch from localStorage to ensure consistency if save fails
+      // fetchDrafts(); 
+    }
   };
 
   const handleToggleExpand = (id: string) => {
@@ -342,6 +337,11 @@ export default function DraftPage(): ReactNode {
             <p className="text-muted-foreground text-lg font-medium">
               {searchTerm ? "No drafts match your search." : "You have no saved drafts."}
             </p>
+             {!searchTerm && drafts.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-2">
+                    Looks like your draft list is empty. Go to the Menu Items page to start selecting!
+                </p>
+            )}
           </div>
         ) : (
           filteredDrafts.map(draft => (
