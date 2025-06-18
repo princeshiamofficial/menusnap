@@ -104,7 +104,7 @@ interface CategoryAdmin {
 interface SubMenuItemAdmin {
   id?: string; 
   name: string;
-  price?: number; // Optional price
+  price?: number; 
 }
 
 interface MenuItemAdmin {
@@ -127,12 +127,12 @@ const menuItemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100, "Name must be 100 characters or less"),
   price: z.coerce.number().min(0, "Price must be a non-negative number. If using variations, this can be 0."),
   description: z.string().max(500, "Description must be 500 characters or less").optional().nullable(),
-  visibleToUsers: z.boolean().default(true), // Not in UI, but managed in data
+  visibleToUsers: z.boolean().default(true),
   subItems: z.array(
     z.object({
       id: z.string().optional(),
       name: z.string().min(1, "Variation name is required."),
-      price: z.number().nonnegative("Price must be a non-negative number.").optional(), // Price is optional
+      price: z.number().nonnegative("Price must be a non-negative number.").optional(),
     })
   ).optional(),
 });
@@ -300,6 +300,9 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
                                 ৳{currentPrice.toLocaleString()}
                              </span>
                            </>
+                         )}
+                         {currentPrice === undefined && (
+                           <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
                          )}
                       </div>
                       <Button 
@@ -534,12 +537,12 @@ export default function ManageMenuItemsPage(): ReactNode {
         name: formData.name,
         price: formData.price,
         description: formData.description,
-        category: selectedCategory.id, // Changed from categoryId
+        category: selectedCategory.id,
         status: formData.visibleToUsers ? 'Active' : 'Inactive', 
         visibleToUsers: formData.visibleToUsers, 
         subItems: formData.subItems ? formData.subItems.map(si => {
             const subItemPayload: any = { name: si.name };
-            if (si.price !== undefined) subItemPayload.price = si.price;
+            if (si.price !== undefined) subItemPayload.price = si.price; // Only include price if defined
             return subItemPayload;
         }) : [],
     };
@@ -551,9 +554,18 @@ export default function ManageMenuItemsPage(): ReactNode {
         body: JSON.stringify(payload),
       });
       const result = await response.json();
-      if (!response.ok || !result || !result.item) {
-        throw new Error(result.message || `Failed to add menu item. Status: ${response.status}`);
+      
+      if (!response.ok) {
+        throw new Error(result.message || `Request failed with status: ${response.status}`);
       }
+      if (!result || !result.item) {
+        const misleadingSuccessMessage = result.message && result.message.toLowerCase().includes("success");
+        if (misleadingSuccessMessage) {
+          throw new Error(`Operation reported success but item data was missing in the response.`);
+        }
+        throw new Error(result.message || `Failed to add menu item: Invalid response structure.`);
+      }
+
       toast({ title: "Success", description: result.message || `Item "${formData.name}" added to ${selectedCategory?.name || 'category'}.` });
       setIsAddItemDialogOpen(false);
       fetchCategoriesAndItems(menuType, true);
@@ -577,13 +589,13 @@ export default function ManageMenuItemsPage(): ReactNode {
         name: formData.name,
         price: formData.price,
         description: formData.description,
-        category: editingItemData.categoryId, // Changed from categoryId
+        category: editingItemData.categoryId,
         status: formData.visibleToUsers ? 'Active' : 'Inactive', 
         visibleToUsers: formData.visibleToUsers, 
         subItems: formData.subItems ? formData.subItems.map(si => {
             const subItemPayload: any = { name: si.name };
             if (si.id) subItemPayload.id = si.id;
-            if (si.price !== undefined) subItemPayload.price = si.price;
+            if (si.price !== undefined) subItemPayload.price = si.price; // Only include price if defined
             return subItemPayload;
         }) : [],
     };
@@ -594,9 +606,18 @@ export default function ManageMenuItemsPage(): ReactNode {
         body: JSON.stringify(payload), 
       });
       const result = await response.json();
-      if (!response.ok || !result || !result.item ) {
-        throw new Error(result.message || `Failed to update item. Status: ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(result.message || `Request failed with status: ${response.status}`);
       }
+      if (!result || !result.item ) {
+        const misleadingSuccessMessage = result.message && result.message.toLowerCase().includes("success");
+        if (misleadingSuccessMessage) {
+          throw new Error(`Operation reported success but item data was missing in the response.`);
+        }
+        throw new Error(result.message || `Failed to update item: Invalid response structure.`);
+      }
+
       toast({ title: "Success", description: result.message || `Item "${formData.name}" updated.` });
       setIsEditItemDialogOpen(false);
       setEditingItemData(null);
