@@ -31,7 +31,7 @@ function StatCard({ title, value, icon: Icon, bgColorClass, textColorClass, icon
     }
 
     const controls = animate(0, numericTarget, {
-      duration: 1.5,
+      duration: 2.5, // Increased duration for slower animation
       ease: "easeOut",
       onUpdate: (latest) => {
         setAnimatedValue(Math.round(latest).toLocaleString());
