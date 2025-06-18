@@ -157,17 +157,17 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
         </div>
         {isExpanded && draft.items && draft.items.length > 0 && (
           <div className="mt-4 pt-4 border-t border-border">
-            <ul className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               {draft.items.map((item) => (
-                <li key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
-                  <div className="flex items-center">
-                    <Square className="h-4 w-4 text-muted-foreground mr-2 opacity-50" />
-                    <span className="text-foreground">{item.name}</span>
+                <div key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
+                  <div className="flex items-center overflow-hidden mr-2">
+                    <Square className="h-4 w-4 text-muted-foreground mr-2 opacity-50 shrink-0" />
+                    <span className="text-foreground truncate" title={item.name}>{item.name}</span>
                   </div>
-                  <span className="text-muted-foreground font-medium">৳{item.price.toLocaleString()}</span>
-                </li>
+                  <span className="text-muted-foreground font-medium whitespace-nowrap">৳{item.price.toLocaleString()}</span>
+                </div>
               ))}
-            </ul>
+            </div>
             <div className="text-right mt-3 font-semibold text-foreground">
                 Total Price: ৳{draft.price.toLocaleString()}
             </div>
@@ -386,3 +386,4 @@ export default function DraftPage(): ReactNode {
   );
 }
 
+    
