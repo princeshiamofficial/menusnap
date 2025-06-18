@@ -380,7 +380,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -684,7 +684,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
     try {
       const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "PUT", 
+        method: "POST", 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templatePayload),
       });
@@ -967,7 +967,7 @@ export default function ManageTemplatesPage(): ReactNode {
 
     try {
         const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-            method: "PUT", 
+            method: "POST", // Changed back to POST as per previous instruction
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedTemplate),
         });
@@ -993,7 +993,7 @@ export default function ManageTemplatesPage(): ReactNode {
     
     try {
         const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-            method: "PUT", 
+            method: "POST", // Changed back to POST as per previous instruction
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedTemplate),
         });
