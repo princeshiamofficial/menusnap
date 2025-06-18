@@ -56,7 +56,7 @@ export function SpeedDialFAB(): ReactNode {
             initial={{ opacity: 0, y: 10 }}
             animate={{
               opacity: 1,
-              y: [0, -4, 0], // Keyframes for y-axis bobbing
+              y: [0, -4, 0], // Increased y-axis bobbing for more eye-catching effect
             }}
             exit={{ opacity: 0, y: 10, transition: { duration: 0.2 } }}
             transition={{
@@ -66,7 +66,7 @@ export function SpeedDialFAB(): ReactNode {
               ease: "easeOut",
               // Specific transition for the y-property's keyframe animation (looping)
               y: {
-                duration: 1.8, // Duration of one bob cycle
+                duration: 1.8, // Slightly adjusted duration for the new bob amplitude
                 repeat: Infinity,
                 repeatType: "mirror",
                 ease: "easeInOut",
