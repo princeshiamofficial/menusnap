@@ -630,12 +630,12 @@ export default function ManageMenuItemsPage(): ReactNode {
                   <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
                     <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                       <Image 
-                        src={item.image || STATIC_ITEM_IMAGE_URL} 
+                        src={STATIC_ITEM_IMAGE_URL} 
                         alt={item.name} 
                         width={40} 
                         height={40} 
                         className="h-full w-full object-contain" 
-                        data-ai-hint="item food illustration"
+                        data-ai-hint="item illustration"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
