@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation'; // Added useRouter
+import { useRouter } from 'next/navigation'; 
 import { Reorder } from "framer-motion";
 import {
   Search,
@@ -33,23 +33,26 @@ import { useTheme } from '@/context/ThemeContext';
 import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog'; 
 import { useToast } from "@/hooks/use-toast";
 
-const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts'; // Added for loading drafts
+const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts'; 
 
+// Interface for items saved within a draft
 interface DraftSubItem {
   id: string;
   name: string;
   price: number;
+  categoryId: string; // Added categoryId
 }
 
+// Interface for the overall draft structure
 interface DraftItem {
   id: string;
   name: string;
   createdAt: string; 
   itemCount: number;
-  primaryTag: string;
-  price: number;
-  previewAvatars: string[];
-  items?: DraftSubItem[];
+  primaryTag: string; // e.g., "restaurant-appetizers-timestamp" or "parlour-drinks-timestamp"
+  price: number; // Total price of items in the draft
+  previewAvatars: string[]; // For avatar display on draft card
+  items?: DraftSubItem[]; // The actual items with their details
 }
 
 
@@ -74,7 +77,7 @@ interface MenuItem {
   id: string;
   name: string;
   price: number;
-  category: string;
+  category: string; // This is the category ID
   description?: string;
   image?: string;
   status?: string;
@@ -105,7 +108,7 @@ export default function MenuItemsPage() {
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const { setTheme } = useTheme();
   const { toast } = useToast();
-  const router = useRouter(); // Initialize useRouter
+  const router = useRouter(); 
 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false); 
 
@@ -182,8 +185,6 @@ export default function MenuItemsPage() {
             if (prevSelectedCategoryId) {
                 categoryToSelect = fetchedApiCategories.find(c => c.id === prevSelectedCategoryId) || null;
             }
-            // Do not automatically select the first category if restoring
-            // This will be handled by the restore draft logic
             if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) {
                  categoryToSelect = fetchedApiCategories[0];
             }
@@ -228,7 +229,7 @@ export default function MenuItemsPage() {
               id: String(item.id), 
               name: String(item.name || 'Unnamed Item'),
               price: parseFloat(item.price) || 0,
-              category: String(item.category || 'uncategorized'),
+              category: String(item.category || 'uncategorized'), // Ensure category ID is a string
               description: String(item.description || ''),
               image: item.image,
               status: String(item.status || 'active'),
@@ -273,15 +274,18 @@ export default function MenuItemsPage() {
   }, [selectedMenuType, setTheme]); 
 
 
-  // Effect to handle restoring a draft
   useEffect(() => {
     const draftIdToRestore = localStorage.getItem('draftToRestoreId');
 
-    if (!draftIdToRestore || !allMenuItems.length || !apiCategories.length) {
-      // If categories/items haven't loaded yet, or no draft to restore, do nothing.
-      // The effect will re-run when they load if draftIdToRestore is still set.
+    if (!draftIdToRestore || (!allMenuItems.length && !loadingMenuItems) || (!apiCategories.length && !loadingCategories) ) {
+      if (draftIdToRestore && (!loadingMenuItems || !loadingCategories)) {
+          // Data is loaded (or finished loading with empty results) but draft not processed, clear the flag
+          localStorage.removeItem('draftToRestoreId');
+          // console.log("Cleared draftToRestoreId because data loaded and it wasn't processed.");
+      }
       return;
     }
+
 
     const allDraftsString = localStorage.getItem(DRAFTS_STORAGE_KEY);
     if (!allDraftsString) {
@@ -299,23 +303,16 @@ export default function MenuItemsPage() {
         toast({ title: "Error", description: `Draft with ID ${draftIdToRestore} not found.`, variant: "destructive" });
         return;
       }
-
+      
       const draftMenuType = draftToRestore.primaryTag.split('-')[0].toLowerCase();
       if (draftMenuType !== selectedMenuType) {
-        // Menu type needs to be changed. Set it, and this effect will run again
-        // once the new data for that menu type is loaded.
-        // The 'draftToRestoreId' remains in localStorage for the next pass.
         setSelectedMenuType(draftMenuType);
         return; 
       }
 
-      // If we reach here, the menu type is correct, and data should be loaded.
-      // Proceed with selecting category and items.
-
       const tagParts = draftToRestore.primaryTag.split('-');
-      // Assuming format: menuType-categorySlug-timestamp
-      // Handle cases where category slug might have multiple parts due to hyphens in original name
-      const draftCategorySlug = tagParts.slice(1, -1).join('-');
+      const draftCategorySlug = tagParts.length > 2 ? tagParts.slice(1, -1).join('-') : 'general';
+
 
       if (draftCategorySlug && draftCategorySlug !== 'general') {
         const targetCategory = apiCategories.find(
@@ -324,22 +321,35 @@ export default function MenuItemsPage() {
         if (targetCategory) {
           setSelectedCategory(targetCategory);
         } else {
-          toast({ title: "Warning", description: `Category for "${draftCategorySlug}" not found. Items will be selected without focusing a category.` });
-          setSelectedCategory(null); // Or keep current if preferred
+          toast({ title: "Warning", description: `Category for "${draftCategorySlug}" not found. Selecting first available.`, variant: "default" });
+          setSelectedCategory(apiCategories[0] || null);
         }
       } else {
-         setSelectedCategory(apiCategories[0] || null); // Fallback to first category or null if no categories
+         setSelectedCategory(apiCategories[0] || null); 
       }
       
 
       if (draftToRestore.items && draftToRestore.items.length > 0) {
         const itemIdsToSelect = draftToRestore.items.map(subItem => subItem.id);
         const newSelectedItemsState = itemIdsToSelect.reduce((acc, itemId) => {
-          acc[itemId] = true;
+          // Ensure item exists in current allMenuItems before selecting
+          if (allMenuItems.some(menuItem => menuItem.id === itemId)) {
+            acc[itemId] = true;
+          } else {
+            console.warn(`Item ID ${itemId} from draft not found in current menu items for type ${selectedMenuType}.`);
+          }
           return acc;
         }, {} as Record<string, boolean>);
         setSelectedItems(newSelectedItemsState);
-        toast({ title: "Draft Restored", description: `${itemIdsToSelect.length} items have been selected.` });
+        const actualSelectedCount = Object.keys(newSelectedItemsState).length;
+
+        if (actualSelectedCount > 0) {
+          toast({ title: "Draft Restored", description: `${actualSelectedCount} items have been selected.` });
+        } else if (itemIdsToSelect.length > 0) {
+            toast({ title: "Draft Partially Restored", description: "Some items from the draft were not found in the current menu and could not be selected.", variant: "default" });
+        } else {
+            toast({ title: "Draft Restored", description: "No items were in the selected draft to restore." });
+        }
       } else {
         setSelectedItems({});
         toast({ title: "Draft Restored", description: "No items were in the selected draft to restore." });
@@ -353,7 +363,7 @@ export default function MenuItemsPage() {
       toast({ title: "Error", description: "Failed to parse or restore draft data.", variant: "destructive" });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps 
-  }, [allMenuItems, apiCategories, selectedMenuType]); // Dependencies carefully chosen
+  }, [allMenuItems, apiCategories, selectedMenuType, loadingMenuItems, loadingCategories]); 
 
 
   const currentMenuItems = useMemo(() => {
@@ -394,6 +404,7 @@ export default function MenuItemsPage() {
       id: item.id,
       name: item.name,
       price: item.price,
+      categoryId: item.category, // Save the category ID
     }));
 
     const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
@@ -641,4 +652,3 @@ export default function MenuItemsPage() {
     </>
   );
 }
-

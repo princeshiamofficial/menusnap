@@ -2,9 +2,9 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation'; // Added useRouter
+import { useRouter } from 'next/navigation'; 
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import {
   Square,
   Utensils, 
   Sparkles,
+  FolderOpen // Added for category header
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
@@ -34,10 +35,23 @@ import { useToast } from "@/hooks/use-toast";
 const STATIC_AVATAR_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 
+// Matches structure in menu-items/page.tsx
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  itemCount?: number;
+  status?: string;
+  createdAt?: string;
+  description?: string;
+  visibleToUsers?: boolean;
+}
+
 interface DraftSubItem {
   id: string;
   name: string;
   price: number;
+  categoryId: string; // Added to know which category this item belongs to
 }
 
 interface DraftItem {
@@ -57,6 +71,7 @@ interface DraftCardProps {
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
   onToggleExpand: (id: string) => void;
+  masterCategoryList: Category[]; // To look up category names/icons
 }
 
 const extractMenuTypeFromTag = (tag: string): string => {
@@ -64,7 +79,6 @@ const extractMenuTypeFromTag = (tag: string): string => {
   const parts = tag.split('-');
   if (parts.length > 0) {
     const type = parts[0];
-    // Capitalize first letter, ensure it's one of the known types or fallback
     const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
     if (capitalizedType === "Restaurant" || capitalizedType === "Parlour") {
       return capitalizedType;
@@ -73,7 +87,7 @@ const extractMenuTypeFromTag = (tag: string): string => {
   return 'Unknown Type';
 };
 
-function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: DraftCardProps): ReactNode {
+function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, masterCategoryList }: DraftCardProps): ReactNode {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     setHasMounted(true);
@@ -92,6 +106,31 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
 
   const menuTypeDisplay = extractMenuTypeFromTag(draft.primaryTag);
   const MenuTypeIcon = menuTypeDisplay === 'Parlour' ? Sparkles : Utensils;
+
+  const itemsByCategoryId = useMemo(() => {
+    if (!draft.items) return {};
+    return draft.items.reduce((acc, item) => {
+      const catId = item.categoryId;
+      if (!acc[catId]) acc[catId] = [];
+      acc[catId].push(item);
+      return acc;
+    }, {} as Record<string, DraftSubItem[]>);
+  }, [draft.items]);
+
+  const categoriesInDraftOrder = useMemo(() => {
+    if (!draft.items || !masterCategoryList) return [];
+    const categoryIdsInDraft = new Set<string>();
+    const orderedCategoryIds: string[] = [];
+    draft.items.forEach(item => {
+        if(!categoryIdsInDraft.has(item.categoryId)){
+            categoryIdsInDraft.add(item.categoryId);
+            orderedCategoryIds.push(item.categoryId);
+        }
+    });
+    return orderedCategoryIds
+        .map(id => masterCategoryList.find(cat => cat.id === id))
+        .filter((cat): cat is Category => cat !== undefined);
+  }, [draft.items, masterCategoryList]);
 
 
   return (
@@ -156,18 +195,31 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand }: D
           </Button>
         </div>
         {isExpanded && draft.items && draft.items.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-border">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {draft.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
-                  <div className="flex items-center overflow-hidden mr-2">
-                    <Square className="h-4 w-4 text-muted-foreground mr-2 opacity-50 shrink-0" />
-                    <span className="text-foreground truncate" title={item.name}>{item.name}</span>
+          <div className="mt-4 pt-4 border-t border-border space-y-4">
+            {categoriesInDraftOrder.map(category => {
+              const itemsForCategory = itemsByCategoryId[category.id] || [];
+              if (itemsForCategory.length === 0) return null;
+
+              return (
+                <div key={category.id}>
+                  <div className="flex items-center mb-2">
+                    <span className="text-lg mr-2 text-primary">{category.icon || <FolderOpen className="h-5 w-5"/>}</span>
+                    <h4 className="text-md font-semibold text-foreground">{category.name}</h4>
                   </div>
-                  <span className="text-muted-foreground font-medium whitespace-nowrap">৳{item.price.toLocaleString()}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {itemsForCategory.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
+                        <div className="flex items-center overflow-hidden mr-2">
+                          <Square className="h-4 w-4 text-muted-foreground mr-2 opacity-50 shrink-0" />
+                          <span className="text-foreground truncate" title={item.name}>{item.name}</span>
+                        </div>
+                        <span className="text-muted-foreground font-medium whitespace-nowrap">৳{item.price.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
          {isExpanded && (!draft.items || draft.items.length === 0) && (
@@ -211,8 +263,8 @@ function DraftSkeletonCard(): ReactNode {
       </CardHeader>
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Skeleton className="h-6 w-24 rounded-full" />
-          <Skeleton className="h-6 w-20 rounded-full" />
+          <Skeleton className="h-6 w-24 rounded-full" /> {/* For menu type badge */}
+          <Skeleton className="h-6 w-20 rounded-full" /> {/* For date badge */}
         </div>
         <div className="flex items-center space-x-2">
           <div className="flex -space-x-2">
@@ -237,10 +289,54 @@ export default function DraftPage(): ReactNode {
   const [drafts, setDrafts] = useState<DraftItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true); 
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDrafts, setExpandedDrafts] = useState<Record<string, boolean>>({});
+  const [masterCategoryList, setMasterCategoryList] = useState<Category[]>([]);
   const { toast } = useToast();
   const router = useRouter(); 
+
+  useEffect(() => {
+    async function fetchAllCategories() {
+      setIsLoadingCategories(true);
+      try {
+        const [restaurantRes, parlourRes] = await Promise.all([
+          fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
+          fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
+        ]);
+
+        const restaurantData = restaurantRes.ok ? await restaurantRes.json() : { success: false, data: { categories: [] } };
+        const parlourData = parlourRes.ok ? await parlourRes.json() : { success: false, data: { categories: [] } };
+        
+        let combinedCategories: Category[] = [];
+        if (restaurantData.success && Array.isArray(restaurantData.data.categories)) {
+          combinedCategories = combinedCategories.concat(
+            restaurantData.data.categories.map((cat: any): Category => ({
+                id: String(cat.id),
+                name: String(cat.name || 'Unnamed Category'),
+                icon: String(cat.icon || '📁'),
+            }))
+          );
+        }
+        if (parlourData.success && Array.isArray(parlourData.data.categories)) {
+           combinedCategories = combinedCategories.concat(
+            parlourData.data.categories.map((cat: any): Category => ({
+                id: String(cat.id),
+                name: String(cat.name || 'Unnamed Category'),
+                icon: String(cat.icon || '✨'),
+            }))
+          );
+        }
+        setMasterCategoryList(combinedCategories);
+      } catch (e) {
+        console.error("Error fetching master category list:", e);
+        toast({ title: "Error", description: "Could not load category details for drafts.", variant: "destructive" });
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    }
+    fetchAllCategories();
+  }, [toast]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -251,7 +347,10 @@ export default function DraftPage(): ReactNode {
         const parsedDrafts: DraftItem[] = JSON.parse(storedDrafts);
         const validatedDrafts = parsedDrafts.map(draft => ({
           ...draft,
-          items: Array.isArray(draft.items) ? draft.items : [],
+          items: Array.isArray(draft.items) ? draft.items.map(subItem => ({
+            ...subItem,
+            categoryId: subItem.categoryId || 'unknown' // Ensure categoryId exists
+          })) : [],
           previewAvatars: Array.isArray(draft.previewAvatars) ? draft.previewAvatars : [],
         }));
         setDrafts(validatedDrafts);
@@ -346,7 +445,7 @@ export default function DraftPage(): ReactNode {
       </header>
 
       <main className="space-y-6">
-        {isLoading ? (
+        {isLoading || isLoadingCategories ? (
           Array.from({ length: 3 }).map((_, index) => <DraftSkeletonCard key={index} />)
         ) : error ? (
           <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
@@ -375,6 +474,7 @@ export default function DraftPage(): ReactNode {
               onRestore={handleRestoreDraft}
               onDelete={handleDeleteDraft}
               onToggleExpand={handleToggleExpand}
+              masterCategoryList={masterCategoryList}
             />
           ))
         )}
@@ -382,5 +482,3 @@ export default function DraftPage(): ReactNode {
     </div>
   );
 }
-
-    
