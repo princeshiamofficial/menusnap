@@ -38,10 +38,10 @@ import { useToast } from "@/hooks/use-toast";
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 
 interface DraftSubItem {
-  id: string;
+  id: string; // Original item ID
   name: string;
   price: number;
-  categoryId: string;
+  categoryId: string; // Original category ID
 }
 
 interface DraftItem {
@@ -57,7 +57,7 @@ interface DraftItem {
 
 
 interface Category {
-  id: string;
+  id: string; // Prefixed ID for UI
   name: string;
   icon: string;
   itemCount?: number;
@@ -68,16 +68,16 @@ interface Category {
 }
 
 interface SubMenuItem {
-  id: string;
+  id: string; // Original ID
   name: string;
   price: number;
 }
 
 interface MenuItem {
-  id: string;
+  id: string; // Original ID
   name: string;
   price: number;
-  category: string;
+  category: string; // Prefixed category ID
   description?: string;
   image?: string;
   status?: string;
@@ -95,17 +95,17 @@ export default function MenuItemsPage() {
   const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
+  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); // Uses original item IDs as keys
   const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
 
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
 
-  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]);
+  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]); // Stores MenuItems with original IDs
   const [loadingMenuItems, setLoadingMenuItems] = useState(true);
   const [errorMenuItems, setErrorMenuItems] = useState<string | null>(null);
 
-  const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
+  const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({}); // Uses original item IDs as keys
   const { setTheme } = useTheme();
   const { toast } = useToast();
   const router = useRouter();
@@ -118,10 +118,7 @@ export default function MenuItemsPage() {
     setLoadingMenuItems(true);
     setErrorMenuItems(null);
 
-    let categoriesResponse: Response | undefined;
-    let menuItemsResponse: Response | undefined;
-
-    const idPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    const currentIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
 
     const categoriesApiUrl = selectedMenuType === 'parlour'
       ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
@@ -133,18 +130,19 @@ export default function MenuItemsPage() {
 
     menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
 
-    const prevSelectedCategoryId = selectedCategory?.id;
+    const prevSelectedCategoryId = selectedCategory?.id; // This would be a prefixed ID
+
+    let categoriesResponse: Response | undefined;
+    let menuItemsResponse: Response | undefined;
 
     try {
       const fetchPromises: [Promise<Response>, Promise<Response>] = [
         fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } }),
         fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
       ];
-
       const responses = await Promise.all(fetchPromises);
       categoriesResponse = responses[0];
       menuItemsResponse = responses[1];
-
     } catch (networkError: any) {
       console.error("Network error during initial data fetch:", networkError);
       setErrorCategories("Network error fetching categories.");
@@ -158,6 +156,7 @@ export default function MenuItemsPage() {
       return;
     }
 
+    // Process Categories
     try {
       if (!categoriesResponse || !categoriesResponse.ok) {
         throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
@@ -171,7 +170,7 @@ export default function MenuItemsPage() {
       const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories
         .filter((cat: any) => cat.id !== null && cat.id !== undefined)
         .map((cat: any) => ({
-          id: `${idPrefix}${String(cat.id)}`,
+          id: `${currentIdPrefix}${String(cat.id)}`, // Prefix category ID
           name: String(cat.name || 'Unnamed Category'),
           icon: String(cat.icon || '📁'),
           itemCount: Number(cat.itemCount || 0),
@@ -190,7 +189,7 @@ export default function MenuItemsPage() {
           if (prevSelectedCategoryId && visibleCategories.some(c => c.id === prevSelectedCategoryId)) {
               categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
           }
-          if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) {
+          if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) { // Only default to first if not restoring
                categoryToSelect = visibleCategories[0];
           }
           setSelectedCategory(categoryToSelect);
@@ -208,6 +207,7 @@ export default function MenuItemsPage() {
       setLoadingCategories(false);
     }
 
+    // Process Menu Items
     if (menuItemsResponse) {
       try {
         if (!menuItemsResponse.ok) {
@@ -216,14 +216,13 @@ export default function MenuItemsPage() {
         const menuItemsApiResponse = await menuItemsResponse.json();
         let rawItemsArray: any[] = [];
 
-        if (Array.isArray(menuItemsApiResponse)) {
+        if (Array.isArray(menuItemsApiResponse)) { // Restaurant API
             rawItemsArray = menuItemsApiResponse;
-        } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) {
+        } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { // Parlour API (data is array)
             rawItemsArray = menuItemsApiResponse.data;
-        } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) {
-            rawItemsArray = menuItemsApiResponse.data.items;
-        }
-        else {
+        } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { // Parlour API (data.items is array)
+             rawItemsArray = menuItemsApiResponse.data.items;
+        } else {
             console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
             throw new Error("Invalid data format for menu items from API");
         }
@@ -231,10 +230,10 @@ export default function MenuItemsPage() {
         const fetchedMenuItems: MenuItem[] = rawItemsArray
           .filter((item: any) => item.id !== null && item.id !== undefined)
           .map((item: any) => ({
-            id: String(item.id),
+            id: String(item.id), // Store ORIGINAL item ID
             name: String(item.name || 'Unnamed Item'),
             price: parseFloat(item.price) || 0,
-            category: `${idPrefix}${String(item.category || 'uncategorized')}`,
+            category: `${currentIdPrefix}${String(item.category || 'uncategorized')}`, // Store PREFIXED category ID
             description: String(item.description || ''),
             image: item.image,
             status: String(item.status || 'active'),
@@ -247,7 +246,7 @@ export default function MenuItemsPage() {
               ? item.subItems
                   .filter((sub: any) => sub.id !== null && sub.id !== undefined)
                   .map((sub: any) => ({
-                    id: String(sub.id),
+                    id: String(sub.id), // Store ORIGINAL sub-item ID
                     name: String(sub.name || 'Unnamed Sub-item'),
                     price: parseFloat(sub.price) || 0,
                   }))
@@ -268,23 +267,20 @@ export default function MenuItemsPage() {
        setAllMenuItems([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMenuType, setTheme]);
+  }, [selectedMenuType, setTheme]); // Removed selectedCategory from deps of fetchData
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
 
-  useEffect(() => {
+ useEffect(() => {
     const draftIdToRestore = localStorage.getItem('draftToRestoreId');
-    if (!draftIdToRestore) {
-      return; 
-    }
+    if (!draftIdToRestore) return;
 
-    if (loadingCategories || loadingMenuItems) {
-      return; 
-    }
-    
+    // Only proceed if data for the current menu type is loaded
+    if (loadingCategories || loadingMenuItems) return;
+
     const allDraftsString = localStorage.getItem(DRAFTS_STORAGE_KEY);
     if (!allDraftsString) {
       localStorage.removeItem('draftToRestoreId');
@@ -308,26 +304,33 @@ export default function MenuItemsPage() {
       toast({ title: "Error", description: `The selected draft (ID: ${draftIdToRestore}) was not found.`, variant: "destructive" });
       return;
     }
+    
+    const draftMenuTypeFromFile = draftToRestore.primaryTag.split('-')[0].toLowerCase();
 
-    const draftMenuType = draftToRestore.primaryTag.split('-')[0].toLowerCase();
-    if (draftMenuType !== selectedMenuType) {
-      setSelectedMenuType(draftMenuType);
-      return; 
+    if (draftMenuTypeFromFile !== selectedMenuType) {
+      setSelectedMenuType(draftMenuTypeFromFile);
+      // Data for the correct menu type will be fetched by the main fetchData effect.
+      // draftToRestoreId remains in localStorage for the next run.
+      return;
     }
-
-    const draftIdPrefix = draftMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    
+    // At this point, selectedMenuType matches draftMenuType, and data should be loaded.
+    const currentDraftIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
 
     let itemsActuallySelectedCount = 0;
     if (draftToRestore.items && draftToRestore.items.length > 0) {
-      const newSelectedItemsState = draftToRestore.items.reduce((acc, subItem) => {
-        // Ensure subItem.categoryId from draft is compared with prefixed category IDs in allMenuItems
-        const fullDraftCategoryId = subItem.categoryId.startsWith(draftIdPrefix) ? subItem.categoryId : `${draftIdPrefix}${subItem.categoryId}`;
+      const newSelectedItemsState = draftToRestore.items.reduce((acc, draftSubItem) => {
+        const fullDraftCategoryId = draftSubItem.categoryId.startsWith(currentDraftIdPrefix) 
+                                      ? draftSubItem.categoryId 
+                                      : `${currentDraftIdPrefix}${draftSubItem.categoryId}`;
         
-        if (allMenuItems.some(menuItem => menuItem.id === subItem.id && menuItem.category === fullDraftCategoryId)) {
-          acc[subItem.id] = true;
+        // Match draftSubItem.id (original item ID) with menuItem.id (original item ID)
+        // and draftSubItem.categoryId (original category ID, now prefixed) with menuItem.category (prefixed category ID)
+        if (allMenuItems.some(menuItem => menuItem.id === draftSubItem.id && menuItem.category === fullDraftCategoryId)) {
+          acc[draftSubItem.id] = true; // Store original item ID as key
           itemsActuallySelectedCount++;
         } else {
-          console.warn(`Item ID ${subItem.id} (Category: ${fullDraftCategoryId}) from draft not found or mismatched.`);
+          console.warn(`Item ID ${draftSubItem.id} (Category: ${fullDraftCategoryId}) from draft not found or mismatched with current items.`);
         }
         return acc;
       }, {} as Record<string, boolean>);
@@ -336,9 +339,9 @@ export default function MenuItemsPage() {
       if (itemsActuallySelectedCount > 0) {
         toast({ title: "Draft Restored", description: `${itemsActuallySelectedCount} items have been selected.` });
       } else if (draftToRestore.items.length > 0) {
-        toast({ title: "Draft Partially Restored", description: "Some items from the draft were not found in the current menu.", variant: "default" });
+        toast({ title: "Draft Info", description: "No items from the draft could be matched to the current menu.", variant: "default" });
       } else {
-         toast({ title: "Draft Restored", description: "No items were in the selected draft." });
+         toast({ title: "Draft Restored", description: "The selected draft had no items." });
       }
     } else {
       setSelectedItems({});
@@ -346,22 +349,22 @@ export default function MenuItemsPage() {
     }
     
     const tagParts = draftToRestore.primaryTag.split('-');
-    const draftCategorySlug = tagParts.length > 2 ? tagParts.slice(1, -1).join('-') : 'general';
+    const draftCategorySlug = tagParts.length > 2 ? tagParts.slice(1, -1).join('-') : (tagParts.length > 1 ? tagParts[1] : 'general');
     let categorySetByDraft = false;
 
     if (draftCategorySlug && draftCategorySlug !== 'general' && apiCategories.length > 0) {
         const targetCategory = apiCategories.find(
-            cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug && cat.id.startsWith(draftIdPrefix)
+            cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug && cat.id.startsWith(currentDraftIdPrefix)
         );
         if (targetCategory) {
             setSelectedCategory(targetCategory);
             categorySetByDraft = true;
         } else {
-            toast({ title: "Info", description: `Category "${draftCategorySlug}" from draft not found. Defaulting.`, variant: "default" });
+             toast({ title: "Info", description: `Category slug "${draftCategorySlug}" from draft not found. Defaulting.`, variant: "default" });
         }
     }
     
-    if (!categorySetByDraft && apiCategories.length > 0) {
+    if (!categorySetByDraft && apiCategories.length > 0 && !selectedCategory) { // Only default if no category selected yet
         setSelectedCategory(apiCategories[0]);
     } else if (apiCategories.length === 0) {
         setSelectedCategory(null);
@@ -377,7 +380,8 @@ export default function MenuItemsPage() {
     setSelectedMenuType, 
     setSelectedCategory, 
     setSelectedItems, 
-    toast
+    toast,
+    selectedCategory // Added selectedCategory to re-evaluate if it changes
   ]);
 
 
@@ -393,16 +397,16 @@ export default function MenuItemsPage() {
   }, [selectedCategory, allMenuItems, searchTerm]);
 
 
-  const handleSelectItem = (itemId: string) => {
-    setSelectedItems(prev => ({ ...prev, [String(itemId)]: !prev[String(itemId)] }));
+  const handleSelectItem = (originalItemId: string) => { // Operates on original item ID
+    setSelectedItems(prev => ({ ...prev, [originalItemId]: !prev[originalItemId] }));
   };
 
   const selectedCount = useMemo(() => {
     return Object.values(selectedItems).filter(Boolean).length;
   }, [selectedItems]);
 
-  const toggleSubItems = (itemId: string) => {
-    setExpandedSubItems(prev => ({ ...prev, [String(itemId)]: !prev[String(itemId)] }));
+  const toggleSubItems = (originalItemId: string) => { // Operates on original item ID
+    setExpandedSubItems(prev => ({ ...prev, [originalItemId]: !prev[originalItemId] }));
   };
 
   const handleSaveDraft = useCallback(() => {
@@ -416,14 +420,16 @@ export default function MenuItemsPage() {
     }
 
     const actualSelectedMenuItems: MenuItem[] = allMenuItems.filter(
-      (item) => selectedItems[item.id]
+      (item) => selectedItems[item.id] // selectedItems uses original item ID
     );
 
+    const currentIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+
     const draftSubItems: DraftSubItem[] = actualSelectedMenuItems.map(item => ({
-      id: item.id,
+      id: item.id, // Store ORIGINAL item ID
       name: item.name,
       price: item.price,
-      categoryId: item.category, 
+      categoryId: item.category.replace(currentIdPrefix, ''), // Store ORIGINAL category ID (remove prefix)
     }));
 
     const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
@@ -439,13 +445,12 @@ export default function MenuItemsPage() {
     } else {
         const firstSelectedItemWithCategory = actualSelectedMenuItems.find(item => item.category);
         if (firstSelectedItemWithCategory) {
-            const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItemWithCategory.category);
+            const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItemWithCategory.category); // Match prefixed category ID
             if (categoryOfFirstItem) {
                 draftNameCategoryPart = categoryOfFirstItem.name.toLowerCase().replace(/\s+/g, '-');
             }
         }
     }
-
 
     const newDraft: DraftItem = {
       id: `draft_${Date.now()}`,
@@ -461,9 +466,7 @@ export default function MenuItemsPage() {
     try {
       const existingDraftsJSON = localStorage.getItem(DRAFTS_STORAGE_KEY);
       const existingDrafts: DraftItem[] = existingDraftsJSON ? JSON.parse(existingDraftsJSON) : [];
-
       existingDrafts.unshift(newDraft);
-
       localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
       toast({ title: "Draft Saved!", description: "Your menu selection has been saved." });
     } catch (error) {
@@ -483,10 +486,10 @@ export default function MenuItemsPage() {
   }
 
   const preparedSelectedItemsForPreview = useMemo(() => {
-    return allMenuItems.filter(item => selectedItems[item.id]);
+    return allMenuItems.filter(item => selectedItems[item.id]); // uses original item ID
   }, [allMenuItems, selectedItems]);
 
-  const handleRemoveItemFromPreview = (itemIdToRemove: string) => {
+  const handleRemoveItemFromPreview = (itemIdToRemove: string) => { // receives original item ID
     setSelectedItems(prev => {
       const updated = { ...prev };
       delete updated[itemIdToRemove];
@@ -494,11 +497,12 @@ export default function MenuItemsPage() {
     });
   };
 
+  const idPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+
 
   return (
     <>
-      <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]"> {}
-        {}
+      <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]">
         <aside className="hidden md:flex w-72 bg-card border-r border-border flex-col">
           <div className="p-4 border-b border-border">
             <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
@@ -533,9 +537,7 @@ export default function MenuItemsPage() {
           </ScrollArea>
         </aside>
 
-        {}
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
-           {}
           <div className="py-4 px-6 border-b border-border bg-card space-y-3 md:space-y-0">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
@@ -567,7 +569,6 @@ export default function MenuItemsPage() {
             </div>
           </div>
 
-          {}
           <div className="md:hidden p-4 border-b border-border bg-card">
             <Label htmlFor="mobile-category-select" className="text-xs font-medium text-muted-foreground mb-1 block">Category</Label>
             <Select
@@ -596,7 +597,6 @@ export default function MenuItemsPage() {
             </Select>
           </div>
 
-          {}
           <ScrollArea className="flex-1">
             <div className="p-4 sm:p-6">
               {selectedCount > 0 && (
@@ -634,15 +634,18 @@ export default function MenuItemsPage() {
 
                   <div className={cn("grid gap-4", itemsGridClass)}>
                     {currentMenuItems.length > 0 ? (
-                      currentMenuItems.map(item => (
+                      currentMenuItems.map(item => {
+                        const uniqueRenderKey = `${idPrefix}${item.id}`;
+                        const uniqueDomIdBase = `item-${idPrefix}${item.id}`;
+                        return (
                           <Card
-                            key={item.id}
+                            key={uniqueRenderKey}
                             className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
                           >
                             <CardContent className="p-4">
                               <div className="flex items-start gap-4">
                                 <Checkbox
-                                  id={`item-${item.id}`}
+                                  id={`${uniqueDomIdBase}-checkbox`}
                                   checked={!!selectedItems[String(item.id)]}
                                   onCheckedChange={() => handleSelectItem(String(item.id))}
                                   aria-label={`Select ${item.name}`}
@@ -654,7 +657,7 @@ export default function MenuItemsPage() {
                                    </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
+                                  <label htmlFor={`${uniqueDomIdBase}-checkbox`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
                                     {item.name}
                                   </label>
                                   {item.description && (
@@ -673,7 +676,7 @@ export default function MenuItemsPage() {
                                     className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
                                     onClick={() => toggleSubItems(String(item.id))}
                                     aria-expanded={!!expandedSubItems[String(item.id)]}
-                                    aria-controls={`subitems-${item.id}`}
+                                    aria-controls={`subitems-${uniqueDomIdBase}`}
                                     aria-label={expandedSubItems[String(item.id)] ? "Hide variations" : "Show variations"}
                                   >
                                     {expandedSubItems[String(item.id)] ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
@@ -682,14 +685,14 @@ export default function MenuItemsPage() {
                               </div>
                               {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
                                 <div
-                                  id={`subitems-${item.id}`}
+                                  id={`subitems-${uniqueDomIdBase}`}
                                   className="mt-3 pl-6 space-y-2 border-l-2 border-primary/20 ml-2 pt-2 pb-1 bg-muted/30 rounded-r-md"
                                 >
                                   <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
                                   <div className="space-y-1.5">
                                     {item.subItems.map(subItem => (
                                       <div
-                                        key={subItem.id}
+                                        key={`${uniqueRenderKey}-sub-${subItem.id}`} // Unique key for sub-item
                                         className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
@@ -701,7 +704,8 @@ export default function MenuItemsPage() {
                               )}
                             </CardContent>
                           </Card>
-                        ))
+                        );
+                      })
                     ) : (
                       <div className="text-center py-10 col-span-full">
                         <p className="text-muted-foreground text-sm">
@@ -719,9 +723,9 @@ export default function MenuItemsPage() {
       <MenuPreviewDialog
         isOpen={isPreviewDialogOpen}
         onOpenChange={setIsPreviewDialogOpen}
-        selectedItems={preparedSelectedItemsForPreview}
-        allCategories={apiCategories}
-        onRemoveItem={handleRemoveItemFromPreview}
+        selectedItems={preparedSelectedItemsForPreview} // Pass items with original IDs
+        allCategories={apiCategories} // Pass categories with prefixed IDs
+        onRemoveItem={handleRemoveItemFromPreview} // Operates on original item IDs
       />
     </>
   );
