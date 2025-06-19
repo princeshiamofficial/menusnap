@@ -404,8 +404,11 @@ export default function ManageMenuItemsPage(): ReactNode {
         visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers), 
       }));
       
-      const visibleAdminCategories = fetchedCategoriesRaw.filter(cat => cat.visibleToUsers);
-      setAllCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 }))); // Initialize with 0, will update later
+      let visibleAdminCategories = fetchedCategoriesRaw.filter(cat => cat.visibleToUsers);
+      // Sort visible categories alphabetically by name
+      visibleAdminCategories = [...visibleAdminCategories].sort((a, b) => a.name.localeCompare(b.name));
+
+      setAllCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 }))); 
       setOrderedCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 })));
 
 
@@ -413,9 +416,9 @@ export default function ManageMenuItemsPage(): ReactNode {
       const menuItemsResult = await menuItemsResponse.json();
 
       let rawItemsArray: any[] = [];
-        if (currentMenuType === 'restaurant' && Array.isArray(menuItemsResult)) { // Restaurant menu items API returns array directly
+        if (currentMenuType === 'restaurant' && Array.isArray(menuItemsResult)) { 
             rawItemsArray = menuItemsResult;
-        } else if (menuItemsResult.success) { // Parlour API nests under 'data' or 'data.items' or 'data.menuItems'
+        } else if (menuItemsResult.success) { 
             if (Array.isArray(menuItemsResult.data)) { 
                 rawItemsArray = menuItemsResult.data;
             } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) { 
@@ -425,7 +428,7 @@ export default function ManageMenuItemsPage(): ReactNode {
             } else {
                 throw new Error('Invalid data format for menu items (expected array under "data", "data.items", or "data.menuItems" for parlour, or direct array for restaurant).');
             }
-        } else if (Array.isArray(menuItemsResult)){ // Fallback if not success but still an array (e.g. direct array for parlour, unlikely given API structure)
+        } else if (Array.isArray(menuItemsResult)){ 
              rawItemsArray = menuItemsResult;
         }
          else {
@@ -446,31 +449,30 @@ export default function ManageMenuItemsPage(): ReactNode {
       }));
       setAllMenuItems(fetchedMenuItems);
 
-      // Calculate item counts per category based on fetched menu items
       const categoryCounts = fetchedMenuItems.reduce((acc, item) => {
         acc[item.categoryId] = (acc[item.categoryId] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      // Update categories with correct item counts
-      const updatedCategories = visibleAdminCategories.map(cat => ({
+      const updatedCategoriesWithCounts = visibleAdminCategories.map(cat => ({
         ...cat,
         itemCount: categoryCounts[cat.id] || 0
       }));
-
-      setAllCategories(updatedCategories); // These are the visible categories with counts
-      setOrderedCategories(updatedCategories); // For display
       
-      // Logic to select a category after data fetch
-      if (updatedCategories.length > 0) {
-        let categoryToSelect = updatedCategories[0]; // Default to first visible category
+      const sortedUpdatedCategories = [...updatedCategoriesWithCounts].sort((a,b) => a.name.localeCompare(b.name));
+
+      setAllCategories(sortedUpdatedCategories); 
+      setOrderedCategories(sortedUpdatedCategories); 
+      
+      if (sortedUpdatedCategories.length > 0) {
+        let categoryToSelect = sortedUpdatedCategories[0]; 
         if (prevSelectedCategoryId) {
-            const foundCat = updatedCategories.find(c => c.id === prevSelectedCategoryId);
-            if (foundCat) categoryToSelect = foundCat; // If previous selection still exists and is visible
+            const foundCat = sortedUpdatedCategories.find(c => c.id === prevSelectedCategoryId);
+            if (foundCat) categoryToSelect = foundCat; 
         }
         setSelectedCategory(categoryToSelect);
       } else {
-        setSelectedCategory(null); // No visible categories
+        setSelectedCategory(null); 
       }
 
 
@@ -487,17 +489,16 @@ export default function ManageMenuItemsPage(): ReactNode {
       setLoadingItems(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory?.id]); // Depend on selectedCategory.id to refetch items if it changes, but initial fetch managed by menuType
+  }, [selectedCategory?.id]); 
 
   useEffect(() => {
     fetchCategoriesAndItems(menuType);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuType]); // Initial fetch and when menuType changes
+  }, [menuType]); 
 
-  // Filter menu items when selectedCategory or other filters change
   useEffect(() => {
     if (!selectedCategory) {
-        setFilteredMenuItems([]); // Clear items if no category selected
+        setFilteredMenuItems([]); 
         return;
     }
 
@@ -513,9 +514,6 @@ export default function ManageMenuItemsPage(): ReactNode {
   }, [allMenuItems, selectedCategory, searchTerm, statusFilter]);
 
   const totalAllItemsCount = useMemo(() => {
-    // This should count items across all visible categories, not just selected.
-    // Or, if it's meant to be *all* items fetched, use allMenuItems.length before category filtering.
-    // For now, using allCategories which are filtered for visibility.
     return allCategories.reduce((sum, cat) => sum + cat.itemCount, 0);
   }, [allCategories]);
 
@@ -530,7 +528,7 @@ export default function ManageMenuItemsPage(): ReactNode {
   };
 
   const handleRefresh = () => {
-    fetchCategoriesAndItems(menuType, true); // true to retain selected category if possible
+    fetchCategoriesAndItems(menuType, true); 
   };
 
 
@@ -541,16 +539,14 @@ export default function ManageMenuItemsPage(): ReactNode {
     }
     
     const payload = { 
-        // No 'id' field for new items; backend will generate it
         name: formData.name,
         price: formData.price,
         description: formData.description,
-        category: selectedCategory.id, // categoryId is selectedCategory.id
-        status: formData.visibleToUsers ? 'Active' : 'Inactive', // Based on internal form state
-        visibleToUsers: formData.visibleToUsers, // Send the boolean
+        category: selectedCategory.id, 
+        status: formData.visibleToUsers ? 'Active' : 'Inactive', 
+        visibleToUsers: formData.visibleToUsers, 
         subItems: formData.subItems ? formData.subItems.map(si => {
             const subItemPayload: any = { name: si.name };
-            // For new items, subItems won't have IDs from client
             if (si.price !== undefined) subItemPayload.price = si.price;
             return subItemPayload;
         }) : [],
@@ -574,7 +570,7 @@ export default function ManageMenuItemsPage(): ReactNode {
 
       toast({ title: "Success", description: result.message || `Item "${formData.name}" added to ${selectedCategory?.name || 'category'}.` });
       setIsAddItemDialogOpen(false);
-      fetchCategoriesAndItems(menuType, true); // Refetch to update list and counts
+      fetchCategoriesAndItems(menuType, true); 
     } catch (error: any) {
       toast({ title: "Error Adding Item", description: error.message, variant: "destructive" });
     }
@@ -595,12 +591,12 @@ export default function ManageMenuItemsPage(): ReactNode {
         name: formData.name,
         price: formData.price,
         description: formData.description,
-        category: editingItemData.categoryId, // Keep original category
+        category: editingItemData.categoryId, 
         status: formData.visibleToUsers ? 'Active' : 'Inactive', 
         visibleToUsers: formData.visibleToUsers, 
         subItems: formData.subItems ? formData.subItems.map(si => {
             const subItemPayload: any = { name: si.name };
-            if (si.id) subItemPayload.id = si.id; // Include ID for existing subItems
+            if (si.id) subItemPayload.id = si.id; 
             if (si.price !== undefined) subItemPayload.price = si.price;
             return subItemPayload;
         }) : [],
@@ -643,9 +639,8 @@ export default function ManageMenuItemsPage(): ReactNode {
         headers: { 'Accept': 'application/json' },
       });
       const result = await response.json();
-      if (!response.ok || (result && result.success === false && response.status !== 404) ) { // Allow 404 if API confirms not found
+      if (!response.ok || (result && result.success === false && response.status !== 404) ) { 
          if (response.status === 404 && result.message && result.message.toLowerCase().includes('not found')) {
-            // Treat as success if backend confirms not found
             toast({ title: "Item Not Found", description: result.message || `Item "${itemToDeleteInfo.name}" was already removed or did not exist.` });
          } else {
             throw new Error(result.message || `Failed to delete item. Status: ${response.status}`);
