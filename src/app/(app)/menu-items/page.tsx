@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -129,7 +130,6 @@ export default function MenuItemsPage() {
         ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
         : 'https://colorhutbd.xyz/vm/api/menu-items.php';
 
-      // Ensure only visible items are fetched for the customer-facing page
       menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
 
 
@@ -370,9 +370,16 @@ export default function MenuItemsPage() {
 
 
   const currentMenuItems = useMemo(() => {
-    if (!selectedCategory || !allMenuItems.length) return [];
-    return allMenuItems
-      .filter(item => item.category === selectedCategory.id && item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    let itemsToFilter = allMenuItems;
+    // If a specific category is selected (desktop or mobile via dropdown), filter by it.
+    // If selectedCategory is null (e.g. "All Categories" on mobile), use all items.
+    if (selectedCategory) {
+      itemsToFilter = allMenuItems.filter(item => item.category === selectedCategory.id);
+    }
+    
+    // Apply search term regardless of category selection
+    return itemsToFilter
+      .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
       .map(item => ({ ...item, iconPlaceholder: !item.image }));
   }, [selectedCategory, allMenuItems, searchTerm]);
 
@@ -415,13 +422,28 @@ export default function MenuItemsPage() {
     const previewAvatarsArray = actualSelectedMenuItems
       .slice(0, 3)
       .map(item => item.name.substring(0, 2).toUpperCase());
+    
+    let draftNameCategoryPart = 'general';
+    if (selectedCategory) {
+        draftNameCategoryPart = selectedCategory.name.toLowerCase().replace(/\s+/g, '-');
+    } else if (apiCategories.length > 0 && !selectedCategory && currentMenuItems.length > 0) {
+        // If "All Categories" is selected, try to infer a sensible category part from the first selected item
+        const firstSelectedCategoryId = currentMenuItems.find(item => selectedItems[item.id])?.category;
+        if (firstSelectedCategoryId) {
+            const firstSelectedCatObj = apiCategories.find(cat => cat.id === firstSelectedCategoryId);
+            if (firstSelectedCatObj) {
+                draftNameCategoryPart = firstSelectedCatObj.name.toLowerCase().replace(/\s+/g, '-');
+            }
+        }
+    }
+
 
     const newDraft: DraftItem = {
       id: `draft_${Date.now()}`,
       name: `Menu Selection ${new Date().toLocaleDateString()}`,
       createdAt: new Date().toISOString(),
       itemCount: actualSelectedMenuItems.length,
-      primaryTag: `${selectedMenuType}-${selectedCategory ? selectedCategory.name.toLowerCase().replace(/\s+/g, '-') : 'general'}-${Date.now()}`,
+      primaryTag: `${selectedMenuType}-${draftNameCategoryPart}-${Date.now()}`,
       price: totalPrice,
       previewAvatars: previewAvatarsArray,
       items: draftSubItems,
@@ -439,7 +461,7 @@ export default function MenuItemsPage() {
       console.error("Error saving draft to localStorage:", error);
       toast({ title: "Error", description: "Could not save draft. LocalStorage might be full or disabled.", variant: "destructive" });
     }
-  }, [selectedCount, allMenuItems, selectedItems, selectedMenuType, selectedCategory, toast]);
+  }, [selectedCount, allMenuItems, selectedItems, selectedMenuType, selectedCategory, apiCategories, currentMenuItems, toast]);
 
 
   let itemsGridClass = 'grid-cols-1';
@@ -466,8 +488,9 @@ export default function MenuItemsPage() {
 
   return (
     <>
-      <div className="flex h-[calc(100vh-theme(spacing.16)-1px)]">
-        <aside className="w-72 bg-card border-r border-border flex flex-col">
+      <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]"> {/* Adjusted for mobile scroll */}
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:flex w-72 bg-card border-r border-border flex-col">
           <div className="p-4 border-b border-border">
             <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
           </div>
@@ -501,22 +524,14 @@ export default function MenuItemsPage() {
           </ScrollArea>
         </aside>
 
+        {/* Main Content Area */}
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
-          <div className="py-6 px-6 border-b border-border bg-card flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
-            <div className="flex items-center gap-3">
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search menu item"
-                  className="pl-10 text-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+           {/* Header: Title, Search, Actions */}
+          <div className="py-4 px-6 border-b border-border bg-card space-y-3 md:space-y-0">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
+              <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
               <Select value={selectedMenuType} onValueChange={setSelectedMenuType}>
-                <SelectTrigger className="w-[180px] text-sm">
+                <SelectTrigger className="w-full md:w-[200px] text-sm">
                   <SelectValue placeholder="Select menu type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -524,49 +539,87 @@ export default function MenuItemsPage() {
                   <SelectItem value="parlour">Parlour Menu</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="text-sm" onClick={handleSaveDraft}>
-                <Save className="h-4 w-4 mr-2" />
-                Save as Draft
-              </Button>
-              <Button variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}>
-                <Eye className="h-4 w-4 mr-2" />
-                Show Preview ({selectedCount})
-              </Button>
+            </div>
+            <div className="flex flex-col md:flex-row items-center gap-3">
+                <div className="relative w-full md:flex-grow">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input type="search" placeholder="Search menu item..." className="pl-10 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </div>
+                <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
+                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleSaveDraft}>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Draft
+                    </Button>
+                    <Button variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview ({selectedCount})
+                    </Button>
+                </div>
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col overflow-hidden py-6 px-6">
-            {selectedCount > 0 && (
-              <div className="mb-4">
-                <Badge variant="default" className="bg-orange-500 hover:bg-orange-600 text-white">
-                  {selectedCount} selected
-                </Badge>
-              </div>
-            )}
+          {/* Mobile Category Selector */}
+          <div className="md:hidden p-4 border-b border-border bg-card">
+            <Label htmlFor="mobile-category-select" className="text-xs font-medium text-muted-foreground mb-1 block">Category</Label>
+            <Select
+              value={selectedCategory?.id || ''}
+              onValueChange={(value) => {
+                const newSelectedCategory = value ? (apiCategories.find(c => c.id === value) || null) : null;
+                setSelectedCategory(newSelectedCategory);
+              }}
+            >
+              <SelectTrigger id="mobile-category-select" className="w-full text-sm">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Categories</SelectItem>
+                {apiCategories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.icon && <span className="mr-2">{category.icon}</span>}
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {loadingMenuItems && (
-              <div className="flex-1 flex items-center justify-center">
-                <p className="text-muted-foreground">Loading menu items...</p>
-              </div>
-            )}
-            {errorMenuItems && (
-              <div className="flex-1 flex items-center justify-center">
-                <p className="text-destructive">Error loading menu items: {errorMenuItems}</p>
-              </div>
-            )}
-
-            {!loadingMenuItems && !errorMenuItems && selectedCategory && (
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex items-center gap-2 mb-4">
-                  {selectedCategory.icon ? <span className="text-xl">{selectedCategory.icon}</span> : <DefaultCategoryIcon className="h-5 w-5 text-primary" />}
-                  <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
-                  <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
-                    {selectedCategory?.itemCount ?? currentMenuItems.length}
+          {/* Items List Area */}
+          <ScrollArea className="flex-1">
+            <div className="p-4 sm:p-6">
+              {selectedCount > 0 && (
+                <div className="mb-4">
+                  <Badge variant="default" className="bg-orange-500 hover:bg-orange-600 text-white">
+                    {selectedCount} selected
                   </Badge>
                 </div>
+              )}
+              {loadingMenuItems && (
+                <div className="flex-1 flex items-center justify-center py-10">
+                  <p className="text-muted-foreground">Loading menu items...</p>
+                </div>
+              )}
+              {errorMenuItems && (
+                <div className="flex-1 flex items-center justify-center py-10">
+                  <p className="text-destructive">Error loading menu items: {errorMenuItems}</p>
+                </div>
+              )}
 
-                <ScrollArea className="flex-1 -mx-1">
-                  <div className={cn("grid gap-4 px-1", itemsGridClass)}>
+              {!loadingMenuItems && !errorMenuItems && (
+                <>
+                  {selectedCategory && (
+                    <div className="flex items-center gap-2 mb-4">
+                      {selectedCategory.icon ? <span className="text-xl">{selectedCategory.icon}</span> : <DefaultCategoryIcon className="h-5 w-5 text-primary" />}
+                      <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
+                      <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
+                        {currentMenuItems.length}
+                      </Badge>
+                    </div>
+                  )}
+                  {!selectedCategory && !loadingCategories && (
+                     <h2 className="text-xl font-semibold text-foreground mb-4">All Items</h2>
+                  )}
+
+                  <div className={cn("grid gap-4", itemsGridClass)}>
                     {currentMenuItems.length > 0 ? (
                       currentMenuItems.map(item => (
                           <Card
@@ -617,14 +670,14 @@ export default function MenuItemsPage() {
                               {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
                                 <div
                                   id={`subitems-${item.id}`}
-                                  className="mt-3 pl-8 pr-2 py-2 space-y-1.5 bg-muted/30 rounded-md border-l-2 border-primary/50 ml-6"
+                                  className="mt-3 pl-6 space-y-2"
                                 >
-                                  <h4 className="text-xs font-medium text-muted-foreground px-2">Variations:</h4>
-                                  <div className="space-y-1">
+                                  <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
+                                  <div className="space-y-1.5">
                                     {item.subItems.map(subItem => (
                                       <div
                                         key={subItem.id}
-                                        className="flex justify-between items-center text-xs px-2 py-1 hover:bg-muted/60 rounded"
+                                        className="flex justify-between items-center text-xs p-2 rounded-md bg-muted/50 border-l-2 border-primary/30"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
                                         <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
@@ -639,20 +692,15 @@ export default function MenuItemsPage() {
                     ) : (
                       <div className="text-center py-10 col-span-full">
                         <p className="text-muted-foreground text-sm">
-                          {searchTerm ? "No items match your search." : "No items in this category."}
+                          {searchTerm ? "No items match your search." : (!selectedCategory && apiCategories.length > 0 ? "Select a category or search to view items." : "No items in this category.")}
                         </p>
                       </div>
                     )}
                   </div>
-                </ScrollArea>
-              </div>
-            )}
-            {!loadingCategories && !selectedCategory && !loadingMenuItems && !errorMenuItems && (
-                <div className="flex-1 flex items-center justify-center">
-                    <p className="text-muted-foreground">Select a category to see menu items.</p>
-                </div>
-             )}
-          </div>
+                </>
+              )}
+            </div>
+          </ScrollArea>
         </main>
       </div>
       <MenuPreviewDialog
@@ -665,4 +713,3 @@ export default function MenuItemsPage() {
     </>
   );
 }
-
