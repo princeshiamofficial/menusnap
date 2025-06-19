@@ -10,6 +10,7 @@ import {
   TableBody,
   TableHead,
   TableCell,
+  TableRow,
 } from "@/components/ui/table";
 import {
   Button,
@@ -26,8 +27,25 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-  DropdownMenuPortal
+  DropdownMenuPortal,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -40,7 +58,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search,
   ListFilter,
-  FileText,
+  FileText as FileTextIcon, // Renamed to avoid conflict
   ArrowUpDown,
   MoreVertical,
   Eye,
@@ -49,7 +67,16 @@ import {
   Tag,
   AlertTriangle,
   RefreshCw,
-  Edit3
+  Edit3,
+  Download,
+  Printer,
+  User,
+  Mail,
+  Phone,
+  Building2,
+  Briefcase,
+  MapPin,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
@@ -66,7 +93,15 @@ interface ApiOrder {
   status: OrderStatus;
   templateName?: string;
   customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerAddress?: string; // For Business Info section
+  businessName?: string; // For Business Info
+  businessRole?: string; // For Business Info
+  bio?: string; // For Additional Info
   totalAmount?: number;
+  // Placeholder for actual order items
+  items?: { id: string; name: string; quantity: number; price: number }[]; 
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -110,6 +145,185 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
   { value: 'status-desc', label: 'Status (Z-A)' },
 ];
 
+
+function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void }) {
+  if (!order) return null;
+
+  const formatDate = (dateString: string, includeTime: boolean = true): string => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValidDate(date)) return "Invalid Date";
+      return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
+    } catch {
+      return "Invalid Date";
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="text-xl">Order Details</DialogTitle>
+          <DialogDescription>
+            Order {order.orderId} placed on {formatDate(order.orderDate)}
+          </DialogDescription>
+           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <X className="h-5 w-5" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
+        </DialogHeader>
+        <Tabs defaultValue="customer-info" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="mx-6 mt-4 bg-muted">
+            <TabsTrigger value="order-items">Order Items</TabsTrigger>
+            <TabsTrigger value="customer-info">Customer Info</TabsTrigger>
+            <TabsTrigger value="status-template">Status &amp; Template</TabsTrigger>
+          </TabsList>
+          <ScrollArea className="flex-1 overflow-y-auto">
+            <TabsContent value="order-items" className="p-6">
+              <Card>
+                <CardHeader><CardTitle>Order Items</CardTitle></CardHeader>
+                <CardContent>
+                  {order.items && order.items.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item Name</TableHead>
+                          <TableHead className="text-center">Quantity</TableHead>
+                          <TableHead className="text-right">Price</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {order.items.map(item => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell className="text-center">{item.quantity}</TableCell>
+                            <TableCell className="text-right">৳{item.price.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">৳{(item.quantity * item.price).toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-muted-foreground">No items in this order.</p>
+                  )}
+                  {order.totalAmount !== undefined && (
+                     <div className="mt-4 pt-4 border-t text-right">
+                        <p className="text-lg font-semibold">Total Amount: ৳{order.totalAmount.toLocaleString()}</p>
+                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="customer-info" className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Personal Information</CardTitle></CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex items-start">
+                      <User className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="font-medium text-foreground">{order.customerName || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Full Name</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <Mail className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-foreground">{order.customerEmail || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Email Address</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <Phone className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-foreground">{order.customerPhone || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Phone Number</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Business Information</CardTitle></CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex items-start">
+                      <Building2 className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="font-medium text-foreground">{order.businessName || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Restaurant Name</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <Briefcase className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-foreground">{order.businessRole || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Role</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <MapPin className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-foreground">{order.customerAddress || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Address</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              <Card>
+                <CardHeader><CardTitle className="text-base">Additional Information</CardTitle></CardHeader>
+                <CardContent className="text-sm">
+                  <div className="flex items-start">
+                    <FileTextIcon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                    <div>
+                      <p className="font-medium text-foreground">Bio</p>
+                      <p className="text-muted-foreground mt-1">{order.bio || "No bio information available for this customer."}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            <TabsContent value="status-template" className="p-6">
+              <Card>
+                <CardHeader><CardTitle>Status & Template</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Order Status</h4>
+                    <Badge variant="outline" className={cn("text-sm py-1 px-3", statusColors[order.status] || statusColors.Pending)}>
+                      {order.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Template Used</h4>
+                    {order.templateName !== 'Unknown Template' ? (
+                      <Badge variant="outline" className={cn("text-sm py-1 px-3 font-normal", templateBadgeStyle)}>
+                          <Tag className="h-3.5 w-3.5 mr-1.5 opacity-80"/>
+                          {order.templateName}
+                      </Badge>
+                    ) : (
+                      <p className="text-muted-foreground italic">N/A</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
+        <DialogFooter className="px-6 py-4 border-t mt-auto">
+          <DialogClose asChild>
+            <Button variant="outline">Close</Button>
+          </DialogClose>
+          <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
+          <Button variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Printer className="mr-2 h-4 w-4" /> Print Order
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 export default function ManageOrdersPage(): ReactNode {
   const [allOrders, setAllOrders] = useState<ApiOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -121,6 +335,9 @@ export default function ManageOrdersPage(): ReactNode {
   const [sortOption, setSortOption] = useState<SortOptionOrders>('newest');
   
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<ApiOrder | null>(null);
 
   const { toast } = useToast();
 
@@ -146,14 +363,24 @@ export default function ManageOrdersPage(): ReactNode {
         throw new Error(result.message || 'API request for orders was not successful.');
       }
 
-      const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any): ApiOrder => ({
-        id: String(order.id || Math.random().toString(36).substring(7)), 
-        orderId: String(order.orderId || order.id || 'N/A'), 
-        orderDate: String(order.orderDate || order.createdAt || order.date || new Date().toISOString()),
-        status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : "Pending",
-        templateName: order.template?.name ? String(order.template.name) : "Unknown Template",
-        customerName: order.customer?.name ? String(order.customer.name) : "N/A",
-        totalAmount: parseFloat(order.totalAmount || order.total || 0),
+      const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any, index: number): ApiOrder => ({
+        id: String(order.id || `mock-${index}-${Date.now()}`), 
+        orderId: String(order.orderId || order.id || `ORD-${Date.now() + index}`), 
+        orderDate: String(order.orderDate || order.createdAt || order.date || new Date(Date.now() - index * 86400000).toISOString()),
+        status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : ALL_ORDER_STATUSES[index % ALL_ORDER_STATUSES.length],
+        templateName: order.template?.name ? String(order.template.name) : `Template ${index % 5 + 1}`,
+        customerName: order.customer?.name ? String(order.customer.name) : `Customer ${index + 1}`,
+        customerEmail: order.customer?.email || `customer${index+1}@example.com`,
+        customerPhone: order.customer?.phone || `019100000${index % 100 < 10 ? '0' : ''}${index % 100}`,
+        customerAddress: order.customer?.address || `${index+1} Dhaka, Bangladesh`,
+        businessName: order.customer?.companyName || `Restaurant ${index % 3 + 1}`,
+        businessRole: "Owner",
+        bio: `This is a sample bio for customer ${index+1}. They ordered template: ${order.template?.name || `Template ${index % 5 + 1}`}.`,
+        totalAmount: parseFloat(order.totalAmount || order.total || (Math.random() * 1000 + 500).toFixed(2)),
+        items: order.items || [
+            { id: `item1-${index}`, name: `Menu Item A${index}`, quantity: 2, price: 150 },
+            { id: `item2-${index}`, name: `Menu Item B${index}`, quantity: 1, price: 250 },
+        ],
       }));
       setAllOrders(fetchedOrders);
     } catch (e: any) {
@@ -191,6 +418,11 @@ export default function ManageOrdersPage(): ReactNode {
       title: "Status Updated",
       description: `Order ${allOrders.find(o => o.id === orderId)?.orderId || orderId} status changed to ${newStatus}.`,
     });
+  };
+
+  const handleViewDetails = (order: ApiOrder) => {
+    setSelectedOrderForDetails(order);
+    setIsDetailsDialogOpen(true);
   };
 
   const uniqueTemplateNames = useMemo(() => {
@@ -339,7 +571,7 @@ export default function ManageOrdersPage(): ReactNode {
               </Select>
               <Select value={templateFilter} onValueChange={setTemplateFilter}>
                 <SelectTrigger className="w-full sm:w-auto min-w-[150px] h-9 text-sm">
-                  <FileText className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  <FileTextIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                   <SelectValue placeholder="All Templates" />
                 </SelectTrigger>
                 <SelectContent>
@@ -467,9 +699,10 @@ export default function ManageOrdersPage(): ReactNode {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewDetails(order)}>
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuSub>
                                   <DropdownMenuSubTrigger>
                                       <Edit3 className="mr-2 h-4 w-4" />
@@ -541,6 +774,11 @@ export default function ManageOrdersPage(): ReactNode {
           </motion.div>
         </div>
       </section>
+      <OrderDetailsDialog 
+        order={selectedOrderForDetails} 
+        isOpen={isDetailsDialogOpen} 
+        onOpenChange={setIsDetailsDialogOpen} 
+      />
     </div>
   );
 }
