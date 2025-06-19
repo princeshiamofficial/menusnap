@@ -446,7 +446,7 @@ export default function ManageOrdersPage(): ReactNode {
             { id: `item1-${index}`, name: `Menu Item A${index}`, quantity: 2, price: 150 },
             { id: `item2-${index}`, name: `Menu Item B${index}`, quantity: 1, price: 250 },
         ],
-        templateImageUrl: order.template?.imageUrl || `https://placehold.co/600x400.png`, // Placeholder for image
+        templateImageUrl: order.template?.imageUrl || `https://placehold.co/600x400.png`, 
         templateDescription: order.template?.description || 'A fresh and floral design, ideal for spring menus or garden cafes.',
         templateTags: order.template?.tags || ['Restaurant', 'Cafe', 'Seasonal'],
       }));
@@ -475,10 +475,8 @@ export default function ManageOrdersPage(): ReactNode {
   }, [fetchOrders]);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    // Simulate API call
-    // In a real app, you would make an API call here and update based on response
-    setIsLoading(true); // Indicate loading state during the "API call"
-    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate network delay
+    setIsLoading(true); 
+    await new Promise(resolve => setTimeout(resolve, 700)); 
     
     setAllOrders(prevOrders =>
       prevOrders.map(order =>
@@ -486,7 +484,6 @@ export default function ManageOrdersPage(): ReactNode {
       )
     );
 
-    // Update selectedOrderForDetails if it's the one being changed
     if (selectedOrderForDetails && selectedOrderForDetails.id === orderId) {
         setSelectedOrderForDetails(prev => prev ? {...prev, status: newStatus} : null);
     }
@@ -495,7 +492,7 @@ export default function ManageOrdersPage(): ReactNode {
       title: "Status Updated",
       description: `Order ${allOrders.find(o => o.id === orderId)?.orderId || orderId} status changed to ${newStatus}.`,
     });
-    setIsLoading(false); // End loading state
+    setIsLoading(false); 
   };
 
   const handleViewDetails = (order: ApiOrder) => {
@@ -862,3 +859,4 @@ export default function ManageOrdersPage(): ReactNode {
   );
 }
     
+
