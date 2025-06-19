@@ -562,17 +562,21 @@ export default function MenuItemsPage() {
           <div className="md:hidden p-4 border-b border-border bg-card">
             <Label htmlFor="mobile-category-select" className="text-xs font-medium text-muted-foreground mb-1 block">Category</Label>
             <Select
-              value={selectedCategory?.id || ''}
+              value={selectedCategory ? selectedCategory.id : 'all-categories'}
               onValueChange={(value) => {
-                const newSelectedCategory = value ? (apiCategories.find(c => c.id === value) || null) : null;
-                setSelectedCategory(newSelectedCategory);
+                if (value === 'all-categories') {
+                  setSelectedCategory(null);
+                } else {
+                  const newSelectedCategory = apiCategories.find(c => c.id === value) || null;
+                  setSelectedCategory(newSelectedCategory);
+                }
               }}
             >
               <SelectTrigger id="mobile-category-select" className="w-full text-sm">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all-categories">All Categories</SelectItem>
                 {apiCategories.map(category => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.icon && <span className="mr-2">{category.icon}</span>}
@@ -670,14 +674,14 @@ export default function MenuItemsPage() {
                               {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
                                 <div
                                   id={`subitems-${item.id}`}
-                                  className="mt-3 pl-6 space-y-2"
+                                  className="mt-3 pl-6 space-y-2 border-l-2 border-primary/20 ml-2 pt-2 pb-1"
                                 >
                                   <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
                                   <div className="space-y-1.5">
                                     {item.subItems.map(subItem => (
                                       <div
                                         key={subItem.id}
-                                        className="flex justify-between items-center text-xs p-2 rounded-md bg-muted/50 border-l-2 border-primary/30"
+                                        className="flex justify-between items-center text-xs p-1.5 rounded-md bg-muted/50"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
                                         <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
@@ -713,3 +717,4 @@ export default function MenuItemsPage() {
     </>
   );
 }
+
