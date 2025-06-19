@@ -19,7 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { X, ChevronLeft, Send, ShoppingCart, FileText, GripVertical } from 'lucide-react';
-import { CustomerDetailsForm, type CustomerDetailsFormValues } from './customer-details-form'; // Import the new form
+import { CustomerDetailsForm, type CustomerDetailsFormValues } from './customer-details-form';
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 interface Category {
   id: string;
   name: string;
-  icon: string; 
+  icon: string;
   itemCount?: number;
 }
 
@@ -37,7 +37,7 @@ interface SubMenuItem {
   price: number;
 }
 
-export interface MenuItem { // Exporting MenuItem to be used in CustomerDetailsForm
+export interface MenuItem {
   id: string;
   name: string;
   price: number;
@@ -70,7 +70,7 @@ export function MenuPreviewDialog({
 }: MenuPreviewDialogProps): ReactNode {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
-  const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false); // State for customer form
+  const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
   const { toast } = useToast();
 
   const derivedDisplayedCategories = useMemo(() => {
@@ -81,27 +81,21 @@ export function MenuPreviewDialog({
   const [orderedDialogCategories, setOrderedDialogCategories] = useState<Category[]>(derivedDisplayedCategories);
 
   useEffect(() => {
-    const existingOrderMap = new Map(orderedDialogCategories.map(cat => [cat.id, cat]));
-    const newOrder: Category[] = [];
-    const addedIds = new Set<string>();
+    // This effect updates orderedDialogCategories if the actual set of derivedDisplayedCategories changes.
+    // It tries to be smart about not overwriting user's reorder if only the instance of
+    // derivedDisplayedCategories changed but not its content.
 
-    derivedDisplayedCategories.forEach(derivedCat => {
-        if(existingOrderMap.has(derivedCat.id)){
-            newOrder.push(existingOrderMap.get(derivedCat.id)!); 
-            addedIds.add(derivedCat.id);
-        }
-    });
+    const derivedCategoryIdsSorted = derivedDisplayedCategories.map(c => c.id).sort().join(',');
+    const currentOrderedCategoryIdsSorted = orderedDialogCategories.map(c => c.id).sort().join(',');
 
-     derivedDisplayedCategories.forEach(derivedCat => {
-        if(!addedIds.has(derivedCat.id)){
-            newOrder.push(derivedCat);
-            addedIds.add(derivedCat.id);
-        }
-    });
-
-    const finalOrderedCategories = newOrder.filter(cat => derivedDisplayedCategories.some(dc => dc.id === cat.id));
-    setOrderedDialogCategories(finalOrderedCategories);
-  }, [derivedDisplayedCategories, orderedDialogCategories]);
+    if (derivedCategoryIdsSorted !== currentOrderedCategoryIdsSorted) {
+      // The set of categories has changed (items added/removed leading to category changes).
+      // Reset orderedDialogCategories based on the new derivedDisplayedCategories.
+      // A more sophisticated merge could be done to preserve existing order for common categories,
+      // but for now, a direct set is simpler.
+      setOrderedDialogCategories(derivedDisplayedCategories);
+    }
+  }, [derivedDisplayedCategories]); // Only depend on derivedDisplayedCategories
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -125,14 +119,25 @@ export function MenuPreviewDialog({
   const handleCustomerFormSubmit = (data: CustomerDetailsFormValues) => {
     console.log("Customer Details:", data);
     console.log("Selected Menu Items:", selectedItems);
-    // Here you would typically send data to a backend
     toast({
       title: "Information Shared",
       description: "Customer details and menu selection have been noted.",
     });
-    setIsCustomerFormOpen(false); // Close customer form
-    onOpenChange(false); // Optionally close the main preview dialog
+    setIsCustomerFormOpen(false);
+    onOpenChange(false);
   };
+
+  // When the dialog opens, if activeCategoryId is not in the current set of derivedDisplayedCategories, reset it.
+  useEffect(() => {
+    if (isOpen && activeCategoryId && !derivedDisplayedCategories.some(cat => cat.id === activeCategoryId)) {
+      setActiveCategoryId(null);
+    }
+    // If orderedDialogCategories is empty (e.g. after all items removed), reset activeCategoryId
+    if (isOpen && orderedDialogCategories.length === 0 && activeCategoryId !== null) {
+        setActiveCategoryId(null);
+    }
+  }, [isOpen, activeCategoryId, derivedDisplayedCategories, orderedDialogCategories]);
+
 
   return (
     <>
@@ -162,6 +167,7 @@ export function MenuPreviewDialog({
                 </Button>
               </div>
               <ScrollArea className={cn("h-[calc(100%-56px)]", isSidebarCollapsed ? "p-1" : "p-2")}>
+              {orderedDialogCategories.length > 0 && (
                 <Button
                   variant="ghost"
                   className={cn(
@@ -175,13 +181,14 @@ export function MenuPreviewDialog({
                   <FileText className="h-4 w-4 shrink-0" />
                   {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
                 </Button>
+              )}
                 <Reorder.Group axis="y" values={orderedDialogCategories} onReorder={setOrderedDialogCategories} className="space-y-1">
                   {orderedDialogCategories.map(category => (
                     <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
                       <Button
                         variant="ghost"
                         className={cn(
-                          "w-full justify-start text-sm mb-0 h-9 flex items-center", 
+                          "w-full justify-start text-sm mb-0 h-9 flex items-center",
                           activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
                           isSidebarCollapsed ? "justify-center px-0" : "px-2"
                         )}
@@ -195,6 +202,9 @@ export function MenuPreviewDialog({
                     </Reorder.Item>
                   ))}
                 </Reorder.Group>
+                 {orderedDialogCategories.length === 0 && !isSidebarCollapsed && (
+                    <p className="text-xs text-muted-foreground p-2 text-center">No categories with selected items.</p>
+                )}
               </ScrollArea>
             </div>
 
@@ -247,21 +257,24 @@ export function MenuPreviewDialog({
               })}
               {selectedItems.length === 0 && (
                 <div className="text-center text-muted-foreground py-10">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No items selected for preview.</p>
+                  <p className="text-xs mt-1">Go back to select some items from the menu.</p>
                 </div>
               )}
             </ScrollArea>
           </div>
 
           <DialogFooter className="px-6 py-4 border-t mt-auto">
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               className="bg-foreground text-background hover:bg-foreground/90"
-              onClick={() => setIsCustomerFormOpen(true)} // Open customer form
+              onClick={() => setIsCustomerFormOpen(true)}
+              disabled={selectedItems.length === 0}
             >
               <ShoppingCart className="h-4 w-4 mr-2" /> Share with Color Hut
             </Button>
-            <Button variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={selectedItems.length === 0}>
               <Send className="h-4 w-4 mr-2" /> Share with Partner
             </Button>
           </DialogFooter>
@@ -277,3 +290,4 @@ export function MenuPreviewDialog({
     </>
   );
 }
+
