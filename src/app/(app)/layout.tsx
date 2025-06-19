@@ -7,7 +7,6 @@ import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar'
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SpeedDialFAB } from '@/components/layout/SpeedDialFAB'; 
-import { MobileAppRedirect } from '@/components/layout/MobileAppRedirect'; // Added import
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -21,7 +20,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // For non-admin routes within the (app) group
   return (
     <ProtectedRoute> {/* Main app authentication */}
-      <MobileAppRedirect /> {/* Added MobileAppRedirect component */}
       <SidebarProvider defaultOpen> 
         <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r border-sidebar-border shadow-md bg-sidebar">
           <SidebarNav />
@@ -40,3 +38,4 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     </ProtectedRoute>
   );
 }
+
