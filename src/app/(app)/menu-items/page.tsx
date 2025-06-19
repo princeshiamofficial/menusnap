@@ -38,10 +38,10 @@ import { useToast } from "@/hooks/use-toast";
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 
 interface DraftSubItem {
-  id: string; // Original item ID
+  id: string; 
   name: string;
   price: number;
-  categoryId: string; // Original category ID (non-prefixed)
+  categoryId: string; 
 }
 
 interface DraftItem {
@@ -49,7 +49,7 @@ interface DraftItem {
   name: string;
   createdAt: string;
   itemCount: number;
-  primaryTag: string; // e.g., "restaurant-appetizers-timestamp" or "parlour-facials-timestamp"
+  primaryTag: string; 
   price: number;
   previewAvatars: string[];
   items?: DraftSubItem[];
@@ -57,7 +57,7 @@ interface DraftItem {
 
 
 interface Category {
-  id: string; // Prefixed ID for UI (e.g., "restaurant-1", "parlour-5")
+  id: string; 
   name: string;
   icon: string;
   itemCount?: number;
@@ -68,18 +68,18 @@ interface Category {
 }
 
 interface SubMenuItem {
-  id: string; // Original ID
+  id: string; 
   name: string;
   price: number;
 }
 
 interface MenuItem {
-  id: string; // Original ID
+  id: string; 
   name: string;
   price: number;
-  category: string; // Prefixed category ID (e.g., "restaurant-1")
+  category: string; 
   description?: string;
-  image?: string;
+  image?: string; 
   status?: string;
   featured?: boolean;
   visibleToUsers?: boolean;
@@ -95,22 +95,36 @@ export default function MenuItemsPage() {
   const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); // Uses original item IDs as keys
+  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); 
   const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
 
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
 
-  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]); // Stores MenuItems with original IDs
+  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]); 
   const [loadingMenuItems, setLoadingMenuItems] = useState(true);
   const [errorMenuItems, setErrorMenuItems] = useState<string | null>(null);
 
-  const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({}); // Uses original item IDs as keys
+  const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({}); 
   const { setTheme } = useTheme();
   const { toast } = useToast();
   const router = useRouter();
 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
+  const [draftIdForRestoration, setDraftIdForRestoration] = useState<string | null>(null);
+
+  // Effect to initialize draftIdForRestoration from localStorage on mount
+  useEffect(() => {
+    const idFromStorage = typeof window !== 'undefined' ? localStorage.getItem('draftToRestoreId') : null;
+    if (idFromStorage) {
+      setDraftIdForRestoration(idFromStorage);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('draftToRestoreId'); // Move from localStorage to state
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Runs once on mount
+
 
   const fetchData = useCallback(async () => {
     setLoadingCategories(true);
@@ -129,9 +143,7 @@ export default function MenuItemsPage() {
       : 'https://colorhutbd.xyz/vm/api/menu-items.php';
 
     menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
-
-    const prevSelectedCategoryId = selectedCategory?.id; 
-
+    
     let categoriesResponse: Response | undefined;
     let menuItemsResponse: Response | undefined;
 
@@ -156,6 +168,7 @@ export default function MenuItemsPage() {
       return;
     }
 
+    // Process Categories
     try {
       if (!categoriesResponse || !categoriesResponse.ok) {
         throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
@@ -183,14 +196,16 @@ export default function MenuItemsPage() {
       setApiCategories(visibleCategories);
       setOrderedCategories(visibleCategories);
       
-      const isRestoringDraft = !!(typeof window !== 'undefined' && localStorage.getItem('draftToRestoreId'));
+      // Handle selectedCategory logic, aware of draft restoration
+      const isRestoring = !!draftIdForRestoration; 
 
-      if (!isRestoringDraft) { // Only manage selectedCategory here if not in a restoration process
+      if (!isRestoring) {
+        // If not restoring, set selectedCategory based on current state or default
         if (visibleCategories.length > 0) {
             let categoryToSelect: Category | null = null;
             // Try to maintain previous selection if it's still valid for the current menu type
-            if (prevSelectedCategoryId && visibleCategories.some(c => c.id === prevSelectedCategoryId && c.id.startsWith(currentIdPrefix))) {
-                categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
+            if (selectedCategory && visibleCategories.some(c => c.id === selectedCategory.id && c.id.startsWith(currentIdPrefix))) {
+                categoryToSelect = selectedCategory;
             }
             // Default to first category if no valid previous selection or if it was for a different type
             if (!categoryToSelect) { 
@@ -201,12 +216,13 @@ export default function MenuItemsPage() {
             setSelectedCategory(null);
         }
       } else {
-        // If restoring a draft, but the current selectedCategory is for the wrong menu type, clear it.
-        // This ensures the draft restoration effect starts with a clean slate if a menu type switch happened.
-        if (selectedCategory && !selectedCategory.id.startsWith(currentIdPrefix)) {
-            setSelectedCategory(null);
-        }
-        // Otherwise, leave selectedCategory as is; the draft restoration effect will handle it.
+         // If restoring a draft, be more conservative.
+         // Only clear selectedCategory if it's for the WRONG menu type.
+         // The draft restoration effect will handle setting the correct category.
+         if (selectedCategory && !selectedCategory.id.startsWith(currentIdPrefix)) {
+             setSelectedCategory(null);
+         }
+         // Otherwise, leave selectedCategory as is, or if it's null, the draft effect will set it.
       }
       setErrorCategories(null);
     } catch (e: any) {
@@ -219,6 +235,7 @@ export default function MenuItemsPage() {
       setLoadingCategories(false);
     }
 
+    // Process Menu Items
     if (menuItemsResponse) {
       try {
         if (!menuItemsResponse.ok) {
@@ -286,23 +303,25 @@ export default function MenuItemsPage() {
        setErrorMenuItems("Menu items response was unexpectedly undefined.");
        setAllMenuItems([]);
     }
-  }, [selectedMenuType, setTheme, selectedCategory?.id]); // Keep selectedCategory?.id for re-fetching when category changes naturally
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMenuType, setTheme, draftIdForRestoration]); // draftIdForRestoration added to influence selectedCategory logic
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
 
- useEffect(() => {
-    const draftIdToRestore = typeof window !== 'undefined' ? localStorage.getItem('draftToRestoreId') : null;
-    if (!draftIdToRestore) return;
+  // Effect for handling draft restoration
+  useEffect(() => {
+    if (!draftIdForRestoration) return; // No draft ID in state, so nothing to restore
 
+    // If data for the current selectedMenuType is still loading, wait.
     if (loadingCategories || loadingMenuItems) return;
 
     const allDraftsString = typeof window !== 'undefined' ? localStorage.getItem(DRAFTS_STORAGE_KEY) : null;
     if (!allDraftsString) {
-      if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: "Could not find your saved drafts.", variant: "destructive" });
+      setDraftIdForRestoration(null); // Clear restoration intent
       return;
     }
 
@@ -311,47 +330,52 @@ export default function MenuItemsPage() {
       allDrafts = JSON.parse(allDraftsString);
     } catch (e) {
       console.error("Error parsing drafts from localStorage:", e);
-      if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: "Saved draft data appears to be corrupted.", variant: "destructive" });
+      setDraftIdForRestoration(null); // Clear restoration intent
       return;
     }
 
-    const draftToRestore = allDrafts.find(d => d.id === draftIdToRestore);
+    const draftToRestore = allDrafts.find(d => d.id === draftIdForRestoration);
     if (!draftToRestore) {
-      if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
-      toast({ title: "Error", description: `The selected draft (ID: ${draftIdToRestore}) was not found.`, variant: "destructive" });
+      toast({ title: "Error", description: `The selected draft (ID: ${draftIdForRestoration}) was not found.`, variant: "destructive" });
+      setDraftIdForRestoration(null); // Clear restoration intent
       return;
     }
     
     const draftMenuTypeFromFile = draftToRestore.primaryTag.split('-')[0].toLowerCase();
 
+    // If the current menu type doesn't match the draft's, switch it.
+    // The effect will re-run once selectedMenuType matches and data is loaded.
+    // draftIdForRestoration remains set, so the next run will pick it up.
     if (draftMenuTypeFromFile !== selectedMenuType) {
       setSelectedMenuType(draftMenuTypeFromFile);
+      // Data fetching for the new type will be triggered by selectedMenuType change.
+      // This effect will re-evaluate once loading states are false for the new type.
       return; 
     }
     
     // At this point, selectedMenuType matches draftMenuType, and data for this type should be loaded.
-    if (apiCategories.length === 0 && allMenuItems.length === 0 && !loadingCategories && !loadingMenuItems) {
-        toast({ title: "Draft Info", description: `No categories or items available for the '${draftMenuTypeFromFile}' menu type. Draft cannot be fully restored.`, variant: "default" });
-        if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
-        return;
+    const currentIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    const categoriesForCurrentType = apiCategories.filter(c => c.id.startsWith(currentIdPrefix));
+    const itemsForCurrentType = allMenuItems.filter(i => i.category.startsWith(currentIdPrefix));
+
+    if (categoriesForCurrentType.length === 0 && itemsForCurrentType.length === 0 && draftToRestore.itemCount > 0) {
+      toast({ title: "Draft Info", description: `No categories or items available for the '${draftMenuTypeFromFile}' menu type. Draft cannot be fully restored.`, variant: "default" });
+      setDraftIdForRestoration(null); // Clear restoration intent
+      return;
     }
 
-    const draftContentIdPrefix = draftMenuTypeFromFile === 'parlour' ? 'parlour-' : 'restaurant-';
-
+    // Restore selected items
     let itemsActuallySelectedCount = 0;
     if (draftToRestore.items && draftToRestore.items.length > 0) {
       const newSelectedItemsState = draftToRestore.items.reduce((acc, draftSubItem) => {
-        const fullTargetCategoryIdForMatching = `${draftContentIdPrefix}${draftSubItem.categoryId}`;
-        
-        if (allMenuItems.some(menuItem => 
+        const fullTargetCategoryIdForMatching = `${currentIdPrefix}${draftSubItem.categoryId}`;
+        if (itemsForCurrentType.some(menuItem => 
             menuItem.id === draftSubItem.id &&
             menuItem.category === fullTargetCategoryIdForMatching 
         )) {
-          acc[draftSubItem.id] = true; 
+          acc[draftSubItem.id] = true;
           itemsActuallySelectedCount++;
-        } else {
-          console.warn(`Item ID ${draftSubItem.id} (Category for matching: ${fullTargetCategoryIdForMatching}) from draft not found or mismatched. Current allMenuItems categories: ${allMenuItems.map(mi=>mi.category).join(', ')}`);
         }
         return acc;
       }, {} as Record<string, boolean>);
@@ -369,17 +393,17 @@ export default function MenuItemsPage() {
       toast({ title: "Draft Restored", description: "The selected draft had no items." });
     }
     
+    // Restore selected category
     const tagParts = draftToRestore.primaryTag.split('-');
-    let draftCategorySlug = 'general';
+    let draftCategorySlug = 'general'; 
     if (tagParts.length > 1 && tagParts[0].toLowerCase() === draftMenuTypeFromFile) {
         draftCategorySlug = tagParts[1];
     }
     
     let categorySetByDraft = false;
-    if (draftCategorySlug && draftCategorySlug !== 'general' && apiCategories.length > 0) {
-        const targetCategory = apiCategories.find(
-            cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug && 
-                   cat.id.startsWith(draftContentIdPrefix)
+    if (draftCategorySlug && draftCategorySlug !== 'general' && categoriesForCurrentType.length > 0) {
+        const targetCategory = categoriesForCurrentType.find(
+            cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug
         );
         if (targetCategory) {
             setSelectedCategory(targetCategory);
@@ -390,43 +414,39 @@ export default function MenuItemsPage() {
     }
     
     if (!categorySetByDraft) {
-      if (apiCategories.length > 0) {
-        // Only set to default if no category is selected OR if the current one is for the wrong menu type
-        if (!selectedCategory || !selectedCategory.id.startsWith(draftContentIdPrefix)) {
-          setSelectedCategory(apiCategories.find(cat => cat.id.startsWith(draftContentIdPrefix)) || apiCategories[0]);
-        }
+      if (categoriesForCurrentType.length > 0) {
+          // If no category is selected or current selected is wrong type, set to first of current type
+          if (!selectedCategory || !selectedCategory.id.startsWith(currentIdPrefix)) {
+            setSelectedCategory(categoriesForCurrentType[0]);
+          }
       } else {
         setSelectedCategory(null);
       }
     }
 
-    if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
+    // Mark restoration as complete for this ID
+    setDraftIdForRestoration(null);
   }, [
+    draftIdForRestoration, // Main trigger
     selectedMenuType, 
     loadingCategories, 
-    loadingMenuItems, 
-    apiCategories, 
-    allMenuItems, 
+    loadingMenuItems,  
+    apiCategories,     
+    allMenuItems,      
     toast,
-    selectedCategory // Effect should re-run if selectedCategory changes
-    // Removed state setters from dependencies as they cause loops or unnecessary runs
+    selectedCategory // Include selectedCategory to re-evaluate if it changes from other sources during the process
   ]);
 
 
   const currentMenuItems = useMemo(() => {
     const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
-    // Ensure allMenuItems are filtered by the currentExpectedPrefix first
     const itemsOfCurrentType = allMenuItems.filter(item => item.category.startsWith(currentExpectedPrefix));
 
     let itemsToFilter = itemsOfCurrentType;
-    if (selectedCategory && selectedCategory.id.startsWith(currentExpectedPrefix)) { // Ensure selectedCategory is also for the current type
+    if (selectedCategory && selectedCategory.id.startsWith(currentExpectedPrefix)) {
       itemsToFilter = itemsOfCurrentType.filter(item => item.category === selectedCategory.id);
-    } else if (selectedCategory && !selectedCategory.id.startsWith(currentExpectedPrefix)) {
-      // If selectedCategory is from a different menu type, effectively show no items for it
-      // This case should ideally be handled by resetting selectedCategory when menuType changes
-      return []; 
     }
-    // If no category is selected (or selectedCategory is from wrong type), show all items of current type
+    // Note: If selectedCategory is null OR for a different type, we show all items of current type.
     
     return itemsToFilter
       .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -466,7 +486,7 @@ export default function MenuItemsPage() {
       id: item.id, 
       name: item.name,
       price: item.price,
-      categoryId: item.category.replace(currentIdPrefix, ''), // Store original, non-prefixed category ID
+      categoryId: item.category.replace(currentIdPrefix, ''), 
     }));
 
     const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
@@ -476,10 +496,9 @@ export default function MenuItemsPage() {
       .map(item => item.name.substring(0, 2).toUpperCase());
     
     let draftNameCategoryPart = 'general';
-    // Determine category part from selectedCategory if available and matches current menu type
     if (selectedCategory && selectedCategory.id.startsWith(currentIdPrefix)) { 
         draftNameCategoryPart = selectedCategory.name.toLowerCase().replace(/\s+/g, '-');
-    } else if (actualSelectedMenuItems.length > 0) { // Fallback to first selected item's category
+    } else if (actualSelectedMenuItems.length > 0) { 
         const firstSelectedItem = actualSelectedMenuItems[0];
         if (firstSelectedItem.category.startsWith(currentIdPrefix)) {
             const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItem.category); 
@@ -502,10 +521,12 @@ export default function MenuItemsPage() {
     };
 
     try {
-      const existingDraftsJSON = localStorage.getItem(DRAFTS_STORAGE_KEY);
+      const existingDraftsJSON = typeof window !== 'undefined' ? localStorage.getItem(DRAFTS_STORAGE_KEY) : null;
       const existingDrafts: DraftItem[] = existingDraftsJSON ? JSON.parse(existingDraftsJSON) : [];
       existingDrafts.unshift(newDraft);
-      localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
+      }
       toast({ title: "Draft Saved!", description: "Your menu selection has been saved." });
     } catch (error) {
       console.error("Error saving draft to localStorage:", error);
@@ -524,7 +545,6 @@ export default function MenuItemsPage() {
   }
 
   const preparedSelectedItemsForPreview = useMemo(() => {
-    // Ensure items are from the correct menu type if `allMenuItems` could contain mixed types
     const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
     return allMenuItems.filter(item => selectedItems[item.id] && item.category.startsWith(currentExpectedPrefix)); 
   }, [allMenuItems, selectedItems, selectedMenuType]);
@@ -583,8 +603,6 @@ export default function MenuItemsPage() {
               <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
               <Select value={selectedMenuType} onValueChange={
                 (newType) => {
-                  // When menu type changes, reset selectedCategory to allow fetchData to pick a default for the new type
-                  setSelectedCategory(null); 
                   setSelectedMenuType(newType);
                 }
               }>
@@ -776,4 +794,3 @@ export default function MenuItemsPage() {
     </>
   );
 }
-
