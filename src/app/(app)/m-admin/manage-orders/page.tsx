@@ -3,6 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Table,
@@ -58,7 +59,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search,
   ListFilter,
-  FileText as FileTextIcon, // Renamed to avoid conflict
+  FileText as FileTextIcon,
   ArrowUpDown,
   MoreVertical,
   Eye,
@@ -76,15 +77,18 @@ import {
   Building2,
   Briefcase,
   MapPin,
-  X
+  X,
+  FileArchive
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 
-type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold";
+type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
 
-const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold"];
+const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold", "Out for Delivery"];
+const QUICK_STATUS_UPDATE_OPTIONS: OrderStatus[] = ["Pending", "Processing", "Delivered", "Cancelled", "Out for Delivery"];
+
 
 interface ApiOrder {
   id: string;
@@ -95,13 +99,15 @@ interface ApiOrder {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
-  customerAddress?: string; // For Business Info section
-  businessName?: string; // For Business Info
-  businessRole?: string; // For Business Info
-  bio?: string; // For Additional Info
+  customerAddress?: string; 
+  businessName?: string; 
+  businessRole?: string; 
+  bio?: string; 
   totalAmount?: number;
-  // Placeholder for actual order items
-  items?: { id: string; name: string; quantity: number; price: number }[]; 
+  items?: { id: string; name: string; quantity: number; price: number }[];
+  templateImageUrl?: string;
+  templateDescription?: string;
+  templateTags?: string[];
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -110,6 +116,7 @@ const statusColors: Record<OrderStatus, string> = {
   "Pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600",
   "Processing": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
   "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
+  "Out for Delivery": "bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-400 border-blue-300 dark:border-blue-600",
   "Shipped": "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/20 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600",
   "Delivered": "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600",
   "Cancelled": "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600",
@@ -146,7 +153,7 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
 ];
 
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void; }) {
   if (!order) return null;
 
   const formatDate = (dateString: string, includeTime: boolean = true): string => {
@@ -161,11 +168,11 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: ApiOrder |
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="text-xl">Order Details</DialogTitle>
           <DialogDescription>
-            Order {order.orderId} placed on {formatDate(order.orderDate)}
+            Order <span className="font-medium text-primary">{order.orderId}</span> placed on {formatDate(order.orderDate)}
           </DialogDescription>
            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
             <X className="h-5 w-5" />
@@ -173,14 +180,14 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: ApiOrder |
           </DialogClose>
         </DialogHeader>
         <Tabs defaultValue="customer-info" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-6 mt-4 bg-muted">
+          <TabsList className="mx-auto my-4 bg-muted w-fit">
             <TabsTrigger value="order-items">Order Items</TabsTrigger>
             <TabsTrigger value="customer-info">Customer Info</TabsTrigger>
             <TabsTrigger value="status-template">Status &amp; Template</TabsTrigger>
           </TabsList>
-          <ScrollArea className="flex-1 overflow-y-auto">
+          <ScrollArea className="flex-1 overflow-y-auto bg-muted/30">
             <TabsContent value="order-items" className="p-6">
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader><CardTitle>Order Items</CardTitle></CardHeader>
                 <CardContent>
                   {order.items && order.items.length > 0 ? (
@@ -217,7 +224,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: ApiOrder |
             </TabsContent>
             <TabsContent value="customer-info" className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
+                <Card className="shadow-sm">
                   <CardHeader><CardTitle className="text-base">Personal Information</CardTitle></CardHeader>
                   <CardContent className="space-y-3 text-sm">
                     <div className="flex items-start">
@@ -243,7 +250,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: ApiOrder |
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className="shadow-sm">
                   <CardHeader><CardTitle className="text-base">Business Information</CardTitle></CardHeader>
                   <CardContent className="space-y-3 text-sm">
                     <div className="flex items-start">
@@ -270,46 +277,104 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: ApiOrder |
                   </CardContent>
                 </Card>
               </div>
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader><CardTitle className="text-base">Additional Information</CardTitle></CardHeader>
                 <CardContent className="text-sm">
                   <div className="flex items-start">
-                    <FileTextIcon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                    <FileArchive className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                     <div>
                       <p className="font-medium text-foreground">Bio</p>
-                      <p className="text-muted-foreground mt-1">{order.bio || "No bio information available for this customer."}</p>
+                      <p className="text-muted-foreground mt-1 leading-relaxed">{order.bio || "No bio information available for this customer."}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
             <TabsContent value="status-template" className="p-6">
-              <Card>
-                <CardHeader><CardTitle>Status & Template</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Order Status</h4>
-                    <Badge variant="outline" className={cn("text-sm py-1 px-3", statusColors[order.status] || statusColors.Pending)}>
-                      {order.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Template Used</h4>
-                    {order.templateName !== 'Unknown Template' ? (
-                      <Badge variant="outline" className={cn("text-sm py-1 px-3 font-normal", templateBadgeStyle)}>
-                          <Tag className="h-3.5 w-3.5 mr-1.5 opacity-80"/>
-                          {order.templateName}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Order Status</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Current Status:</span>
+                      <Badge variant="outline" className={cn("text-sm py-1 px-3 font-medium", statusColors[order.status] || statusColors.Pending)}>
+                        {order.status}
                       </Badge>
-                    ) : (
-                      <p className="text-muted-foreground italic">N/A</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Update Status:</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {QUICK_STATUS_UPDATE_OPTIONS.map(statusOption => (
+                          <Button
+                            key={statusOption}
+                            variant={order.status === statusOption ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => onStatusUpdate(order.id, statusOption)}
+                            className={cn(order.status === statusOption ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
+                          >
+                            {statusOption}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                     <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-sm text-muted-foreground">Order Date:</span>
+                        <span className="text-sm font-medium text-foreground">{formatDate(order.orderDate, true)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Template Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-muted rounded-md border">
+                        <FileTextIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">{order.templateName || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground leading-snug">{order.templateDescription || 'No description provided.'}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Template Preview:</p>
+                      <div className="aspect-[4/3] bg-muted rounded-md border overflow-hidden relative">
+                        {order.templateImageUrl ? (
+                          <Image 
+                            src={order.templateImageUrl} 
+                            alt={order.templateName || 'Template preview'} 
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover"
+                            data-ai-hint={order.templateName ? order.templateName.toLowerCase().split(' ').slice(0,2).join(' ') : "menu design"}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
+                            No Preview Available
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {order.templateTags && order.templateTags.length > 0 && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1.5">Tags:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {order.templateTags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs bg-muted text-muted-foreground font-normal">{tag}</Badge>
+                          ))}
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </ScrollArea>
         </Tabs>
-        <DialogFooter className="px-6 py-4 border-t mt-auto">
+        <DialogFooter className="px-6 py-4 border-t mt-auto bg-background">
           <DialogClose asChild>
             <Button variant="outline">Close</Button>
           </DialogClose>
@@ -381,6 +446,9 @@ export default function ManageOrdersPage(): ReactNode {
             { id: `item1-${index}`, name: `Menu Item A${index}`, quantity: 2, price: 150 },
             { id: `item2-${index}`, name: `Menu Item B${index}`, quantity: 1, price: 250 },
         ],
+        templateImageUrl: order.template?.imageUrl || `https://placehold.co/600x400.png`, // Placeholder for image
+        templateDescription: order.template?.description || 'A fresh and floral design, ideal for spring menus or garden cafes.',
+        templateTags: order.template?.tags || ['Restaurant', 'Cafe', 'Seasonal'],
       }));
       setAllOrders(fetchedOrders);
     } catch (e: any) {
@@ -408,16 +476,26 @@ export default function ManageOrdersPage(): ReactNode {
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // In a real app, you would make an API call here and update based on response
+    setIsLoading(true); // Indicate loading state during the "API call"
+    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate network delay
+    
     setAllOrders(prevOrders =>
       prevOrders.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
       )
     );
+
+    // Update selectedOrderForDetails if it's the one being changed
+    if (selectedOrderForDetails && selectedOrderForDetails.id === orderId) {
+        setSelectedOrderForDetails(prev => prev ? {...prev, status: newStatus} : null);
+    }
+
     toast({
       title: "Status Updated",
       description: `Order ${allOrders.find(o => o.id === orderId)?.orderId || orderId} status changed to ${newStatus}.`,
     });
+    setIsLoading(false); // End loading state
   };
 
   const handleViewDetails = (order: ApiOrder) => {
@@ -499,7 +577,7 @@ export default function ManageOrdersPage(): ReactNode {
   };
 
 
-  const formatDate = (dateString: string, includeTime: boolean = true): string => {
+  const formatDateForDisplay = (dateString: string, includeTime: boolean = true): string => {
     try {
       const date = parseISO(dateString);
       if (!isValidDate(date)) return "Invalid Date";
@@ -610,7 +688,7 @@ export default function ManageOrdersPage(): ReactNode {
                         <TableHead className="w-[150px]">Order ID</TableHead>
                         <TableHead>Template</TableHead>
                         <TableHead>Customer</TableHead>
-                        <TableHead className="w-[120px]">Status</TableHead>
+                        <TableHead className="w-[150px]">Status</TableHead>
                         <TableHead className="text-right w-[100px]">Action</TableHead>
                     </motion.tr>
                 </TableHeader>
@@ -649,11 +727,11 @@ export default function ManageOrdersPage(): ReactNode {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
                   >
-                    <TableHead className="w-[180px]">Date</TableHead>
+                    <TableHead className="w-[200px]">Date</TableHead>
                     <TableHead className="w-[150px]">Order ID</TableHead>
                     <TableHead>Template</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead className="w-[120px]">Status</TableHead>
+                    <TableHead className="w-[150px]">Status</TableHead>
                     <TableHead className="text-right w-[100px]">Action</TableHead>
                   </motion.tr>
                 </TableHeader>
@@ -671,10 +749,10 @@ export default function ManageOrdersPage(): ReactNode {
                         <TableCell className="text-xs text-muted-foreground">
                             <div className="flex items-center">
                                 <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70"/>
-                                {formatDate(order.orderDate)}
+                                {formatDateForDisplay(order.orderDate)}
                             </div>
                         </TableCell>
-                        <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap">{order.orderId}</TableCell>
+                        <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => handleViewDetails(order)}>{order.orderId}</TableCell>
                         <TableCell>
                           {order.templateName !== 'Unknown Template' ? (
                             <Badge variant="outline" className={cn("text-xs py-1 px-2 font-normal", templateBadgeStyle)}>
@@ -687,7 +765,7 @@ export default function ManageOrdersPage(): ReactNode {
                         </TableCell>
                         <TableCell>{order.customerName !== 'N/A' ? order.customerName : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={cn("text-xs py-1 px-2", statusColors[order.status] || statusColors.Pending)}>
+                          <Badge variant="outline" className={cn("text-xs py-1 px-2.5", statusColors[order.status] || statusColors.Pending)}>
                             {order.status}
                           </Badge>
                         </TableCell>
@@ -778,9 +856,9 @@ export default function ManageOrdersPage(): ReactNode {
         order={selectedOrderForDetails} 
         isOpen={isDetailsDialogOpen} 
         onOpenChange={setIsDetailsDialogOpen} 
+        onStatusUpdate={handleStatusChange}
       />
     </div>
   );
 }
     
-
