@@ -41,7 +41,7 @@ interface DraftSubItem {
   id: string; // Original item ID
   name: string;
   price: number;
-  categoryId: string; // Original category ID
+  categoryId: string; // Original category ID (non-prefixed)
 }
 
 interface DraftItem {
@@ -49,7 +49,7 @@ interface DraftItem {
   name: string;
   createdAt: string;
   itemCount: number;
-  primaryTag: string;
+  primaryTag: string; // e.g., "restaurant-appetizers-timestamp" or "parlour-facials-timestamp"
   price: number;
   previewAvatars: string[];
   items?: DraftSubItem[];
@@ -57,7 +57,7 @@ interface DraftItem {
 
 
 interface Category {
-  id: string; // Prefixed ID for UI
+  id: string; // Prefixed ID for UI (e.g., "restaurant-1", "parlour-5")
   name: string;
   icon: string;
   itemCount?: number;
@@ -77,7 +77,7 @@ interface MenuItem {
   id: string; // Original ID
   name: string;
   price: number;
-  category: string; // Prefixed category ID
+  category: string; // Prefixed category ID (e.g., "restaurant-1")
   description?: string;
   image?: string;
   status?: string;
@@ -183,17 +183,30 @@ export default function MenuItemsPage() {
       setApiCategories(visibleCategories);
       setOrderedCategories(visibleCategories);
       
-      if (visibleCategories.length > 0) {
-          let categoryToSelect: Category | null = null;
-          if (prevSelectedCategoryId && visibleCategories.some(c => c.id === prevSelectedCategoryId)) {
-              categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
-          }
-          if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) { 
-               categoryToSelect = visibleCategories[0];
-          }
-          setSelectedCategory(categoryToSelect);
+      const isRestoringDraft = !!(typeof window !== 'undefined' && localStorage.getItem('draftToRestoreId'));
+
+      if (!isRestoringDraft) { // Only manage selectedCategory here if not in a restoration process
+        if (visibleCategories.length > 0) {
+            let categoryToSelect: Category | null = null;
+            // Try to maintain previous selection if it's still valid for the current menu type
+            if (prevSelectedCategoryId && visibleCategories.some(c => c.id === prevSelectedCategoryId && c.id.startsWith(currentIdPrefix))) {
+                categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
+            }
+            // Default to first category if no valid previous selection or if it was for a different type
+            if (!categoryToSelect) { 
+                 categoryToSelect = visibleCategories[0];
+            }
+            setSelectedCategory(categoryToSelect);
+        } else { // No visible categories for this menu type
+            setSelectedCategory(null);
+        }
       } else {
-          setSelectedCategory(null);
+        // If restoring a draft, but the current selectedCategory is for the wrong menu type, clear it.
+        // This ensures the draft restoration effect starts with a clean slate if a menu type switch happened.
+        if (selectedCategory && !selectedCategory.id.startsWith(currentIdPrefix)) {
+            setSelectedCategory(null);
+        }
+        // Otherwise, leave selectedCategory as is; the draft restoration effect will handle it.
       }
       setErrorCategories(null);
     } catch (e: any) {
@@ -229,7 +242,7 @@ export default function MenuItemsPage() {
         const seenOriginalItemIds = new Set<string>();
 
         rawItemsArray
-          .filter((item: any) => item.id !== null && item.id !== undefined) 
+          .filter((item: any) => item.id !== null && item.id !== undefined && item.visibleToUsers) 
           .forEach((item: any) => {
             const originalItemId = String(item.id);
             if (!seenOriginalItemIds.has(originalItemId)) {
@@ -273,7 +286,7 @@ export default function MenuItemsPage() {
        setErrorMenuItems("Menu items response was unexpectedly undefined.");
        setAllMenuItems([]);
     }
-  }, [selectedMenuType, setTheme, selectedCategory?.id]); 
+  }, [selectedMenuType, setTheme, selectedCategory?.id]); // Keep selectedCategory?.id for re-fetching when category changes naturally
 
   useEffect(() => {
     fetchData();
@@ -281,14 +294,14 @@ export default function MenuItemsPage() {
 
 
  useEffect(() => {
-    const draftIdToRestore = localStorage.getItem('draftToRestoreId');
+    const draftIdToRestore = typeof window !== 'undefined' ? localStorage.getItem('draftToRestoreId') : null;
     if (!draftIdToRestore) return;
 
     if (loadingCategories || loadingMenuItems) return;
 
-    const allDraftsString = localStorage.getItem(DRAFTS_STORAGE_KEY);
+    const allDraftsString = typeof window !== 'undefined' ? localStorage.getItem(DRAFTS_STORAGE_KEY) : null;
     if (!allDraftsString) {
-      localStorage.removeItem('draftToRestoreId');
+      if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: "Could not find your saved drafts.", variant: "destructive" });
       return;
     }
@@ -298,14 +311,14 @@ export default function MenuItemsPage() {
       allDrafts = JSON.parse(allDraftsString);
     } catch (e) {
       console.error("Error parsing drafts from localStorage:", e);
-      localStorage.removeItem('draftToRestoreId');
+      if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: "Saved draft data appears to be corrupted.", variant: "destructive" });
       return;
     }
 
     const draftToRestore = allDrafts.find(d => d.id === draftIdToRestore);
     if (!draftToRestore) {
-      localStorage.removeItem('draftToRestoreId');
+      if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: `The selected draft (ID: ${draftIdToRestore}) was not found.`, variant: "destructive" });
       return;
     }
@@ -314,23 +327,31 @@ export default function MenuItemsPage() {
 
     if (draftMenuTypeFromFile !== selectedMenuType) {
       setSelectedMenuType(draftMenuTypeFromFile);
-      return;
+      return; 
     }
     
-    const currentDraftIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    // At this point, selectedMenuType matches draftMenuType, and data for this type should be loaded.
+    if (apiCategories.length === 0 && allMenuItems.length === 0 && !loadingCategories && !loadingMenuItems) {
+        toast({ title: "Draft Info", description: `No categories or items available for the '${draftMenuTypeFromFile}' menu type. Draft cannot be fully restored.`, variant: "default" });
+        if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
+        return;
+    }
+
+    const draftContentIdPrefix = draftMenuTypeFromFile === 'parlour' ? 'parlour-' : 'restaurant-';
 
     let itemsActuallySelectedCount = 0;
     if (draftToRestore.items && draftToRestore.items.length > 0) {
       const newSelectedItemsState = draftToRestore.items.reduce((acc, draftSubItem) => {
-        const fullDraftCategoryId = draftSubItem.categoryId.startsWith(currentDraftIdPrefix) 
-                                      ? draftSubItem.categoryId 
-                                      : `${currentDraftIdPrefix}${draftSubItem.categoryId}`;
+        const fullTargetCategoryIdForMatching = `${draftContentIdPrefix}${draftSubItem.categoryId}`;
         
-        if (allMenuItems.some(menuItem => menuItem.id === draftSubItem.id && menuItem.category === fullDraftCategoryId)) {
+        if (allMenuItems.some(menuItem => 
+            menuItem.id === draftSubItem.id &&
+            menuItem.category === fullTargetCategoryIdForMatching 
+        )) {
           acc[draftSubItem.id] = true; 
           itemsActuallySelectedCount++;
         } else {
-          console.warn(`Item ID ${draftSubItem.id} (Category: ${fullDraftCategoryId}) from draft not found or mismatched with current items.`);
+          console.warn(`Item ID ${draftSubItem.id} (Category for matching: ${fullTargetCategoryIdForMatching}) from draft not found or mismatched. Current allMenuItems categories: ${allMenuItems.map(mi=>mi.category).join(', ')}`);
         }
         return acc;
       }, {} as Record<string, boolean>);
@@ -349,12 +370,16 @@ export default function MenuItemsPage() {
     }
     
     const tagParts = draftToRestore.primaryTag.split('-');
-    const draftCategorySlug = tagParts.length > 2 ? tagParts.slice(1, -1).join('-') : (tagParts.length > 1 ? tagParts[1] : 'general');
+    let draftCategorySlug = 'general';
+    if (tagParts.length > 1 && tagParts[0].toLowerCase() === draftMenuTypeFromFile) {
+        draftCategorySlug = tagParts[1];
+    }
+    
     let categorySetByDraft = false;
-
     if (draftCategorySlug && draftCategorySlug !== 'general' && apiCategories.length > 0) {
         const targetCategory = apiCategories.find(
-            cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug && cat.id.startsWith(currentDraftIdPrefix)
+            cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug && 
+                   cat.id.startsWith(draftContentIdPrefix)
         );
         if (targetCategory) {
             setSelectedCategory(targetCategory);
@@ -364,35 +389,44 @@ export default function MenuItemsPage() {
         }
     }
     
-    if (!categorySetByDraft && apiCategories.length > 0 && !selectedCategory) { 
-        setSelectedCategory(apiCategories[0]);
-    } else if (apiCategories.length === 0) {
+    if (!categorySetByDraft) {
+      if (apiCategories.length > 0) {
+        // Only set to default if no category is selected OR if the current one is for the wrong menu type
+        if (!selectedCategory || !selectedCategory.id.startsWith(draftContentIdPrefix)) {
+          setSelectedCategory(apiCategories.find(cat => cat.id.startsWith(draftContentIdPrefix)) || apiCategories[0]);
+        }
+      } else {
         setSelectedCategory(null);
+      }
     }
 
-    localStorage.removeItem('draftToRestoreId');
+    if (typeof window !== 'undefined') localStorage.removeItem('draftToRestoreId');
   }, [
     selectedMenuType, 
     loadingCategories, 
     loadingMenuItems, 
     apiCategories, 
     allMenuItems, 
-    setSelectedMenuType, 
-    setSelectedCategory, 
-    setSelectedItems, 
     toast,
-    selectedCategory 
+    selectedCategory // Effect should re-run if selectedCategory changes
+    // Removed state setters from dependencies as they cause loops or unnecessary runs
   ]);
 
 
   const currentMenuItems = useMemo(() => {
     const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    // Ensure allMenuItems are filtered by the currentExpectedPrefix first
     const itemsOfCurrentType = allMenuItems.filter(item => item.category.startsWith(currentExpectedPrefix));
 
     let itemsToFilter = itemsOfCurrentType;
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory.id.startsWith(currentExpectedPrefix)) { // Ensure selectedCategory is also for the current type
       itemsToFilter = itemsOfCurrentType.filter(item => item.category === selectedCategory.id);
+    } else if (selectedCategory && !selectedCategory.id.startsWith(currentExpectedPrefix)) {
+      // If selectedCategory is from a different menu type, effectively show no items for it
+      // This case should ideally be handled by resetting selectedCategory when menuType changes
+      return []; 
     }
+    // If no category is selected (or selectedCategory is from wrong type), show all items of current type
     
     return itemsToFilter
       .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -432,7 +466,7 @@ export default function MenuItemsPage() {
       id: item.id, 
       name: item.name,
       price: item.price,
-      categoryId: item.category.replace(currentIdPrefix, ''), 
+      categoryId: item.category.replace(currentIdPrefix, ''), // Store original, non-prefixed category ID
     }));
 
     const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
@@ -442,18 +476,19 @@ export default function MenuItemsPage() {
       .map(item => item.name.substring(0, 2).toUpperCase());
     
     let draftNameCategoryPart = 'general';
-    
-    if (selectedCategory) { 
+    // Determine category part from selectedCategory if available and matches current menu type
+    if (selectedCategory && selectedCategory.id.startsWith(currentIdPrefix)) { 
         draftNameCategoryPart = selectedCategory.name.toLowerCase().replace(/\s+/g, '-');
-    } else {
-        const firstSelectedItemWithCategory = actualSelectedMenuItems.find(item => item.category);
-        if (firstSelectedItemWithCategory) {
-            const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItemWithCategory.category); 
+    } else if (actualSelectedMenuItems.length > 0) { // Fallback to first selected item's category
+        const firstSelectedItem = actualSelectedMenuItems[0];
+        if (firstSelectedItem.category.startsWith(currentIdPrefix)) {
+            const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItem.category); 
             if (categoryOfFirstItem) {
                 draftNameCategoryPart = categoryOfFirstItem.name.toLowerCase().replace(/\s+/g, '-');
             }
         }
     }
+
 
     const newDraft: DraftItem = {
       id: `draft_${Date.now()}`,
@@ -489,8 +524,10 @@ export default function MenuItemsPage() {
   }
 
   const preparedSelectedItemsForPreview = useMemo(() => {
-    return allMenuItems.filter(item => selectedItems[item.id]); 
-  }, [allMenuItems, selectedItems]);
+    // Ensure items are from the correct menu type if `allMenuItems` could contain mixed types
+    const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    return allMenuItems.filter(item => selectedItems[item.id] && item.category.startsWith(currentExpectedPrefix)); 
+  }, [allMenuItems, selectedItems, selectedMenuType]);
 
   const handleRemoveItemFromPreview = (itemIdToRemove: string) => { 
     setSelectedItems(prev => {
@@ -544,7 +581,13 @@ export default function MenuItemsPage() {
           <div className="py-4 px-6 border-b border-border bg-card space-y-3 md:space-y-0">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
-              <Select value={selectedMenuType} onValueChange={setSelectedMenuType}>
+              <Select value={selectedMenuType} onValueChange={
+                (newType) => {
+                  // When menu type changes, reset selectedCategory to allow fetchData to pick a default for the new type
+                  setSelectedCategory(null); 
+                  setSelectedMenuType(newType);
+                }
+              }>
                 <SelectTrigger className="w-full md:w-[200px] text-sm">
                   <SelectValue placeholder="Select menu type" />
                 </SelectTrigger>
@@ -622,7 +665,7 @@ export default function MenuItemsPage() {
 
               {!loadingMenuItems && !errorMenuItems && (
                 <>
-                  {selectedCategory && (
+                  {selectedCategory && selectedCategory.id.startsWith(idPrefix) && (
                     <div className="flex items-center gap-2 mb-4">
                       {selectedCategory.icon ? <span className="text-xl">{selectedCategory.icon}</span> : <DefaultCategoryIcon className="h-5 w-5 text-primary" />}
                       <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
@@ -631,8 +674,8 @@ export default function MenuItemsPage() {
                       </Badge>
                     </div>
                   )}
-                  {!selectedCategory && !loadingCategories && (
-                     <h2 className="text-xl font-semibold text-foreground mb-4">All Items</h2>
+                  {(!selectedCategory || !selectedCategory.id.startsWith(idPrefix)) && !loadingCategories && (
+                     <h2 className="text-xl font-semibold text-foreground mb-4">All Items ({currentMenuItems.length})</h2>
                   )}
 
                   <div className={cn("grid gap-4", itemsGridClass)}>
@@ -712,7 +755,7 @@ export default function MenuItemsPage() {
                     ) : (
                       <div className="text-center py-10 col-span-full">
                         <p className="text-muted-foreground text-sm">
-                          {searchTerm ? "No items match your search." : (!selectedCategory && apiCategories.length > 0 ? "Select a category or search to view items." : "No items in this category.")}
+                          {searchTerm ? "No items match your search." : ((!selectedCategory || !selectedCategory.id.startsWith(idPrefix)) && apiCategories.length > 0 ? "Select a category or search to view items." : "No items in this category.")}
                         </p>
                       </div>
                     )}
