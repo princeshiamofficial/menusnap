@@ -191,32 +191,26 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
                 <CardHeader><CardTitle>Order Items</CardTitle></CardHeader>
                 <CardContent>
                   {order.items && order.items.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Item Name</TableHead>
-                          <TableHead className="text-center">Quantity</TableHead>
-                          <TableHead className="text-right">Price</TableHead>
-                          <TableHead className="text-right">Total</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {order.items.map((item, index) => (
-                          <TableRow key={`${item.id}-${index}`}>
-                            <TableCell>{item.name}</TableCell>
-                            <TableCell className="text-center">{item.quantity}</TableCell>
-                            <TableCell className="text-right">৳{item.price.toLocaleString()}</TableCell>
-                            <TableCell className="text-right">৳{(item.quantity * item.price).toLocaleString()}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <div className="space-y-3">
+                      {order.items.map((item, index) => (
+                        <div key={`${item.id}-${index}`} className="flex justify-between items-start py-3 border-b last:border-b-0">
+                          <div>
+                            <p className="font-medium text-foreground">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">Quantity: {item.quantity}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-foreground">৳{(item.quantity * item.price).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">@ ৳{item.price.toLocaleString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <p className="text-muted-foreground">No items in this order.</p>
+                    <p className="text-muted-foreground text-center py-4">No items in this order.</p>
                   )}
                   {order.totalAmount !== undefined && (
-                     <div className="mt-4 pt-4 border-t text-right">
-                        <p className="text-lg font-semibold">Total Amount: ৳{order.totalAmount.toLocaleString()}</p>
+                     <div className="mt-6 pt-4 border-t text-right">
+                        <p className="text-lg font-bold text-foreground">Total Amount: ৳{order.totalAmount.toLocaleString()}</p>
                      </div>
                   )}
                 </CardContent>
