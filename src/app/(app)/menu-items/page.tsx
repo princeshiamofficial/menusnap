@@ -112,272 +112,289 @@ export default function MenuItemsPage() {
 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoadingCategories(true);
-      setErrorCategories(null);
-      setLoadingMenuItems(true);
-      setErrorMenuItems(null);
+  const fetchData = useCallback(async () => {
+    setLoadingCategories(true);
+    setErrorCategories(null);
+    setLoadingMenuItems(true);
+    setErrorMenuItems(null);
 
-      let categoriesResponse: Response | undefined;
-      let menuItemsResponse: Response | undefined;
+    let categoriesResponse: Response | undefined;
+    let menuItemsResponse: Response | undefined;
 
-      const categoriesApiUrl = selectedMenuType === 'parlour'
-        ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
-        : 'https://colorhutbd.xyz/vm/api/categories.php';
+    const categoriesApiUrl = selectedMenuType === 'parlour'
+      ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
+      : 'https://colorhutbd.xyz/vm/api/categories.php';
 
-      let menuItemsApiUrl = selectedMenuType === 'parlour'
-        ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
-        : 'https://colorhutbd.xyz/vm/api/menu-items.php';
+    let menuItemsApiUrl = selectedMenuType === 'parlour'
+      ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
+      : 'https://colorhutbd.xyz/vm/api/menu-items.php';
 
-      menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
+    menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
 
+    const prevSelectedCategoryId = selectedCategory?.id;
 
-      try {
-        const fetchPromises: [Promise<Response>, Promise<Response>] = [
-          fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } }),
-          fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
-        ];
+    try {
+      const fetchPromises: [Promise<Response>, Promise<Response>] = [
+        fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } }),
+        fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
+      ];
 
-        const responses = await Promise.all(fetchPromises);
-        categoriesResponse = responses[0];
-        menuItemsResponse = responses[1];
+      const responses = await Promise.all(fetchPromises);
+      categoriesResponse = responses[0];
+      menuItemsResponse = responses[1];
 
-      } catch (networkError: any) {
-        console.error("Network error during initial data fetch:", networkError);
-        setErrorCategories("Network error fetching categories.");
-        setErrorMenuItems("Network error fetching menu items.");
-        setApiCategories([]);
-        setOrderedCategories([]);
-        setSelectedCategory(null);
-        setAllMenuItems([]);
-        setLoadingCategories(false);
-        setLoadingMenuItems(false);
-        return;
-      }
-
-      const prevSelectedCategoryId = selectedCategory?.id;
-      try {
-        if (!categoriesResponse || !categoriesResponse.ok) {
-          throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
-        }
-        const categoriesApiResponse = await categoriesResponse.json();
-        if (!categoriesApiResponse.success || !categoriesApiResponse.data || !Array.isArray(categoriesApiResponse.data.categories)) {
-          console.error("Invalid API response structure for categories:", categoriesApiResponse);
-          throw new Error("Invalid data format for categories from API");
-        }
-
-        const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories
-          .filter((cat: any) => cat.id !== null && cat.id !== undefined)
-          .map((cat: any) => ({
-            id: String(cat.id),
-            name: String(cat.name || 'Unnamed Category'),
-            icon: String(cat.icon || '📁'),
-            itemCount: Number(cat.itemCount || 0),
-            status: String(cat.status || 'active'),
-            createdAt: String(cat.createdAt || new Date().toISOString()),
-            description: String(cat.description || ''),
-            visibleToUsers: cat.visibleToUsers !== undefined ? Boolean(cat.visibleToUsers) : true,
-          }));
-
-        const visibleCategories = fetchedApiCategories.filter(cat => cat.visibleToUsers);
-
-        setApiCategories(visibleCategories);
-        setOrderedCategories(visibleCategories);
-
-        if (visibleCategories.length > 0) {
-            let categoryToSelect: Category | null = null;
-            if (prevSelectedCategoryId) {
-                categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
-            }
-            if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) {
-                 categoryToSelect = visibleCategories[0];
-            }
-            setSelectedCategory(categoryToSelect);
-        } else {
-            setSelectedCategory(null);
-        }
-        setErrorCategories(null);
-      } catch (e: any) {
-        console.error("Failed to fetch/process categories:", e);
-        setErrorCategories(e.message || "Error processing categories data.");
-        setApiCategories([]);
-        setOrderedCategories([]);
-        setSelectedCategory(null);
-      } finally {
-        setLoadingCategories(false);
-      }
-
-      if (menuItemsResponse) {
-        try {
-          if (!menuItemsResponse.ok) {
-            throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
-          }
-          const menuItemsApiResponse = await menuItemsResponse.json();
-          let rawItemsArray: any[] = [];
-
-          if (Array.isArray(menuItemsApiResponse)) {
-              rawItemsArray = menuItemsApiResponse;
-          } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) {
-              rawItemsArray = menuItemsApiResponse.data;
-          } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) {
-              rawItemsArray = menuItemsApiResponse.data.items;
-          }
-          else {
-              console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
-              throw new Error("Invalid data format for menu items from API");
-          }
-
-
-          const fetchedMenuItems: MenuItem[] = rawItemsArray
-            .filter((item: any) => item.id !== null && item.id !== undefined)
-            .map((item: any) => ({
-              id: String(item.id),
-              name: String(item.name || 'Unnamed Item'),
-              price: parseFloat(item.price) || 0,
-              category: String(item.category || 'uncategorized'),
-              description: String(item.description || ''),
-              image: item.image,
-              status: String(item.status || 'active'),
-              featured: Boolean(item.featured || false),
-              visibleToUsers: item.visibleToUsers !== undefined ? Boolean(item.visibleToUsers) : true,
-              createdAt: String(item.createdAt || new Date().toISOString()),
-              updatedAt: String(item.updatedAt || new Date().toISOString()),
-              iconPlaceholder: !item.image,
-              subItems: Array.isArray(item.subItems)
-                ? item.subItems
-                    .filter((sub: any) => sub.id !== null && sub.id !== undefined)
-                    .map((sub: any) => ({
-                      id: String(sub.id),
-                      name: String(sub.name || 'Unnamed Sub-item'),
-                      price: parseFloat(sub.price) || 0,
-                    }))
-                : [],
-            }));
-          setAllMenuItems(fetchedMenuItems);
-          setErrorMenuItems(null);
-        } catch (e: any) {
-          console.error("Failed to fetch/process menu items:", e);
-          setErrorMenuItems(e.message || "Error processing menu items data.");
-          setAllMenuItems([]);
-        } finally {
-          setLoadingMenuItems(false);
-        }
-      } else {
-         setLoadingMenuItems(false);
-         setErrorMenuItems("Menu items response was unexpectedly undefined.");
-         setAllMenuItems([]);
-      }
-    };
-    fetchData();
-
-    if (selectedMenuType === 'parlour') {
-      setTheme('parlour');
-    } else {
-      setTheme('default');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMenuType, setTheme]);
-
-
-  useEffect(() => {
-    const draftIdToRestore = localStorage.getItem('draftToRestoreId');
-
-    if (!draftIdToRestore || (!allMenuItems.length && !loadingMenuItems) || (!apiCategories.length && !loadingCategories) ) {
-      if (draftIdToRestore && (!loadingMenuItems || !loadingCategories)) {
-          localStorage.removeItem('draftToRestoreId');
-      }
-      return;
-    }
-
-
-    const allDraftsString = localStorage.getItem(DRAFTS_STORAGE_KEY);
-    if (!allDraftsString) {
-      localStorage.removeItem('draftToRestoreId');
-      toast({ title: "Error", description: "Could not find drafts to restore.", variant: "destructive" });
+    } catch (networkError: any) {
+      console.error("Network error during initial data fetch:", networkError);
+      setErrorCategories("Network error fetching categories.");
+      setErrorMenuItems("Network error fetching menu items.");
+      setApiCategories([]);
+      setOrderedCategories([]);
+      setSelectedCategory(null);
+      setAllMenuItems([]);
+      setLoadingCategories(false);
+      setLoadingMenuItems(false);
       return;
     }
 
     try {
-      const allDrafts: DraftItem[] = JSON.parse(allDraftsString);
-      const draftToRestore = allDrafts.find(d => d.id === draftIdToRestore);
-
-      if (!draftToRestore) {
-        localStorage.removeItem('draftToRestoreId');
-        toast({ title: "Error", description: `Draft with ID ${draftIdToRestore} not found.`, variant: "destructive" });
-        return;
+      if (!categoriesResponse || !categoriesResponse.ok) {
+        throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
+      }
+      const categoriesApiResponse = await categoriesResponse.json();
+      if (!categoriesApiResponse.success || !categoriesApiResponse.data || !Array.isArray(categoriesApiResponse.data.categories)) {
+        console.error("Invalid API response structure for categories:", categoriesApiResponse);
+        throw new Error("Invalid data format for categories from API");
       }
 
-      const draftMenuType = draftToRestore.primaryTag.split('-')[0].toLowerCase();
-      if (draftMenuType !== selectedMenuType) {
-        setSelectedMenuType(draftMenuType);
-        return;
-      }
+      const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories
+        .filter((cat: any) => cat.id !== null && cat.id !== undefined)
+        .map((cat: any) => ({
+          id: String(cat.id),
+          name: String(cat.name || 'Unnamed Category'),
+          icon: String(cat.icon || '📁'),
+          itemCount: Number(cat.itemCount || 0),
+          status: String(cat.status || 'active'),
+          createdAt: String(cat.createdAt || new Date().toISOString()),
+          description: String(cat.description || ''),
+          visibleToUsers: cat.visibleToUsers !== undefined ? Boolean(cat.visibleToUsers) : true,
+        }));
 
-      const tagParts = draftToRestore.primaryTag.split('-');
-      const draftCategorySlug = tagParts.length > 2 ? tagParts.slice(1, -1).join('-') : 'general';
-
-
-      if (draftCategorySlug && draftCategorySlug !== 'general') {
-        const targetCategory = apiCategories.find(
-          cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug
-        );
-        if (targetCategory) {
-          setSelectedCategory(targetCategory);
-        } else {
-          toast({ title: "Warning", description: `Category for "${draftCategorySlug}" not found or not visible. Selecting first available.`, variant: "default" });
-          setSelectedCategory(apiCategories[0] || null);
-        }
-      } else {
-         setSelectedCategory(apiCategories[0] || null);
-      }
-
-
-      if (draftToRestore.items && draftToRestore.items.length > 0) {
-        const itemIdsToSelect = draftToRestore.items.map(subItem => subItem.id);
-        const newSelectedItemsState = itemIdsToSelect.reduce((acc, itemId) => {
-          if (allMenuItems.some(menuItem => menuItem.id === itemId)) {
-            acc[itemId] = true;
-          } else {
-            console.warn(`Item ID ${itemId} from draft not found in current menu items for type ${selectedMenuType}.`);
+      const visibleCategories = fetchedApiCategories.filter(cat => cat.visibleToUsers);
+      setApiCategories(visibleCategories);
+      setOrderedCategories(visibleCategories);
+      
+      // Category selection logic
+      if (visibleCategories.length > 0) {
+          let categoryToSelect: Category | null = null;
+          // Try to retain previous selection if it's still valid for the new menu type
+          if (prevSelectedCategoryId) {
+              categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
           }
-          return acc;
-        }, {} as Record<string, boolean>);
-        setSelectedItems(newSelectedItemsState);
-        const actualSelectedCount = Object.keys(newSelectedItemsState).length;
-
-        if (actualSelectedCount > 0) {
-          toast({ title: "Draft Restored", description: `${actualSelectedCount} items have been selected.` });
-        } else if (itemIdsToSelect.length > 0) {
-            toast({ title: "Draft Partially Restored", description: "Some items from the draft were not found in the current menu and could not be selected.", variant: "default" });
-        } else {
-            toast({ title: "Draft Restored", description: "No items were in the selected draft to restore." });
-        }
+          // If not restoring a draft and no valid previous selection, default to first category
+          if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) {
+               categoryToSelect = visibleCategories[0];
+          }
+          setSelectedCategory(categoryToSelect);
       } else {
-        setSelectedItems({});
-        toast({ title: "Draft Restored", description: "No items were in the selected draft to restore." });
+          setSelectedCategory(null);
       }
+      setErrorCategories(null);
+    } catch (e: any) {
+      console.error("Failed to fetch/process categories:", e);
+      setErrorCategories(e.message || "Error processing categories data.");
+      setApiCategories([]);
+      setOrderedCategories([]);
+      setSelectedCategory(null);
+    } finally {
+      setLoadingCategories(false);
+    }
 
-      localStorage.removeItem('draftToRestoreId');
+    if (menuItemsResponse) {
+      try {
+        if (!menuItemsResponse.ok) {
+          throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
+        }
+        const menuItemsApiResponse = await menuItemsResponse.json();
+        let rawItemsArray: any[] = [];
 
-    } catch (error) {
-      console.error("Error restoring draft:", error);
-      localStorage.removeItem('draftToRestoreId');
-      toast({ title: "Error", description: "Failed to parse or restore draft data.", variant: "destructive" });
+        if (Array.isArray(menuItemsApiResponse)) {
+            rawItemsArray = menuItemsApiResponse;
+        } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) {
+            rawItemsArray = menuItemsApiResponse.data;
+        } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) {
+            rawItemsArray = menuItemsApiResponse.data.items;
+        }
+        else {
+            console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
+            throw new Error("Invalid data format for menu items from API");
+        }
+
+        const fetchedMenuItems: MenuItem[] = rawItemsArray
+          .filter((item: any) => item.id !== null && item.id !== undefined)
+          .map((item: any) => ({
+            id: String(item.id),
+            name: String(item.name || 'Unnamed Item'),
+            price: parseFloat(item.price) || 0,
+            category: String(item.category || 'uncategorized'),
+            description: String(item.description || ''),
+            image: item.image,
+            status: String(item.status || 'active'),
+            featured: Boolean(item.featured || false),
+            visibleToUsers: item.visibleToUsers !== undefined ? Boolean(item.visibleToUsers) : true,
+            createdAt: String(item.createdAt || new Date().toISOString()),
+            updatedAt: String(item.updatedAt || new Date().toISOString()),
+            iconPlaceholder: !item.image,
+            subItems: Array.isArray(item.subItems)
+              ? item.subItems
+                  .filter((sub: any) => sub.id !== null && sub.id !== undefined)
+                  .map((sub: any) => ({
+                    id: String(sub.id),
+                    name: String(sub.name || 'Unnamed Sub-item'),
+                    price: parseFloat(sub.price) || 0,
+                  }))
+              : [],
+          }));
+        setAllMenuItems(fetchedMenuItems);
+        setErrorMenuItems(null);
+      } catch (e: any) {
+        console.error("Failed to fetch/process menu items:", e);
+        setErrorMenuItems(e.message || "Error processing menu items data.");
+        setAllMenuItems([]);
+      } finally {
+        setLoadingMenuItems(false);
+      }
+    } else {
+       setLoadingMenuItems(false);
+       setErrorMenuItems("Menu items response was unexpectedly undefined.");
+       setAllMenuItems([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allMenuItems, apiCategories, selectedMenuType, loadingMenuItems, loadingCategories]);
+  }, [selectedMenuType, setTheme]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+
+  useEffect(() => {
+    const draftIdToRestore = localStorage.getItem('draftToRestoreId');
+    if (!draftIdToRestore) {
+      return; // No draft to restore
+    }
+
+    // If categories or menu items for the *current* selectedMenuType are still loading, wait.
+    // This ensures we operate on the correct dataset if a menu type switch is in progress.
+    if (loadingCategories || loadingMenuItems) {
+      return;
+    }
+
+    // At this point, loading is false. Data for the current selectedMenuType is available (or confirmed empty).
+    const allDraftsString = localStorage.getItem(DRAFTS_STORAGE_KEY);
+    if (!allDraftsString) {
+      localStorage.removeItem('draftToRestoreId'); // Drafts store missing, can't restore.
+      toast({ title: "Error", description: "Could not find your saved drafts.", variant: "destructive" });
+      return;
+    }
+
+    let allDrafts: DraftItem[];
+    try {
+      allDrafts = JSON.parse(allDraftsString);
+    } catch (e) {
+      console.error("Error parsing drafts from localStorage:", e);
+      localStorage.removeItem('draftToRestoreId'); // Corrupted drafts store.
+      toast({ title: "Error", description: "Saved draft data appears to be corrupted.", variant: "destructive" });
+      return;
+    }
+
+    const draftToRestore = allDrafts.find(d => d.id === draftIdToRestore);
+    if (!draftToRestore) {
+      localStorage.removeItem('draftToRestoreId'); // Specific draft not found.
+      toast({ title: "Error", description: `The selected draft (ID: ${draftIdToRestore}) was not found.`, variant: "destructive" });
+      return;
+    }
+
+    const draftMenuType = draftToRestore.primaryTag.split('-')[0].toLowerCase();
+    if (draftMenuType !== selectedMenuType) {
+      // Menu type from draft doesn't match current. Switch menu type and let this effect re-run.
+      // Do NOT remove draftIdToRestoreId yet.
+      setSelectedMenuType(draftMenuType);
+      return; // Exit to allow re-fetch for the correct menu type
+    }
+
+    // If we reach here, menu types match, and data for this menu type has been loaded.
+
+    // Select category based on draft
+    const tagParts = draftToRestore.primaryTag.split('-');
+    const draftCategorySlug = tagParts.length > 2 ? tagParts.slice(1, -1).join('-') : 'general';
+    let categorySetByDraft = false;
+
+    if (draftCategorySlug && draftCategorySlug !== 'general' && apiCategories.length > 0) {
+      const targetCategory = apiCategories.find(
+        cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug
+      );
+      if (targetCategory) {
+        setSelectedCategory(targetCategory);
+        categorySetByDraft = true;
+      } else {
+        toast({ title: "Info", description: `Category "${draftCategorySlug}" from draft not found. Defaulting selection.`, variant: "default" });
+      }
+    }
+    
+    if (!categorySetByDraft && apiCategories.length > 0) {
+        // If category wasn't specifically set by slug, or if it was general, or if target not found,
+        // set to the first available category for the current menu type.
+        setSelectedCategory(apiCategories[0]);
+    } else if (apiCategories.length === 0) {
+        setSelectedCategory(null); // No categories available for this menu type
+    }
+
+
+    // Select items based on draft
+    let itemsActuallySelectedCount = 0;
+    if (draftToRestore.items && draftToRestore.items.length > 0) {
+      const newSelectedItemsState = draftToRestore.items.reduce((acc, subItem) => {
+        if (allMenuItems.some(menuItem => menuItem.id === subItem.id && menuItem.category === subItem.categoryId)) {
+          acc[subItem.id] = true;
+          itemsActuallySelectedCount++;
+        } else {
+          console.warn(`Item ID ${subItem.id} (Category: ${subItem.categoryId}) from draft not found or mismatched in current menu items for type ${selectedMenuType}.`);
+        }
+        return acc;
+      }, {} as Record<string, boolean>);
+      setSelectedItems(newSelectedItemsState);
+
+      if (itemsActuallySelectedCount > 0) {
+        toast({ title: "Draft Restored", description: `${itemsActuallySelectedCount} items have been selected from your draft.` });
+      } else if (draftToRestore.items.length > 0) {
+        toast({ title: "Draft Partially Restored", description: "Some items from the draft were not found in the current menu.", variant: "default" });
+      } else {
+        toast({ title: "Draft Restored", description: "No items were in the selected draft to restore." });
+      }
+    } else {
+      setSelectedItems({}); // Clear selection if draft has no items
+      toast({ title: "Draft Restored", description: "The selected draft had no items." });
+    }
+
+    localStorage.removeItem('draftToRestoreId'); // Successfully processed or decided nothing to restore for this draft.
+  }, [
+    selectedMenuType, 
+    loadingCategories, 
+    loadingMenuItems, 
+    apiCategories, 
+    allMenuItems, 
+    setSelectedMenuType, 
+    setSelectedCategory, 
+    setSelectedItems, 
+    toast
+  ]);
 
 
   const currentMenuItems = useMemo(() => {
     let itemsToFilter = allMenuItems;
-    // If a specific category is selected (desktop or mobile via dropdown), filter by it.
-    // If selectedCategory is null (e.g. "All Categories" on mobile), use all items.
     if (selectedCategory) {
       itemsToFilter = allMenuItems.filter(item => item.category === selectedCategory.id);
     }
     
-    // Apply search term regardless of category selection
     return itemsToFilter
       .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
       .map(item => ({ ...item, iconPlaceholder: !item.image }));
@@ -414,7 +431,7 @@ export default function MenuItemsPage() {
       id: item.id,
       name: item.name,
       price: item.price,
-      categoryId: item.category,
+      categoryId: item.category, 
     }));
 
     const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
@@ -424,16 +441,14 @@ export default function MenuItemsPage() {
       .map(item => item.name.substring(0, 2).toUpperCase());
     
     let draftNameCategoryPart = 'general';
-    if (selectedCategory) {
+    const firstSelectedItemWithCategory = actualSelectedMenuItems.find(item => item.category);
+    
+    if (selectedCategory) { // Prefer explicitly selected category
         draftNameCategoryPart = selectedCategory.name.toLowerCase().replace(/\s+/g, '-');
-    } else if (apiCategories.length > 0 && !selectedCategory && currentMenuItems.length > 0) {
-        // If "All Categories" is selected, try to infer a sensible category part from the first selected item
-        const firstSelectedCategoryId = currentMenuItems.find(item => selectedItems[item.id])?.category;
-        if (firstSelectedCategoryId) {
-            const firstSelectedCatObj = apiCategories.find(cat => cat.id === firstSelectedCategoryId);
-            if (firstSelectedCatObj) {
-                draftNameCategoryPart = firstSelectedCatObj.name.toLowerCase().replace(/\s+/g, '-');
-            }
+    } else if (firstSelectedItemWithCategory) { // Infer from first selected item if no overall category selected
+        const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItemWithCategory.category);
+        if (categoryOfFirstItem) {
+            draftNameCategoryPart = categoryOfFirstItem.name.toLowerCase().replace(/\s+/g, '-');
         }
     }
 
@@ -461,7 +476,7 @@ export default function MenuItemsPage() {
       console.error("Error saving draft to localStorage:", error);
       toast({ title: "Error", description: "Could not save draft. LocalStorage might be full or disabled.", variant: "destructive" });
     }
-  }, [selectedCount, allMenuItems, selectedItems, selectedMenuType, selectedCategory, apiCategories, currentMenuItems, toast]);
+  }, [selectedCount, allMenuItems, selectedItems, selectedMenuType, selectedCategory, apiCategories, toast]);
 
 
   let itemsGridClass = 'grid-cols-1';
@@ -674,14 +689,14 @@ export default function MenuItemsPage() {
                               {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
                                 <div
                                   id={`subitems-${item.id}`}
-                                  className="mt-3 pl-6 space-y-2 border-l-2 border-primary/20 ml-2 pt-2 pb-1"
+                                  className="mt-3 pl-6 space-y-2 border-l-2 border-primary/20 ml-2 pt-2 pb-1 bg-muted/30 rounded-r-md"
                                 >
                                   <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
                                   <div className="space-y-1.5">
                                     {item.subItems.map(subItem => (
                                       <div
                                         key={subItem.id}
-                                        className="flex justify-between items-center text-xs p-1.5 rounded-md bg-muted/50"
+                                        className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
                                         <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
