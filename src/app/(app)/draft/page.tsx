@@ -107,30 +107,39 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
   const menuTypeDisplay = extractMenuTypeFromTag(draft.primaryTag);
   const MenuTypeIcon = menuTypeDisplay === 'Parlour' ? Sparkles : Utensils;
 
+  const idPrefixForDraft = useMemo(() => {
+    const type = draft.primaryTag.split('-')[0].toLowerCase();
+    return (type === "restaurant" || type === "parlour") ? type : "unknown";
+  }, [draft.primaryTag]);
+
   const itemsByCategoryId = useMemo(() => {
-    if (!draft.items) return {};
+    if (!draft.items || idPrefixForDraft === "unknown") return {};
     return draft.items.reduce((acc, item) => {
-      const catId = item.categoryId; 
-      if (!acc[catId]) acc[catId] = [];
-      acc[catId].push(item);
+      const prefixedCatId = `${idPrefixForDraft}-${item.categoryId}`;
+      if (!acc[prefixedCatId]) acc[prefixedCatId] = [];
+      acc[prefixedCatId].push(item);
       return acc;
     }, {} as Record<string, DraftSubItem[]>);
-  }, [draft.items]);
+  }, [draft.items, idPrefixForDraft]);
 
   const categoriesInDraftOrder = useMemo(() => {
-    if (!draft.items || !masterCategoryList) return [];
+    if (!draft.items || !masterCategoryList || idPrefixForDraft === "unknown") return [];
+    
     const categoryIdsInDraft = new Set<string>();
-    const orderedCategoryIds: string[] = [];
+    const orderedPrefixedCategoryIds: string[] = [];
+
     draft.items.forEach(item => {
-        if(!categoryIdsInDraft.has(item.categoryId)){
-            categoryIdsInDraft.add(item.categoryId);
-            orderedCategoryIds.push(item.categoryId);
+        const prefixedCatId = `${idPrefixForDraft}-${item.categoryId}`;
+        if(!categoryIdsInDraft.has(prefixedCatId)){
+            categoryIdsInDraft.add(prefixedCatId);
+            orderedPrefixedCategoryIds.push(prefixedCatId);
         }
     });
-    return orderedCategoryIds
-        .map(id => masterCategoryList.find(cat => cat.id === id))
+
+    return orderedPrefixedCategoryIds
+        .map(prefixedId => masterCategoryList.find(cat => cat.id === prefixedId))
         .filter((cat): cat is Category => cat !== undefined);
-  }, [draft.items, masterCategoryList]);
+  }, [draft.items, masterCategoryList, idPrefixForDraft]);
 
 
   return (
@@ -220,6 +229,11 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
                 </div>
               );
             })}
+            {categoriesInDraftOrder.length === 0 && (
+                 <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
+                    Could not match items to any known categories for this draft type.
+                 </div>
+            )}
           </div>
         )}
          {isExpanded && (!draft.items || draft.items.length === 0) && (
@@ -349,7 +363,9 @@ export default function DraftPage(): ReactNode {
           ...draft,
           items: Array.isArray(draft.items) ? draft.items.map(subItem => ({
             ...subItem,
-            categoryId: subItem.categoryId || 'unknown' 
+            // Ensure categoryId is a string; if it's number-like, convert it.
+            // If it's truly missing or null, default to 'unknown' but log this.
+            categoryId: subItem.categoryId === null || subItem.categoryId === undefined ? 'unknown' : String(subItem.categoryId)
           })) : [],
           previewAvatars: Array.isArray(draft.previewAvatars) ? draft.previewAvatars : [],
         }));
