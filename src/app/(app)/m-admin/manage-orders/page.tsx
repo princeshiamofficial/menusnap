@@ -194,8 +194,8 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange }: { order: ApiOrder |
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {order.items.map(item => (
-                          <TableRow key={item.id}>
+                        {order.items.map((item, index) => (
+                          <TableRow key={`${item.id}-${index}`}>
                             <TableCell>{item.name}</TableCell>
                             <TableCell className="text-center">{item.quantity}</TableCell>
                             <TableCell className="text-right">৳{item.price.toLocaleString()}</TableCell>
@@ -783,3 +783,4 @@ export default function ManageOrdersPage(): ReactNode {
   );
 }
     
+
