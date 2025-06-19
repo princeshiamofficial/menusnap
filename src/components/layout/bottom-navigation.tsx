@@ -26,7 +26,7 @@ export function BottomNavigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center space-y-1 rounded-md p-2 text-xs font-medium transition-colors w-1/4 h-full",
+                "flex flex-col items-center justify-center rounded-md p-2 text-xs font-medium transition-colors w-1/4 h-full", // Removed space-y-1
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
@@ -43,4 +43,3 @@ export function BottomNavigation() {
     </nav>
   );
 }
-
