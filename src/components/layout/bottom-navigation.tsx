@@ -34,7 +34,7 @@ export function BottomNavigation() {
               )}
               aria-current={isActive ? "page" : undefined}
             >
-              <item.icon className={cn("h-5 w-5 mb-0.5", isActive ? "text-primary" : "")} />
+              <item.icon className={cn("h-5 w-5 mb-0.5 flex-shrink-0", isActive ? "text-primary" : "")} />
               <span className="truncate text-[10px] leading-tight sm:text-xs">{item.label}</span>
             </Link>
           );
@@ -43,3 +43,4 @@ export function BottomNavigation() {
     </nav>
   );
 }
+
