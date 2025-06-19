@@ -130,7 +130,7 @@ export default function MenuItemsPage() {
 
     menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
 
-    const prevSelectedCategoryId = selectedCategory?.id; // This would be a prefixed ID
+    const prevSelectedCategoryId = selectedCategory?.id; 
 
     let categoriesResponse: Response | undefined;
     let menuItemsResponse: Response | undefined;
@@ -156,7 +156,6 @@ export default function MenuItemsPage() {
       return;
     }
 
-    // Process Categories
     try {
       if (!categoriesResponse || !categoriesResponse.ok) {
         throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
@@ -170,7 +169,7 @@ export default function MenuItemsPage() {
       const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories
         .filter((cat: any) => cat.id !== null && cat.id !== undefined)
         .map((cat: any) => ({
-          id: `${currentIdPrefix}${String(cat.id)}`, // Prefix category ID
+          id: `${currentIdPrefix}${String(cat.id)}`, 
           name: String(cat.name || 'Unnamed Category'),
           icon: String(cat.icon || '📁'),
           itemCount: Number(cat.itemCount || 0),
@@ -189,7 +188,7 @@ export default function MenuItemsPage() {
           if (prevSelectedCategoryId && visibleCategories.some(c => c.id === prevSelectedCategoryId)) {
               categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
           }
-          if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) { // Only default to first if not restoring
+          if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) { 
                categoryToSelect = visibleCategories[0];
           }
           setSelectedCategory(categoryToSelect);
@@ -207,7 +206,6 @@ export default function MenuItemsPage() {
       setLoadingCategories(false);
     }
 
-    // Process Menu Items
     if (menuItemsResponse) {
       try {
         if (!menuItemsResponse.ok) {
@@ -216,43 +214,52 @@ export default function MenuItemsPage() {
         const menuItemsApiResponse = await menuItemsResponse.json();
         let rawItemsArray: any[] = [];
 
-        if (Array.isArray(menuItemsApiResponse)) { // Restaurant API
+        if (Array.isArray(menuItemsApiResponse)) { 
             rawItemsArray = menuItemsApiResponse;
-        } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { // Parlour API (data is array)
+        } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { 
             rawItemsArray = menuItemsApiResponse.data;
-        } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { // Parlour API (data.items is array)
+        } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { 
              rawItemsArray = menuItemsApiResponse.data.items;
         } else {
             console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
             throw new Error("Invalid data format for menu items from API");
         }
 
-        const fetchedMenuItems: MenuItem[] = rawItemsArray
-          .filter((item: any) => item.id !== null && item.id !== undefined)
-          .map((item: any) => ({
-            id: String(item.id), // Store ORIGINAL item ID
-            name: String(item.name || 'Unnamed Item'),
-            price: parseFloat(item.price) || 0,
-            category: `${currentIdPrefix}${String(item.category || 'uncategorized')}`, // Store PREFIXED category ID
-            description: String(item.description || ''),
-            image: item.image,
-            status: String(item.status || 'active'),
-            featured: Boolean(item.featured || false),
-            visibleToUsers: item.visibleToUsers !== undefined ? Boolean(item.visibleToUsers) : true,
-            createdAt: String(item.createdAt || new Date().toISOString()),
-            updatedAt: String(item.updatedAt || new Date().toISOString()),
-            iconPlaceholder: !item.image,
-            subItems: Array.isArray(item.subItems)
-              ? item.subItems
-                  .filter((sub: any) => sub.id !== null && sub.id !== undefined)
-                  .map((sub: any) => ({
-                    id: String(sub.id), // Store ORIGINAL sub-item ID
-                    name: String(sub.name || 'Unnamed Sub-item'),
-                    price: parseFloat(sub.price) || 0,
-                  }))
-              : [],
-          }));
-        setAllMenuItems(fetchedMenuItems);
+        const uniqueFetchedMenuItems: MenuItem[] = [];
+        const seenOriginalItemIds = new Set<string>();
+
+        rawItemsArray
+          .filter((item: any) => item.id !== null && item.id !== undefined) 
+          .forEach((item: any) => {
+            const originalItemId = String(item.id);
+            if (!seenOriginalItemIds.has(originalItemId)) {
+              uniqueFetchedMenuItems.push({
+                id: originalItemId, 
+                name: String(item.name || 'Unnamed Item'),
+                price: parseFloat(item.price) || 0,
+                category: `${currentIdPrefix}${String(item.category || 'uncategorized')}`, 
+                description: String(item.description || ''),
+                image: item.image,
+                status: String(item.status || 'active'),
+                featured: Boolean(item.featured || false),
+                visibleToUsers: item.visibleToUsers !== undefined ? Boolean(item.visibleToUsers) : true,
+                createdAt: String(item.createdAt || new Date().toISOString()),
+                updatedAt: String(item.updatedAt || new Date().toISOString()),
+                iconPlaceholder: !item.image,
+                subItems: Array.isArray(item.subItems)
+                  ? item.subItems
+                      .filter((sub: any) => sub.id !== null && sub.id !== undefined)
+                      .map((sub: any) => ({
+                        id: String(sub.id), 
+                        name: String(sub.name || 'Unnamed Sub-item'),
+                        price: parseFloat(sub.price) || 0,
+                      }))
+                  : [],
+              });
+              seenOriginalItemIds.add(originalItemId);
+            }
+          });
+        setAllMenuItems(uniqueFetchedMenuItems);
         setErrorMenuItems(null);
       } catch (e: any) {
         console.error("Failed to fetch/process menu items:", e);
@@ -266,8 +273,7 @@ export default function MenuItemsPage() {
        setErrorMenuItems("Menu items response was unexpectedly undefined.");
        setAllMenuItems([]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMenuType, setTheme]); // Removed selectedCategory from deps of fetchData
+  }, [selectedMenuType, setTheme, selectedCategory?.id]); 
 
   useEffect(() => {
     fetchData();
@@ -278,7 +284,6 @@ export default function MenuItemsPage() {
     const draftIdToRestore = localStorage.getItem('draftToRestoreId');
     if (!draftIdToRestore) return;
 
-    // Only proceed if data for the current menu type is loaded
     if (loadingCategories || loadingMenuItems) return;
 
     const allDraftsString = localStorage.getItem(DRAFTS_STORAGE_KEY);
@@ -309,12 +314,9 @@ export default function MenuItemsPage() {
 
     if (draftMenuTypeFromFile !== selectedMenuType) {
       setSelectedMenuType(draftMenuTypeFromFile);
-      // Data for the correct menu type will be fetched by the main fetchData effect.
-      // draftToRestoreId remains in localStorage for the next run.
       return;
     }
     
-    // At this point, selectedMenuType matches draftMenuType, and data should be loaded.
     const currentDraftIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
 
     let itemsActuallySelectedCount = 0;
@@ -324,10 +326,8 @@ export default function MenuItemsPage() {
                                       ? draftSubItem.categoryId 
                                       : `${currentDraftIdPrefix}${draftSubItem.categoryId}`;
         
-        // Match draftSubItem.id (original item ID) with menuItem.id (original item ID)
-        // and draftSubItem.categoryId (original category ID, now prefixed) with menuItem.category (prefixed category ID)
         if (allMenuItems.some(menuItem => menuItem.id === draftSubItem.id && menuItem.category === fullDraftCategoryId)) {
-          acc[draftSubItem.id] = true; // Store original item ID as key
+          acc[draftSubItem.id] = true; 
           itemsActuallySelectedCount++;
         } else {
           console.warn(`Item ID ${draftSubItem.id} (Category: ${fullDraftCategoryId}) from draft not found or mismatched with current items.`);
@@ -364,7 +364,7 @@ export default function MenuItemsPage() {
         }
     }
     
-    if (!categorySetByDraft && apiCategories.length > 0 && !selectedCategory) { // Only default if no category selected yet
+    if (!categorySetByDraft && apiCategories.length > 0 && !selectedCategory) { 
         setSelectedCategory(apiCategories[0]);
     } else if (apiCategories.length === 0) {
         setSelectedCategory(null);
@@ -381,23 +381,26 @@ export default function MenuItemsPage() {
     setSelectedCategory, 
     setSelectedItems, 
     toast,
-    selectedCategory // Added selectedCategory to re-evaluate if it changes
+    selectedCategory 
   ]);
 
 
   const currentMenuItems = useMemo(() => {
-    let itemsToFilter = allMenuItems;
+    const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    const itemsOfCurrentType = allMenuItems.filter(item => item.category.startsWith(currentExpectedPrefix));
+
+    let itemsToFilter = itemsOfCurrentType;
     if (selectedCategory) {
-      itemsToFilter = allMenuItems.filter(item => item.category === selectedCategory.id);
+      itemsToFilter = itemsOfCurrentType.filter(item => item.category === selectedCategory.id);
     }
     
     return itemsToFilter
       .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
       .map(item => ({ ...item, iconPlaceholder: !item.image }));
-  }, [selectedCategory, allMenuItems, searchTerm]);
+  }, [selectedCategory, allMenuItems, searchTerm, selectedMenuType]);
 
 
-  const handleSelectItem = (originalItemId: string) => { // Operates on original item ID
+  const handleSelectItem = (originalItemId: string) => { 
     setSelectedItems(prev => ({ ...prev, [originalItemId]: !prev[originalItemId] }));
   };
 
@@ -405,7 +408,7 @@ export default function MenuItemsPage() {
     return Object.values(selectedItems).filter(Boolean).length;
   }, [selectedItems]);
 
-  const toggleSubItems = (originalItemId: string) => { // Operates on original item ID
+  const toggleSubItems = (originalItemId: string) => { 
     setExpandedSubItems(prev => ({ ...prev, [originalItemId]: !prev[originalItemId] }));
   };
 
@@ -420,16 +423,16 @@ export default function MenuItemsPage() {
     }
 
     const actualSelectedMenuItems: MenuItem[] = allMenuItems.filter(
-      (item) => selectedItems[item.id] // selectedItems uses original item ID
+      (item) => selectedItems[item.id] 
     );
 
     const currentIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
 
     const draftSubItems: DraftSubItem[] = actualSelectedMenuItems.map(item => ({
-      id: item.id, // Store ORIGINAL item ID
+      id: item.id, 
       name: item.name,
       price: item.price,
-      categoryId: item.category.replace(currentIdPrefix, ''), // Store ORIGINAL category ID (remove prefix)
+      categoryId: item.category.replace(currentIdPrefix, ''), 
     }));
 
     const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
@@ -445,7 +448,7 @@ export default function MenuItemsPage() {
     } else {
         const firstSelectedItemWithCategory = actualSelectedMenuItems.find(item => item.category);
         if (firstSelectedItemWithCategory) {
-            const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItemWithCategory.category); // Match prefixed category ID
+            const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItemWithCategory.category); 
             if (categoryOfFirstItem) {
                 draftNameCategoryPart = categoryOfFirstItem.name.toLowerCase().replace(/\s+/g, '-');
             }
@@ -486,10 +489,10 @@ export default function MenuItemsPage() {
   }
 
   const preparedSelectedItemsForPreview = useMemo(() => {
-    return allMenuItems.filter(item => selectedItems[item.id]); // uses original item ID
+    return allMenuItems.filter(item => selectedItems[item.id]); 
   }, [allMenuItems, selectedItems]);
 
-  const handleRemoveItemFromPreview = (itemIdToRemove: string) => { // receives original item ID
+  const handleRemoveItemFromPreview = (itemIdToRemove: string) => { 
     setSelectedItems(prev => {
       const updated = { ...prev };
       delete updated[itemIdToRemove];
@@ -692,7 +695,7 @@ export default function MenuItemsPage() {
                                   <div className="space-y-1.5">
                                     {item.subItems.map(subItem => (
                                       <div
-                                        key={`${uniqueRenderKey}-sub-${subItem.id}`} // Unique key for sub-item
+                                        key={`${uniqueRenderKey}-sub-${subItem.id}`} 
                                         className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
@@ -723,9 +726,9 @@ export default function MenuItemsPage() {
       <MenuPreviewDialog
         isOpen={isPreviewDialogOpen}
         onOpenChange={setIsPreviewDialogOpen}
-        selectedItems={preparedSelectedItemsForPreview} // Pass items with original IDs
-        allCategories={apiCategories} // Pass categories with prefixed IDs
-        onRemoveItem={handleRemoveItemFromPreview} // Operates on original item IDs
+        selectedItems={preparedSelectedItemsForPreview} 
+        allCategories={apiCategories} 
+        onRemoveItem={handleRemoveItemFromPreview} 
       />
     </>
   );
