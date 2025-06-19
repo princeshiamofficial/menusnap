@@ -26,16 +26,22 @@ export function BottomNavigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center rounded-md p-2 text-xs font-medium transition-colors w-1/4 h-full", // Removed space-y-1
+                "flex flex-col items-center justify-center rounded-md p-2 text-xs font-medium transition-colors w-1/4 h-full",
                 isActive
-                  ? "text-primary"
+                  ? "text-primary" // Active color applied to Link, children can inherit or override
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
               )}
               aria-current={isActive ? "page" : undefined}
             >
-              <item.icon className={cn("h-5 w-5 mb-0.5 flex-shrink-0", isActive ? "text-primary" : "")} />
-              <span className="truncate text-[10px] leading-tight sm:text-xs">{item.label}</span>
+              <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive ? "text-primary" : "")} />
+              <span className={cn(
+                "block text-center truncate text-[10px] leading-tight sm:text-xs pt-0.5", // Added pt-0.5 for a bit of space if needed, removed mb-0.5 from icon
+                isActive ? "text-primary" : "" // Ensure text also gets active color if not inherited
+               )}
+              >
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -43,3 +49,4 @@ export function BottomNavigation() {
     </nav>
   );
 }
+
