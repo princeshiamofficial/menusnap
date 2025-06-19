@@ -177,7 +177,7 @@ export function CustomerDetailsForm({
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isValid} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                {form.formState.isSubmitting ? "Submitting..." : "Submit Details"}
+                {form.formState.isSubmitting ? "Submitting..." : "Confirm Order"}
               </Button>
             </DialogFooter>
           </form>
@@ -186,3 +186,4 @@ export function CustomerDetailsForm({
     </Dialog>
   );
 }
+
