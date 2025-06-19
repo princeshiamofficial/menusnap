@@ -80,9 +80,9 @@ export function CustomerDetailsForm({
     }}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="text-xl">Customer Details</DialogTitle>
+          <DialogTitle className="text-xl">Your Details</DialogTitle>
           <DialogDescription>
-            Please provide customer information to share the menu selection.
+            Please provide your information to share the menu selection.
           </DialogDescription>
         </DialogHeader>
         
@@ -95,9 +95,9 @@ export function CustomerDetailsForm({
                   name="customerName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><User className="h-4 w-4 mr-2 text-muted-foreground"/>Customer Name*</FormLabel>
+                      <FormLabel className="flex items-center"><User className="h-4 w-4 mr-2 text-muted-foreground"/>Your Name*</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter customer's full name" {...field} />
+                        <Input placeholder="Enter your full name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -123,7 +123,7 @@ export function CustomerDetailsForm({
                     <FormItem>
                       <FormLabel className="flex items-center"><Mail className="h-4 w-4 mr-2 text-muted-foreground"/>Email (Optional)</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="customer@example.com" {...field} />
+                        <Input type="email" placeholder="you@example.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -136,7 +136,7 @@ export function CustomerDetailsForm({
                     <FormItem>
                       <FormLabel className="flex items-center"><Building className="h-4 w-4 mr-2 text-muted-foreground"/>Company Name (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Customer's company name" {...field} />
+                        <Input placeholder="Your company name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
