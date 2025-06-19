@@ -26,7 +26,7 @@ import {
   Square,
   Utensils, 
   Sparkles,
-  FolderOpen // Added for category header
+  FolderOpen 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
@@ -35,7 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 const STATIC_AVATAR_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 
-// Matches structure in menu-items/page.tsx
+
 interface Category {
   id: string;
   name: string;
@@ -51,13 +51,13 @@ interface DraftSubItem {
   id: string;
   name: string;
   price: number;
-  categoryId: string; // Added to know which category this item belongs to
+  categoryId: string; 
 }
 
 interface DraftItem {
   id: string;
   name: string; 
-  createdAt: string; // ISO string
+  createdAt: string; 
   itemCount: number;
   primaryTag: string; 
   price: number; 
@@ -71,7 +71,7 @@ interface DraftCardProps {
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
   onToggleExpand: (id: string) => void;
-  masterCategoryList: Category[]; // To look up category names/icons
+  masterCategoryList: Category[]; 
 }
 
 const extractMenuTypeFromTag = (tag: string): string => {
@@ -110,7 +110,7 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
   const itemsByCategoryId = useMemo(() => {
     if (!draft.items) return {};
     return draft.items.reduce((acc, item) => {
-      const catId = item.categoryId;
+      const catId = item.categoryId; 
       if (!acc[catId]) acc[catId] = [];
       acc[catId].push(item);
       return acc;
@@ -263,8 +263,8 @@ function DraftSkeletonCard(): ReactNode {
       </CardHeader>
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Skeleton className="h-6 w-24 rounded-full" /> {/* For menu type badge */}
-          <Skeleton className="h-6 w-20 rounded-full" /> {/* For date badge */}
+          <Skeleton className="h-6 w-24 rounded-full" /> {}
+          <Skeleton className="h-6 w-20 rounded-full" /> {}
         </div>
         <div className="flex items-center space-x-2">
           <div className="flex -space-x-2">
@@ -312,7 +312,7 @@ export default function DraftPage(): ReactNode {
         if (restaurantData.success && Array.isArray(restaurantData.data.categories)) {
           combinedCategories = combinedCategories.concat(
             restaurantData.data.categories.map((cat: any): Category => ({
-                id: String(cat.id),
+                id: `restaurant-${String(cat.id)}`,
                 name: String(cat.name || 'Unnamed Category'),
                 icon: String(cat.icon || '📁'),
             }))
@@ -321,7 +321,7 @@ export default function DraftPage(): ReactNode {
         if (parlourData.success && Array.isArray(parlourData.data.categories)) {
            combinedCategories = combinedCategories.concat(
             parlourData.data.categories.map((cat: any): Category => ({
-                id: String(cat.id),
+                id: `parlour-${String(cat.id)}`,
                 name: String(cat.name || 'Unnamed Category'),
                 icon: String(cat.icon || '✨'),
             }))
@@ -349,7 +349,7 @@ export default function DraftPage(): ReactNode {
           ...draft,
           items: Array.isArray(draft.items) ? draft.items.map(subItem => ({
             ...subItem,
-            categoryId: subItem.categoryId || 'unknown' // Ensure categoryId exists
+            categoryId: subItem.categoryId || 'unknown' 
           })) : [],
           previewAvatars: Array.isArray(draft.previewAvatars) ? draft.previewAvatars : [],
         }));
@@ -482,3 +482,4 @@ export default function DraftPage(): ReactNode {
     </div>
   );
 }
+

@@ -121,6 +121,8 @@ export default function MenuItemsPage() {
     let categoriesResponse: Response | undefined;
     let menuItemsResponse: Response | undefined;
 
+    const idPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+
     const categoriesApiUrl = selectedMenuType === 'parlour'
       ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
       : 'https://colorhutbd.xyz/vm/api/categories.php';
@@ -169,7 +171,7 @@ export default function MenuItemsPage() {
       const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories
         .filter((cat: any) => cat.id !== null && cat.id !== undefined)
         .map((cat: any) => ({
-          id: String(cat.id),
+          id: `${idPrefix}${String(cat.id)}`,
           name: String(cat.name || 'Unnamed Category'),
           icon: String(cat.icon || '📁'),
           itemCount: Number(cat.itemCount || 0),
@@ -183,14 +185,11 @@ export default function MenuItemsPage() {
       setApiCategories(visibleCategories);
       setOrderedCategories(visibleCategories);
       
-      // Category selection logic
       if (visibleCategories.length > 0) {
           let categoryToSelect: Category | null = null;
-          // Try to retain previous selection if it's still valid for the new menu type
-          if (prevSelectedCategoryId) {
+          if (prevSelectedCategoryId && visibleCategories.some(c => c.id === prevSelectedCategoryId)) {
               categoryToSelect = visibleCategories.find(c => c.id === prevSelectedCategoryId) || null;
           }
-          // If not restoring a draft and no valid previous selection, default to first category
           if (!localStorage.getItem('draftToRestoreId') && !categoryToSelect) {
                categoryToSelect = visibleCategories[0];
           }
@@ -235,7 +234,7 @@ export default function MenuItemsPage() {
             id: String(item.id),
             name: String(item.name || 'Unnamed Item'),
             price: parseFloat(item.price) || 0,
-            category: String(item.category || 'uncategorized'),
+            category: `${idPrefix}${String(item.category || 'uncategorized')}`,
             description: String(item.description || ''),
             image: item.image,
             status: String(item.status || 'active'),
@@ -279,19 +278,16 @@ export default function MenuItemsPage() {
   useEffect(() => {
     const draftIdToRestore = localStorage.getItem('draftToRestoreId');
     if (!draftIdToRestore) {
-      return; // No draft to restore
+      return; 
     }
 
-    // If categories or menu items for the *current* selectedMenuType are still loading, wait.
-    // This ensures we operate on the correct dataset if a menu type switch is in progress.
     if (loadingCategories || loadingMenuItems) {
-      return;
+      return; 
     }
-
-    // At this point, loading is false. Data for the current selectedMenuType is available (or confirmed empty).
+    
     const allDraftsString = localStorage.getItem(DRAFTS_STORAGE_KEY);
     if (!allDraftsString) {
-      localStorage.removeItem('draftToRestoreId'); // Drafts store missing, can't restore.
+      localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: "Could not find your saved drafts.", variant: "destructive" });
       return;
     }
@@ -301,81 +297,77 @@ export default function MenuItemsPage() {
       allDrafts = JSON.parse(allDraftsString);
     } catch (e) {
       console.error("Error parsing drafts from localStorage:", e);
-      localStorage.removeItem('draftToRestoreId'); // Corrupted drafts store.
+      localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: "Saved draft data appears to be corrupted.", variant: "destructive" });
       return;
     }
 
     const draftToRestore = allDrafts.find(d => d.id === draftIdToRestore);
     if (!draftToRestore) {
-      localStorage.removeItem('draftToRestoreId'); // Specific draft not found.
+      localStorage.removeItem('draftToRestoreId');
       toast({ title: "Error", description: `The selected draft (ID: ${draftIdToRestore}) was not found.`, variant: "destructive" });
       return;
     }
 
     const draftMenuType = draftToRestore.primaryTag.split('-')[0].toLowerCase();
     if (draftMenuType !== selectedMenuType) {
-      // Menu type from draft doesn't match current. Switch menu type and let this effect re-run.
-      // Do NOT remove draftIdToRestoreId yet.
       setSelectedMenuType(draftMenuType);
-      return; // Exit to allow re-fetch for the correct menu type
+      return; 
     }
 
-    // If we reach here, menu types match, and data for this menu type has been loaded.
+    const draftIdPrefix = draftMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
 
-    // Select category based on draft
-    const tagParts = draftToRestore.primaryTag.split('-');
-    const draftCategorySlug = tagParts.length > 2 ? tagParts.slice(1, -1).join('-') : 'general';
-    let categorySetByDraft = false;
-
-    if (draftCategorySlug && draftCategorySlug !== 'general' && apiCategories.length > 0) {
-      const targetCategory = apiCategories.find(
-        cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug
-      );
-      if (targetCategory) {
-        setSelectedCategory(targetCategory);
-        categorySetByDraft = true;
-      } else {
-        toast({ title: "Info", description: `Category "${draftCategorySlug}" from draft not found. Defaulting selection.`, variant: "default" });
-      }
-    }
-    
-    if (!categorySetByDraft && apiCategories.length > 0) {
-        // If category wasn't specifically set by slug, or if it was general, or if target not found,
-        // set to the first available category for the current menu type.
-        setSelectedCategory(apiCategories[0]);
-    } else if (apiCategories.length === 0) {
-        setSelectedCategory(null); // No categories available for this menu type
-    }
-
-
-    // Select items based on draft
     let itemsActuallySelectedCount = 0;
     if (draftToRestore.items && draftToRestore.items.length > 0) {
       const newSelectedItemsState = draftToRestore.items.reduce((acc, subItem) => {
-        if (allMenuItems.some(menuItem => menuItem.id === subItem.id && menuItem.category === subItem.categoryId)) {
+        // Ensure subItem.categoryId from draft is compared with prefixed category IDs in allMenuItems
+        const fullDraftCategoryId = subItem.categoryId.startsWith(draftIdPrefix) ? subItem.categoryId : `${draftIdPrefix}${subItem.categoryId}`;
+        
+        if (allMenuItems.some(menuItem => menuItem.id === subItem.id && menuItem.category === fullDraftCategoryId)) {
           acc[subItem.id] = true;
           itemsActuallySelectedCount++;
         } else {
-          console.warn(`Item ID ${subItem.id} (Category: ${subItem.categoryId}) from draft not found or mismatched in current menu items for type ${selectedMenuType}.`);
+          console.warn(`Item ID ${subItem.id} (Category: ${fullDraftCategoryId}) from draft not found or mismatched.`);
         }
         return acc;
       }, {} as Record<string, boolean>);
       setSelectedItems(newSelectedItemsState);
 
       if (itemsActuallySelectedCount > 0) {
-        toast({ title: "Draft Restored", description: `${itemsActuallySelectedCount} items have been selected from your draft.` });
+        toast({ title: "Draft Restored", description: `${itemsActuallySelectedCount} items have been selected.` });
       } else if (draftToRestore.items.length > 0) {
         toast({ title: "Draft Partially Restored", description: "Some items from the draft were not found in the current menu.", variant: "default" });
       } else {
-        toast({ title: "Draft Restored", description: "No items were in the selected draft to restore." });
+         toast({ title: "Draft Restored", description: "No items were in the selected draft." });
       }
     } else {
-      setSelectedItems({}); // Clear selection if draft has no items
+      setSelectedItems({});
       toast({ title: "Draft Restored", description: "The selected draft had no items." });
     }
+    
+    const tagParts = draftToRestore.primaryTag.split('-');
+    const draftCategorySlug = tagParts.length > 2 ? tagParts.slice(1, -1).join('-') : 'general';
+    let categorySetByDraft = false;
 
-    localStorage.removeItem('draftToRestoreId'); // Successfully processed or decided nothing to restore for this draft.
+    if (draftCategorySlug && draftCategorySlug !== 'general' && apiCategories.length > 0) {
+        const targetCategory = apiCategories.find(
+            cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug && cat.id.startsWith(draftIdPrefix)
+        );
+        if (targetCategory) {
+            setSelectedCategory(targetCategory);
+            categorySetByDraft = true;
+        } else {
+            toast({ title: "Info", description: `Category "${draftCategorySlug}" from draft not found. Defaulting.`, variant: "default" });
+        }
+    }
+    
+    if (!categorySetByDraft && apiCategories.length > 0) {
+        setSelectedCategory(apiCategories[0]);
+    } else if (apiCategories.length === 0) {
+        setSelectedCategory(null);
+    }
+
+    localStorage.removeItem('draftToRestoreId');
   }, [
     selectedMenuType, 
     loadingCategories, 
@@ -441,14 +433,16 @@ export default function MenuItemsPage() {
       .map(item => item.name.substring(0, 2).toUpperCase());
     
     let draftNameCategoryPart = 'general';
-    const firstSelectedItemWithCategory = actualSelectedMenuItems.find(item => item.category);
     
-    if (selectedCategory) { // Prefer explicitly selected category
+    if (selectedCategory) { 
         draftNameCategoryPart = selectedCategory.name.toLowerCase().replace(/\s+/g, '-');
-    } else if (firstSelectedItemWithCategory) { // Infer from first selected item if no overall category selected
-        const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItemWithCategory.category);
-        if (categoryOfFirstItem) {
-            draftNameCategoryPart = categoryOfFirstItem.name.toLowerCase().replace(/\s+/g, '-');
+    } else {
+        const firstSelectedItemWithCategory = actualSelectedMenuItems.find(item => item.category);
+        if (firstSelectedItemWithCategory) {
+            const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItemWithCategory.category);
+            if (categoryOfFirstItem) {
+                draftNameCategoryPart = categoryOfFirstItem.name.toLowerCase().replace(/\s+/g, '-');
+            }
         }
     }
 
@@ -503,8 +497,8 @@ export default function MenuItemsPage() {
 
   return (
     <>
-      <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]"> {/* Adjusted for mobile scroll */}
-        {/* Desktop Sidebar */}
+      <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]"> {}
+        {}
         <aside className="hidden md:flex w-72 bg-card border-r border-border flex-col">
           <div className="p-4 border-b border-border">
             <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
@@ -539,9 +533,9 @@ export default function MenuItemsPage() {
           </ScrollArea>
         </aside>
 
-        {/* Main Content Area */}
+        {}
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
-           {/* Header: Title, Search, Actions */}
+           {}
           <div className="py-4 px-6 border-b border-border bg-card space-y-3 md:space-y-0">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
@@ -573,7 +567,7 @@ export default function MenuItemsPage() {
             </div>
           </div>
 
-          {/* Mobile Category Selector */}
+          {}
           <div className="md:hidden p-4 border-b border-border bg-card">
             <Label htmlFor="mobile-category-select" className="text-xs font-medium text-muted-foreground mb-1 block">Category</Label>
             <Select
@@ -602,7 +596,7 @@ export default function MenuItemsPage() {
             </Select>
           </div>
 
-          {/* Items List Area */}
+          {}
           <ScrollArea className="flex-1">
             <div className="p-4 sm:p-6">
               {selectedCount > 0 && (
