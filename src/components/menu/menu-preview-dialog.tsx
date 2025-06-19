@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { X, ChevronLeft, Send, Users, FileText, GripVertical } from 'lucide-react';
+import { X, ChevronLeft, Send, ShoppingCart, FileText, GripVertical } from 'lucide-react'; // Changed Users to ShoppingCart
 
 // Interfaces matching MenuItemsPage for consistency
 interface Category {
@@ -110,7 +110,7 @@ export function MenuPreviewDialog({
 
     setOrderedDialogCategories(finalOrderedCategories);
 
-  }, [derivedDisplayedCategories]); // Removed orderedDialogCategories from deps to avoid loop based on self-update
+  }, [derivedDisplayedCategories]);
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -252,7 +252,7 @@ export function MenuPreviewDialog({
 
         <DialogFooter className="px-6 py-4 border-t mt-auto">
           <Button variant="secondary" className="bg-foreground text-background hover:bg-foreground/90">
-            <Users className="h-4 w-4 mr-2" /> Share with Color Hut
+            <ShoppingCart className="h-4 w-4 mr-2" /> Share with Color Hut
           </Button>
           <Button variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Send className="h-4 w-4 mr-2" /> Share with Partner
