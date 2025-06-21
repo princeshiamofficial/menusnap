@@ -116,9 +116,6 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
             ))}
           </div>
         </CardContent>
-        <CardFooter className="p-4 bg-muted/50 mt-auto">
-          <Button variant="secondary" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90">View Template</Button>
-        </CardFooter>
       </Card>
     </motion.div>
   );
@@ -282,4 +279,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
