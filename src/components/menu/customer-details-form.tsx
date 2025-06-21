@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { MenuItem } from './menu-preview-dialog'; // Import MenuItem for typing
-import { User, Phone, Mail, Building, MapPin, StickyNote } from 'lucide-react';
+import { User, Phone, Mail, Building, MapPin } from 'lucide-react';
 
 const customerDetailsSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -30,7 +30,6 @@ const customerDetailsSchema = z.object({
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   companyName: z.string().max(100).optional(),
   deliveryAddress: z.string().max(250).optional(),
-  notes: z.string().max(500).optional(),
 });
 
 export type CustomerDetailsFormValues = z.infer<typeof customerDetailsSchema>;
@@ -56,7 +55,6 @@ export function CustomerDetailsForm({
       email: "",
       companyName: "",
       deliveryAddress: "",
-      notes: "",
     },
     mode: "onChange",
   });
@@ -150,19 +148,6 @@ export function CustomerDetailsForm({
                       <FormLabel className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-muted-foreground"/>Delivery Address (Optional)</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Full delivery address" {...field} rows={3} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center"><StickyNote className="h-4 w-4 mr-2 text-muted-foreground"/>Additional Notes (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Any special instructions or notes..." {...field} rows={3}/>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
