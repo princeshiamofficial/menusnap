@@ -751,9 +751,9 @@ export default function MenuItemsPage() {
                                 >
                                   <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
                                   <div className="space-y-1.5">
-                                    {item.subItems.map(subItem => (
+                                    {item.subItems.map((subItem, index) => (
                                       <div
-                                        key={`${uniqueRenderKey}-sub-${subItem.id}`} 
+                                        key={`${uniqueRenderKey}-sub-${subItem.id}-${index}`}
                                         className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
