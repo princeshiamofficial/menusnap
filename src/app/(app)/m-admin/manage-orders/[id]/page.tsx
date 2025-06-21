@@ -28,6 +28,14 @@ type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Deliv
 
 const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold", "Out for Delivery"];
 
+interface OrderItemDetail {
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    categoryId: string;
+}
+
 interface ApiOrder {
     id: string;
     orderId: string;
@@ -42,7 +50,7 @@ interface ApiOrder {
     businessRole?: string; 
     bio?: string; 
     totalAmount?: number;
-    items?: { id: string; name: string; quantity: number; price: number }[];
+    items?: OrderItemDetail[];
     templateImageUrl?: string;
     templateDescription?: string;
     templateTags?: string[];
@@ -96,6 +104,7 @@ export default function OrderDetailsPage() {
     const [order, setOrder] = useState<ApiOrder | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [categoryMap, setCategoryMap] = useState<Map<string, string>>(new Map());
 
     useEffect(() => {
         if (!orderIdFromUrl) {
@@ -104,13 +113,35 @@ export default function OrderDetailsPage() {
             return;
         }
 
-        const fetchOrderDetails = async () => {
+        const fetchOrderAndCategoryDetails = async () => {
             setIsLoading(true);
             setError(null);
             try {
-                const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } });
-                if (!response.ok) throw new Error(`API error! status: ${response.status}`);
-                const result = await response.json();
+                const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
+                    fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
+                    fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
+                    fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
+                ]);
+    
+                // Process categories first to build the map
+                const newCategoryMap = new Map<string, string>();
+                if (restaurantCategoriesResponse.ok) {
+                    const resCatResult = await restaurantCategoriesResponse.json();
+                    if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
+                        resCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
+                    }
+                }
+                if (parlourCategoriesResponse.ok) {
+                    const parCatResult = await parlourCategoriesResponse.json();
+                    if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
+                        parCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
+                    }
+                }
+                setCategoryMap(newCategoryMap);
+
+                // Process orders
+                if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
+                const result = await ordersResponse.json();
 
                 let rawOrdersArray: any[] = [];
                 if (result.success) {
@@ -140,7 +171,13 @@ export default function OrderDetailsPage() {
                         customerAddress: orderData.customer?.address,
                         businessName: orderData.customer?.companyName,
                         totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
-                        items: orderData.items || [],
+                        items: (orderData.items || []).map((item: any): OrderItemDetail => ({
+                            id: String(item.id),
+                            name: String(item.name),
+                            quantity: Number(item.quantity || 1),
+                            price: Number(item.price),
+                            categoryId: String(item.categoryId || item.category || 'uncategorized'),
+                        })),
                         templateImageUrl: orderData.template?.imageUrl,
                     };
                     setOrder(formattedOrder);
@@ -154,7 +191,7 @@ export default function OrderDetailsPage() {
             }
         };
 
-        fetchOrderDetails();
+        fetchOrderAndCategoryDetails();
     }, [orderIdFromUrl]);
     
     const formatDate = (dateString?: string): string => {
@@ -170,6 +207,18 @@ export default function OrderDetailsPage() {
     const subtotal = useMemo(() => {
         if (!order?.items) return 0;
         return order.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    }, [order?.items]);
+
+    const groupedItems = useMemo(() => {
+        if (!order?.items) return {};
+        return order.items.reduce((acc, item) => {
+            const catId = item.categoryId || 'uncategorized';
+            if (!acc[catId]) {
+                acc[catId] = [];
+            }
+            acc[catId].push(item);
+            return acc;
+        }, {} as Record<string, OrderItemDetail[]>);
     }, [order?.items]);
 
     if (isLoading) {
@@ -273,15 +322,24 @@ export default function OrderDetailsPage() {
                 
                 <section>
                     <SectionTitle>Order Summary</SectionTitle>
-                    {order.items && order.items.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                            {order.items.map((item, index) => (
-                                <OrderItem
-                                    key={`${item.id}-${index}`}
-                                    name={item.name}
-                                    quantity={item.quantity}
-                                    price={item.price}
-                                />
+                    {groupedItems && Object.keys(groupedItems).length > 0 ? (
+                        <div className="space-y-8">
+                            {Object.entries(groupedItems).map(([categoryId, items]) => (
+                                <div key={categoryId}>
+                                    <h3 className="text-xl font-semibold mb-4 border-b pb-2 text-foreground">
+                                        {categoryMap.get(categoryId) || 'Uncategorized'}
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                                        {items.map((item, index) => (
+                                            <OrderItem
+                                                key={`${item.id}-${index}`}
+                                                name={item.name}
+                                                quantity={item.quantity}
+                                                price={item.price}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     ) : (
