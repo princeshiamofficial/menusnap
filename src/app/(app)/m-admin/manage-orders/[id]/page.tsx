@@ -56,25 +56,22 @@ interface ApiOrder {
     templateTags?: string[];
 }
 
-const statusColors: Record<OrderStatus, string> = {
-  "Pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600",
-  "Processing": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "Out for Delivery": "bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-400 border-blue-300 dark:border-blue-600",
-  "Shipped": "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/20 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600",
-  "Delivered": "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600",
-  "Cancelled": "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600",
-  "Refunded": "bg-gray-100 text-gray-700 dark:bg-gray-700/20 dark:text-gray-400 border-gray-300 dark:border-gray-600",
-  "On Hold": "bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-400 border-orange-300 dark:border-orange-600",
-};
-
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <div className="mt-10 mb-6">
-    <h2 className="inline-block bg-primary text-primary-foreground text-sm font-bold uppercase tracking-widest px-4 py-1.5 rounded">
-      {children}
-    </h2>
-  </div>
+    <div className="mt-10 mb-6">
+        <div
+            className="inline-block relative px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
+            style={{
+                backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")',
+                backgroundSize: '100% 100%',
+                backgroundRepeat: 'no-repeat',
+                color: '#ffffff'
+            }}
+        >
+            {children}
+        </div>
+    </div>
 );
+
 
 const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) => (
     <div className="flex items-start">
@@ -240,10 +237,6 @@ export default function OrderDetailsPage() {
                             <Skeleton className="h-6 w-24 ml-auto" />
                         </div>
                     </div>
-                     <SectionTitle><Skeleton className="h-6 w-32" /></SectionTitle>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-                    </div>
                     <SectionTitle><Skeleton className="h-6 w-40" /></SectionTitle>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                         {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -303,22 +296,8 @@ export default function OrderDetailsPage() {
                            <CalendarDays className="h-4 w-4" />
                            {formatDate(order.orderDate)}
                         </p>
-                        <Badge variant="outline" className={cn("text-xs py-1 px-2.5 font-medium", statusColors[order.status] || statusColors.Pending)}>
-                            {order.status}
-                        </Badge>
                     </div>
                 </div>
-
-                <section>
-                    <SectionTitle>Customer Info</SectionTitle>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                        <InfoItem icon={User} label="Customer Name" value={order.customerName} />
-                        <InfoItem icon={Phone} label="Phone Number" value={order.customerPhone} />
-                        <InfoItem icon={Mail} label="Email Address" value={order.customerEmail} />
-                        <InfoItem icon={Building} label="Business Name" value={order.businessName} />
-                        <InfoItem icon={MapPin} label="Address" value={order.customerAddress} />
-                    </div>
-                </section>
                 
                 <section>
                     <SectionTitle>Order Summary</SectionTitle>
