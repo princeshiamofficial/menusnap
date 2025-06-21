@@ -34,6 +34,7 @@ interface OrderItemDetail {
     quantity: number;
     price: number;
     categoryId: string;
+    description?: string | null;
 }
 
 interface ApiOrder {
@@ -83,13 +84,13 @@ const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label
     </div>
 );
 
-const OrderItem = ({ name, quantity, price }: { name: string, quantity: number, price: number }) => (
+const OrderItem = ({ name, description, price, quantity }: { name: string, description?: string|null, price: number, quantity: number }) => (
     <div>
         <div className="flex justify-between items-baseline">
             <h3 className="font-bold text-foreground">{name}</h3>
             <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>
         </div>
-        <p className="text-sm text-muted-foreground">Quantity: {quantity}</p>
+        {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
     </div>
 );
 
@@ -174,6 +175,7 @@ export default function OrderDetailsPage() {
                             quantity: Number(item.quantity || 1),
                             price: Number(item.price),
                             categoryId: String(item.categoryId || item.category || 'uncategorized'),
+                            description: item.description || null,
                         })),
                         templateImageUrl: orderData.template?.imageUrl,
                     };
@@ -313,6 +315,7 @@ export default function OrderDetailsPage() {
                                             <OrderItem
                                                 key={`${item.id}-${index}`}
                                                 name={item.name}
+                                                description={item.description}
                                                 quantity={item.quantity}
                                                 price={item.price}
                                             />
