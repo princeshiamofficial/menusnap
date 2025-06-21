@@ -799,72 +799,79 @@ export default function ManageMenuItemsPage(): ReactNode {
                     </div>
                 </div>
             )}
-            {!loadingItems && !errorItems && selectedCategory && filteredMenuItems.length === 0 && (
-              <div className="text-center py-10 text-muted-foreground bg-card border border-border rounded-lg">
-                 <PackageSearch className="mx-auto h-12 w-12 mb-4 opacity-70" />
-                <p className="text-md">
-                  {searchTerm || statusFilter !== 'all'
-                    ? "No items match your criteria for this category."
-                    : "No menu items available for this category."}
-                </p>
-              </div>
-            )}
-            {!loadingItems && !errorItems && selectedCategory && filteredMenuItems.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredMenuItems.map(item => (
-                  <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
-                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                      <Image 
-                        src={STATIC_ITEM_IMAGE_URL} 
-                        alt={item.name} 
-                        width={40} 
-                        height={40} 
-                        className="h-full w-full object-contain" 
-                        data-ai-hint="item illustration"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                        <Badge 
-                          variant={item.status === 'Active' ? 'default' : 'outline'}
-                          className={cn(
-                            "text-xs px-1.5 py-0.5",
-                            item.status === 'Active' 
-                            ? 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600' 
-                            : 'bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600'
-                          )}
-                        >
-                          {item.status}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Added {formatDate(item.addedDate)}</p>
-                    </div>
-                    <div className="text-sm font-semibold text-foreground whitespace-nowrap">
-                      ৳{item.price.toLocaleString()}
-                    </div>
-                    <div className="flex items-center gap-0.5">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditItemDialog(item)}>
-                            <Edit3 className="mr-2 h-4 w-4" /> Edit Item
-                          </DropdownMenuItem>
-                           <DropdownMenuItem onClick={() => openDeleteItemDialog(item)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Item
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator/>
-                          <DropdownMenuItem disabled>Duplicate Item</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+            {!loadingItems && !errorItems && selectedCategory && (
+              <>
+                <div className="flex items-center gap-2 mb-4">
+                  <h2 className="text-2xl font-bold text-foreground">{selectedCategory.name}</h2>
+                  <Badge variant="secondary">{filteredMenuItems.length} items</Badge>
+                </div>
+                {filteredMenuItems.length === 0 ? (
+                  <div className="text-center py-10 text-muted-foreground bg-card border border-border rounded-lg">
+                    <PackageSearch className="mx-auto h-12 w-12 mb-4 opacity-70" />
+                    <p className="text-md">
+                      {searchTerm || statusFilter !== 'all'
+                        ? "No items match your criteria for this category."
+                        : "No menu items available for this category."}
+                    </p>
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredMenuItems.map(item => (
+                      <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                          <Image 
+                            src={STATIC_ITEM_IMAGE_URL} 
+                            alt={item.name} 
+                            width={40} 
+                            height={40} 
+                            className="h-full w-full object-contain" 
+                            data-ai-hint="item illustration"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                            <Badge 
+                              variant={item.status === 'Active' ? 'default' : 'outline'}
+                              className={cn(
+                                "text-xs px-1.5 py-0.5",
+                                item.status === 'Active' 
+                                ? 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600' 
+                                : 'bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600'
+                              )}
+                            >
+                              {item.status}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Added {formatDate(item.addedDate)}</p>
+                        </div>
+                        <div className="text-sm font-semibold text-foreground whitespace-nowrap">
+                          ৳{item.price.toLocaleString()}
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditItemDialog(item)}>
+                                <Edit3 className="mr-2 h-4 w-4" /> Edit Item
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openDeleteItemDialog(item)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Item
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator/>
+                              <DropdownMenuItem disabled>Duplicate Item</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </ScrollArea>
@@ -930,4 +937,3 @@ export default function ManageMenuItemsPage(): ReactNode {
   );
 }
     
-
