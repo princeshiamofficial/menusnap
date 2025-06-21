@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -7,7 +8,8 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Layers, Search, Star, Maximize, AlertTriangle } from "lucide-react"; 
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Layers, Search, Star, Maximize, AlertTriangle, X } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
@@ -23,6 +25,44 @@ interface ApiTemplate {
   createdAt?: string; 
 }
 
+interface TemplatePreviewDialogProps {
+  imageUrl: string | null;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePreviewDialogProps) {
+  if (!imageUrl) return null;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl w-full h-[90vh] p-2 bg-transparent border-none shadow-none">
+          <div className="relative w-full h-full">
+            <Image
+              src={imageUrl}
+              alt="Template Preview"
+              fill
+              className="object-contain"
+              data-ai-hint="template full-view"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1000px"
+            />
+          </div>
+          <DialogClose asChild>
+             <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 h-10 w-10 bg-black/50 text-white hover:bg-black/70 rounded-full"
+                aria-label="Close preview"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+          </DialogClose>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 interface TemplateCardProps {
   id: string;
   imageUrl: string;
@@ -31,6 +71,7 @@ interface TemplateCardProps {
   description: string;
   tags: string[];
   isTopRated?: boolean;
+  onPreview: (imageUrl: string) => void;
 }
 
 const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
@@ -42,6 +83,7 @@ function TemplateCard({
   description,
   tags,
   isTopRated,
+  onPreview,
 }: TemplateCardProps): ReactNode {
   const [showConfetti, setShowConfetti] = useState(false);
   const controls = useAnimation();
@@ -86,6 +128,7 @@ function TemplateCard({
               size="icon"
               className="absolute bottom-2 right-2 h-9 w-9 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
               aria-label="Maximize template preview"
+              onClick={() => onPreview(actualImageUrl)}
             >
               <Maximize className="h-5 w-5" />
             </Button>
@@ -149,6 +192,7 @@ export default function TemplatesPage(): ReactNode {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchTemplates() {
@@ -294,12 +338,18 @@ export default function TemplatesPage(): ReactNode {
                   imageHint={getImageHint(template.name)}
                   tags={template.tags || []}
                   isTopRated={template.isTopRated}
+                  onPreview={setPreviewImageUrl}
                 />
               </motion.div>
             ))}
           </motion.div>
         )}
       </main>
+      <TemplatePreviewDialog
+        imageUrl={previewImageUrl}
+        isOpen={!!previewImageUrl}
+        onOpenChange={() => setPreviewImageUrl(null)}
+      />
     </div>
   );
 }
