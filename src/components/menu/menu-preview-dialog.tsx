@@ -57,6 +57,7 @@ interface MenuPreviewDialogProps {
   selectedItems: MenuItem[];
   allCategories: Category[];
   onRemoveItem: (itemId: string) => void;
+  selectedMenuType: string;
 }
 
 const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
@@ -67,10 +68,12 @@ export function MenuPreviewDialog({
   selectedItems,
   allCategories,
   onRemoveItem,
+  selectedMenuType,
 }: MenuPreviewDialogProps): ReactNode {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const derivedDisplayedCategories = useMemo(() => {
@@ -81,21 +84,13 @@ export function MenuPreviewDialog({
   const [orderedDialogCategories, setOrderedDialogCategories] = useState<Category[]>(derivedDisplayedCategories);
 
   useEffect(() => {
-    // This effect updates orderedDialogCategories if the actual set of derivedDisplayedCategories changes.
-    // It tries to be smart about not overwriting user's reorder if only the instance of
-    // derivedDisplayedCategories changed but not its content.
-
     const derivedCategoryIdsSorted = derivedDisplayedCategories.map(c => c.id).sort().join(',');
     const currentOrderedCategoryIdsSorted = orderedDialogCategories.map(c => c.id).sort().join(',');
 
     if (derivedCategoryIdsSorted !== currentOrderedCategoryIdsSorted) {
-      // The set of categories has changed (items added/removed leading to category changes).
-      // Reset orderedDialogCategories based on the new derivedDisplayedCategories.
-      // A more sophisticated merge could be done to preserve existing order for common categories,
-      // but for now, a direct set is simpler.
       setOrderedDialogCategories(derivedDisplayedCategories);
     }
-  }, [derivedDisplayedCategories]); // Only depend on derivedDisplayedCategories
+  }, [derivedDisplayedCategories]);
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -116,23 +111,83 @@ export function MenuPreviewDialog({
     return orderedDialogCategories;
   }, [activeCategoryId, orderedDialogCategories]);
 
-  const handleCustomerFormSubmit = (data: CustomerDetailsFormValues) => {
-    console.log("Customer Details:", data);
-    console.log("Selected Menu Items:", selectedItems);
-    toast({
-      title: "Information Shared",
-      description: "Customer details and menu selection have been noted.",
-    });
-    setIsCustomerFormOpen(false);
-    onOpenChange(false);
+  const handleCustomerFormSubmit = async (data: CustomerDetailsFormValues) => {
+    setIsSubmitting(true);
+    
+    const generateOrderId = (menuType: string) => {
+      const prefix = menuType === 'restaurant' ? 'RO' : 'PO';
+      const d = new Date();
+      const datePart = `${d.getFullYear()}${(d.getMonth() + 1).toString().padStart(2, '0')}${d.getDate().toString().padStart(2, '0')}`;
+      const randomPart = Math.floor(100 + Math.random() * 900); // Generates a 3-digit number
+      return `${prefix}-${datePart}${randomPart}`;
+    };
+
+    const newOrderId = generateOrderId(selectedMenuType);
+    const totalAmount = selectedItems.reduce((sum, item) => sum + item.price, 0);
+
+    const orderPayload = {
+      orderId: newOrderId,
+      orderDate: new Date().toISOString(),
+      status: 'Pending',
+      customer: {
+        name: data.customerName,
+        email: data.email,
+        phone: data.phoneNumber,
+        address: data.deliveryAddress,
+        companyName: data.companyName,
+        role: data.role,
+      },
+      items: selectedItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: 1, // Assuming quantity is 1 for each selected item
+        price: item.price,
+        categoryId: item.category,
+        description: item.description,
+      })),
+      totalAmount: totalAmount,
+      templateName: "Custom Menu Selection", // Add a default template name
+    };
+    
+    try {
+      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Failed to submit order. Status: ${response.status}`);
+      }
+
+      toast({
+        title: "Order Submitted Successfully!",
+        description: `Your order #${newOrderId} has been placed.`,
+      });
+      setIsCustomerFormOpen(false);
+      onOpenChange(false);
+
+    } catch (error: any) {
+      console.error("Error submitting order:", error);
+      toast({
+        title: "Submission Error",
+        description: error.message || "Could not submit your order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // When the dialog opens, if activeCategoryId is not in the current set of derivedDisplayedCategories, reset it.
   useEffect(() => {
     if (isOpen && activeCategoryId && !derivedDisplayedCategories.some(cat => cat.id === activeCategoryId)) {
       setActiveCategoryId(null);
     }
-    // If orderedDialogCategories is empty (e.g. after all items removed), reset activeCategoryId
     if (isOpen && orderedDialogCategories.length === 0 && activeCategoryId !== null) {
         setActiveCategoryId(null);
     }
@@ -286,8 +341,8 @@ export function MenuPreviewDialog({
         onOpenChange={setIsCustomerFormOpen}
         onSubmit={handleCustomerFormSubmit}
         selectedItems={selectedItems}
+        isSubmitting={isSubmitting}
       />
     </>
   );
 }
-

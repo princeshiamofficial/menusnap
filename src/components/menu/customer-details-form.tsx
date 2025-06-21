@@ -40,13 +40,15 @@ interface CustomerDetailsFormProps {
   onOpenChange: (isOpen: boolean) => void;
   onSubmit: (data: CustomerDetailsFormValues) => void;
   selectedItems: MenuItem[]; // Receive selected items
+  isSubmitting: boolean;
 }
 
 export function CustomerDetailsForm({
   isOpen,
   onOpenChange,
   onSubmit,
-  selectedItems, // Use selectedItems prop
+  selectedItems,
+  isSubmitting,
 }: CustomerDetailsFormProps): ReactNode {
   const form = useForm<CustomerDetailsFormValues>({
     resolver: zodResolver(customerDetailsSchema),
@@ -63,15 +65,8 @@ export function CustomerDetailsForm({
 
   const handleFormSubmit = (data: CustomerDetailsFormValues) => {
     onSubmit(data);
-    form.reset(); // Reset form after submission
+    // Do not reset form here, parent component handles it.
   };
-
-  // Log selected items when the form is opened/updated (for debugging or if needed by the form)
-  // React.useEffect(() => {
-  //   if (isOpen) {
-  //     console.log("Customer form opened with items:", selectedItems);
-  //   }
-  // }, [isOpen, selectedItems]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
@@ -176,8 +171,8 @@ export function CustomerDetailsForm({
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isValid} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                {form.formState.isSubmitting ? "Submitting..." : "Confirm Order"}
+              <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                {isSubmitting ? "Submitting..." : "Confirm Order"}
               </Button>
             </DialogFooter>
           </form>

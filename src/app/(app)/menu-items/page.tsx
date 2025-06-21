@@ -786,9 +786,9 @@ export default function MenuItemsPage() {
         onOpenChange={setIsPreviewDialogOpen}
         selectedItems={preparedSelectedItemsForPreview} 
         allCategories={apiCategories} 
-        onRemoveItem={handleRemoveItemFromPreview} 
+        onRemoveItem={handleRemoveItemFromPreview}
+        selectedMenuType={selectedMenuType}
       />
     </>
   );
 }
-
