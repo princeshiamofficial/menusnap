@@ -195,7 +195,7 @@ export default function OrderDetailsPage() {
 
             <main className="space-y-6">
                 <Card className="shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-muted/30">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-muted/30 p-6">
                         <div>
                             <CardTitle className="text-2xl font-bold text-primary">Order #{order.orderId}</CardTitle>
                             <p className="text-xs text-muted-foreground flex items-center pt-1">
@@ -207,21 +207,6 @@ export default function OrderDetailsPage() {
                             {order.status}
                         </Badge>
                     </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                            <div className="space-y-2">
-                                <h3 className="font-semibold text-lg">Customer</h3>
-                                <p className="flex items-center text-sm"><User className="mr-2 h-4 w-4 text-muted-foreground" /> {order.customerName}</p>
-                                <p className="flex items-center text-sm"><Mail className="mr-2 h-4 w-4 text-muted-foreground" /> {order.customerEmail || 'N/A'}</p>
-                                <p className="flex items-center text-sm"><Phone className="mr-2 h-4 w-4 text-muted-foreground" /> {order.customerPhone || 'N/A'}</p>
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="font-semibold text-lg">Business</h3>
-                                <p className="flex items-center text-sm"><Building2 className="mr-2 h-4 w-4 text-muted-foreground" /> {order.businessName || 'N/A'}</p>
-                                <p className="flex items-center text-sm"><MapPin className="mr-2 h-4 w-4 text-muted-foreground" /> {order.customerAddress || 'N/A'}</p>
-                            </div>
-                        </div>
-                    </CardContent>
                 </Card>
 
                 <Card>
