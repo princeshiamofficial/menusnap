@@ -27,10 +27,10 @@ const customerDetailsSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters").max(100),
   phoneNumber: z.string().min(10, "Phone number seems too short").max(20)
     .regex(/^(\+?\d{1,3}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$/, "Invalid phone number format"),
-  email: z.string().email("Invalid email address").optional().or(z.literal("")),
-  companyName: z.string().max(100).optional(),
-  role: z.string().max(100).optional(),
-  deliveryAddress: z.string().max(250).optional(),
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  companyName: z.string().min(1, "Company name is required").max(100),
+  role: z.string().min(1, "Role is required").max(100),
+  deliveryAddress: z.string().min(1, "Delivery address is required").max(250),
 });
 
 export type CustomerDetailsFormValues = z.infer<typeof customerDetailsSchema>;
@@ -121,7 +121,7 @@ export function CustomerDetailsForm({
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><Mail className="h-4 w-4 mr-2 text-muted-foreground"/>Email (Optional)</FormLabel>
+                      <FormLabel className="flex items-center"><Mail className="h-4 w-4 mr-2 text-muted-foreground"/>Email*</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="you@example.com" {...field} />
                       </FormControl>
@@ -134,7 +134,7 @@ export function CustomerDetailsForm({
                   name="companyName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><Building className="h-4 w-4 mr-2 text-muted-foreground"/>Company Name (Optional)</FormLabel>
+                      <FormLabel className="flex items-center"><Building className="h-4 w-4 mr-2 text-muted-foreground"/>Company Name*</FormLabel>
                       <FormControl>
                         <Input placeholder="Your company name" {...field} />
                       </FormControl>
@@ -147,7 +147,7 @@ export function CustomerDetailsForm({
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><Briefcase className="h-4 w-4 mr-2 text-muted-foreground"/>Your Role (Optional)</FormLabel>
+                      <FormLabel className="flex items-center"><Briefcase className="h-4 w-4 mr-2 text-muted-foreground"/>Your Role*</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Owner, Manager" {...field} />
                       </FormControl>
@@ -160,7 +160,7 @@ export function CustomerDetailsForm({
                   name="deliveryAddress"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-muted-foreground"/>Delivery Address (Optional)</FormLabel>
+                      <FormLabel className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-muted-foreground"/>Delivery Address*</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Full delivery address" {...field} rows={3} />
                       </FormControl>
