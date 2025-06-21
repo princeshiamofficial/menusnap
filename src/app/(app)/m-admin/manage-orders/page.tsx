@@ -174,7 +174,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="text-xl">Order Details</DialogTitle>
           <DialogDescription>
-            Order <span className="font-medium text-primary">{order.orderId}</span> placed on {formatDate(order.orderDate)}
+            Order ID: <span className="font-medium text-primary">{order.orderId}</span> placed on {formatDate(order.orderDate)}
           </DialogDescription>
            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
             <X className="h-5 w-5" />

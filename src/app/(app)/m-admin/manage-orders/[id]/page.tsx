@@ -197,7 +197,7 @@ export default function OrderDetailsPage() {
                 <Card className="shadow-lg">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-muted/30 p-6">
                         <div>
-                            <CardTitle className="text-2xl font-bold text-primary">Order #{order.orderId}</CardTitle>
+                            <CardTitle className="text-2xl font-bold text-primary">Order ID: {order.orderId}</CardTitle>
                             <p className="text-xs text-muted-foreground flex items-center pt-1">
                                 <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
                                 Placed on {formatDate(order.orderDate)}
@@ -213,7 +213,7 @@ export default function OrderDetailsPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center">
                             <FileTextIcon className="mr-2 h-5 w-5 text-primary"/>
-                            Ordered Items
+                            Order Items
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
