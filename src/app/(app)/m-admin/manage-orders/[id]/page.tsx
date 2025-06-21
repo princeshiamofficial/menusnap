@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -328,25 +327,6 @@ export default function OrderDetailsPage() {
                         <p className="text-muted-foreground text-center py-4">No items were found in this order.</p>
                     )}
                 </section>
-
-                {order.totalAmount !== undefined && (
-                    <section className="mt-12 pt-6 border-t border-border">
-                        <div className="max-w-xs ml-auto text-right space-y-2 text-md">
-                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Subtotal:</span>
-                                <span className="font-medium text-foreground">৳{subtotal.toLocaleString()}</span>
-                            </div>
-                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Tax (0%):</span>
-                                <span className="font-medium text-foreground">৳0.00</span>
-                            </div>
-                             <div className="flex justify-between text-xl font-bold text-primary">
-                                <span>Total:</span>
-                                <span>৳{order.totalAmount.toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </section>
-                )}
 
             </main>
         </div>
