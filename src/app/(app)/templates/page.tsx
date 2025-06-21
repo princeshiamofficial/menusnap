@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -11,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Layers, Search, Star, Maximize, AlertTriangle } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import { BubbleConfetti } from '@/components/ui/bubble-confetti';
 
 interface ApiTemplate {
   id: string;
@@ -43,8 +43,13 @@ function TemplateCard({
   tags,
   isTopRated,
 }: TemplateCardProps): ReactNode {
+  const [showConfetti, setShowConfetti] = useState(false);
   const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
   const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
+
+  const handleSelectClick = () => {
+    setShowConfetti(true);
+  };
 
   return (
     <motion.div
@@ -91,8 +96,17 @@ function TemplateCard({
           </div>
         </CardContent>
         <CardFooter className="p-4 border-t mt-auto">
-          <Button variant="outline" className="w-full">
+          <Button
+            variant="outline"
+            className="w-full relative overflow-hidden"
+            onClick={handleSelectClick}
+          >
             Select Template
+            {showConfetti && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <BubbleConfetti onComplete={() => setShowConfetti(false)} />
+              </div>
+            )}
           </Button>
         </CardFooter>
       </Card>
