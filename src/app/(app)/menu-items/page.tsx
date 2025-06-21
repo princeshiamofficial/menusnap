@@ -271,10 +271,10 @@ export default function MenuItemsPage() {
                 iconPlaceholder: !item.image,
                 subItems: Array.isArray(item.subItems)
                   ? item.subItems
-                      .filter((sub: any) => sub.id !== null && sub.id !== undefined)
-                      .map((sub: any) => ({
-                        id: String(sub.id), 
-                        name: String(sub.name || 'Unnamed Sub-item'),
+                      .filter((sub: any) => sub && sub.name && String(sub.name).trim()) // Ensure sub-item is an object with a non-empty name
+                      .map((sub: any, index: number) => ({
+                        id: (sub.id && sub.id !== 'undefined') ? String(sub.id) : `${originalItemId}-sub-${index}`,
+                        name: String(sub.name),
                         price: parseFloat(sub.price) || 0,
                       }))
                   : [],
@@ -751,9 +751,9 @@ export default function MenuItemsPage() {
                                 >
                                   <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
                                   <div className="space-y-1.5">
-                                    {item.subItems.map((subItem, index) => (
+                                    {item.subItems.map((subItem) => (
                                       <div
-                                        key={`${uniqueRenderKey}-sub-${subItem.id}-${index}`}
+                                        key={subItem.id}
                                         className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
