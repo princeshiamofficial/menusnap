@@ -305,7 +305,7 @@ export default function OrderDetailsPage() {
                         <div className="space-y-8">
                             {Object.entries(groupedItems).map(([categoryId, items]) => (
                                 <div key={categoryId}>
-                                    <h3 className="text-xl font-semibold mb-4 border-b pb-2 text-foreground">
+                                    <h3 className="text-xl font-semibold mb-4 border-b-2 border-primary/20 pb-2 text-primary">
                                         {categoryMap.get(categoryId) || 'Uncategorized'}
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
