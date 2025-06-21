@@ -8,7 +8,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Layers, Search, Star, Maximize, AlertTriangle, X } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion, useAnimation } from 'framer-motion';
@@ -37,6 +37,10 @@ function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePrevi
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-full h-[90vh] p-2 bg-transparent border-none shadow-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Template Preview</DialogTitle>
+            <DialogDescription>A larger view of the selected template.</DialogDescription>
+          </DialogHeader>
           <div className="relative w-full h-full">
             <Image
               src={imageUrl}
