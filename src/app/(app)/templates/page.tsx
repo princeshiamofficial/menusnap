@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Layers, Search, Star, Maximize, AlertTriangle } from "lucide-react"; 
 import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
 
 interface ApiTemplate {
   id: string;
@@ -46,50 +47,56 @@ function TemplateCard({
   const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
 
   return (
-    <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
-      <CardHeader className="p-0 relative">
-        <div className="aspect-[4/3] relative group">
-          <Image
-            src={actualImageUrl}
-            alt={title}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover"
-            data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : imageHint}
-          />
-          {isTopRated && (
-            <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2.5 shadow">
-              <Star className="h-4 w-4 mr-1.5 fill-current text-yellow-900" />
-              TOP RATED
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute bottom-2 right-2 h-9 w-9 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
-            aria-label="Maximize template preview"
-          >
-            <Maximize className="h-5 w-5" />
+    <motion.div
+      className="h-full"
+      whileHover={{ y: -5, scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+    >
+      <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
+        <CardHeader className="p-0 relative">
+          <div className="aspect-[4/3] relative group">
+            <Image
+              src={actualImageUrl}
+              alt={title}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover"
+              data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : imageHint}
+            />
+            {isTopRated && (
+              <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2.5 shadow">
+                <Star className="h-4 w-4 mr-1.5 fill-current text-yellow-900" />
+                TOP RATED
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute bottom-2 right-2 h-9 w-9 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+              aria-label="Maximize template preview"
+            >
+              <Maximize className="h-5 w-5" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 flex-grow">
+          <h2 className="text-lg font-semibold mb-1.5 text-foreground">{title}</h2>
+          <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{description}</p>
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <Badge key={tag} variant="secondary" className="font-normal text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+        <CardFooter className="p-4 border-t mt-auto">
+          <Button variant="outline" className="w-full">
+            Select Template
           </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 flex-grow">
-        <h2 className="text-lg font-semibold mb-1.5 text-foreground">{title}</h2>
-        <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{description}</p>
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="font-normal text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-      <CardFooter className="p-4 border-t mt-auto">
-        <Button variant="outline" className="w-full">
-          Select Template
-        </Button>
-      </CardFooter>
-    </Card>
+        </CardFooter>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -183,6 +190,24 @@ export default function TemplatesPage(): ReactNode {
       return 0; 
     });
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.07,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+    },
+  };
+
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -232,23 +257,28 @@ export default function TemplatesPage(): ReactNode {
               </p>
             </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {filteredTemplates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                id={template.id}
-                title={template.name}
-                description={template.description}
-                imageUrl={template.imageUrl}
-                imageHint={getImageHint(template.name)}
-                tags={template.tags || []}
-                isTopRated={template.isTopRated}
-              />
+              <motion.div key={template.id} variants={itemVariants}>
+                <TemplateCard
+                  id={template.id}
+                  title={template.name}
+                  description={template.description}
+                  imageUrl={template.imageUrl}
+                  imageHint={getImageHint(template.name)}
+                  tags={template.tags || []}
+                  isTopRated={template.isTopRated}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </main>
     </div>
   );
 }
-    
