@@ -71,7 +71,7 @@ interface Category {
 interface SubMenuItem {
   id: string; 
   name: string;
-  price: number;
+  price?: number;
 }
 
 interface MenuItem {
@@ -271,12 +271,22 @@ export default function MenuItemsPage() {
                 iconPlaceholder: !item.image,
                 subItems: Array.isArray(item.subItems)
                   ? item.subItems
-                      .filter((sub: any) => sub && sub.name && String(sub.name).trim()) // Ensure sub-item is an object with a non-empty name
-                      .map((sub: any, index: number) => ({
-                        id: (sub.id && sub.id !== 'undefined') ? String(sub.id) : `${originalItemId}-sub-${index}`,
-                        name: String(sub.name),
-                        price: parseFloat(sub.price) || 0,
-                      }))
+                      .filter((sub: any) => sub && sub.name && String(sub.name).trim())
+                      .map((sub: any, index: number) => {
+                        const priceVal = sub.price;
+                        let finalPrice: number | undefined = undefined;
+                        if (priceVal !== null && priceVal !== undefined && String(priceVal).trim() !== "") {
+                          const parsed = parseFloat(String(priceVal));
+                          if (!isNaN(parsed)) {
+                            finalPrice = parsed;
+                          }
+                        }
+                        return {
+                          id: (sub.id && sub.id !== 'undefined') ? String(sub.id) : `${originalItemId}-sub-${index}`,
+                          name: String(sub.name),
+                          price: finalPrice,
+                        };
+                      })
                   : [],
               });
               seenOriginalItemIds.add(originalItemId);
@@ -757,7 +767,9 @@ export default function MenuItemsPage() {
                                         className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
-                                        <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
+                                        {typeof subItem.price === 'number' && (
+                                          <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
+                                        )}
                                       </div>
                                     ))}
                                   </div>
