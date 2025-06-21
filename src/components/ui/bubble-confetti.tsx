@@ -4,11 +4,11 @@ import { useRef } from 'react';
 import { motion } from 'framer-motion';
 
 const Bubble = ({ onComplete }: { onComplete: () => void }) => {
-  const duration = Math.random() * 1.5 + 0.5; // 0.5s to 2.0s
-  const delay = Math.random() * 0.2; // up to 0.2s delay
-  const x = (Math.random() - 0.5) * 250; // spread horizontally
-  const y = (Math.random() - 0.5) * 250; // spread vertically
-  const scale = Math.random() * 0.5 + 0.5; // size from 0.5 to 1.0
+  const duration = Math.random() * 1.5 + 0.8; // 0.8s to 2.3s
+  const delay = Math.random() * 0.2;
+  const x = (Math.random() - 0.5) * 400; // Increased spread
+  const y = (Math.random() - 0.5) * 400; // Increased spread
+  const scale = Math.random() * 0.6 + 0.6; // size from 0.6 to 1.2
 
   const colors = [
     'hsl(var(--primary))',
@@ -16,6 +16,8 @@ const Bubble = ({ onComplete }: { onComplete: () => void }) => {
     '#fde047', // yellow-300
     '#a78bfa', // violet-400
     '#60a5fa', // blue-400
+    '#f472b6', // pink-400
+    '#34d399', // emerald-400
   ];
   const color = colors[Math.floor(Math.random() * colors.length)];
 
@@ -36,18 +38,19 @@ const Bubble = ({ onComplete }: { onComplete: () => void }) => {
       onAnimationComplete={onComplete}
       style={{
         position: 'absolute',
-        width: '12px',
-        height: '12px',
+        width: '15px', // slightly larger bubbles
+        height: '15px',
         borderRadius: '50%',
         backgroundColor: color,
-        boxShadow: `0 0 5px ${color}`,
+        boxShadow: `0 0 8px ${color}`,
+        filter: 'blur(0.5px)', // adds a softer look
       }}
       className="pointer-events-none"
     />
   );
 };
 
-export const BubbleConfetti = ({ count = 30, onComplete }: { count?: number; onComplete: () => void }) => {
+export const BubbleConfetti = ({ count = 50, onComplete }: { count?: number; onComplete: () => void }) => {
   const completedCount = useRef(0);
 
   const handleAnimationComplete = () => {

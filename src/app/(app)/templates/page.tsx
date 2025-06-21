@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Layers, Search, Star, Maximize, AlertTriangle } from "lucide-react"; 
 import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
 
 interface ApiTemplate {
@@ -44,11 +44,17 @@ function TemplateCard({
   isTopRated,
 }: TemplateCardProps): ReactNode {
   const [showConfetti, setShowConfetti] = useState(false);
+  const controls = useAnimation();
   const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
   const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
 
   const handleSelectClick = () => {
     setShowConfetti(true);
+    controls.start({
+      scale: [1, 1.05, 1],
+      rotate: [0, 1, -1, 1, 0],
+      transition: { duration: 0.4, ease: "easeInOut" }
+    });
   };
 
   return (
@@ -56,6 +62,7 @@ function TemplateCard({
       className="h-full"
       whileHover={{ y: -5, scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+      animate={controls}
     >
       <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
         <CardHeader className="p-0 relative">
