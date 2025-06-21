@@ -282,7 +282,7 @@ export default function MenuItemsPage() {
                           }
                         }
                         return {
-                          id: (sub.id && sub.id !== 'undefined') ? String(sub.id) : `${originalItemId}-sub-${index}`,
+                          id: (sub.id && String(sub.id) !== 'undefined') ? String(sub.id) : `${originalItemId}-sub-${index}`,
                           name: String(sub.name),
                           price: finalPrice,
                         };
@@ -738,7 +738,7 @@ export default function MenuItemsPage() {
                                   )}
                                 </div>
                                 <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-                                  ৳{(item.price ?? 0).toLocaleString()}
+                                  {item.price > 0 ? `৳${item.price.toLocaleString()}` : null}
                                 </div>
                                 {item.subItems && item.subItems.length > 0 && (
                                   <Button
@@ -767,9 +767,11 @@ export default function MenuItemsPage() {
                                         className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm"
                                       >
                                         <span className="text-foreground">{subItem.name}</span>
-                                        {typeof subItem.price === 'number' && (
+                                        {typeof subItem.price === 'number' && subItem.price > 0 ? (
                                           <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
-                                        )}
+                                        ) : typeof subItem.price !== 'number' ? (
+                                          <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
+                                        ) : null}
                                       </div>
                                     ))}
                                   </div>
