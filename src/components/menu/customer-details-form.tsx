@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { MenuItem } from './menu-preview-dialog'; // Import MenuItem for typing
-import { User, Phone, Mail, Building, MapPin } from 'lucide-react';
+import { User, Phone, Mail, Building, MapPin, Briefcase } from 'lucide-react';
 
 const customerDetailsSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -29,6 +29,7 @@ const customerDetailsSchema = z.object({
     .regex(/^(\+?\d{1,3}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$/, "Invalid phone number format"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   companyName: z.string().max(100).optional(),
+  role: z.string().max(100).optional(),
   deliveryAddress: z.string().max(250).optional(),
 });
 
@@ -54,6 +55,7 @@ export function CustomerDetailsForm({
       phoneNumber: "",
       email: "",
       companyName: "",
+      role: "",
       deliveryAddress: "",
     },
     mode: "onChange",
@@ -142,6 +144,19 @@ export function CustomerDetailsForm({
                 />
                 <FormField
                   control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Briefcase className="h-4 w-4 mr-2 text-muted-foreground"/>Your Role (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Owner, Manager" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="deliveryAddress"
                   render={({ field }) => (
                     <FormItem>
@@ -171,4 +186,3 @@ export function CustomerDetailsForm({
     </Dialog>
   );
 }
-
