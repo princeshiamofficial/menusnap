@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Table,
@@ -154,6 +155,7 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
 
 
 function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void; }) {
+  const router = useRouter();
   if (!order) return null;
 
   const formatDate = (dateString: string, includeTime: boolean = true): string => {
@@ -181,41 +183,17 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
         </DialogHeader>
         <Tabs defaultValue="customer-info" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="mx-auto my-4 bg-muted w-fit">
-            <TabsTrigger value="order-items">Order Items</TabsTrigger>
+            <Button
+              variant="ghost"
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
+            >
+              Order Items
+            </Button>
             <TabsTrigger value="customer-info">Customer Info</TabsTrigger>
             <TabsTrigger value="status-template">Status &amp; Template</TabsTrigger>
           </TabsList>
           <ScrollArea className="flex-1 overflow-y-auto bg-muted/30">
-            <TabsContent value="order-items" className="p-6">
-              <Card className="shadow-sm">
-                <CardHeader><CardTitle>Order Items</CardTitle></CardHeader>
-                <CardContent>
-                  {order.items && order.items.length > 0 ? (
-                    <div className="space-y-3">
-                      {order.items.map((item, index) => (
-                        <div key={`${item.id}-${index}`} className="flex justify-between items-start py-3 border-b last:border-b-0">
-                          <div>
-                            <p className="font-medium text-foreground">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">Quantity: {item.quantity}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-foreground">৳{(item.quantity * item.price).toLocaleString()}</p>
-                            <p className="text-xs text-muted-foreground">@ ৳{item.price.toLocaleString()}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-4">No items in this order.</p>
-                  )}
-                  {order.totalAmount !== undefined && (
-                     <div className="mt-6 pt-4 border-t text-right">
-                        <p className="text-lg font-bold text-foreground">Total Amount: ৳{order.totalAmount.toLocaleString()}</p>
-                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
             <TabsContent value="customer-info" className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="shadow-sm">
@@ -853,4 +831,3 @@ export default function ManageOrdersPage(): ReactNode {
   );
 }
     
-
