@@ -3,9 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -13,13 +11,13 @@ import {
   User,
   Mail,
   Phone,
-  Building2,
   MapPin,
   CalendarDays,
   FileText as FileTextIcon,
   AlertTriangle,
   Printer,
   Download,
+  Building,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -61,6 +59,35 @@ const statusColors: Record<OrderStatus, string> = {
   "Refunded": "bg-gray-100 text-gray-700 dark:bg-gray-700/20 dark:text-gray-400 border-gray-300 dark:border-gray-600",
   "On Hold": "bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-400 border-orange-300 dark:border-orange-600",
 };
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <div className="mt-10 mb-6">
+    <h2 className="inline-block bg-primary text-primary-foreground text-sm font-bold uppercase tracking-widest px-4 py-1.5 rounded">
+      {children}
+    </h2>
+  </div>
+);
+
+const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) => (
+    <div className="flex items-start">
+        <Icon className="h-4 w-4 mr-3 mt-1 text-primary shrink-0" />
+        <div>
+            <p className="font-semibold text-foreground">{value || 'N/A'}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
+        </div>
+    </div>
+);
+
+const OrderItem = ({ name, quantity, price }: { name: string, quantity: number, price: number }) => (
+    <div>
+        <div className="flex justify-between items-baseline">
+            <h3 className="font-bold text-foreground">{name}</h3>
+            <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>
+        </div>
+        <p className="text-sm text-muted-foreground">Quantity: {quantity}</p>
+    </div>
+);
+
 
 export default function OrderDetailsPage() {
     const params = useParams();
@@ -139,24 +166,47 @@ export default function OrderDetailsPage() {
           return "Invalid Date";
         }
     };
+    
+    const subtotal = useMemo(() => {
+        if (!order?.items) return 0;
+        return order.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    }, [order?.items]);
 
     if (isLoading) {
         return (
-            <div className="p-8 space-y-6">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-6 w-full" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Skeleton className="h-64 w-full" />
-                    <Skeleton className="h-64 w-full" />
-                </div>
-                <Skeleton className="h-96 w-full" />
+            <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
+                 <header className="flex items-center justify-between mb-6 max-w-5xl mx-auto">
+                    <Skeleton className="h-10 w-36" />
+                    <div className="flex items-center gap-2">
+                        <Skeleton className="h-10 w-36" />
+                        <Skeleton className="h-10 w-28" />
+                    </div>
+                </header>
+                <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
+                    <div className="flex justify-between items-start border-b pb-8 mb-8">
+                        <Skeleton className="h-14 w-1/3" />
+                        <div className="space-y-2 text-right">
+                            <Skeleton className="h-6 w-48" />
+                            <Skeleton className="h-4 w-56" />
+                            <Skeleton className="h-6 w-24 ml-auto" />
+                        </div>
+                    </div>
+                     <SectionTitle><Skeleton className="h-6 w-32" /></SectionTitle>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                    </div>
+                    <SectionTitle><Skeleton className="h-6 w-40" /></SectionTitle>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                    </div>
+                </main>
             </div>
         )
     }
 
     if (error) {
         return (
-            <div className="p-8 flex flex-col items-center justify-center text-center h-full">
+            <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center">
                 <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
                 <h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Order</h2>
                 <p className="text-muted-foreground max-w-md">{error}</p>
@@ -169,8 +219,8 @@ export default function OrderDetailsPage() {
 
     if (!order) {
         return (
-             <div className="p-8 flex flex-col items-center justify-center text-center h-full">
-                <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
+             <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center">
+                <FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" />
                 <h2 className="text-xl font-semibold mb-2">Order Not Found</h2>
                 <p className="text-muted-foreground max-w-md">The requested order could not be found.</p>
                 <Button variant="outline" onClick={() => router.back()} className="mt-6">
@@ -181,8 +231,8 @@ export default function OrderDetailsPage() {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <header className="flex items-center justify-between mb-6">
+        <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
+            <header className="flex items-center justify-between mb-6 max-w-5xl mx-auto">
                 <Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Orders
@@ -193,67 +243,71 @@ export default function OrderDetailsPage() {
                 </div>
             </header>
 
-            <main className="space-y-6">
-                <Card className="shadow-lg">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-muted/30 p-6">
-                        <div>
-                            <CardTitle className="text-2xl font-bold text-primary">Order ID: {order.orderId}</CardTitle>
-                            <p className="text-xs text-muted-foreground flex items-center pt-1">
-                                <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
-                                Placed on {formatDate(order.orderDate)}
-                            </p>
-                        </div>
-                        <Badge variant="outline" className={cn("text-sm py-1 px-3 font-medium", statusColors[order.status] || statusColors.Pending)}>
+            <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
+                 <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
+                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground">
+                        Order Details
+                    </h1>
+                    <div className="text-right text-muted-foreground text-sm space-y-1">
+                        <p className="font-bold text-lg text-foreground">Order ID: {order.orderId}</p>
+                        <p className="flex items-center justify-end gap-2">
+                           <CalendarDays className="h-4 w-4" />
+                           {formatDate(order.orderDate)}
+                        </p>
+                        <Badge variant="outline" className={cn("text-xs py-1 px-2.5 font-medium", statusColors[order.status] || statusColors.Pending)}>
                             {order.status}
                         </Badge>
-                    </CardHeader>
-                </Card>
+                    </div>
+                </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center">
-                            <FileTextIcon className="mr-2 h-5 w-5 text-primary"/>
-                            Order Items
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                       {order.items && order.items.length > 0 ? (
-                            <div className="space-y-3">
-                                {order.items.map((item, index) => (
-                                    <div key={`${item.id}-${index}`} className="flex justify-between items-start py-3 px-4 border rounded-lg bg-muted/50 last:border-b-0">
-                                        <div>
-                                            <p className="font-medium text-foreground">{item.name}</p>
-                                            <p className="text-xs text-muted-foreground">Quantity: {item.quantity}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-semibold text-foreground">৳{(item.quantity * item.price).toLocaleString()}</p>
-                                            <p className="text-xs text-muted-foreground">@ ৳{item.price.toLocaleString()}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                                {order.totalAmount !== undefined && (
-                                    <>
-                                        <Separator className="my-4"/>
-                                        <div className="flex justify-end pt-2 text-right">
-                                            <div>
-                                                <p className="text-muted-foreground">Subtotal</p>
-                                                <p className="text-muted-foreground">Tax (0%)</p>
-                                                <p className="text-lg font-bold text-foreground mt-1">Total Amount</p>
-                                            </div>
-                                            <div className="ml-8">
-                                                <p>৳{order.totalAmount.toLocaleString()}</p>
-                                                <p>৳0.00</p>
-                                                <p className="text-lg font-bold text-primary mt-1">৳{order.totalAmount.toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                    </>
-                                 )}
+                <section>
+                    <SectionTitle>Customer Info</SectionTitle>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <InfoItem icon={User} label="Customer Name" value={order.customerName} />
+                        <InfoItem icon={Phone} label="Phone Number" value={order.customerPhone} />
+                        <InfoItem icon={Mail} label="Email Address" value={order.customerEmail} />
+                        <InfoItem icon={Building} label="Business Name" value={order.businessName} />
+                        <InfoItem icon={MapPin} label="Address" value={order.customerAddress} />
+                    </div>
+                </section>
+                
+                <section>
+                    <SectionTitle>Order Summary</SectionTitle>
+                    {order.items && order.items.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                            {order.items.map((item, index) => (
+                                <OrderItem
+                                    key={`${item.id}-${index}`}
+                                    name={item.name}
+                                    quantity={item.quantity}
+                                    price={item.price}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground text-center py-4">No items were found in this order.</p>
+                    )}
+                </section>
+
+                {order.totalAmount !== undefined && (
+                    <section className="mt-12 pt-6 border-t border-border">
+                        <div className="max-w-xs ml-auto text-right space-y-2 text-md">
+                             <div className="flex justify-between">
+                                <span className="text-muted-foreground">Subtotal:</span>
+                                <span className="font-medium text-foreground">৳{subtotal.toLocaleString()}</span>
                             </div>
-                        ) : (
-                            <p className="text-muted-foreground text-center py-4">No items were found in this order.</p>
-                        )}
-                    </CardContent>
-                </Card>
+                             <div className="flex justify-between">
+                                <span className="text-muted-foreground">Tax (0%):</span>
+                                <span className="font-medium text-foreground">৳0.00</span>
+                            </div>
+                             <div className="flex justify-between text-xl font-bold text-primary">
+                                <span>Total:</span>
+                                <span>৳{order.totalAmount.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
             </main>
         </div>
     )
