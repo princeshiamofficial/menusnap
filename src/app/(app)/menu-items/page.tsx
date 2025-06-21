@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -547,7 +548,11 @@ export default function MenuItemsPage() {
             <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
           </div>
           <ScrollArea className="flex-1">
-            {loadingCategories && <p className="p-4 text-sm text-muted-foreground">Loading categories...</p>}
+            {loadingCategories && (
+              <div className="p-2 space-y-2.5">
+                {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}
+              </div>
+            )}
             {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
             {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
               <p className="p-4 text-sm text-muted-foreground">No visible categories found for {selectedMenuType} menu.</p>
@@ -650,8 +655,21 @@ export default function MenuItemsPage() {
                 </div>
               )}
               {loadingMenuItems && (
-                <div className="flex-1 flex items-center justify-center py-10">
-                  <p className="text-muted-foreground">Loading menu items...</p>
+                <div className={cn("grid gap-4", itemsGridClass)}>
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <Card key={index} className="shadow-sm rounded-lg bg-card">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <Skeleton className="h-5 w-5 rounded-sm mt-1" />
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-3 w-full" />
+                          </div>
+                          <Skeleton className="h-5 w-12" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
               {errorMenuItems && (
