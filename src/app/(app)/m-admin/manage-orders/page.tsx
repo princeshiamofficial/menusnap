@@ -188,7 +188,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
               className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
             >
-              Order Items
+              View Items
             </Button>
             <TabsTrigger value="customer-info">Customer Info</TabsTrigger>
             <TabsTrigger value="status-template">Status &amp; Template</TabsTrigger>
