@@ -11,12 +11,10 @@ import {
   Eye,
   GripVertical,
   ChevronRight,
-  MinusCircle,
   PlusCircle,
   Send,
   FileText as DefaultCategoryIcon,
   Edit,
-  Trash2,
   X,
   Plus,
   ChevronDown
@@ -40,16 +38,6 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -59,7 +47,7 @@ import {
 import { useTheme } from '@/context/ThemeContext';
 import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog';
 import { useToast } from "@/hooks/use-toast";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -131,11 +119,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
       name: initialData?.name || "",
       price: initialData?.price || 0,
       description: initialData?.description || "",
-      subItems: initialData?.subItems?.map(si => ({
-        id: si.id,
-        name: si.name,
-        price: si.price
-      })) || [],
+      subItems: initialData?.subItems?.map(si => ({ ...si })) || [],
     },
     mode: 'onChange',
   });
@@ -155,8 +139,6 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
       });
     }
   }, [isOpen, initialData, form]);
-
-  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -208,12 +190,12 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
   );
 }
 
+
 const MenuItemCard = React.memo(function MenuItemCard({ 
   item, 
   isSelected, 
   onSelectItem, 
   onEditItem, 
-  onDeleteItem, 
   onToggleSubItems,
   isSubItemsExpanded
 }: {
@@ -221,7 +203,6 @@ const MenuItemCard = React.memo(function MenuItemCard({
   isSelected: boolean;
   onSelectItem: (id: string) => void;
   onEditItem: (item: MenuItem) => void;
-  onDeleteItem: (item: MenuItem) => void;
   onToggleSubItems: (id: string) => void;
   isSubItemsExpanded: boolean;
 }) {
@@ -237,7 +218,6 @@ const MenuItemCard = React.memo(function MenuItemCard({
           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">{item.price > 0 && `৳${item.price.toLocaleString()}`}</div>
           <div className="flex flex-col gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4"/></Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDeleteItem(item)}><Trash2 className="h-4 w-4"/></Button>
           </div>
         </div>
         {item.subItems && item.subItems.length > 0 && (
@@ -284,9 +264,7 @@ export default function MenuItemsPage() {
 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
@@ -420,23 +398,6 @@ export default function MenuItemsPage() {
     setIsFormDialogOpen(true);
   }, []);
 
-  const handleOpenDeleteItem = useCallback((item: MenuItem) => {
-    setItemToDelete(item);
-    setIsDeleteDialogOpen(true);
-  }, []);
-
-  const handleConfirmDelete = () => {
-    if (!itemToDelete) return;
-
-    const newItems = allMenuItems.filter(i => i.id !== itemToDelete.id);
-    setAllMenuItems(newItems);
-    localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(newItems));
-    
-    toast({ title: "Item Deleted", description: `"${itemToDelete.name}" has been removed.` });
-    setIsDeleteDialogOpen(false);
-    setItemToDelete(null);
-  };
-
   const handleFormSubmit = (data: MenuItemFormValues) => {
     setIsSubmitting(true);
     let newItems;
@@ -471,14 +432,19 @@ export default function MenuItemsPage() {
 
   const currentMenuItems = useMemo(() => {
     const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    
+    // Ensure allMenuItems have string IDs before filtering
     const itemsOfCurrentType = allMenuItems.filter(item => String(item.id).startsWith(currentExpectedPrefix));
+    
     let itemsToFilter = itemsOfCurrentType;
     if (selectedCategory && String(selectedCategory.id).startsWith(currentExpectedPrefix)) {
       itemsToFilter = itemsOfCurrentType.filter(item => item.category === selectedCategory.id);
     }
+    
     if (!debouncedSearchTerm) {
         return itemsToFilter;
     }
+    
     return itemsToFilter.filter(item => item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
   }, [selectedCategory, allMenuItems, debouncedSearchTerm, selectedMenuType]);
 
@@ -584,7 +550,6 @@ export default function MenuItemsPage() {
                       isSelected={!!selectedItems[item.id]}
                       onSelectItem={handleSelectItem}
                       onEditItem={handleOpenEditItem}
-                      onDeleteItem={handleOpenDeleteItem}
                       onToggleSubItems={toggleSubItems}
                       isSubItemsExpanded={!!expandedSubItems[item.id]}
                     />
@@ -605,21 +570,6 @@ export default function MenuItemsPage() {
         categoryName={selectedCategory?.name}
         isSubmitting={isSubmitting}
       />
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the item "{itemToDelete?.name}". This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <MenuPreviewDialog
         isOpen={isPreviewDialogOpen}
