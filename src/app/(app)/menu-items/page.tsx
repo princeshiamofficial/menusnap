@@ -231,7 +231,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
                 {item.subItems.map((subItem, index) => (
                   <div key={subItem.id || index} className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm">
                     <span className="text-foreground">{subItem.name}</span>
-                    {subItem.price && subItem.price > 0 && <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>}
+                    {(typeof subItem.price === 'number' && subItem.price > 0) && <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>}
                   </div>
                 ))}
               </div>
@@ -543,9 +543,9 @@ export default function MenuItemsPage() {
               <>
                 {selectedCategory && <h2 className="text-xl font-semibold text-foreground mb-4">{selectedCategory.name}</h2>}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {currentMenuItems.map((item, index) => (
+                  {currentMenuItems.map((item) => (
                     <MenuItemCard
-                      key={`${item.id}-${index}`}
+                      key={`${item.id}-${item.name}`}
                       item={item}
                       isSelected={!!selectedItems[item.id]}
                       onSelectItem={handleSelectItem}
