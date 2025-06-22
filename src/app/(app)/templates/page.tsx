@@ -9,10 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Layers, Search, Star, Maximize, AlertTriangle, X } from "lucide-react"; 
 import type { ReactNode } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
+import { useToast } from "@/hooks/use-toast";
 
 interface ApiTemplate {
   id: string;
@@ -68,47 +70,31 @@ function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePrevi
 
 
 interface TemplateCardProps {
-  id: string;
-  imageUrl: string;
-  imageHint: string;
-  title: string;
-  description: string;
-  tags: string[];
-  isTopRated?: boolean;
+  template: ApiTemplate;
   onPreview: (imageUrl: string) => void;
+  onSelect: (template: ApiTemplate) => void;
 }
 
 const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
 
 function TemplateCard({
-  imageUrl,
-  imageHint,
-  title,
-  description,
-  tags,
-  isTopRated,
+  template,
   onPreview,
+  onSelect,
 }: TemplateCardProps): ReactNode {
-  const [showConfetti, setShowConfetti] = useState(false);
-  const controls = useAnimation();
+  const { imageUrl, name: title, description, tags, isTopRated } = template;
   const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
   const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
-
-  const handleSelectClick = () => {
-    setShowConfetti(true);
-    controls.start({
-      scale: [1, 1.05, 1],
-      rotate: [0, 1, -1, 1, 0],
-      transition: { duration: 0.4, ease: "easeInOut" }
-    });
-  };
+  
+  const getImageHint = (name: string): string => {
+    return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
+  }
 
   return (
     <motion.div
       className="h-full"
       whileHover={{ y: -5, scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-      animate={controls}
     >
       <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
         <CardHeader className="p-0 relative">
@@ -119,7 +105,7 @@ function TemplateCard({
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover"
-              data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : imageHint}
+              data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
             />
             {isTopRated && (
               <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2.5 shadow">
@@ -152,15 +138,10 @@ function TemplateCard({
         <CardFooter className="p-4 border-t mt-auto">
           <Button
             variant="outline"
-            className="w-full relative overflow-hidden"
-            onClick={handleSelectClick}
+            className="w-full"
+            onClick={() => onSelect(template)}
           >
             Select Template
-            {showConfetti && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <BubbleConfetti onComplete={() => setShowConfetti(false)} />
-              </div>
-            )}
           </Button>
         </CardFooter>
       </Card>
@@ -197,6 +178,9 @@ export default function TemplatesPage(): ReactNode {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [templateToConfirm, setTemplateToConfirm] = useState<ApiTemplate | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchTemplates() {
@@ -234,6 +218,22 @@ export default function TemplatesPage(): ReactNode {
     }
     fetchTemplates();
   }, []);
+
+  const handleSelectTemplate = (template: ApiTemplate) => {
+    setTemplateToConfirm(template);
+  };
+
+  const handleConfirmSelection = () => {
+    if (!templateToConfirm) return;
+
+    setShowConfetti(true);
+    toast({
+      title: "Template Confirmed!",
+      description: `You've selected the "${templateToConfirm.name}" template.`,
+    });
+
+    setTemplateToConfirm(null); // Close dialog
+  };
 
   const getImageHint = (name: string): string => {
     return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
@@ -335,20 +335,37 @@ export default function TemplatesPage(): ReactNode {
             {filteredTemplates.map((template) => (
               <motion.div key={template.id} variants={itemVariants}>
                 <TemplateCard
-                  id={template.id}
-                  title={template.name}
-                  description={template.description}
-                  imageUrl={template.imageUrl}
-                  imageHint={getImageHint(template.name)}
-                  tags={template.tags || []}
-                  isTopRated={template.isTopRated}
+                  template={template}
                   onPreview={setPreviewImageUrl}
+                  onSelect={handleSelectTemplate}
                 />
               </motion.div>
             ))}
           </motion.div>
         )}
       </main>
+
+      <AlertDialog open={!!templateToConfirm} onOpenChange={(open) => !open && setTemplateToConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Template Selection</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to select the "{templateToConfirm?.name}" template? This will be the base for your new menu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTemplateToConfirm(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSelection}>Confirm & Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {showConfetti && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
+          <BubbleConfetti onComplete={() => setShowConfetti(false)} />
+        </div>
+      )}
+
       <TemplatePreviewDialog
         imageUrl={previewImageUrl}
         isOpen={!!previewImageUrl}
