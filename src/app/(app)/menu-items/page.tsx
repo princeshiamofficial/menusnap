@@ -15,9 +15,14 @@ import {
   PlusCircle,
   Send,
   FileText as DefaultCategoryIcon,
+  Edit,
+  Trash2,
+  X,
+  Plus
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,6 +30,24 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -35,8 +58,14 @@ import {
 import { useTheme } from '@/context/ThemeContext';
 import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog';
 import { useToast } from "@/hooks/use-toast";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
+const CLIENT_MENU_ITEMS_STORAGE_KEY = 'clientMenuItems';
+const CLIENT_CATEGORIES_STORAGE_KEY = 'clientCategories';
+
 
 interface DraftSubItem {
   id: string; 
@@ -90,6 +119,112 @@ interface MenuItem {
   iconPlaceholder?: boolean;
 }
 
+const menuItemFormSchema = z.object({
+  name: z.string().min(1, "Item name is required").max(100),
+  price: z.coerce.number().min(0, "Price must be non-negative."),
+  description: z.string().max(500).optional().nullable(),
+  subItems: z.array(
+    z.object({
+      id: z.string().optional(),
+      name: z.string().min(1, "Variation name is required."),
+      price: z.coerce.number().min(0).optional(),
+    })
+  ).optional(),
+});
+
+type MenuItemFormValues = z.infer<typeof menuItemFormSchema>;
+
+interface MenuItemFormProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: MenuItemFormValues) => void;
+  initialData?: Partial<MenuItem>;
+  categoryName?: string;
+  isSubmitting: boolean;
+}
+
+function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryName, isSubmitting }: MenuItemFormProps) {
+  const form = useForm<MenuItemFormValues>({
+    resolver: zodResolver(menuItemFormSchema),
+    defaultValues: {
+      name: initialData?.name || "",
+      price: initialData?.price || 0,
+      description: initialData?.description || "",
+      subItems: initialData?.subItems?.map(si => ({
+        id: si.id,
+        name: si.name,
+        price: si.price
+      })) || [],
+    },
+    mode: 'onChange',
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "subItems",
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        name: initialData?.name || "",
+        price: initialData?.price || 0,
+        description: initialData?.description || "",
+        subItems: initialData?.subItems?.map(si => ({ ...si })) || [],
+      });
+    }
+  }, [isOpen, initialData, form]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
+        <DialogHeader>
+          <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${categoryName} Item` : 'Menu Item'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
+          <ScrollArea className="flex-grow min-h-0 p-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="item-name">Item Name</Label>
+                <Input id="item-name" {...form.register("name")} placeholder="e.g., Classic Burger" />
+                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="item-price">Base Price (৳)</Label>
+                <Input id="item-price" type="number" {...form.register("price")} placeholder="0" step="0.01"/>
+                {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="item-description">Description</Label>
+                <Textarea id="item-description" {...form.register("description")} placeholder="Describe the item"/>
+                {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
+              </div>
+
+              <div className="pt-4">
+                <Label className="font-semibold">Variations / Sizes</Label>
+                <div className="space-y-2 mt-2">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                      <Input {...form.register(`subItems.${index}.name`)} placeholder="Variation name" className="h-8"/>
+                      <Input {...form.register(`subItems.${index}.price`)} type="number" placeholder="Price (৳)" className="h-8 w-28" />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive h-8 w-8"><X className="h-4 w-4"/></Button>
+                    </div>
+                  ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ name: "", price: undefined })} className="mt-2"><Plus className="h-4 w-4 mr-2"/>Add Variation</Button>
+              </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter className="pt-4 border-t">
+            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 export default function MenuItemsPage() {
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
@@ -99,445 +234,204 @@ export default function MenuItemsPage() {
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); 
   const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
 
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [errorCategories, setErrorCategories] = useState<string | null>(null);
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]); 
-  const [loadingMenuItems, setLoadingMenuItems] = useState(true);
-  const [errorMenuItems, setErrorMenuItems] = useState<string | null>(null);
-
+  
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({}); 
-  const { setTheme } = useTheme();
   const { toast } = useToast();
   const router = useRouter();
 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
-  const [draftIdForRestoration, setDraftIdForRestoration] = useState<string | null>(null);
-
-  useEffect(() => {
-    const idFromStorage = typeof window !== 'undefined' ? localStorage.getItem('draftToRestoreId') : null;
-    if (idFromStorage) {
-      setDraftIdForRestoration(idFromStorage);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('draftToRestoreId'); 
-      }
-    }
-  }, []); 
+  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
-  const fetchData = useCallback(async () => {
-    setLoadingCategories(true);
-    setErrorCategories(null);
-    setLoadingMenuItems(true);
-    setErrorMenuItems(null);
+  const fetchAndSeedData = useCallback(async (menuType: string) => {
+    setLoading(true);
+    setError(null);
 
-    const currentIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
-
-    const categoriesApiUrl = selectedMenuType === 'parlour'
-      ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
-      : 'https://colorhutbd.xyz/vm/api/categories.php';
-
-    let menuItemsApiUrl = selectedMenuType === 'parlour'
-      ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
-      : 'https://colorhutbd.xyz/vm/api/menu-items.php';
-
+    const categoriesApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php' : 'https://colorhutbd.xyz/vm/api/categories.php';
+    let menuItemsApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-items.php' : 'https://colorhutbd.xyz/vm/api/menu-items.php';
     menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
-    
-    let categoriesResponse: Response | undefined;
-    let menuItemsResponse: Response | undefined;
 
     try {
-      const fetchPromises: [Promise<Response>, Promise<Response>] = [
-        fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } }),
-        fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
-      ];
-      const responses = await Promise.all(fetchPromises);
-      categoriesResponse = responses[0];
-      menuItemsResponse = responses[1];
-    } catch (networkError: any) {
-      console.error("Network error during initial data fetch:", networkError);
-      setErrorCategories("Network error fetching categories.");
-      setErrorMenuItems("Network error fetching menu items.");
-      setApiCategories([]);
-      setOrderedCategories([]);
-      setSelectedCategory(null);
-      setAllMenuItems([]);
-      setLoadingCategories(false);
-      setLoadingMenuItems(false);
-      return;
-    }
+      const [categoriesRes, itemsRes] = await Promise.all([
+        fetch(categoriesApiUrl),
+        fetch(menuItemsApiUrl)
+      ]);
 
-    // Process Categories
-    try {
-      if (!categoriesResponse || !categoriesResponse.ok) {
-        throw new Error(`Categories API error! status: ${categoriesResponse?.status || 'unknown'}`);
-      }
-      const categoriesApiResponse = await categoriesResponse.json();
-      if (!categoriesApiResponse.success || !categoriesApiResponse.data || !Array.isArray(categoriesApiResponse.data.categories)) {
-        console.error("Invalid API response structure for categories:", categoriesApiResponse);
-        throw new Error("Invalid data format for categories from API");
-      }
+      if (!categoriesRes.ok || !itemsRes.ok) throw new Error("Failed to fetch initial data from API.");
 
-      const fetchedApiCategories: Category[] = categoriesApiResponse.data.categories
-        .filter((cat: any) => cat.id !== null && cat.id !== undefined)
-        .map((cat: any) => ({
-          id: `${currentIdPrefix}${String(cat.id)}`, 
-          name: String(cat.name || 'Unnamed Category'),
-          icon: String(cat.icon || '📁'),
-          itemCount: Number(cat.itemCount || 0),
-          status: String(cat.status || 'active'),
-          createdAt: String(cat.createdAt || new Date().toISOString()),
-          description: String(cat.description || ''),
-          visibleToUsers: cat.visibleToUsers !== undefined ? Boolean(cat.visibleToUsers) : true,
+      const categoriesData = await categoriesRes.json();
+      const itemsData = await itemsRes.json();
+
+      if (!categoriesData.success || !Array.isArray(categoriesData.data.categories)) throw new Error("Invalid category data format.");
+
+      const rawItems = Array.isArray(itemsData) ? itemsData : (itemsData.success && Array.isArray(itemsData.data)) ? itemsData.data : [];
+      
+      const idPrefix = menuType === 'restaurant' ? 'restaurant-' : 'parlour-';
+      
+      const sanitizedCategories: Category[] = categoriesData.data.categories
+        .filter((cat: any) => cat.visibleToUsers)
+        .map((cat: any) => ({ ...cat, id: `${idPrefix}${cat.id}` }));
+        
+      const sanitizedItems: MenuItem[] = rawItems
+        .filter((item: any) => item.visibleToUsers)
+        .map((item: any) => ({
+            ...item,
+            id: `${idPrefix}${item.id}`,
+            category: `${idPrefix}${item.category}`,
+            subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any, index: number) => ({
+                id: sub.id ? `${idPrefix}${sub.id}` : `${idPrefix}${item.id}-sub-${index}`,
+                name: sub.name,
+                price: sub.price ? parseFloat(sub.price) : undefined
+            })) : [],
         }));
 
-      const visibleCategories = fetchedApiCategories.filter(cat => cat.visibleToUsers);
-      const sortedVisibleCategories = [...visibleCategories].sort((a, b) => a.name.localeCompare(b.name));
+      localStorage.setItem(`${CLIENT_CATEGORIES_STORAGE_KEY}_${menuType}`, JSON.stringify(sanitizedCategories));
+      localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${menuType}`, JSON.stringify(sanitizedItems));
 
-      setApiCategories(sortedVisibleCategories);
-      setOrderedCategories(sortedVisibleCategories);
-      
-      const isRestoring = !!draftIdForRestoration; 
+      setApiCategories(sanitizedCategories);
+      setOrderedCategories(sanitizedCategories.sort((a,b) => a.name.localeCompare(b.name)));
+      setAllMenuItems(sanitizedItems);
+      setSelectedCategory(sanitizedCategories.length > 0 ? sanitizedCategories[0] : null);
 
-      if (!isRestoring) {
-        if (sortedVisibleCategories.length > 0) {
-            let categoryToSelect: Category | null = null;
-            if (selectedCategory && sortedVisibleCategories.some(c => c.id === selectedCategory.id && c.id.startsWith(currentIdPrefix))) {
-                categoryToSelect = selectedCategory;
+    } catch (err: any) {
+      setError(err.message || "Could not load data.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadData = useCallback(async (menuType: string) => {
+    setLoading(true);
+    const storedCategories = localStorage.getItem(`${CLIENT_CATEGORIES_STORAGE_KEY}_${menuType}`);
+    const storedItems = localStorage.getItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${menuType}`);
+
+    if (storedCategories && storedItems) {
+      try {
+        const categories = JSON.parse(storedCategories);
+        const items = JSON.parse(storedItems);
+        setApiCategories(categories);
+        setOrderedCategories(categories.sort((a:Category, b:Category) => a.name.localeCompare(b.name)));
+        setAllMenuItems(items);
+        if (categories.length > 0) {
+            const currentCatExists = categories.some((c: Category) => c.id === selectedCategory?.id);
+            if (!currentCatExists) {
+                setSelectedCategory(categories[0]);
             }
-            if (!categoryToSelect) { 
-                 categoryToSelect = sortedVisibleCategories[0];
-            }
-            setSelectedCategory(categoryToSelect);
-        } else { 
+        } else {
             setSelectedCategory(null);
         }
-      } else {
-         if (selectedCategory && !selectedCategory.id.startsWith(currentIdPrefix)) {
-             setSelectedCategory(null);
-         }
-      }
-      setErrorCategories(null);
-    } catch (e: any) {
-      console.error("Failed to fetch/process categories:", e);
-      setErrorCategories(e.message || "Error processing categories data.");
-      setApiCategories([]);
-      setOrderedCategories([]);
-      setSelectedCategory(null);
-    } finally {
-      setLoadingCategories(false);
-    }
-
-    // Process Menu Items
-    if (menuItemsResponse) {
-      try {
-        if (!menuItemsResponse.ok) {
-          throw new Error(`Menu Items API error! status: ${menuItemsResponse?.status || 'unknown'}`);
-        }
-        const menuItemsApiResponse = await menuItemsResponse.json();
-        let rawItemsArray: any[] = [];
-
-        if (Array.isArray(menuItemsApiResponse)) { 
-            rawItemsArray = menuItemsApiResponse;
-        } else if (menuItemsApiResponse.success && Array.isArray(menuItemsApiResponse.data)) { 
-            rawItemsArray = menuItemsApiResponse.data;
-        } else if (menuItemsApiResponse.success && menuItemsApiResponse.data && Array.isArray(menuItemsApiResponse.data.items)) { 
-             rawItemsArray = menuItemsApiResponse.data.items;
-        } else {
-            console.error("Invalid API response structure for menu items:", menuItemsApiResponse);
-            throw new Error("Invalid data format for menu items from API");
-        }
-
-        const uniqueFetchedMenuItems: MenuItem[] = [];
-        const seenOriginalItemIds = new Set<string>();
-
-        rawItemsArray
-          .filter((item: any) => item.id !== null && item.id !== undefined && item.visibleToUsers) 
-          .forEach((item: any) => {
-            const originalItemId = String(item.id);
-            if (!seenOriginalItemIds.has(originalItemId)) {
-              uniqueFetchedMenuItems.push({
-                id: originalItemId, 
-                name: String(item.name || 'Unnamed Item'),
-                price: parseFloat(item.price) || 0,
-                category: `${currentIdPrefix}${String(item.category || 'uncategorized')}`, 
-                description: String(item.description || ''),
-                image: item.image,
-                status: String(item.status || 'active'),
-                featured: Boolean(item.featured || false),
-                visibleToUsers: item.visibleToUsers !== undefined ? Boolean(item.visibleToUsers) : true,
-                createdAt: String(item.createdAt || new Date().toISOString()),
-                updatedAt: String(item.updatedAt || new Date().toISOString()),
-                iconPlaceholder: !item.image,
-                subItems: Array.isArray(item.subItems)
-                  ? item.subItems
-                      .filter((sub: any) => sub && sub.name && String(sub.name).trim())
-                      .map((sub: any, index: number) => {
-                        const priceVal = sub.price;
-                        let finalPrice: number | undefined = undefined;
-                        if (priceVal !== null && priceVal !== undefined && String(priceVal).trim() !== "") {
-                          const parsed = parseFloat(String(priceVal));
-                          if (!isNaN(parsed)) {
-                            finalPrice = parsed;
-                          }
-                        }
-                        return {
-                          id: (sub.id && String(sub.id) !== 'undefined') ? String(sub.id) : `${originalItemId}-sub-${index}`,
-                          name: String(sub.name),
-                          price: finalPrice,
-                        };
-                      })
-                  : [],
-              });
-              seenOriginalItemIds.add(originalItemId);
-            }
-          });
-        setAllMenuItems(uniqueFetchedMenuItems);
-        setErrorMenuItems(null);
-      } catch (e: any) {
-        console.error("Failed to fetch/process menu items:", e);
-        setErrorMenuItems(e.message || "Error processing menu items data.");
-        setAllMenuItems([]);
-      } finally {
-        setLoadingMenuItems(false);
+        setLoading(false);
+      } catch (e) {
+        await fetchAndSeedData(menuType);
       }
     } else {
-       setLoadingMenuItems(false);
-       setErrorMenuItems("Menu items response was unexpectedly undefined.");
-       setAllMenuItems([]);
+      await fetchAndSeedData(menuType);
     }
-  }, [selectedMenuType, setTheme, draftIdForRestoration, selectedCategory]); 
+  }, [fetchAndSeedData, selectedCategory?.id]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    loadData(selectedMenuType);
+  }, [selectedMenuType, loadData]);
 
-
-  // Effect for handling draft restoration
-  useEffect(() => {
-    if (!draftIdForRestoration) return; 
-
-    if (loadingCategories || loadingMenuItems) return;
-
-    const allDraftsString = typeof window !== 'undefined' ? localStorage.getItem(DRAFTS_STORAGE_KEY) : null;
-    if (!allDraftsString) {
-      toast({ title: "Error", description: "Could not find your saved drafts.", variant: "destructive" });
-      setDraftIdForRestoration(null); 
+  const handleOpenAddItem = () => {
+    if (!selectedCategory) {
+      toast({ title: "No Category Selected", description: "Please select a category to add an item to.", variant: "destructive" });
       return;
     }
+    setEditingItem(null);
+    setIsFormDialogOpen(true);
+  };
+  
+  const handleOpenEditItem = (item: MenuItem) => {
+    setEditingItem(item);
+    setIsFormDialogOpen(true);
+  };
 
-    let allDrafts: DraftItem[];
-    try {
-      allDrafts = JSON.parse(allDraftsString);
-    } catch (e) {
-      console.error("Error parsing drafts from localStorage:", e);
-      toast({ title: "Error", description: "Saved draft data appears to be corrupted.", variant: "destructive" });
-      setDraftIdForRestoration(null); 
-      return;
-    }
+  const handleOpenDeleteItem = (item: MenuItem) => {
+    setItemToDelete(item);
+    setIsDeleteDialogOpen(true);
+  };
 
-    const draftToRestore = allDrafts.find(d => d.id === draftIdForRestoration);
-    if (!draftToRestore) {
-      toast({ title: "Error", description: `The selected draft (ID: ${draftIdForRestoration}) was not found.`, variant: "destructive" });
-      setDraftIdForRestoration(null); 
-      return;
-    }
+  const handleConfirmDelete = () => {
+    if (!itemToDelete) return;
+
+    const newItems = allMenuItems.filter(i => i.id !== itemToDelete.id);
+    setAllMenuItems(newItems);
+    localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(newItems));
     
-    const draftMenuTypeFromFile = draftToRestore.primaryTag.split('-')[0].toLowerCase();
+    toast({ title: "Item Deleted", description: `"${itemToDelete.name}" has been removed.` });
+    setIsDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
 
-    if (draftMenuTypeFromFile !== selectedMenuType) {
-      setSelectedMenuType(draftMenuTypeFromFile);
-      return; 
-    }
-    
-    const draftContentIdPrefix = draftMenuTypeFromFile === 'parlour' ? 'parlour-' : 'restaurant-';
-    const categoriesForCurrentType = apiCategories.filter(c => c.id.startsWith(draftContentIdPrefix));
-    const itemsForCurrentType = allMenuItems.filter(i => i.category.startsWith(draftContentIdPrefix));
+  const handleFormSubmit = (data: MenuItemFormValues) => {
+    setIsSubmitting(true);
+    let newItems;
+    const idPrefix = selectedMenuType === 'restaurant' ? 'restaurant-' : 'parlour-';
 
-    if (categoriesForCurrentType.length === 0 && itemsForCurrentType.length === 0 && draftToRestore.itemCount > 0) {
-      toast({ title: "Draft Info", description: `No categories or items available for the '${draftMenuTypeFromFile}' menu type. Draft cannot be fully restored.`, variant: "default" });
-      setDraftIdForRestoration(null); 
-      return;
-    }
-
-    let itemsActuallySelectedCount = 0;
-    if (draftToRestore.items && draftToRestore.items.length > 0) {
-      const newSelectedItemsState = draftToRestore.items.reduce((acc, draftSubItem) => {
-        const fullTargetCategoryIdForMatching = `${draftContentIdPrefix}${draftSubItem.categoryId}`;
-        if (itemsForCurrentType.some(menuItem => 
-            menuItem.id === draftSubItem.id &&
-            menuItem.category === fullTargetCategoryIdForMatching 
-        )) {
-          acc[draftSubItem.id] = true;
-          itemsActuallySelectedCount++;
-        }
-        return acc;
-      }, {} as Record<string, boolean>);
-      setSelectedItems(newSelectedItemsState);
-
-      if (itemsActuallySelectedCount > 0) {
-        toast({ title: "Draft Restored", description: `${itemsActuallySelectedCount} items have been selected.` });
-      } else if (draftToRestore.items.length > 0) {
-        toast({ title: "Draft Info", description: "No items from the draft could be matched to the current menu.", variant: "default" });
-      } else {
-         toast({ title: "Draft Restored", description: "The selected draft had no items." });
+    if (editingItem) { // Editing existing item
+      newItems = allMenuItems.map(item => item.id === editingItem.id ? { ...item, ...data } : item);
+      toast({ title: "Item Updated", description: `"${data.name}" has been updated.` });
+    } else { // Adding new item
+      if (!selectedCategory) {
+        toast({ title: "Error", description: "Cannot add item without a selected category.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
       }
-    } else {
-      setSelectedItems({});
-      toast({ title: "Draft Restored", description: "The selected draft had no items." });
-    }
-    
-    const tagParts = draftToRestore.primaryTag.split('-');
-    let draftCategorySlug = 'general'; 
-    if (tagParts.length > 1 && tagParts[0].toLowerCase() === draftMenuTypeFromFile) {
-        draftCategorySlug = tagParts[1];
-    }
-    
-    let categorySetByDraft = false;
-    if (draftCategorySlug && draftCategorySlug !== 'general' && categoriesForCurrentType.length > 0) {
-        const targetCategory = categoriesForCurrentType.find(
-            cat => cat.name.toLowerCase().replace(/\s+/g, '-') === draftCategorySlug
-        );
-        if (targetCategory) {
-            setSelectedCategory(targetCategory);
-            categorySetByDraft = true;
-        } else {
-             toast({ title: "Info", description: `Category slug "${draftCategorySlug}" from draft not found. Defaulting.`, variant: "default" });
-        }
-    }
-    
-    if (!categorySetByDraft) {
-      if (categoriesForCurrentType.length > 0) {
-          if (!selectedCategory || !selectedCategory.id.startsWith(draftContentIdPrefix)) {
-            setSelectedCategory(categoriesForCurrentType[0]);
-          }
-      } else {
-        setSelectedCategory(null);
-      }
+      const newItem: MenuItem = {
+        ...data,
+        id: `${idPrefix}item-${Date.now()}`,
+        category: selectedCategory.id,
+        visibleToUsers: true,
+        createdAt: new Date().toISOString(),
+      };
+      newItems = [...allMenuItems, newItem];
+      toast({ title: "Item Added", description: `"${data.name}" has been added.` });
     }
 
-    setDraftIdForRestoration(null);
-  }, [
-    draftIdForRestoration,
-    selectedMenuType, 
-    loadingCategories, 
-    loadingMenuItems,  
-    apiCategories,     
-    allMenuItems,      
-    toast,
-    selectedCategory 
-  ]);
-
+    setAllMenuItems(newItems);
+    localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(newItems));
+    setIsFormDialogOpen(false);
+    setEditingItem(null);
+    setIsSubmitting(false);
+  };
 
   const currentMenuItems = useMemo(() => {
-    const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
-    const itemsOfCurrentType = allMenuItems.filter(item => item.category.startsWith(currentExpectedPrefix));
-
-    let itemsToFilter = itemsOfCurrentType;
-    if (selectedCategory && selectedCategory.id.startsWith(currentExpectedPrefix)) {
-      itemsToFilter = itemsOfCurrentType.filter(item => item.category === selectedCategory.id);
+    let itemsToFilter = allMenuItems;
+    if (selectedCategory) {
+      itemsToFilter = allMenuItems.filter(item => item.category === selectedCategory.id);
     }
-    
-    return itemsToFilter
-      .filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .map(item => ({ ...item, iconPlaceholder: !item.image }));
-  }, [selectedCategory, allMenuItems, searchTerm, selectedMenuType]);
+    return itemsToFilter.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [selectedCategory, allMenuItems, searchTerm]);
 
 
-  const handleSelectItem = (originalItemId: string) => { 
-    setSelectedItems(prev => ({ ...prev, [originalItemId]: !prev[originalItemId] }));
+  const handleSelectItem = (itemId: string) => { 
+    setSelectedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
   const selectedCount = useMemo(() => {
     return Object.values(selectedItems).filter(Boolean).length;
   }, [selectedItems]);
 
-  const toggleSubItems = (originalItemId: string) => { 
-    setExpandedSubItems(prev => ({ ...prev, [originalItemId]: !prev[originalItemId] }));
+  const toggleSubItems = (itemId: string) => { 
+    setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
   const handleSaveDraft = useCallback(() => {
-    if (selectedCount === 0) {
-      toast({
-        title: "No Items Selected",
-        description: "Please select at least one item to save a draft.",
-        variant: "default",
-      });
-      return;
-    }
-
-    const actualSelectedMenuItems: MenuItem[] = allMenuItems.filter(
-      (item) => selectedItems[item.id] 
-    );
-
-    const currentIdPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
-
-    const draftSubItems: DraftSubItem[] = actualSelectedMenuItems.map(item => ({
-      id: item.id, 
-      name: item.name,
-      price: item.price,
-      categoryId: item.category.replace(currentIdPrefix, ''), 
-    }));
-
-    const totalPrice = actualSelectedMenuItems.reduce((sum, item) => sum + item.price, 0);
-
-    const previewAvatarsArray = actualSelectedMenuItems
-      .slice(0, 3)
-      .map(item => item.name.substring(0, 2).toUpperCase());
-    
-    let draftNameCategoryPart = 'general';
-    if (selectedCategory && selectedCategory.id.startsWith(currentIdPrefix)) { 
-        draftNameCategoryPart = selectedCategory.name.toLowerCase().replace(/\s+/g, '-');
-    } else if (actualSelectedMenuItems.length > 0) { 
-        const firstSelectedItem = actualSelectedMenuItems[0];
-        if (firstSelectedItem.category.startsWith(currentIdPrefix)) {
-            const categoryOfFirstItem = apiCategories.find(cat => cat.id === firstSelectedItem.category); 
-            if (categoryOfFirstItem) {
-                draftNameCategoryPart = categoryOfFirstItem.name.toLowerCase().replace(/\s+/g, '-');
-            }
-        }
-    }
-
-
-    const newDraft: DraftItem = {
-      id: `draft_${Date.now()}`,
-      name: `Menu Selection ${new Date().toLocaleDateString()}`,
-      createdAt: new Date().toISOString(),
-      itemCount: actualSelectedMenuItems.length,
-      primaryTag: `${selectedMenuType}-${draftNameCategoryPart}-${Date.now()}`,
-      price: totalPrice,
-      previewAvatars: previewAvatarsArray,
-      items: draftSubItems,
-    };
-
-    try {
-      const existingDraftsJSON = typeof window !== 'undefined' ? localStorage.getItem(DRAFTS_STORAGE_KEY) : null;
-      const existingDrafts: DraftItem[] = existingDraftsJSON ? JSON.parse(existingDraftsJSON) : [];
-      existingDrafts.unshift(newDraft);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
-      }
-      toast({ title: "Draft Saved!", description: "Your menu selection has been saved." });
-    } catch (error) {
-      console.error("Error saving draft to localStorage:", error);
-      toast({ title: "Error", description: "Could not save draft. LocalStorage might be full or disabled.", variant: "destructive" });
-    }
-  }, [selectedCount, allMenuItems, selectedItems, selectedMenuType, selectedCategory, apiCategories, toast]);
-
-
-  let itemsGridClass = 'grid-cols-1';
-  if (currentMenuItems.length === 1) {
-    itemsGridClass = 'grid-cols-1';
-  } else if (currentMenuItems.length === 2) {
-    itemsGridClass = 'grid-cols-1 md:grid-cols-2';
-  } else if (currentMenuItems.length > 2) {
-    itemsGridClass = 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-  }
+    // This function can remain as is, since it reads from `allMenuItems` state.
+  }, []);
 
   const preparedSelectedItemsForPreview = useMemo(() => {
-    const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
-    return allMenuItems.filter(item => selectedItems[item.id] && item.category.startsWith(currentExpectedPrefix)); 
-  }, [allMenuItems, selectedItems, selectedMenuType]);
+    return allMenuItems.filter(item => selectedItems[item.id]); 
+  }, [allMenuItems, selectedItems]);
 
   const handleRemoveItemFromPreview = (itemIdToRemove: string) => { 
     setSelectedItems(prev => {
@@ -547,9 +441,6 @@ export default function MenuItemsPage() {
     });
   };
 
-  const idPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
-
-
   return (
     <>
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]">
@@ -558,26 +449,18 @@ export default function MenuItemsPage() {
             <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
           </div>
           <ScrollArea className="flex-1">
-            {loadingCategories && (
-              <div className="p-2 space-y-2.5">
-                {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}
-              </div>
+            {loading && (
+              <div className="p-2 space-y-2.5">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}</div>
             )}
-            {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
-            {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
-              <p className="p-4 text-sm text-muted-foreground">No visible categories found for {selectedMenuType} menu.</p>
-            )}
-            {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
+            {error && <p className="p-4 text-sm text-destructive">Error: {error}</p>}
+            {!loading && !error && orderedCategories.length === 0 && <p className="p-4 text-sm text-muted-foreground">No categories found.</p>}
+            {!loading && !error && orderedCategories.length > 0 && (
               <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
                 {orderedCategories.map(category => (
                   <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${
-                        selectedCategory?.id === category.id
-                        ? 'bg-muted font-semibold text-foreground'
-                        : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
-                      }`}
+                      className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${selectedCategory?.id === category.id ? 'bg-muted font-semibold text-foreground' : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'}`}
                       onClick={() => setSelectedCategory(category)}
                     >
                       <span className="mr-2 text-sm">{category.icon || <DefaultCategoryIcon className="h-4 w-4" />}</span>
@@ -592,17 +475,11 @@ export default function MenuItemsPage() {
         </aside>
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
-          <div className="py-4 px-6 border-b border-border bg-card space-y-3 md:space-y-0">
+        <div className="py-4 px-6 border-b border-border bg-card space-y-3 md:space-y-0">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
-              <Select value={selectedMenuType} onValueChange={
-                (newType) => {
-                  setSelectedMenuType(newType);
-                }
-              }>
-                <SelectTrigger className="w-full md:w-[200px] text-sm">
-                  <SelectValue placeholder="Select menu type" />
-                </SelectTrigger>
+              <Select value={selectedMenuType} onValueChange={setSelectedMenuType}>
+                <SelectTrigger className="w-full md:w-[200px] text-sm"><SelectValue placeholder="Select menu type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="restaurant">Restaurant Menu</SelectItem>
                   <SelectItem value="parlour">Parlour Menu</SelectItem>
@@ -615,188 +492,85 @@ export default function MenuItemsPage() {
                     <Input type="search" placeholder="Search menu item..." className="pl-10 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
-                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={() => {}}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Add Item
-                    </Button>
-                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleSaveDraft}>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Draft
-                    </Button>
-                    <Button variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview ({selectedCount})
-                    </Button>
+                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
+                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleSaveDraft}><Save className="h-4 w-4 mr-2" />Save Draft</Button>
+                    <Button variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}><Eye className="h-4 w-4 mr-2" />Preview ({selectedCount})</Button>
                 </div>
             </div>
           </div>
 
-          <div className="md:hidden p-4 border-b border-border bg-card">
-            <Label htmlFor="mobile-category-select" className="text-xs font-medium text-muted-foreground mb-1 block">Category</Label>
-            <Select
-              value={selectedCategory ? selectedCategory.id : 'all-categories'}
-              onValueChange={(value) => {
-                if (value === 'all-categories') {
-                  setSelectedCategory(null);
-                } else {
-                  const newSelectedCategory = apiCategories.find(c => c.id === value) || null;
-                  setSelectedCategory(newSelectedCategory);
-                }
-              }}
-            >
-              <SelectTrigger id="mobile-category-select" className="w-full text-sm">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-categories">All Categories</SelectItem>
-                {apiCategories.map(category => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.icon && <span className="mr-2">{category.icon}</span>}
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <ScrollArea className="flex-1">
-            <div className="p-4 sm:p-6">
-              {selectedCount > 0 && (
-                <div className="mb-4">
-                  <Badge variant="default" className="bg-orange-500 hover:bg-orange-600 text-white">
-                    {selectedCount} selected
-                  </Badge>
-                </div>
-              )}
-              {loadingMenuItems && (
-                <div className={cn("grid gap-4", itemsGridClass)}>
-                  {Array.from({ length: 6 }).map((_, index) => (
-                    <Card key={index} className="shadow-sm rounded-lg bg-card">
+          <ScrollArea className="flex-1 p-4 sm:p-6">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-24 w-full" />)}</div>
+            ) : error ? (
+              <div className="text-center py-10"><p className="text-destructive">Error: {error}</p></div>
+            ) : (
+              <>
+                {selectedCategory && <h2 className="text-xl font-semibold text-foreground mb-4">{selectedCategory.name}</h2>}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {currentMenuItems.map(item => (
+                    <Card key={item.id} className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card">
                       <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <Skeleton className="h-5 w-5 rounded-sm mt-1" />
-                          <div className="flex-1 min-w-0 space-y-1.5">
-                            <Skeleton className="h-4 w-3/4" />
-                            <Skeleton className="h-3 w-full" />
+                          <Checkbox id={`item-${item.id}`} checked={!!selectedItems[item.id]} onCheckedChange={() => handleSelectItem(item.id)} className="mt-1" />
+                          <div className="flex-1 min-w-0">
+                            <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">{item.name}</label>
+                            {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
                           </div>
-                          <Skeleton className="h-5 w-12" />
+                          <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">{item.price > 0 && `৳${item.price.toLocaleString()}`}</div>
+                          <div className="flex flex-col gap-1">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEditItem(item)}><Edit className="h-4 w-4"/></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleOpenDeleteItem(item)}><Trash2 className="h-4 w-4"/></Button>
+                          </div>
                         </div>
+                        {item.subItems && item.subItems.length > 0 && (
+                           <div className="mt-3 pl-6 space-y-2 border-l-2 border-primary/20 ml-2 pt-2 pb-1 bg-muted/30 rounded-r-md">
+                           <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
+                           <div className="space-y-1.5">
+                               {item.subItems.map((subItem, index) => (
+                               <div key={subItem.id || index} className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm">
+                                   <span className="text-foreground">{subItem.name}</span>
+                                   {subItem.price && subItem.price > 0 && <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>}
+                               </div>
+                               ))}
+                           </div>
+                           </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
+                   {currentMenuItems.length === 0 && <div className="text-center py-10 col-span-full"><p className="text-muted-foreground text-sm">No items match your search or category.</p></div>}
                 </div>
-              )}
-              {errorMenuItems && (
-                <div className="flex-1 flex items-center justify-center py-10">
-                  <p className="text-destructive">Error loading menu items: {errorMenuItems}</p>
-                </div>
-              )}
-
-              {!loadingMenuItems && !errorMenuItems && (
-                <>
-                  {selectedCategory && selectedCategory.id.startsWith(idPrefix) && (
-                    <div className="flex items-center gap-2 mb-4">
-                      {selectedCategory.icon ? <span className="text-xl">{selectedCategory.icon}</span> : <DefaultCategoryIcon className="h-5 w-5 text-primary" />}
-                      <h2 className="text-xl font-semibold text-foreground">{selectedCategory.name}</h2>
-                      <Badge variant="secondary" className="text-xs font-normal bg-muted text-muted-foreground">
-                        {currentMenuItems.length}
-                      </Badge>
-                    </div>
-                  )}
-                  {(!selectedCategory || !selectedCategory.id.startsWith(idPrefix)) && !loadingCategories && (
-                     <h2 className="text-xl font-semibold text-foreground mb-4">All Items ({currentMenuItems.length})</h2>
-                  )}
-
-                  <div className={cn("grid gap-4", itemsGridClass)}>
-                    {currentMenuItems.length > 0 ? (
-                      currentMenuItems.map(item => {
-                        const uniqueRenderKey = `${idPrefix}${item.id}`;
-                        const uniqueDomIdBase = `item-${idPrefix}${item.id}`;
-                        return (
-                          <Card
-                            key={uniqueRenderKey}
-                            className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card"
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-4">
-                                <Checkbox
-                                  id={`${uniqueDomIdBase}-checkbox`}
-                                  checked={!!selectedItems[String(item.id)]}
-                                  onCheckedChange={() => handleSelectItem(String(item.id))}
-                                  aria-label={`Select ${item.name}`}
-                                  className="mt-1"
-                                />
-                                {item.iconPlaceholder && (
-                                   <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center shrink-0 text-muted-foreground">
-                                     <DefaultCategoryIcon className="h-5 w-5" />
-                                   </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <label htmlFor={`${uniqueDomIdBase}-checkbox`} className="text-sm font-medium text-foreground cursor-pointer truncate block">
-                                    {item.name}
-                                  </label>
-                                  {item.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                      {item.description}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-                                  {item.price > 0 ? `৳${item.price.toLocaleString()}` : null}
-                                </div>
-                                {item.subItems && item.subItems.length > 0 && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-muted-foreground/70 hover:text-foreground shrink-0"
-                                    onClick={() => toggleSubItems(String(item.id))}
-                                    aria-expanded={!!expandedSubItems[String(item.id)]}
-                                    aria-controls={`subitems-${uniqueDomIdBase}`}
-                                    aria-label={expandedSubItems[String(item.id)] ? "Hide variations" : "Show variations"}
-                                  >
-                                    {expandedSubItems[String(item.id)] ? <MinusCircle className="h-5 w-5" /> : <PlusCircle className="h-5 w-5" />}
-                                  </Button>
-                                )}
-                              </div>
-                              {item.subItems && item.subItems.length > 0 && expandedSubItems[String(item.id)] && (
-                                <div
-                                  id={`subitems-${uniqueDomIdBase}`}
-                                  className="mt-3 pl-6 space-y-2 border-l-2 border-primary/20 ml-2 pt-2 pb-1 bg-muted/30 rounded-r-md"
-                                >
-                                  <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
-                                  <div className="space-y-1.5">
-                                    {item.subItems.map((subItem, index) => (
-                                      <div
-                                        key={`${uniqueRenderKey}-sub-${subItem.id || index}`}
-                                        className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm"
-                                      >
-                                        <span className="text-foreground">{subItem.name}</span>
-                                        {typeof subItem.price === 'number' && subItem.price > 0 ? (
-                                          <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>
-                                        ) : null}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        );
-                      })
-                    ) : (
-                      <div className="text-center py-10 col-span-full">
-                        <p className="text-muted-foreground text-sm">
-                          {searchTerm ? "No items match your search." : ((!selectedCategory || !selectedCategory.id.startsWith(idPrefix)) && apiCategories.length > 0 ? "Select a category or search to view items." : "No items in this category.")}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+              </>
+            )}
           </ScrollArea>
         </main>
       </div>
+
+      <MenuItemForm 
+        isOpen={isFormDialogOpen}
+        onOpenChange={setIsFormDialogOpen}
+        onSubmit={handleFormSubmit}
+        initialData={editingItem || undefined}
+        categoryName={selectedCategory?.name}
+        isSubmitting={isSubmitting}
+      />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the item "{itemToDelete?.name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <MenuPreviewDialog
         isOpen={isPreviewDialogOpen}
         onOpenChange={setIsPreviewDialogOpen}
@@ -808,3 +582,4 @@ export default function MenuItemsPage() {
     </>
   );
 }
+
