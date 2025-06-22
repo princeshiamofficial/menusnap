@@ -201,7 +201,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
 }: {
   item: MenuItem;
   isSelected: boolean;
-  onSelectItem: (id: string) => void;
+  onSelectItem: (id: string, isSelected: boolean) => void;
   onEditItem: (item: MenuItem) => void;
   onToggleSubItems: (id: string) => void;
   isSubItemsExpanded: boolean;
@@ -210,12 +210,14 @@ const MenuItemCard = React.memo(function MenuItemCard({
     <Card className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card">
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
-          <Checkbox id={`item-${item.id}`} checked={isSelected} onCheckedChange={() => onSelectItem(item.id)} className="mt-1" />
+          <Checkbox id={`item-${item.id}`} checked={isSelected} onCheckedChange={(checked) => onSelectItem(item.id, !!checked)} className="mt-1" />
           <div className="flex-1 min-w-0">
             <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">{item.name}</label>
             {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
           </div>
-          <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">{item.price > 0 && `৳${item.price.toLocaleString()}`}</div>
+          <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
+            {item.price > 0 && `৳${item.price.toLocaleString()}`}
+          </div>
           <div className="flex flex-col gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4"/></Button>
           </div>
@@ -289,7 +291,7 @@ export default function MenuItemsPage() {
       
     const sanitizedItems: MenuItem[] = items
       .filter((item: any) => item.visibleToUsers)
-      .map((item: any) => {
+      .map((item: any, itemIndex: number) => {
         const itemIdStr = String(item.id);
         const prefixedItemId = itemIdStr.startsWith(idPrefix) ? itemIdStr : `${idPrefix}${itemIdStr}`;
         const categoryIdStr = String(item.category || item.categoryId);
@@ -299,8 +301,8 @@ export default function MenuItemsPage() {
             ...item,
             id: prefixedItemId,
             category: prefixedCategoryId,
-            subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any, index: number) => ({
-                id: sub.id ? `${idPrefix}${sub.id}` : `${prefixedItemId}-sub-${index}`,
+            subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any, subIndex: number) => ({
+                id: sub.id ? `${idPrefix}${sub.id}` : `${prefixedItemId}-sub-${itemIndex}-${subIndex}`,
                 name: sub.name,
                 price: sub.price ? parseFloat(sub.price) : undefined
             })).filter(si => si.name) : [],
@@ -332,7 +334,7 @@ export default function MenuItemsPage() {
 
       const rawItems = Array.isArray(itemsData) ? itemsData : (itemsData.success && Array.isArray(itemsData.data)) ? itemsData.data : [];
       
-      const { sanitizedCategories, sanitizedItems } = sanitizeAndPrefixData(rawItems, categoriesData.data.categories, menuType);
+      const { sanitizedItems, sanitizedCategories } = sanitizeAndPrefixData(rawItems, categoriesData.data.categories, menuType);
 
       localStorage.setItem(`${CLIENT_CATEGORIES_STORAGE_KEY}_${menuType}`, JSON.stringify(sanitizedCategories));
       localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${menuType}`, JSON.stringify(sanitizedItems));
@@ -400,13 +402,18 @@ export default function MenuItemsPage() {
 
   const handleFormSubmit = (data: MenuItemFormValues) => {
     setIsSubmitting(true);
+    // Immediately close the dialog and update UI for better perceived performance.
+    setIsFormDialogOpen(false); 
+
     let newItems;
     const idPrefix = selectedMenuType === 'restaurant' ? 'restaurant-' : 'parlour-';
 
-    if (editingItem) { // Editing existing item
-      newItems = allMenuItems.map(item => item.id === editingItem.id ? { ...item, ...data } : item);
+    if (editingItem) {
+      newItems = allMenuItems.map(item =>
+        item.id === editingItem.id ? { ...item, ...data } : item
+      );
       toast({ title: "Item Updated", description: `"${data.name}" has been updated.` });
-    } else { // Adding new item
+    } else {
       if (!selectedCategory) {
         toast({ title: "Error", description: "Cannot add item without a selected category.", variant: "destructive" });
         setIsSubmitting(false);
@@ -424,10 +431,19 @@ export default function MenuItemsPage() {
     }
 
     setAllMenuItems(newItems);
-    localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(newItems));
-    setIsFormDialogOpen(false);
     setEditingItem(null);
-    setIsSubmitting(false);
+
+    // Defer the potentially slow localStorage write to after the UI has updated.
+    setTimeout(() => {
+      try {
+        localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(newItems));
+      } catch (e) {
+        console.error("Failed to save menu items to localStorage", e);
+        toast({ title: "Save Error", description: "Could not save changes to local storage.", variant: "destructive" });
+      } finally {
+        setIsSubmitting(false);
+      }
+    }, 0);
   };
 
   const currentMenuItems = useMemo(() => {
@@ -448,8 +464,8 @@ export default function MenuItemsPage() {
     return itemsToFilter.filter(item => item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
   }, [selectedCategory, allMenuItems, debouncedSearchTerm, selectedMenuType]);
 
-  const handleSelectItem = useCallback((itemId: string) => { 
-    setSelectedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+  const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => { 
+    setSelectedItems(prev => ({ ...prev, [itemId]: isSelected }));
   }, []);
 
   const selectedCount = useMemo(() => {
@@ -543,9 +559,9 @@ export default function MenuItemsPage() {
               <>
                 {selectedCategory && <h2 className="text-xl font-semibold text-foreground mb-4">{selectedCategory.name}</h2>}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {currentMenuItems.map((item) => (
+                  {currentMenuItems.map((item, index) => (
                     <MenuItemCard
-                      key={`${item.id}-${item.name}`}
+                      key={`${item.id}-${index}`}
                       item={item}
                       isSelected={!!selectedItems[item.id]}
                       onSelectItem={handleSelectItem}
