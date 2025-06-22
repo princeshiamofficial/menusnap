@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Reorder } from "framer-motion";
 import {
@@ -18,7 +18,8 @@ import {
   Edit,
   Trash2,
   X,
-  Plus
+  Plus,
+  ChevronDown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,26 +66,6 @@ import * as z from "zod";
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CLIENT_MENU_ITEMS_STORAGE_KEY = 'clientMenuItems';
 const CLIENT_CATEGORIES_STORAGE_KEY = 'clientCategories';
-
-
-interface DraftSubItem {
-  id: string; 
-  name: string;
-  price: number;
-  categoryId: string; 
-}
-
-interface DraftItem {
-  id: string;
-  name: string;
-  createdAt: string;
-  itemCount: number;
-  primaryTag: string; 
-  price: number;
-  previewAvatars: string[];
-  items?: DraftSubItem[];
-}
-
 
 interface Category {
   id: string; 
@@ -175,6 +156,8 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
     }
   }, [isOpen, initialData, form]);
 
+  if (!isOpen) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
@@ -225,12 +208,68 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
   );
 }
 
+const MenuItemCard = React.memo(function MenuItemCard({ 
+  item, 
+  isSelected, 
+  onSelectItem, 
+  onEditItem, 
+  onDeleteItem, 
+  onToggleSubItems,
+  isSubItemsExpanded
+}: {
+  item: MenuItem;
+  isSelected: boolean;
+  onSelectItem: (id: string) => void;
+  onEditItem: (item: MenuItem) => void;
+  onDeleteItem: (item: MenuItem) => void;
+  onToggleSubItems: (id: string) => void;
+  isSubItemsExpanded: boolean;
+}) {
+  return (
+    <Card className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-4">
+          <Checkbox id={`item-${item.id}`} checked={isSelected} onCheckedChange={() => onSelectItem(item.id)} className="mt-1" />
+          <div className="flex-1 min-w-0">
+            <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">{item.name}</label>
+            {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
+          </div>
+          <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">{item.price > 0 && `৳${item.price.toLocaleString()}`}</div>
+          <div className="flex flex-col gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4"/></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => onDeleteItem(item)}><Trash2 className="h-4 w-4"/></Button>
+          </div>
+        </div>
+        {item.subItems && item.subItems.length > 0 && (
+          <div className="mt-3 pl-2">
+            <Button variant="link" size="sm" onClick={() => onToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary">
+              {isSubItemsExpanded ? 'Hide' : 'Show'} Variations ({item.subItems.length})
+              {isSubItemsExpanded ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
+            </Button>
+            {isSubItemsExpanded && (
+              <div className="mt-2 pl-4 space-y-2 border-l-2 border-primary/20 pt-2 pb-1 bg-muted/30 rounded-r-md">
+                {item.subItems.map((subItem, index) => (
+                  <div key={subItem.id || index} className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm">
+                    <span className="text-foreground">{subItem.name}</span>
+                    {subItem.price && subItem.price > 0 && <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+MenuItemCard.displayName = 'MenuItemCard';
 
 export default function MenuItemsPage() {
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
   const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); 
   const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
 
@@ -249,15 +288,56 @@ export default function MenuItemsPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
 
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  const sanitizeAndPrefixData = useCallback((items: any[], categories: any[], menuType: string): { sanitizedItems: MenuItem[], sanitizedCategories: Category[] } => {
+    const idPrefix = menuType === 'restaurant' ? 'restaurant-' : 'parlour-';
+    
+    const sanitizedCategories: Category[] = categories
+      .filter((cat: any) => cat.visibleToUsers)
+      .map((cat: any) => ({
+        ...cat,
+        id: String(cat.id).startsWith(idPrefix) ? String(cat.id) : `${idPrefix}${cat.id}`,
+      }));
+      
+    const sanitizedItems: MenuItem[] = items
+      .filter((item: any) => item.visibleToUsers)
+      .map((item: any) => {
+        const itemIdStr = String(item.id);
+        const prefixedItemId = itemIdStr.startsWith(idPrefix) ? itemIdStr : `${idPrefix}${itemIdStr}`;
+        const categoryIdStr = String(item.category || item.categoryId);
+        const prefixedCategoryId = categoryIdStr.startsWith(idPrefix) ? categoryIdStr : `${idPrefix}${categoryIdStr}`;
+
+        return {
+            ...item,
+            id: prefixedItemId,
+            category: prefixedCategoryId,
+            subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any, index: number) => ({
+                id: sub.id ? `${idPrefix}${sub.id}` : `${prefixedItemId}-sub-${index}`,
+                name: sub.name,
+                price: sub.price ? parseFloat(sub.price) : undefined
+            })).filter(si => si.name) : [],
+        };
+    });
+
+    return { sanitizedItems, sanitizedCategories };
+  }, []);
 
   const fetchAndSeedData = useCallback(async (menuType: string) => {
     setLoading(true);
     setError(null);
 
     const categoriesApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php' : 'https://colorhutbd.xyz/vm/api/categories.php';
-    let menuItemsApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-items.php' : 'https://colorhutbd.xyz/vm/api/menu-items.php';
-    menuItemsApiUrl += (menuItemsApiUrl.includes('?') ? '&' : '?') + 'visibleOnly=true';
+    const menuItemsApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-items.php?visibleOnly=true' : 'https://colorhutbd.xyz/vm/api/menu-items.php?visibleOnly=true';
 
     try {
       const [categoriesRes, itemsRes] = await Promise.all([
@@ -274,24 +354,7 @@ export default function MenuItemsPage() {
 
       const rawItems = Array.isArray(itemsData) ? itemsData : (itemsData.success && Array.isArray(itemsData.data)) ? itemsData.data : [];
       
-      const idPrefix = menuType === 'restaurant' ? 'restaurant-' : 'parlour-';
-      
-      const sanitizedCategories: Category[] = categoriesData.data.categories
-        .filter((cat: any) => cat.visibleToUsers)
-        .map((cat: any) => ({ ...cat, id: `${idPrefix}${cat.id}` }));
-        
-      const sanitizedItems: MenuItem[] = rawItems
-        .filter((item: any) => item.visibleToUsers)
-        .map((item: any) => ({
-            ...item,
-            id: `${idPrefix}${item.id}`,
-            category: `${idPrefix}${item.category}`,
-            subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any, index: number) => ({
-                id: sub.id ? `${idPrefix}${sub.id}` : `${idPrefix}${item.id}-sub-${index}`,
-                name: sub.name,
-                price: sub.price ? parseFloat(sub.price) : undefined
-            })) : [],
-        }));
+      const { sanitizedCategories, sanitizedItems } = sanitizeAndPrefixData(rawItems, categoriesData.data.categories, menuType);
 
       localStorage.setItem(`${CLIENT_CATEGORIES_STORAGE_KEY}_${menuType}`, JSON.stringify(sanitizedCategories));
       localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${menuType}`, JSON.stringify(sanitizedItems));
@@ -306,7 +369,7 @@ export default function MenuItemsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sanitizeAndPrefixData]);
 
   const loadData = useCallback(async (menuType: string) => {
     setLoading(true);
@@ -317,13 +380,15 @@ export default function MenuItemsPage() {
       try {
         const categories = JSON.parse(storedCategories);
         const items = JSON.parse(storedItems);
-        setApiCategories(categories);
-        setOrderedCategories(categories.sort((a:Category, b:Category) => a.name.localeCompare(b.name)));
-        setAllMenuItems(items);
-        if (categories.length > 0) {
-            const currentCatExists = categories.some((c: Category) => c.id === selectedCategory?.id);
+        const { sanitizedCategories, sanitizedItems } = sanitizeAndPrefixData(items, categories, menuType);
+        
+        setApiCategories(sanitizedCategories);
+        setOrderedCategories(sanitizedCategories.sort((a:Category, b:Category) => a.name.localeCompare(b.name)));
+        setAllMenuItems(sanitizedItems);
+        if (sanitizedCategories.length > 0) {
+            const currentCatExists = sanitizedCategories.some((c: Category) => c.id === selectedCategory?.id);
             if (!currentCatExists) {
-                setSelectedCategory(categories[0]);
+                setSelectedCategory(sanitizedCategories[0]);
             }
         } else {
             setSelectedCategory(null);
@@ -335,7 +400,7 @@ export default function MenuItemsPage() {
     } else {
       await fetchAndSeedData(menuType);
     }
-  }, [fetchAndSeedData, selectedCategory?.id]);
+  }, [fetchAndSeedData, sanitizeAndPrefixData, selectedCategory?.id]);
 
   useEffect(() => {
     loadData(selectedMenuType);
@@ -350,15 +415,15 @@ export default function MenuItemsPage() {
     setIsFormDialogOpen(true);
   };
   
-  const handleOpenEditItem = (item: MenuItem) => {
+  const handleOpenEditItem = useCallback((item: MenuItem) => {
     setEditingItem(item);
     setIsFormDialogOpen(true);
-  };
+  }, []);
 
-  const handleOpenDeleteItem = (item: MenuItem) => {
+  const handleOpenDeleteItem = useCallback((item: MenuItem) => {
     setItemToDelete(item);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
   const handleConfirmDelete = () => {
     if (!itemToDelete) return;
@@ -405,25 +470,29 @@ export default function MenuItemsPage() {
   };
 
   const currentMenuItems = useMemo(() => {
-    let itemsToFilter = allMenuItems;
-    if (selectedCategory) {
-      itemsToFilter = allMenuItems.filter(item => item.category === selectedCategory.id);
+    const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
+    const itemsOfCurrentType = allMenuItems.filter(item => String(item.id).startsWith(currentExpectedPrefix));
+    let itemsToFilter = itemsOfCurrentType;
+    if (selectedCategory && String(selectedCategory.id).startsWith(currentExpectedPrefix)) {
+      itemsToFilter = itemsOfCurrentType.filter(item => item.category === selectedCategory.id);
     }
-    return itemsToFilter.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [selectedCategory, allMenuItems, searchTerm]);
+    if (!debouncedSearchTerm) {
+        return itemsToFilter;
+    }
+    return itemsToFilter.filter(item => item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+  }, [selectedCategory, allMenuItems, debouncedSearchTerm, selectedMenuType]);
 
-
-  const handleSelectItem = (itemId: string) => { 
+  const handleSelectItem = useCallback((itemId: string) => { 
     setSelectedItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
-  };
+  }, []);
 
   const selectedCount = useMemo(() => {
     return Object.values(selectedItems).filter(Boolean).length;
   }, [selectedItems]);
 
-  const toggleSubItems = (itemId: string) => { 
+  const toggleSubItems = useCallback((itemId: string) => { 
     setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
-  };
+  }, []);
 
   const handleSaveDraft = useCallback(() => {
     // This function can remain as is, since it reads from `allMenuItems` state.
@@ -508,36 +577,17 @@ export default function MenuItemsPage() {
               <>
                 {selectedCategory && <h2 className="text-xl font-semibold text-foreground mb-4">{selectedCategory.name}</h2>}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {currentMenuItems.map(item => (
-                    <Card key={item.id} className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card">
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-4">
-                          <Checkbox id={`item-${item.id}`} checked={!!selectedItems[item.id]} onCheckedChange={() => handleSelectItem(item.id)} className="mt-1" />
-                          <div className="flex-1 min-w-0">
-                            <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">{item.name}</label>
-                            {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
-                          </div>
-                          <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">{item.price > 0 && `৳${item.price.toLocaleString()}`}</div>
-                          <div className="flex flex-col gap-1">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenEditItem(item)}><Edit className="h-4 w-4"/></Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleOpenDeleteItem(item)}><Trash2 className="h-4 w-4"/></Button>
-                          </div>
-                        </div>
-                        {item.subItems && item.subItems.length > 0 && (
-                           <div className="mt-3 pl-6 space-y-2 border-l-2 border-primary/20 ml-2 pt-2 pb-1 bg-muted/30 rounded-r-md">
-                           <h4 className="text-xs font-medium text-muted-foreground">Variations:</h4>
-                           <div className="space-y-1.5">
-                               {item.subItems.map((subItem, index) => (
-                               <div key={subItem.id || index} className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm">
-                                   <span className="text-foreground">{subItem.name}</span>
-                                   {subItem.price && subItem.price > 0 && <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>}
-                               </div>
-                               ))}
-                           </div>
-                           </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                  {currentMenuItems.map((item, index) => (
+                    <MenuItemCard
+                      key={`${item.id}-${index}`}
+                      item={item}
+                      isSelected={!!selectedItems[item.id]}
+                      onSelectItem={handleSelectItem}
+                      onEditItem={handleOpenEditItem}
+                      onDeleteItem={handleOpenDeleteItem}
+                      onToggleSubItems={toggleSubItems}
+                      isSubItemsExpanded={!!expandedSubItems[item.id]}
+                    />
                   ))}
                    {currentMenuItems.length === 0 && <div className="text-center py-10 col-span-full"><p className="text-muted-foreground text-sm">No items match your search or category.</p></div>}
                 </div>
@@ -546,7 +596,7 @@ export default function MenuItemsPage() {
           </ScrollArea>
         </main>
       </div>
-
+      
       <MenuItemForm 
         isOpen={isFormDialogOpen}
         onOpenChange={setIsFormDialogOpen}
@@ -582,4 +632,3 @@ export default function MenuItemsPage() {
     </>
   );
 }
-
