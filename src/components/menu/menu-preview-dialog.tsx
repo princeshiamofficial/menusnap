@@ -150,6 +150,7 @@ export function MenuPreviewDialog({
         quantity: 1, 
         price: item.price,
         categoryId: category.id,
+        categoryName: category.name,
         description: item.description || '',
       }));
     });

@@ -28,6 +28,7 @@ interface OrderItemDetail {
     quantity: number;
     price: number;
     categoryId: string;
+    categoryName?: string;
     description?: string | null;
 }
 
@@ -160,6 +161,7 @@ export default function OrderDetailsPage() {
                             quantity: Number(item.quantity || 1),
                             price: Number(item.price),
                             categoryId: String(item.categoryId || item.category || 'uncategorized'),
+                            categoryName: item.categoryName,
                             description: item.description || null,
                         })),
                         templateImageUrl: orderData.template?.imageUrl,
@@ -294,7 +296,7 @@ export default function OrderDetailsPage() {
                             {Object.entries(groupedItems).map(([categoryId, items]) => (
                                 <div key={categoryId}>
                                     <h3 className="text-xl font-semibold mb-4 border-b-2 border-primary/20 pb-2 text-primary">
-                                        {categoryMap.get(categoryId) || 'Uncategorized'}
+                                        {categoryMap.get(categoryId) || items[0]?.categoryName || categoryId}
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                                         {items.map((item, index) => (

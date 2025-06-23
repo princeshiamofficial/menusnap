@@ -308,6 +308,21 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting }: Category
   );
 }
 
+const customSlugify = (text: string): string => {
+  if (!text) return '';
+  const parts = text.trim().split(/\s+/);
+  if (parts.length === 0) return '';
+  
+  const firstWord = parts[0];
+  const restOfText = parts.slice(1).join(' ');
+  // Remove non-alphanumeric chars from the rest, but keep spaces to then remove them
+  const sanitizedRest = restOfText.replace(/[^\w\s]/g, '').replace(/\s+/g, '');
+  
+  if (sanitizedRest) {
+    return `${firstWord}-${sanitizedRest}`;
+  }
+  return firstWord;
+};
 
 export default function MenuItemsPage() {
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
@@ -515,7 +530,7 @@ export default function MenuItemsPage() {
     setIsCategorySubmitting(true);
     
     const newCategory: Category = {
-      id: `${selectedMenuType}-category-${Date.now()}`,
+      id: customSlugify(data.name),
       name: data.name,
       icon: data.icon,
       visibleToUsers: true,
