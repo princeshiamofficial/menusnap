@@ -129,14 +129,19 @@ export function MenuPreviewDialog({
         role: data.role,
         userId: 'anonymous' // Default value
       },
-      items: selectedItems.map(item => ({
-        id: item.id.toString(),
-        name: item.name,
-        quantity: 1, 
-        price: item.price,
-        categoryId: item.category.toString(),
-        description: item.description || '',
-      })),
+      items: selectedItems.map(item => {
+        const originalItemId = String(item.id).replace(/^restaurant-|^parlour-/, '');
+        const originalCategoryId = String(item.category).replace(/^restaurant-|^parlour-/, '');
+        
+        return {
+          id: originalItemId,
+          name: item.name,
+          quantity: 1, 
+          price: item.price,
+          categoryId: originalCategoryId,
+          description: item.description || '',
+        }
+      }),
       total: totalAmount, // Required by PHP validateRequired
       status: 'Pending',
       orderDate: new Date().toISOString(),
@@ -342,3 +347,4 @@ export function MenuPreviewDialog({
     </>
   );
 }
+
