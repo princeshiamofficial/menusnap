@@ -114,30 +114,21 @@ export function MenuPreviewDialog({
   const handleCustomerFormSubmit = async (data: CustomerDetailsFormValues) => {
     setIsSubmitting(true);
     
-    const generateOrderId = (menuType: string) => {
-      const prefix = menuType === 'restaurant' ? 'RO' : 'PO';
-      const d = new Date();
-      const datePart = `${d.getFullYear()}${(d.getMonth() + 1).toString().padStart(2, '0')}${d.getDate().toString().padStart(2, '0')}`;
-      const randomPart = Math.floor(100 + Math.random() * 900); // Generates a 3-digit number
-      return `${prefix}-${datePart}${randomPart}`;
-    };
-
-    const newOrderId = generateOrderId(selectedMenuType);
+    // The PHP script expects a unique 'id', so we'll generate one on the client.
+    const newOrderId = `client-${Date.now()}`;
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.price, 0);
 
     const orderPayload = {
-      orderId: newOrderId,
-      orderDate: new Date().toISOString(),
-      status: 'Pending',
-      
-      // Flattened customer details to match expected API structure
-      customerName: data.customerName,
-      customerEmail: data.email,
-      customerPhone: data.phoneNumber,
-      customerAddress: data.deliveryAddress,
-      businessName: data.companyName,
-      businessRole: data.role,
-
+      id: newOrderId, // Required by PHP validateRequired
+      customer: { // Required `customer` object
+        name: data.customerName,
+        email: data.email,
+        phone: data.phoneNumber,
+        address: data.deliveryAddress,
+        restaurant: data.companyName, // Mapping companyName to restaurant
+        role: data.role,
+        userId: 'anonymous' // Default value
+      },
       items: selectedItems.map(item => ({
         id: item.id.toString(),
         name: item.name,
@@ -146,8 +137,12 @@ export function MenuPreviewDialog({
         categoryId: item.category.toString(),
         description: item.description || '',
       })),
-      totalAmount: totalAmount,
-      templateName: "Custom Menu Selection",
+      total: totalAmount, // Required by PHP validateRequired
+      status: 'Pending',
+      orderDate: new Date().toISOString(),
+      template: { 
+          name: "Custom Menu Selection",
+      }
     };
     
     try {
@@ -168,7 +163,7 @@ export function MenuPreviewDialog({
 
       toast({
         title: "Order Submitted Successfully!",
-        description: `Your order #${newOrderId} has been placed.`,
+        description: `Your order #${orderPayload.id} has been placed.`,
       });
       setIsCustomerFormOpen(false);
       onOpenChange(false);
