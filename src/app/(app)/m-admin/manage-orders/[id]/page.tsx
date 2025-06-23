@@ -7,17 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   ArrowLeft,
-  User,
-  Mail,
-  Phone,
-  MapPin,
   CalendarDays,
   FileText as FileTextIcon,
   AlertTriangle,
   Printer,
   Download,
-  Building,
-  Briefcase,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -73,16 +67,6 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     </div>
 );
 
-
-const InfoItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string }) => (
-    <div className="flex items-start">
-        <Icon className="h-4 w-4 mr-3 mt-1 text-primary shrink-0" />
-        <div>
-            <p className="font-semibold text-foreground">{value || 'N/A'}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-        </div>
-    </div>
-);
 
 const OrderItem = ({ name, description, price, quantity }: { name: string, description?: string|null, price: number, quantity: number }) => (
     <div>
@@ -240,9 +224,10 @@ export default function OrderDetailsPage() {
                             <Skeleton className="h-6 w-24 ml-auto" />
                         </div>
                     </div>
+                    {/* The customer info skeleton section would have been here, it is now removed */}
                     <SectionTitle><Skeleton className="h-6 w-40" /></SectionTitle>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                        {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                         {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                     </div>
                 </main>
             </div>
@@ -301,17 +286,6 @@ export default function OrderDetailsPage() {
                         </p>
                     </div>
                 </div>
-
-                <SectionTitle>Customer Information</SectionTitle>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6 mb-8">
-                    <InfoItem icon={User} label="Customer Name" value={order.customerName} />
-                    <InfoItem icon={Mail} label="Email" value={order.customerEmail} />
-                    <InfoItem icon={Phone} label="Phone" value={order.customerPhone} />
-                    <InfoItem icon={Building} label="Business Name" value={order.businessName} />
-                    <InfoItem icon={Briefcase} label="Role" value={order.businessRole} />
-                    <InfoItem icon={MapPin} label="Address" value={order.customerAddress} />
-                </div>
-                <Separator className="my-10" />
                 
                 <section>
                     <SectionTitle>Order Summary</SectionTitle>
