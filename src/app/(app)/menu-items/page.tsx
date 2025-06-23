@@ -217,7 +217,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
             {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
           </div>
           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-            {item.price > 0 && `৳${item.price.toLocaleString()}`}
+            {(item.price > 0 || item.subItems?.length === 0) && `৳${item.price.toLocaleString()}`}
           </div>
           <div className="flex flex-col gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4"/></Button>
@@ -468,8 +468,7 @@ export default function MenuItemsPage() {
 
   const handleFormSubmit = useCallback((data: MenuItemFormValues) => {
     setIsSubmitting(true);
-    setIsFormDialogOpen(false); 
-
+    
     let newItems;
     const idPrefix = selectedMenuType === 'restaurant' ? 'restaurant-' : 'parlour-';
 
@@ -494,7 +493,8 @@ export default function MenuItemsPage() {
       newItems = [...allMenuItems, newItem];
       toast({ title: "Item Added", description: `"${data.name}" has been added.` });
     }
-
+    
+    setIsFormDialogOpen(false);
     setAllMenuItems(newItems);
     setEditingItem(null);
 
@@ -642,7 +642,12 @@ export default function MenuItemsPage() {
                   <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start items-center text-sm h-9 border border-border rounded-md ${selectedCategory?.id === category.id ? 'bg-muted font-semibold text-foreground' : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'}`}
+                      className={cn(
+                        'w-full justify-start items-center text-sm h-9 border border-border rounded-md',
+                        selectedCategory?.id === category.id
+                        ? 'bg-muted font-semibold text-foreground border-primary'
+                        : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                      )}
                       onClick={() => setSelectedCategory(category)}
                     >
                       <span className="mr-2 text-sm">{category.icon || <DefaultCategoryIcon className="h-4 w-4" />}</span>
