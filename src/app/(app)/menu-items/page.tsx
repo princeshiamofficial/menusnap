@@ -34,6 +34,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -246,6 +247,68 @@ const MenuItemCard = React.memo(function MenuItemCard({
 });
 MenuItemCard.displayName = 'MenuItemCard';
 
+const categoryFormSchema = z.object({
+  name: z.string().min(1, "Category name is required").max(50, "Name is too long"),
+  icon: z.string().min(1, "Icon is required").max(10, "Icon is too long"),
+});
+
+type CategoryFormValues = z.infer<typeof categoryFormSchema>;
+
+interface CategoryFormProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: CategoryFormValues) => void;
+  isSubmitting: boolean;
+}
+
+function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting }: CategoryFormProps) {
+  const form = useForm<CategoryFormValues>({
+    resolver: zodResolver(categoryFormSchema),
+    defaultValues: {
+      name: "",
+      icon: "📁",
+    },
+    mode: 'onChange',
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        name: "",
+        icon: "📁",
+      });
+    }
+  }, [isOpen, form]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add New Category</DialogTitle>
+          <DialogDescription>Create a new category to organize your menu items.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
+          <div>
+            <Label htmlFor="category-name">Category Name</Label>
+            <Input id="category-name" {...form.register("name")} placeholder="e.g., Appetizers" />
+            {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="category-icon">Icon (Emoji or short text)</Label>
+            <Input id="category-icon" {...form.register("icon")} placeholder="e.g., 🍔" />
+            {form.formState.errors.icon && <p className="text-sm text-destructive mt-1">{form.formState.errors.icon.message}</p>}
+          </div>
+          <DialogFooter className="pt-4">
+            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Adding...' : 'Add Category'}</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 export default function MenuItemsPage() {
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
   const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
@@ -269,6 +332,9 @@ export default function MenuItemsPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
+  const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
+
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -400,9 +466,8 @@ export default function MenuItemsPage() {
     setIsFormDialogOpen(true);
   }, []);
 
-  const handleFormSubmit = (data: MenuItemFormValues) => {
+  const handleFormSubmit = useCallback((data: MenuItemFormValues) => {
     setIsSubmitting(true);
-    // Immediately close the dialog and update UI for better perceived performance.
     setIsFormDialogOpen(false); 
 
     let newItems;
@@ -433,7 +498,6 @@ export default function MenuItemsPage() {
     setAllMenuItems(newItems);
     setEditingItem(null);
 
-    // Defer the potentially slow localStorage write to after the UI has updated.
     setTimeout(() => {
       try {
         localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(newItems));
@@ -444,12 +508,42 @@ export default function MenuItemsPage() {
         setIsSubmitting(false);
       }
     }, 0);
-  };
+  }, [allMenuItems, editingItem, selectedCategory, selectedMenuType, toast]);
+
+  const handleAddCategory = useCallback((data: CategoryFormValues) => {
+    setIsCategorySubmitting(true);
+    
+    const newCategory: Category = {
+      id: `${selectedMenuType}-category-${Date.now()}`,
+      name: data.name,
+      icon: data.icon,
+      visibleToUsers: true,
+      itemCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedCategories = [...apiCategories, newCategory];
+    
+    setTimeout(() => {
+        try {
+            localStorage.setItem(`${CLIENT_CATEGORIES_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(updatedCategories));
+        } catch (e) {
+            console.error("Failed to save categories to localStorage", e);
+            toast({ title: "Save Error", description: "Could not save categories to local storage.", variant: "destructive" });
+        } finally {
+            setIsCategorySubmitting(false);
+        }
+    }, 0);
+
+    setApiCategories(updatedCategories);
+    setOrderedCategories(updatedCategories.sort((a,b) => a.name.localeCompare(b.name)));
+    setIsAddCategoryDialogOpen(false);
+    toast({ title: "Category Added", description: `"${data.name}" has been added.` });
+  }, [apiCategories, selectedMenuType, toast]);
 
   const currentMenuItems = useMemo(() => {
     const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
     
-    // Ensure allMenuItems have string IDs before filtering
     const itemsOfCurrentType = allMenuItems.filter(item => String(item.id).startsWith(currentExpectedPrefix));
     
     let itemsToFilter = itemsOfCurrentType;
@@ -465,7 +559,15 @@ export default function MenuItemsPage() {
   }, [selectedCategory, allMenuItems, debouncedSearchTerm, selectedMenuType]);
 
   const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => { 
-    setSelectedItems(prev => ({ ...prev, [itemId]: isSelected }));
+    setSelectedItems(prev => {
+        const newSelected = {...prev};
+        if(isSelected) {
+            newSelected[itemId] = true;
+        } else {
+            delete newSelected[itemId];
+        }
+        return newSelected;
+    });
   }, []);
 
   const selectedCount = useMemo(() => {
@@ -477,27 +579,56 @@ export default function MenuItemsPage() {
   }, []);
 
   const handleSaveDraft = useCallback(() => {
-    // This function can remain as is, since it reads from `allMenuItems` state.
-  }, []);
+    const itemsToSave = allMenuItems.filter(item => selectedItems[item.id]);
+    if (itemsToSave.length === 0) {
+      toast({ title: "No items selected", description: "Please select items to save in a draft.", variant: "destructive" });
+      return;
+    }
+
+    const draftId = `draft-${Date.now()}`;
+    const draftName = `Draft - ${new Date().toLocaleString()}`;
+    const draft = {
+      id: draftId,
+      name: draftName,
+      createdAt: new Date().toISOString(),
+      itemCount: itemsToSave.length,
+      primaryTag: selectedMenuType,
+      previewAvatars: itemsToSave.slice(0, 3).map(i => i.name.charAt(0)),
+      items: itemsToSave,
+    };
+
+    try {
+      const existingDrafts = JSON.parse(localStorage.getItem(DRAFTS_STORAGE_KEY) || '[]');
+      existingDrafts.unshift(draft); // Add to the beginning
+      localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
+      toast({ title: "Draft Saved!", description: `"${draftName}" has been saved.` });
+      setSelectedItems({}); // Clear selection after saving
+    } catch (e) {
+      toast({ title: "Error Saving Draft", description: "Could not save draft to local storage.", variant: "destructive" });
+    }
+  }, [allMenuItems, selectedItems, selectedMenuType, toast]);
 
   const preparedSelectedItemsForPreview = useMemo(() => {
     return allMenuItems.filter(item => selectedItems[item.id]); 
   }, [allMenuItems, selectedItems]);
 
-  const handleRemoveItemFromPreview = (itemIdToRemove: string) => { 
+  const handleRemoveItemFromPreview = useCallback((itemIdToRemove: string) => { 
     setSelectedItems(prev => {
       const updated = { ...prev };
       delete updated[itemIdToRemove];
       return updated;
     });
-  };
+  }, []);
 
   return (
     <>
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]">
         <aside className="hidden md:flex w-72 bg-card border-r border-border flex-col">
-          <div className="p-4 border-b border-border">
+          <div className="p-4 border-b border-border flex justify-between items-center">
             <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
+            <Button variant="ghost" size="icon" onClick={() => setIsAddCategoryDialogOpen(true)} className="h-8 w-8" aria-label="Add New Category">
+              <PlusCircle className="h-5 w-5" />
+            </Button>
           </div>
           <ScrollArea className="flex-1">
             {loading && (
@@ -559,9 +690,9 @@ export default function MenuItemsPage() {
               <>
                 {selectedCategory && <h2 className="text-xl font-semibold text-foreground mb-4">{selectedCategory.name}</h2>}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {currentMenuItems.map((item, index) => (
+                  {currentMenuItems.map((item) => (
                     <MenuItemCard
-                      key={`${item.id}-${index}`}
+                      key={item.id}
                       item={item}
                       isSelected={!!selectedItems[item.id]}
                       onSelectItem={handleSelectItem}
@@ -585,6 +716,13 @@ export default function MenuItemsPage() {
         initialData={editingItem || undefined}
         categoryName={selectedCategory?.name}
         isSubmitting={isSubmitting}
+      />
+
+      <CategoryForm 
+        isOpen={isAddCategoryDialogOpen}
+        onOpenChange={setIsAddCategoryDialogOpen}
+        onSubmit={handleAddCategory}
+        isSubmitting={isCategorySubmitting}
       />
 
       <MenuPreviewDialog
