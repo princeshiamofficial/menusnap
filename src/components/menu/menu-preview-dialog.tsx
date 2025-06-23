@@ -90,7 +90,7 @@ export function MenuPreviewDialog({
     if (derivedCategoryIdsSorted !== currentOrderedCategoryIdsSorted) {
       setOrderedDialogCategories(derivedDisplayedCategories);
     }
-  }, [derivedDisplayedCategories]);
+  }, [derivedDisplayedCategories, orderedDialogCategories]);
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -129,24 +129,25 @@ export function MenuPreviewDialog({
       orderId: newOrderId,
       orderDate: new Date().toISOString(),
       status: 'Pending',
-      customer: {
-        name: data.customerName,
-        email: data.email,
-        phone: data.phoneNumber,
-        address: data.deliveryAddress,
-        companyName: data.companyName,
-        role: data.role,
-      },
+      
+      // Flattened customer details to match expected API structure
+      customerName: data.customerName,
+      customerEmail: data.email,
+      customerPhone: data.phoneNumber,
+      customerAddress: data.deliveryAddress,
+      businessName: data.companyName,
+      businessRole: data.role,
+
       items: selectedItems.map(item => ({
-        id: item.id,
+        id: item.id.toString(),
         name: item.name,
-        quantity: 1, // Assuming quantity is 1 for each selected item
+        quantity: 1, 
         price: item.price,
-        categoryId: item.category,
-        description: item.description,
+        categoryId: item.category.toString(),
+        description: item.description || '',
       })),
       totalAmount: totalAmount,
-      templateName: "Custom Menu Selection", // Add a default template name
+      templateName: "Custom Menu Selection",
     };
     
     try {
