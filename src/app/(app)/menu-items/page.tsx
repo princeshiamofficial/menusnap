@@ -676,44 +676,55 @@ export default function MenuItemsPage() {
             </div>
             
             {/* Mobile-only Category Selector */}
-            <div className="md:hidden">
-              <Label htmlFor="mobile-category-select">Category</Label>
-              <Select
-                value={selectedCategory?.id || ''}
-                onValueChange={(value) => {
-                  const category = apiCategories.find(c => c.id === value);
-                  setSelectedCategory(category || null);
-                }}
-                disabled={loading}
-              >
-                <SelectTrigger
-                  id="mobile-category-select"
-                  className={cn("w-full mt-1", selectedCategory && "border-primary ring-1 ring-primary")}
+            <div className="md:hidden flex items-end gap-2">
+              <div className="flex-grow">
+                <Label htmlFor="mobile-category-select">Category</Label>
+                <Select
+                  value={selectedCategory?.id || ''}
+                  onValueChange={(value) => {
+                    const category = apiCategories.find(c => c.id === value);
+                    setSelectedCategory(category || null);
+                  }}
+                  disabled={loading}
                 >
-                  {selectedCategory ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">{selectedCategory.icon}</span>
-                      <span>{selectedCategory.name}</span>
-                    </div>
-                  ) : (
-                     <span className="text-muted-foreground">Select a category...</span>
-                  )}
-                </SelectTrigger>
-                <SelectContent>
-                  {orderedCategories.length > 0 ? (
-                    orderedCategories.map(category => (
-                      <SelectItem key={category.id} value={category.id}>
-                        <div className="flex items-center gap-2">
-                            <span className="text-base">{category.icon}</span>
-                            <span>{category.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="none" disabled>No categories available</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+                  <SelectTrigger
+                    id="mobile-category-select"
+                    className={cn("w-full mt-1", selectedCategory && "border-primary ring-1 ring-primary")}
+                  >
+                    {selectedCategory ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{selectedCategory.icon}</span>
+                        <span>{selectedCategory.name}</span>
+                      </div>
+                    ) : (
+                       <span className="text-muted-foreground">Select a category...</span>
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {orderedCategories.length > 0 ? (
+                      orderedCategories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          <div className="flex items-center gap-2">
+                              <span className="text-base">{category.icon}</span>
+                              <span>{category.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>No categories available</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsAddCategoryDialogOpen(true)}
+                className="h-10 w-10 shrink-0"
+                aria-label="Add New Category"
+              >
+                <PlusCircle className="h-5 w-5" />
+              </Button>
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-3">
