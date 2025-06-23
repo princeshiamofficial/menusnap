@@ -217,7 +217,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
             {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
           </div>
           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-            {(item.price > 0 || item.subItems?.length === 0) && `৳${item.price.toLocaleString()}`}
+            {(item.price > 0 || !item.subItems || item.subItems.length === 0) && `৳${item.price.toLocaleString()}`}
           </div>
           <div className="flex flex-col gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4"/></Button>
@@ -686,14 +686,27 @@ export default function MenuItemsPage() {
                 }}
                 disabled={loading}
               >
-                <SelectTrigger id="mobile-category-select" className="w-full mt-1">
-                  <SelectValue placeholder="Select a category..." />
+                <SelectTrigger
+                  id="mobile-category-select"
+                  className={cn("w-full mt-1", selectedCategory && "border-primary ring-1 ring-primary")}
+                >
+                  {selectedCategory ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">{selectedCategory.icon}</span>
+                      <span>{selectedCategory.name}</span>
+                    </div>
+                  ) : (
+                     <span className="text-muted-foreground">Select a category...</span>
+                  )}
                 </SelectTrigger>
                 <SelectContent>
                   {orderedCategories.length > 0 ? (
                     orderedCategories.map(category => (
                       <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                        <div className="flex items-center gap-2">
+                            <span className="text-base">{category.icon}</span>
+                            <span>{category.name}</span>
+                        </div>
                       </SelectItem>
                     ))
                   ) : (
