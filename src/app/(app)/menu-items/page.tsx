@@ -208,7 +208,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
   isSubItemsExpanded: boolean;
 }) {
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card">
+    <Card className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card border border-border">
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <Checkbox id={`item-${item.id}`} checked={isSelected} onCheckedChange={(checked) => onSelectItem(item.id, !!checked)} className="mt-1" />
@@ -367,10 +367,11 @@ export default function MenuItemsPage() {
             ...item,
             id: prefixedItemId,
             category: prefixedCategoryId,
+            price: item.price != null ? parseFloat(String(item.price)) : 0,
             subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any, subIndex: number) => ({
                 id: sub.id ? `${idPrefix}${sub.id}` : `${prefixedItemId}-sub-${itemIndex}-${subIndex}`,
                 name: sub.name,
-                price: sub.price ? parseFloat(sub.price) : undefined
+                price: sub.price != null ? parseFloat(String(sub.price)) : undefined
             })).filter(si => si.name) : [],
         };
     });
@@ -728,9 +729,9 @@ export default function MenuItemsPage() {
                   </h2>
                 }
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {currentMenuItems.map((item, index) => (
+                  {currentMenuItems.map((item) => (
                     <MenuItemCard
-                      key={`${item.id}-${index}`}
+                      key={item.id}
                       item={item}
                       isSelected={!!selectedItems[item.id]}
                       onSelectItem={handleSelectItem}
