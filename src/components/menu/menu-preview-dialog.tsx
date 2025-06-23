@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Reorder } from "framer-motion";
 import {
   Dialog,
@@ -75,6 +76,7 @@ export function MenuPreviewDialog({
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const derivedDisplayedCategories = useMemo(() => {
     const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
@@ -181,6 +183,7 @@ export function MenuPreviewDialog({
       });
       setIsCustomerFormOpen(false);
       onOpenChange(false);
+      router.push('/templates');
 
     } catch (error: any) {
       console.error("Error submitting order:", error);
