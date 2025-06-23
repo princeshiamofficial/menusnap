@@ -217,7 +217,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
             {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
           </div>
           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-            {(item.price > 0 || !item.subItems || item.subItems.length === 0) && `৳${item.price.toLocaleString()}`}
+            {item.price > 0 && (!item.subItems || item.subItems.length === 0) && `৳${item.price.toLocaleString()}`}
           </div>
           <div className="flex flex-col gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4"/></Button>
