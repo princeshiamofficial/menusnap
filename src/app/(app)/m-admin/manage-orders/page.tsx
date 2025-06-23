@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import {
   Button,
+  buttonVariants
 } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,16 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Tabs,
   TabsContent,
@@ -79,7 +90,8 @@ import {
   Briefcase,
   MapPin,
   X,
-  FileArchive
+  FileArchive,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
@@ -376,6 +388,9 @@ export default function ManageOrdersPage(): ReactNode {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<ApiOrder | null>(null);
 
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<{ id: string; orderId: string } | null>(null);
+
   const { toast } = useToast();
 
   const fetchOrders = useCallback(async () => {
@@ -470,6 +485,32 @@ export default function ManageOrdersPage(): ReactNode {
   const handleViewDetails = (order: ApiOrder) => {
     setSelectedOrderForDetails(order);
     setIsDetailsDialogOpen(true);
+  };
+
+  const handleDeleteOrder = (order: ApiOrder) => {
+    setOrderToDeleteInfo({ id: order.id, orderId: order.orderId });
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!orderToDeleteInfo) return;
+    try {
+      const response = await fetch(`https://colorhutbd.xyz/vm/api/orders.php?id=${orderToDeleteInfo.id}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json' },
+      });
+      const result = await response.json();
+      if (!response.ok || (result && result.success === false)) {
+        throw new Error(result.message || 'Failed to delete order.');
+      }
+      toast({ title: "Success", description: `Order #${orderToDeleteInfo.orderId} deleted.` });
+      fetchOrders();
+    } catch (error: any) {
+      toast({ title: "Error Deleting Order", description: error.message, variant: "destructive" });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setOrderToDeleteInfo(null);
+    }
   };
 
   const uniqueTemplateNames = useMemo(() => {
@@ -770,6 +811,10 @@ export default function ManageOrdersPage(): ReactNode {
                                   </DropdownMenuSubContent>
                                   </DropdownMenuPortal>
                               </DropdownMenuSub>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDeleteOrder(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Order
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -827,6 +872,26 @@ export default function ManageOrdersPage(): ReactNode {
         onOpenChange={setIsDetailsDialogOpen} 
         onStatusUpdate={handleStatusChange}
       />
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete order #{orderToDeleteInfo?.orderId}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setOrderToDeleteInfo(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteOrder}
+              className={cn(buttonVariants({ variant: "destructive" }))}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Yes, delete order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
