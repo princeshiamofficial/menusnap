@@ -180,6 +180,7 @@ export default function TemplatesPage(): ReactNode {
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [templateToConfirm, setTemplateToConfirm] = useState<ApiTemplate | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -217,22 +218,66 @@ export default function TemplatesPage(): ReactNode {
       }
     }
     fetchTemplates();
+
+    const orderId = localStorage.getItem('pendingOrderIdForTemplate');
+    if (orderId) {
+      setPendingOrderId(orderId);
+    }
   }, []);
 
   const handleSelectTemplate = (template: ApiTemplate) => {
     setTemplateToConfirm(template);
   };
 
-  const handleConfirmSelection = () => {
+  const handleConfirmSelection = async () => {
     if (!templateToConfirm) return;
 
-    setShowConfetti(true);
-    toast({
-      title: "Template Confirmed!",
-      description: `You've selected the "${templateToConfirm.name}" template.`,
-    });
+    if (pendingOrderId) {
+      try {
+        const updateResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({
+            id: pendingOrderId,
+            template: {
+              id: templateToConfirm.id,
+              name: templateToConfirm.name,
+              imageUrl: templateToConfirm.imageUrl,
+              description: templateToConfirm.description,
+              tags: templateToConfirm.tags,
+            },
+          }),
+        });
+        
+        const updateResult = await updateResponse.json();
+        if (!updateResponse.ok || !updateResult.success) {
+          throw new Error(updateResult.message || "Failed to apply template to order.");
+        }
+        
+        setShowConfetti(true);
+        toast({
+          title: "Template Applied!",
+          description: `Template "${templateToConfirm.name}" has been applied to order #${pendingOrderId}.`,
+        });
+        
+        localStorage.removeItem('pendingOrderIdForTemplate');
+        setPendingOrderId(null);
+      } catch (error: any) {
+        toast({
+          title: "Update Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } else {
+      setShowConfetti(true);
+      toast({
+        title: "Template Confirmed!",
+        description: `You've selected the "${templateToConfirm.name}" template.`,
+      });
+    }
 
-    setTemplateToConfirm(null); // Close dialog
+    setTemplateToConfirm(null);
   };
 
   const getImageHint = (name: string): string => {
@@ -350,12 +395,17 @@ export default function TemplatesPage(): ReactNode {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Template Selection</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to select the "{templateToConfirm?.name}" template? This will be the base for your new menu.
+              {pendingOrderId 
+                ? `Apply the "${templateToConfirm?.name}" template to your recent order #${pendingOrderId}?`
+                : `Are you sure you want to select the "${templateToConfirm?.name}" template? This will be the base for your new menu.`
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTemplateToConfirm(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSelection}>Confirm & Continue</AlertDialogAction>
+            <AlertDialogAction onClick={handleConfirmSelection}>
+                {pendingOrderId ? 'Confirm & Apply' : 'Confirm & Continue'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

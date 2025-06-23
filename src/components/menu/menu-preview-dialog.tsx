@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 // Interfaces matching MenuItemsPage for consistency
 interface Category {
   id: string;
+  originalId?: string;
   name: string;
   icon: string;
   itemCount?: number;
@@ -34,15 +35,18 @@ interface Category {
 
 interface SubMenuItem {
   id: string;
+  originalId?: string;
   name: string;
   price: number;
 }
 
 export interface MenuItem {
   id: string;
+  originalId?: string;
   name: string;
   price: number;
   category: string; // Category ID
+  originalCategoryId?: string;
   description?: string;
   image?: string; // URL for image
   status?: string;
@@ -88,8 +92,6 @@ export function MenuPreviewDialog({
   const [orderedDialogCategories, setOrderedDialogCategories] = useState<Category[]>(derivedDisplayedCategories);
 
   useEffect(() => {
-    // This effect now correctly handles updates when the derived list changes,
-    // preserving user's reordering unless the set of categories itself changes.
     const derivedCategoryIds = new Set(derivedDisplayedCategories.map(c => c.id));
     const currentOrderedCategoryIds = new Set(orderedDialogCategories.map(c => c.id));
 
@@ -123,22 +125,16 @@ export function MenuPreviewDialog({
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.price, 0);
     const newOrderId = `client-${Date.now()}`;
 
-    // Create the items payload based on the user's sorted category order
     const reorderedItemsPayload = orderedDialogCategories.flatMap(category => {
       const itemsInCategory = itemsGroupedByCategory[category.id] || [];
-      return itemsInCategory.map(item => {
-        const originalItemId = String(item.id).replace(/^restaurant-|^parlour-/, '');
-        const originalCategoryId = String(item.category).replace(/^restaurant-|^parlour-/, '');
-        
-        return {
-          id: originalItemId,
-          name: item.name,
-          quantity: 1, 
-          price: item.price,
-          categoryId: originalCategoryId,
-          description: item.description || '',
-        };
-      });
+      return itemsInCategory.map(item => ({
+        id: item.originalId || item.id,
+        name: item.name,
+        quantity: 1, 
+        price: item.price,
+        categoryId: item.originalCategoryId || item.category,
+        description: item.description || '',
+      }));
     });
 
     const orderPayload = {
@@ -177,9 +173,12 @@ export function MenuPreviewDialog({
         throw new Error(result.message || `Failed to submit order. Status: ${response.status}`);
       }
 
+      // Store the order ID to be used on the templates page
+      localStorage.setItem('pendingOrderIdForTemplate', orderPayload.id);
+
       toast({
         title: "Order Submitted Successfully!",
-        description: `Your order #${orderPayload.id} has been placed.`,
+        description: `Your order #${orderPayload.id} has been placed. Now, please select a template.`,
       });
       setIsCustomerFormOpen(false);
       onOpenChange(false);
