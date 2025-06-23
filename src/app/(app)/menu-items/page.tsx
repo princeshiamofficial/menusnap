@@ -657,7 +657,7 @@ export default function MenuItemsPage() {
         </aside>
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
-        <div className="py-4 px-6 border-b border-border bg-card space-y-3 md:space-y-0">
+          <div className="py-4 px-6 border-b border-border bg-card space-y-3">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
               <Select value={selectedMenuType} onValueChange={setSelectedMenuType}>
@@ -668,6 +668,35 @@ export default function MenuItemsPage() {
                 </SelectContent>
               </Select>
             </div>
+            
+            {/* Mobile-only Category Selector */}
+            <div className="md:hidden">
+              <Label htmlFor="mobile-category-select">Category</Label>
+              <Select
+                value={selectedCategory?.id || ''}
+                onValueChange={(value) => {
+                  const category = apiCategories.find(c => c.id === value);
+                  setSelectedCategory(category || null);
+                }}
+                disabled={loading}
+              >
+                <SelectTrigger id="mobile-category-select" className="w-full mt-1">
+                  <SelectValue placeholder="Select a category..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {orderedCategories.length > 0 ? (
+                    orderedCategories.map(category => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No categories available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex flex-col md:flex-row items-center gap-3">
                 <div className="relative w-full md:flex-grow">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -688,11 +717,15 @@ export default function MenuItemsPage() {
               <div className="text-center py-10"><p className="text-destructive">Error: {error}</p></div>
             ) : (
               <>
-                {selectedCategory && <h2 className="text-xl font-semibold text-foreground mb-4">{selectedCategory.name}</h2>}
+                {selectedCategory && 
+                  <h2 className="text-xl font-semibold text-foreground mb-4 md:hidden">
+                    {selectedCategory.name}
+                  </h2>
+                }
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {currentMenuItems.map((item) => (
+                  {currentMenuItems.map((item, index) => (
                     <MenuItemCard
-                      key={item.id}
+                      key={`${item.id}-${index}`}
                       item={item}
                       isSelected={!!selectedItems[item.id]}
                       onSelectItem={handleSelectItem}
