@@ -17,6 +17,7 @@ import {
   Printer,
   Download,
   Building,
+  Briefcase,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -166,7 +167,8 @@ export default function OrderDetailsPage() {
                         customerEmail: orderData.customer?.email,
                         customerPhone: orderData.customer?.phone,
                         customerAddress: orderData.customer?.address,
-                        businessName: orderData.customer?.companyName,
+                        businessName: orderData.customer?.restaurant,
+                        businessRole: orderData.customer?.role,
                         totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
                         items: (orderData.items || []).map((item: any): OrderItemDetail => ({
                             id: String(item.id),
@@ -299,6 +301,17 @@ export default function OrderDetailsPage() {
                         </p>
                     </div>
                 </div>
+
+                <SectionTitle>Customer Information</SectionTitle>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6 mb-8">
+                    <InfoItem icon={User} label="Customer Name" value={order.customerName} />
+                    <InfoItem icon={Mail} label="Email" value={order.customerEmail} />
+                    <InfoItem icon={Phone} label="Phone" value={order.customerPhone} />
+                    <InfoItem icon={Building} label="Business Name" value={order.businessName} />
+                    <InfoItem icon={Briefcase} label="Role" value={order.businessRole} />
+                    <InfoItem icon={MapPin} label="Address" value={order.customerAddress} />
+                </div>
+                <Separator className="my-10" />
                 
                 <section>
                     <SectionTitle>Order Summary</SectionTitle>

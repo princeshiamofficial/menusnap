@@ -425,8 +425,8 @@ export default function ManageOrdersPage(): ReactNode {
         customerEmail: order.customer?.email || `customer${index+1}@example.com`,
         customerPhone: order.customer?.phone || `019100000${index % 100 < 10 ? '0' : ''}${index % 100}`,
         customerAddress: order.customer?.address || `${index+1} Dhaka, Bangladesh`,
-        businessName: order.customer?.companyName || `Restaurant ${index % 3 + 1}`,
-        businessRole: "Owner",
+        businessName: order.customer?.restaurant,
+        businessRole: order.customer?.role,
         bio: `This is a sample bio for customer ${index+1}. They ordered template: ${order.template?.name || `Template ${index % 5 + 1}`}.`,
         totalAmount: parseFloat(order.totalAmount || order.total || (Math.random() * 1000 + 500).toFixed(2)),
         items: order.items || [
