@@ -155,12 +155,12 @@ export default function OrderDetailsPage() {
                         businessName: orderData.customer?.restaurant,
                         businessRole: orderData.customer?.role,
                         totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
-                        items: (orderData.items || []).map((item: any): OrderItemDetail => ({
+                        items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
                             id: String(item.id),
                             name: String(item.name),
                             quantity: Number(item.quantity || 1),
                             price: Number(item.price),
-                            categoryId: String(item.categoryId || item.category || 'uncategorized'),
+                            categoryId: String(item.categoryId || item.category || `custom-${index}`),
                             categoryName: item.categoryName,
                             description: item.description || null,
                         })),
@@ -198,7 +198,7 @@ export default function OrderDetailsPage() {
     const groupedItems = useMemo(() => {
         if (!order?.items) return {};
         return order.items.reduce((acc, item) => {
-            const catId = item.categoryId || 'uncategorized';
+            const catId = item.categoryId;
             if (!acc[catId]) {
                 acc[catId] = [];
             }
@@ -296,7 +296,7 @@ export default function OrderDetailsPage() {
                             {Object.entries(groupedItems).map(([categoryId, items]) => (
                                 <div key={categoryId}>
                                     <h3 className="text-xl font-semibold mb-4 border-b-2 border-primary/20 pb-2 text-primary">
-                                        {categoryMap.get(categoryId) || items[0]?.categoryName || categoryId}
+                                        {categoryMap.get(categoryId) || items[0]?.categoryName || 'Uncategorized'}
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                                         {items.map((item, index) => (
