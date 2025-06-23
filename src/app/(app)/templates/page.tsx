@@ -234,19 +234,45 @@ export default function TemplatesPage(): ReactNode {
 
     if (pendingOrderId) {
       try {
+        // Step 1: Fetch all orders to find the one we need to update
+        const ordersResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php");
+        if (!ordersResponse.ok) {
+          throw new Error("Could not fetch existing orders to update.");
+        }
+        const existingOrdersResult = await ordersResponse.json();
+        
+        let ordersArray = [];
+        if (Array.isArray(existingOrdersResult)) {
+            ordersArray = existingOrdersResult;
+        } else if (existingOrdersResult.success && Array.isArray(existingOrdersResult.data)) {
+            ordersArray = existingOrdersResult.data;
+        } else if (existingOrdersResult.success && existingOrdersResult.data && Array.isArray(existingOrdersResult.data.orders)) {
+            ordersArray = existingOrdersResult.data.orders;
+        }
+
+        const orderToUpdate = ordersArray.find((o: any) => String(o.id) === pendingOrderId);
+        
+        if (!orderToUpdate) {
+          throw new Error(`Order #${pendingOrderId} not found on the server.`);
+        }
+        
+        // Step 2: Create the updated payload by merging
+        const updatedOrderPayload = {
+          ...orderToUpdate, // This includes the existing 'items' array
+          template: { // This adds/overwrites the template info
+            id: templateToConfirm.id,
+            name: templateToConfirm.name,
+            imageUrl: templateToConfirm.imageUrl,
+            description: templateToConfirm.description,
+            tags: templateToConfirm.tags,
+          },
+        };
+
+        // Step 3: Send the complete, updated object
         const updateResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php", {
           method: "PUT",
           headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({
-            id: pendingOrderId,
-            template: {
-              id: templateToConfirm.id,
-              name: templateToConfirm.name,
-              imageUrl: templateToConfirm.imageUrl,
-              description: templateToConfirm.description,
-              tags: templateToConfirm.tags,
-            },
-          }),
+          body: JSON.stringify(updatedOrderPayload),
         });
         
         const updateResult = await updateResponse.json();
