@@ -94,7 +94,7 @@ export function MenuPreviewDialog({
     if (derivedCategoryIds.size !== currentOrderedCategoryIds.size || ![...derivedCategoryIds].every(id => currentOrderedCategoryIds.has(id))) {
       setOrderedDialogCategories(derivedDisplayedCategories);
     }
-  }, [derivedDisplayedCategories]);
+  }, [derivedDisplayedCategories, orderedDialogCategories]);
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -117,10 +117,27 @@ export function MenuPreviewDialog({
 
   const handleCustomerFormSubmit = async (data: CustomerDetailsFormValues) => {
     setIsSubmitting(true);
-    
-    // The PHP script expects a unique 'id', so we'll generate one on the client.
-    const newOrderId = `client-${Date.now()}`;
+
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.price, 0);
+    const newOrderId = `client-${Date.now()}`;
+
+    // Create the items payload based on the user's sorted category order
+    const reorderedItemsPayload = orderedDialogCategories.flatMap(category => {
+      const itemsInCategory = itemsGroupedByCategory[category.id] || [];
+      return itemsInCategory.map(item => {
+        const originalItemId = String(item.id).replace(/^restaurant-|^parlour-/, '');
+        const originalCategoryId = String(item.category).replace(/^restaurant-|^parlour-/, '');
+        
+        return {
+          id: originalItemId,
+          name: item.name,
+          quantity: 1, 
+          price: item.price,
+          categoryId: originalCategoryId,
+          description: item.description || '',
+        };
+      });
+    });
 
     const orderPayload = {
       id: newOrderId,
@@ -133,19 +150,7 @@ export function MenuPreviewDialog({
         role: data.role,
         userId: 'anonymous'
       },
-      items: selectedItems.map(item => {
-        const originalItemId = String(item.id).replace(/^restaurant-|^parlour-/, '');
-        const originalCategoryId = String(item.category).replace(/^restaurant-|^parlour-/, '');
-        
-        return {
-          id: originalItemId,
-          name: item.name,
-          quantity: 1, 
-          price: item.price,
-          categoryId: originalCategoryId,
-          description: item.description || '',
-        }
-      }),
+      items: reorderedItemsPayload,
       total: totalAmount,
       status: 'Pending',
       orderDate: new Date().toISOString(),
