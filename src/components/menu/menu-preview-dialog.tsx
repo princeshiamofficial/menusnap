@@ -145,11 +145,11 @@ export function MenuPreviewDialog({
     const reorderedItemsPayload = orderedDialogCategories.flatMap(category => {
       const itemsInCategory = itemsGroupedByCategory[category.id] || [];
       return itemsInCategory.map(item => ({
-        id: item.originalId || item.id,
+        id: item.id,
         name: item.name,
         quantity: 1, 
         price: item.price,
-        categoryId: category.originalId || category.id,
+        categoryId: category.id,
         description: item.description || '',
       }));
     });
