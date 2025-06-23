@@ -123,7 +123,24 @@ export function MenuPreviewDialog({
     setIsSubmitting(true);
 
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.price, 0);
-    const newOrderId = `client-${Date.now()}`;
+    
+    let newOrderId;
+    if (selectedMenuType === 'restaurant') {
+      const random3Digit = Math.floor(100 + Math.random() * 900);
+      const date = new Date();
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+      const year = String(date.getFullYear()).slice(-2);
+      newOrderId = `RO-${random3Digit}${day}${month}${year}`;
+    } else {
+      // For parlour and other types
+      const random3Digit = Math.floor(100 + Math.random() * 900);
+      const date = new Date();
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+      const year = String(date.getFullYear()).slice(-2);
+      newOrderId = `PO-${random3Digit}${day}${month}${year}`;
+    }
 
     const reorderedItemsPayload = orderedDialogCategories.flatMap(category => {
       const itemsInCategory = itemsGroupedByCategory[category.id] || [];
@@ -132,7 +149,7 @@ export function MenuPreviewDialog({
         name: item.name,
         quantity: 1, 
         price: item.price,
-        categoryId: item.originalCategoryId || item.category,
+        categoryId: category.originalId || category.id,
         description: item.description || '',
       }));
     });
