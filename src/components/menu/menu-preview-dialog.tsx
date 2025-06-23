@@ -78,19 +78,23 @@ export function MenuPreviewDialog({
 
   const derivedDisplayedCategories = useMemo(() => {
     const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
-    return allCategories.filter(cat => categoryIdsInSelection.has(cat.id));
+    return allCategories
+      .filter(cat => categoryIdsInSelection.has(cat.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [selectedItems, allCategories]);
 
   const [orderedDialogCategories, setOrderedDialogCategories] = useState<Category[]>(derivedDisplayedCategories);
 
   useEffect(() => {
-    const derivedCategoryIdsSorted = derivedDisplayedCategories.map(c => c.id).sort().join(',');
-    const currentOrderedCategoryIdsSorted = orderedDialogCategories.map(c => c.id).sort().join(',');
+    // This effect now correctly handles updates when the derived list changes,
+    // preserving user's reordering unless the set of categories itself changes.
+    const derivedCategoryIds = new Set(derivedDisplayedCategories.map(c => c.id));
+    const currentOrderedCategoryIds = new Set(orderedDialogCategories.map(c => c.id));
 
-    if (derivedCategoryIdsSorted !== currentOrderedCategoryIdsSorted) {
+    if (derivedCategoryIds.size !== currentOrderedCategoryIds.size || ![...derivedCategoryIds].every(id => currentOrderedCategoryIds.has(id))) {
       setOrderedDialogCategories(derivedDisplayedCategories);
     }
-  }, [derivedDisplayedCategories, orderedDialogCategories]);
+  }, [derivedDisplayedCategories]);
 
 
   const itemsGroupedByCategory = useMemo(() => {
@@ -119,15 +123,15 @@ export function MenuPreviewDialog({
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.price, 0);
 
     const orderPayload = {
-      id: newOrderId, // Required by PHP validateRequired
-      customer: { // Required `customer` object
+      id: newOrderId,
+      customer: {
         name: data.customerName,
         email: data.email,
         phone: data.phoneNumber,
         address: data.deliveryAddress,
-        restaurant: data.companyName, // Mapping companyName to restaurant
+        restaurant: data.companyName, 
         role: data.role,
-        userId: 'anonymous' // Default value
+        userId: 'anonymous'
       },
       items: selectedItems.map(item => {
         const originalItemId = String(item.id).replace(/^restaurant-|^parlour-/, '');
@@ -142,7 +146,7 @@ export function MenuPreviewDialog({
           description: item.description || '',
         }
       }),
-      total: totalAmount, // Required by PHP validateRequired
+      total: totalAmount,
       status: 'Pending',
       orderDate: new Date().toISOString(),
       template: { 
@@ -347,4 +351,3 @@ export function MenuPreviewDialog({
     </>
   );
 }
-
