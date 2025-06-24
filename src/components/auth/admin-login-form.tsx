@@ -8,17 +8,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, LockKeyhole, ShieldCheck, Eye, EyeOff, UserCircle, KeyRound } from 'lucide-react'; // Added UserCircle, KeyRound
+import { AlertTriangle, LockKeyhole, ShieldCheck, Eye, EyeOff, UserCircle, KeyRound } from 'lucide-react';
 
 export function AdminLoginForm() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { adminLogin, adminLoading } = useAdminAuth(); // adminLoading might be useful for button state
+  const { adminLogin, adminLoading } = useAdminAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    adminLogin(username, password);
+    adminLogin(email, password);
   };
 
   return (
@@ -38,16 +38,16 @@ export function AdminLoginForm() {
       <CardContent className="px-6 pb-8">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="admin-username" className="text-sm font-medium text-muted-foreground flex items-center">
+            <Label htmlFor="admin-email" className="text-sm font-medium text-muted-foreground flex items-center">
               <UserCircle className="h-4 w-4 mr-2 text-muted-foreground/80" />
-              Username
+              Email
             </Label>
             <Input
-              id="admin-username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="admin-email"
+              type="email"
+              placeholder="Enter your admin email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="text-base bg-input border-border focus:border-primary"
             />

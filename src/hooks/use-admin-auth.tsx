@@ -3,81 +3,77 @@
 
 import type { ReactNode } from 'react';
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
+import { auth } from '@/lib/firebase';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  signOut,
+  type User
+} from 'firebase/auth';
 
 interface AdminAuthContextType {
   isAdminLoggedIn: boolean;
   adminLoading: boolean;
-  adminLogin: (username: string, pass: string) => void; 
+  adminLogin: (email: string, pass: string) => void; 
   adminLogout: () => void;
+  adminUser: User | null;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-const ADMIN_STORAGE_KEY = 'colorHutAdminLoggedIn';
-
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
+  const [adminUser, setAdminUser] = useState<User | null>(null);
   const [adminLoading, setAdminLoading] = useState(true);
-  const router = useRouter();
   const { toast } = useToast();
-
+  
   useEffect(() => {
-    try {
-      const storedAdminStatus = localStorage.getItem(ADMIN_STORAGE_KEY);
-      if (storedAdminStatus) {
-        setIsAdminLoggedIn(JSON.parse(storedAdminStatus));
-      }
-    } catch (error) {
-      console.error("Failed to parse admin status from localStorage", error);
-      localStorage.removeItem(ADMIN_STORAGE_KEY);
-    }
-    setAdminLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAdminUser(user);
+      setAdminLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const adminLogin = useCallback((username: string, pass: string) => {
-    // Check against the hardcoded credentials
-    if (username === 'colorhut' && pass === 'C0l0rhu7') {
-      try {
-        localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(true));
-        setIsAdminLoggedIn(true);
-        toast({
-          title: "Login Successful",
-          description: "Welcome, Admin!",
-        });
-      } catch (error) {
-        console.error("Failed to save admin status to localStorage", error);
-        toast({
-          title: "Login Error",
-          description: "Could not save session. Please try again.",
-          variant: "destructive",
-        });
+  const adminLogin = useCallback(async (email: string, pass: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      toast({
+        title: "Login Successful",
+        description: "Welcome, Admin!",
+      });
+    } catch (error: any) {
+      console.error("Firebase login error:", error);
+      let description = "An unknown error occurred.";
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-email') {
+          description = "Invalid email or password.";
       }
-    } else {
-      // Handle failed login
       toast({
         title: "Login Failed",
-        description: "Invalid username or password.",
+        description,
         variant: "destructive",
       });
-      console.warn("Admin login attempt failed: incorrect credentials");
     }
   }, [toast]);
 
-  const adminLogout = useCallback(() => {
+  const adminLogout = useCallback(async () => {
     try {
-      localStorage.removeItem(ADMIN_STORAGE_KEY);
+      await signOut(auth);
     } catch (error) {
-      console.error("Failed to remove admin status from localStorage", error);
+      console.error("Firebase logout error:", error);
+      toast({
+        title: "Logout Error",
+        description: "Could not log out. Please try again.",
+        variant: "destructive",
+      });
     }
-    setIsAdminLoggedIn(false);
-    // No automatic redirect here, page component will handle content change
-    // If needed, router.push('/m-admin'); could be added but might cause loops if not handled carefully
-  }, []);
+  }, [toast]);
+
+  const isAdminLoggedIn = !!adminUser;
 
   return (
-    <AdminAuthContext.Provider value={{ isAdminLoggedIn, adminLoading, adminLogin, adminLogout }}>
+    <AdminAuthContext.Provider value={{ isAdminLoggedIn, adminLoading, adminLogin, adminLogout, adminUser }}>
       {children}
     </AdminAuthContext.Provider>
   );
