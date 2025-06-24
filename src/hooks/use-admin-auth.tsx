@@ -10,7 +10,11 @@ import {
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
   signOut,
-  type User
+  type User,
+  updateEmail,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from 'firebase/auth';
 
 interface AdminAuthContextType {
@@ -19,6 +23,8 @@ interface AdminAuthContextType {
   adminLogin: (email: string, pass: string) => void; 
   adminLogout: () => void;
   adminUser: User | null;
+  updateAdminEmail: (newEmail: string, currentPassword: string) => Promise<void>;
+  updateAdminPassword: (newPassword: string, currentPassword: string) => Promise<void>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
@@ -60,7 +66,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     try {
       await signOut(auth);
     } catch (error) {
-      console.error("Firebase logout error:", error);
       toast({
         title: "Logout Error",
         description: "Could not log out. Please try again.",
@@ -68,11 +73,57 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       });
     }
   }, [toast]);
+  
+  const updateAdminEmail = useCallback(async (newEmail: string, currentPassword: string) => {
+    if (!adminUser || !adminUser.email) {
+        throw new Error("User not authenticated or email not available.");
+    }
+    const credential = EmailAuthProvider.credential(adminUser.email, currentPassword);
+    try {
+        await reauthenticateWithCredential(adminUser, credential);
+        await updateEmail(adminUser, newEmail);
+    } catch (error: any) {
+        let description = "An error occurred. Please try again.";
+        if (error.code === 'auth/invalid-credential') {
+            description = "The password you entered is incorrect.";
+        } else if (error.code === 'auth/email-already-in-use') {
+            description = "This email is already in use by another account.";
+        } else if (error.code === 'auth/requires-recent-login') {
+            description = "This action is sensitive. Please log out and log back in before trying again.";
+        }
+        toast({ title: "Email Update Failed", description, variant: "destructive" });
+        throw error;
+    }
+}, [adminUser, toast]);
+
+const updateAdminPassword = useCallback(async (newPassword: string, currentPassword: string) => {
+    if (!adminUser || !adminUser.email) {
+        throw new Error("User not authenticated or email not available.");
+    }
+    const credential = EmailAuthProvider.credential(adminUser.email, currentPassword);
+    try {
+        await reauthenticateWithCredential(adminUser, credential);
+        await updatePassword(adminUser, newPassword);
+        toast({ title: "Success", description: "Password updated successfully." });
+    } catch (error: any) {
+        let description = "An error occurred. Please try again.";
+        if (error.code === 'auth/invalid-credential') {
+            description = "The password you entered is incorrect.";
+        } else if (error.code === 'auth/weak-password') {
+            description = "The new password is too weak. It must be at least 6 characters long.";
+        } else if (error.code === 'auth/requires-recent-login') {
+            description = "This action is sensitive. Please log out and log back in before trying again.";
+        }
+        toast({ title: "Password Update Failed", description, variant: "destructive" });
+        throw error;
+    }
+}, [adminUser, toast]);
+
 
   const isAdminLoggedIn = !!adminUser;
 
   return (
-    <AdminAuthContext.Provider value={{ isAdminLoggedIn, adminLoading, adminLogin, adminLogout, adminUser }}>
+    <AdminAuthContext.Provider value={{ isAdminLoggedIn, adminLoading, adminLogin, adminLogout, adminUser, updateAdminEmail, updateAdminPassword }}>
       {children}
     </AdminAuthContext.Provider>
   );
