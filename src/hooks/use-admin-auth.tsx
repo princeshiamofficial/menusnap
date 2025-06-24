@@ -44,7 +44,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         description: "Welcome, Admin!",
       });
     } catch (error: any) {
-      console.error("Firebase login error:", error);
       let description = "An unknown error occurred.";
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-email') {
           description = "Invalid email or password.";
