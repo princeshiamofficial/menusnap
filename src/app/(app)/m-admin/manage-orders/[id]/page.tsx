@@ -22,6 +22,11 @@ type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Deliv
 
 const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold", "Out for Delivery"];
 
+interface SubItem {
+  id?: string;
+  name: string;
+  price?: number;
+}
 interface OrderItemDetail {
     id: string;
     name: string;
@@ -30,6 +35,7 @@ interface OrderItemDetail {
     categoryId: string;
     categoryName?: string;
     description?: string | null;
+    subItems?: SubItem[];
 }
 
 interface ApiOrder {
@@ -69,13 +75,23 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 );
 
 
-const OrderItem = ({ name, description, price, quantity }: { name: string, description?: string|null, price: number, quantity: number }) => (
+const OrderItem = ({ name, description, price, quantity, subItems }: { name: string, description?: string|null, price: number, quantity: number, subItems?: SubItem[] }) => (
     <div>
         <div className="flex justify-between items-baseline">
             <h3 className="font-bold text-foreground">{name}</h3>
-            <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>
+            {price > 0 && <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>}
         </div>
         {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+        {subItems && subItems.length > 0 && (
+            <div className="mt-2 pl-4 border-l-2 border-muted/50 space-y-1">
+                {subItems.map((sub, index) => (
+                    <div key={sub.id || index} className="flex justify-between items-baseline text-sm text-muted-foreground">
+                        <p className="text-foreground/90">{sub.name}</p>
+                        {typeof sub.price === 'number' && <p className="font-medium">৳{sub.price.toLocaleString()}</p>}
+                    </div>
+                ))}
+            </div>
+        )}
     </div>
 );
 
@@ -163,6 +179,7 @@ export default function OrderDetailsPage() {
                             categoryId: String(item.categoryId || item.category || `custom-${index}`),
                             categoryName: item.categoryName,
                             description: item.description || null,
+                            subItems: Array.isArray(item.subItems) ? item.subItems : [],
                         })),
                         templateImageUrl: orderData.template?.imageUrl,
                     };
@@ -306,6 +323,7 @@ export default function OrderDetailsPage() {
                                                 description={item.description}
                                                 quantity={item.quantity}
                                                 price={item.price}
+                                                subItems={item.subItems}
                                             />
                                         ))}
                                     </div>

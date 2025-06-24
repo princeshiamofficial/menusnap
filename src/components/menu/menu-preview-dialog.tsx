@@ -152,6 +152,7 @@ export function MenuPreviewDialog({
         categoryId: category.id,
         categoryName: category.name,
         description: item.description || '',
+        subItems: item.subItems,
       }));
     });
 
