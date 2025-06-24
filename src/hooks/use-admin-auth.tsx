@@ -3,7 +3,8 @@
 
 import type { ReactNode } from 'react';
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { useRouter, usePathname } from 'next/navigation'; // Keep usePathname if needed for future logic
+import { useRouter, usePathname } from 'next/navigation';
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminAuthContextType {
   isAdminLoggedIn: boolean;
@@ -20,7 +21,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
   const [adminLoading, setAdminLoading] = useState(true);
   const router = useRouter();
-  // const pathname = usePathname(); // Not strictly needed for this basic version
+  const { toast } = useToast();
 
   useEffect(() => {
     try {
@@ -36,20 +37,33 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const adminLogin = useCallback((username: string, pass: string) => {
-    // Basic validation for demo - in a real app, this would call an API
-    if (username.trim() !== '' && pass.trim() !== '') {
+    // Check against the hardcoded credentials
+    if (username === 'colorhut' && pass === 'C0l0rhu7') {
       try {
         localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(true));
+        setIsAdminLoggedIn(true);
+        toast({
+          title: "Login Successful",
+          description: "Welcome, Admin!",
+        });
       } catch (error) {
         console.error("Failed to save admin status to localStorage", error);
+        toast({
+          title: "Login Error",
+          description: "Could not save session. Please try again.",
+          variant: "destructive",
+        });
       }
-      setIsAdminLoggedIn(true);
-      // No automatic redirect here, page component will handle content change
     } else {
-      // Handle failed login, e.g., show a toast - for now, just console log
-      console.warn("Admin login attempt failed: empty credentials");
+      // Handle failed login
+      toast({
+        title: "Login Failed",
+        description: "Invalid username or password.",
+        variant: "destructive",
+      });
+      console.warn("Admin login attempt failed: incorrect credentials");
     }
-  }, []);
+  }, [toast]);
 
   const adminLogout = useCallback(() => {
     try {
