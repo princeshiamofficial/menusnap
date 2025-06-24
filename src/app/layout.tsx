@@ -2,7 +2,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { AuthProvider } from '@/hooks/use-auth';
 import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
 import { ThemeProvider } from '@/context/ThemeContext';
 
@@ -29,12 +28,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
-        <AuthProvider>
-          <ThemeProvider>
-            {children}
-            <ClientSideOnlyToaster />
-          </ThemeProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          {children}
+          <ClientSideOnlyToaster />
+        </ThemeProvider>
       </body>
     </html>
   );
