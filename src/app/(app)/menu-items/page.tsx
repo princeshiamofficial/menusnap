@@ -53,6 +53,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
+const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
+const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
+
 
 interface Category {
   id: string; 
@@ -358,36 +361,6 @@ export default function MenuItemsPage() {
     };
   }, [searchTerm]);
 
-  const sanitizeAndPrefixData = useCallback((items: any[], categories: any[], menuType: string): { sanitizedItems: MenuItem[], sanitizedCategories: Category[] } => {
-    const sanitizedCategories: Category[] = categories
-      .filter((cat: any) => cat.visibleToUsers)
-      .map((cat: any) => ({
-        ...cat,
-        id: String(cat.id),
-      }));
-      
-    const sanitizedItems: MenuItem[] = items
-      .filter((item: any) => item.visibleToUsers)
-      .map((item: any, itemIndex: number) => {
-        const itemIdStr = String(item.id);
-        const categoryIdStr = String(item.category || item.categoryId);
-
-        return {
-            ...item,
-            id: itemIdStr,
-            category: categoryIdStr,
-            price: item.price != null ? parseFloat(String(item.price)) : 0,
-            subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any, subIndex: number) => ({
-                id: sub.id ? String(sub.id) : `${itemIdStr}-sub-${itemIndex}-${subIndex}`,
-                name: sub.name,
-                price: sub.price != null ? parseFloat(String(sub.price)) : undefined
-            })).filter(si => si.name) : [],
-        };
-    });
-
-    return { sanitizedItems, sanitizedCategories };
-  }, []);
-
   const loadData = useCallback(async (menuType: string) => {
     setLoading(true);
     setError(null);
@@ -407,29 +380,44 @@ export default function MenuItemsPage() {
       const itemsData = await itemsRes.json();
 
       if (!categoriesData.success || !Array.isArray(categoriesData.data.categories)) throw new Error("Invalid category data format.");
-
-      const rawItems = Array.isArray(itemsData) ? itemsData : (itemsData.success && Array.isArray(itemsData.data)) ? itemsData.data : [];
       
-      const { sanitizedItems, sanitizedCategories } = sanitizeAndPrefixData(rawItems, categoriesData.data.categories, menuType);
+      const serverCategories: Category[] = categoriesData.data.categories
+        .filter((cat: any) => cat.visibleToUsers)
+        .map((cat: any) => ({ ...cat, id: String(cat.id) }));
 
-      setApiCategories(sanitizedCategories);
-      setOrderedCategories(sanitizedCategories.sort((a,b) => a.name.localeCompare(b.name)));
-      setAllMenuItems(sanitizedItems);
-       if (sanitizedCategories.length > 0) {
-            const currentCatExists = sanitizedCategories.some((c: Category) => c.id === selectedCategory?.id);
-            if (!currentCatExists) {
-                setSelectedCategory(sanitizedCategories[0]);
-            }
-        } else {
-            setSelectedCategory(null);
+      const rawServerItems = Array.isArray(itemsData) ? itemsData : (itemsData.success && Array.isArray(itemsData.data)) ? itemsData.data : [];
+      const serverItems: MenuItem[] = rawServerItems
+        .filter((item: any) => item.visibleToUsers)
+        .map((item: any) => ({ ...item, id: String(item.id), category: String(item.category || item.categoryId) }));
+
+      const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
+      const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
+      
+      const combinedCategories = [...serverCategories, ...localCategories];
+      const combinedItems = [...serverItems, ...localItems];
+      
+      const uniqueCategories = Array.from(new Map(combinedCategories.map(cat => [cat.id, cat])).values());
+      const uniqueItems = Array.from(new Map(combinedItems.map(item => [item.id, item])).values());
+
+      setApiCategories(uniqueCategories);
+      setOrderedCategories(uniqueCategories.sort((a,b) => a.name.localeCompare(b.name)));
+      setAllMenuItems(uniqueItems);
+      
+      if (uniqueCategories.length > 0) {
+        const currentCatExists = uniqueCategories.some((c: Category) => c.id === selectedCategory?.id);
+        if (!currentCatExists) {
+            setSelectedCategory(uniqueCategories[0]);
         }
+      } else {
+        setSelectedCategory(null);
+      }
 
     } catch (err: any) {
       setError(err.message || "Could not load data.");
     } finally {
       setLoading(false);
     }
-  }, [sanitizeAndPrefixData, selectedCategory?.id]);
+  }, [selectedCategory?.id]);
 
   useEffect(() => {
     loadData(selectedMenuType);
@@ -453,10 +441,12 @@ export default function MenuItemsPage() {
     setIsSubmitting(true);
     
     let newItems;
+    let itemToSave;
 
     if (editingItem) {
+      itemToSave = { ...editingItem, ...data };
       newItems = allMenuItems.map(item =>
-        item.id === editingItem.id ? { ...item, ...data } : item
+        item.id === editingItem.id ? itemToSave : item
       );
       toast({ title: "Item Updated", description: `"${data.name}" has been updated.` });
     } else {
@@ -465,19 +455,34 @@ export default function MenuItemsPage() {
         setIsSubmitting(false);
         return;
       }
-      const newItem: MenuItem = {
+      itemToSave = {
         ...data,
         id: `custom-item-${Date.now()}`,
         category: selectedCategory.id,
         visibleToUsers: true,
         createdAt: new Date().toISOString(),
       };
-      newItems = [...allMenuItems, newItem];
+      newItems = [...allMenuItems, itemToSave];
       toast({ title: "Item Added", description: `"${data.name}" has been added.` });
     }
     
-    setIsFormDialogOpen(false);
+    if (itemToSave.id.startsWith('custom-')) {
+      try {
+        const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
+        const existingIndex = localItems.findIndex(i => i.id === itemToSave.id);
+        if (existingIndex > -1) {
+          localItems[existingIndex] = itemToSave;
+        } else {
+          localItems.push(itemToSave);
+        }
+        localStorage.setItem(CUSTOM_MENU_ITEMS_STORAGE_KEY, JSON.stringify(localItems));
+      } catch(e) {
+        toast({ title: "Error", description: "Could not save custom item locally.", variant: "destructive" });
+      }
+    }
+
     setAllMenuItems(newItems);
+    setIsFormDialogOpen(false);
     setEditingItem(null);
     setIsSubmitting(false);
   }, [allMenuItems, editingItem, selectedCategory, toast]);
@@ -486,7 +491,7 @@ export default function MenuItemsPage() {
     setIsCategorySubmitting(true);
     
     const newCategory: Category = {
-      id: `custom-category-${customSlugify(data.name)}`,
+      id: `custom-category-${customSlugify(data.name)}-${Date.now()}`,
       name: data.name,
       icon: data.icon,
       visibleToUsers: true,
@@ -498,8 +503,17 @@ export default function MenuItemsPage() {
     
     setApiCategories(updatedCategories);
     setOrderedCategories(updatedCategories.sort((a,b) => a.name.localeCompare(b.name)));
+    
+    try {
+      const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
+      localCategories.push(newCategory);
+      localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
+      toast({ title: "Category Added", description: `"${data.name}" has been added locally.` });
+    } catch(e) {
+      toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
+    }
+    
     setIsAddCategoryDialogOpen(false);
-    toast({ title: "Category Added", description: `"${data.name}" has been added.` });
     setIsCategorySubmitting(false);
   }, [apiCategories, toast]);
 
@@ -757,3 +771,5 @@ export default function MenuItemsPage() {
     </>
   );
 }
+
+    
