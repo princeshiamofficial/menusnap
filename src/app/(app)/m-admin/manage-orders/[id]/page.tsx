@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   Printer,
   Download,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -75,25 +77,43 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 );
 
 
-const OrderItem = ({ name, description, price, quantity, subItems }: { name: string, description?: string|null, price: number, quantity: number, subItems?: SubItem[] }) => (
-    <div>
-        <div className="flex justify-between items-baseline">
-            <h3 className="font-bold text-foreground">{name}</h3>
-            {price > 0 && <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>}
-        </div>
-        {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
-        {subItems && subItems.length > 0 && (
-            <div className="mt-2 pl-4 border-l-2 border-muted/50 space-y-1">
-                {subItems.map((sub, index) => (
-                    <div key={sub.id || index} className="flex justify-between items-baseline text-sm text-muted-foreground">
-                        <p className="text-foreground/90">{sub.name}</p>
-                        {typeof sub.price === 'number' && <p className="font-medium">৳{sub.price.toLocaleString()}</p>}
-                    </div>
-                ))}
+const OrderItem = ({ name, description, price, quantity, subItems }: { name: string, description?: string|null, price: number, quantity: number, subItems?: SubItem[] }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const hasSubItems = subItems && subItems.length > 0;
+
+    return (
+        <div>
+            <div className="flex justify-between items-baseline">
+                <h3 className="font-bold text-foreground">{name}</h3>
+                {price > 0 && <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>}
             </div>
-        )}
-    </div>
-);
+            {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+            
+            {hasSubItems && (
+                <Button 
+                    variant="link" 
+                    size="sm" 
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="text-xs h-auto p-1 mt-2 text-primary hover:text-primary/80"
+                >
+                    {isExpanded ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+                    {isExpanded ? 'Hide' : 'Show'} Variations ({subItems.length})
+                </Button>
+            )}
+
+            {hasSubItems && isExpanded && (
+                <div className="mt-2 pl-4 border-l-2 border-muted/50 space-y-1 bg-muted/30 p-2 rounded-r-md">
+                    {subItems.map((sub, index) => (
+                        <div key={sub.id || index} className="flex justify-between items-baseline text-sm text-muted-foreground p-1.5 bg-card shadow-sm rounded-md">
+                            <p className="text-foreground/90">{sub.name}</p>
+                            {typeof sub.price === 'number' && <p className="font-medium">৳{sub.price.toLocaleString()}</p>}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 
 export default function OrderDetailsPage() {
