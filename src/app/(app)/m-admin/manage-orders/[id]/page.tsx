@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -119,6 +121,7 @@ const OrderItem = ({ name, description, price, quantity, subItems }: { name: str
 export default function OrderDetailsPage() {
     const params = useParams();
     const router = useRouter();
+    const { isAdminLoggedIn, adminLoading } = useAdminAuth();
     const orderIdFromUrl = params.id as string;
     const [order, setOrder] = useState<ApiOrder | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -126,9 +129,10 @@ export default function OrderDetailsPage() {
     const [categoryMap, setCategoryMap] = useState<Map<string, string>>(new Map());
 
     useEffect(() => {
-        if (!orderIdFromUrl) {
-            setError("Order ID not found in URL.");
-            setIsLoading(false);
+        if (!isAdminLoggedIn || !orderIdFromUrl) {
+            if (!adminLoading) {
+                setIsLoading(false);
+            }
             return;
         }
 
@@ -215,7 +219,7 @@ export default function OrderDetailsPage() {
         };
 
         fetchOrderAndCategoryDetails();
-    }, [orderIdFromUrl]);
+    }, [orderIdFromUrl, isAdminLoggedIn, adminLoading]);
     
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
@@ -236,15 +240,16 @@ export default function OrderDetailsPage() {
         if (!order?.items) return {};
         return order.items.reduce((acc, item) => {
             const catId = item.categoryId;
-            if (!acc[catId]) {
-                acc[catId] = [];
+            const categoryName = categoryMap.get(catId) || item.categoryName || 'Uncategorized';
+            if (!acc[categoryName]) {
+                acc[categoryName] = [];
             }
-            acc[catId].push(item);
+            acc[categoryName].push(item);
             return acc;
         }, {} as Record<string, OrderItemDetail[]>);
-    }, [order?.items]);
+    }, [order?.items, categoryMap]);
 
-    if (isLoading) {
+    if (adminLoading || isLoading) {
         return (
             <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
                  <header className="flex items-center justify-between mb-6 max-w-5xl mx-auto">
@@ -271,6 +276,14 @@ export default function OrderDetailsPage() {
                 </main>
             </div>
         )
+    }
+
+    if (!isAdminLoggedIn) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
+                <AdminLoginForm />
+            </div>
+        );
     }
 
     if (error) {
@@ -330,10 +343,10 @@ export default function OrderDetailsPage() {
                     <SectionTitle>Order Summary</SectionTitle>
                     {groupedItems && Object.keys(groupedItems).length > 0 ? (
                         <div className="space-y-8">
-                            {Object.entries(groupedItems).map(([categoryId, items]) => (
-                                <div key={categoryId}>
+                            {Object.entries(groupedItems).map(([categoryName, items]) => (
+                                <div key={categoryName}>
                                     <h3 className="text-xl font-semibold mb-4 border-b-2 border-primary/20 pb-2 text-primary">
-                                        {categoryMap.get(categoryId) || items[0]?.categoryName || 'Uncategorized'}
+                                        {categoryName}
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                                         {items.map((item, index) => (

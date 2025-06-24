@@ -4,6 +4,8 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Image from 'next/image';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import {
   Button,
   buttonVariants
@@ -342,6 +344,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
 
 
 export default function ManageMenuItemsPage(): ReactNode {
+  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [menuType, setMenuType] = useState<MenuType>("restaurant");
   const [allCategories, setAllCategories] = useState<CategoryAdmin[]>([]);
   const [orderedCategories, setOrderedCategories] = useState<CategoryAdmin[]>([]);
@@ -492,9 +495,11 @@ export default function ManageMenuItemsPage(): ReactNode {
   }, [selectedCategory?.id]); 
 
   useEffect(() => {
-    fetchCategoriesAndItems(menuType);
+    if (isAdminLoggedIn) {
+      fetchCategoriesAndItems(menuType);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuType]); 
+  }, [menuType, isAdminLoggedIn]); 
 
   useEffect(() => {
     if (!selectedCategory) {
@@ -656,6 +661,22 @@ export default function ManageMenuItemsPage(): ReactNode {
       fetchCategoriesAndItems(menuType, true);
     }
   };
+
+  if (adminLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <p>Loading Admin Area...</p>
+      </div>
+    );
+  }
+
+  if (!isAdminLoggedIn) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
+        <AdminLoginForm />
+      </div>
+    );
+  }
 
 
   return (

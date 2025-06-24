@@ -6,6 +6,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import {
   Table,
   TableHeader,
@@ -374,6 +376,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
 
 
 export default function ManageOrdersPage(): ReactNode {
+  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [allOrders, setAllOrders] = useState<ApiOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -448,8 +451,10 @@ export default function ManageOrdersPage(): ReactNode {
   }, []);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (isAdminLoggedIn) {
+      fetchOrders();
+    }
+  }, [fetchOrders, isAdminLoggedIn]);
   
   useEffect(() => {
     setCurrentPage(1);
@@ -613,6 +618,22 @@ export default function ManageOrdersPage(): ReactNode {
           <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
       </motion.tr>
   ));
+
+  if (adminLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <p>Loading Admin Area...</p>
+      </div>
+    );
+  }
+
+  if (!isAdminLoggedIn) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
+        <AdminLoginForm />
+      </div>
+    );
+  }
 
 
   return (

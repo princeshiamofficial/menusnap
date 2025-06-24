@@ -3,6 +3,8 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import {
   Button,
   buttonVariants
@@ -252,6 +254,7 @@ const sortOptionsList: { value: SortOption; label: string }[] = [
 const ITEMS_PER_PAGE = 10;
 
 export default function ManageCategoriesPage(): ReactNode {
+  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [categoryType, setCategoryType] = useState<CategoryType>("restaurant");
   const [allCategories, setAllCategories] = useState<ApiCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -318,9 +321,11 @@ export default function ManageCategoriesPage(): ReactNode {
 
 
   useEffect(() => {
-    fetchCategories(categoryType);
-    setCurrentPage(1); 
-  }, [categoryType, fetchCategories]);
+    if (isAdminLoggedIn) {
+      fetchCategories(categoryType);
+      setCurrentPage(1);
+    }
+  }, [categoryType, fetchCategories, isAdminLoggedIn]);
 
   useEffect(() => {
     setCurrentPage(1); 
@@ -553,6 +558,22 @@ export default function ManageCategoriesPage(): ReactNode {
       return dateString;
     }
   };
+
+  if (adminLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <p>Loading Admin Area...</p>
+      </div>
+    );
+  }
+
+  if (!isAdminLoggedIn) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
+        <AdminLoginForm />
+      </div>
+    );
+  }
 
 
   return (
@@ -845,6 +866,7 @@ export default function ManageCategoriesPage(): ReactNode {
     
 
     
+
 
 
 

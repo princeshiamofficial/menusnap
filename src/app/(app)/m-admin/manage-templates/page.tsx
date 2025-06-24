@@ -4,6 +4,8 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -836,6 +838,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
 
 export default function ManageTemplatesPage(): ReactNode {
+  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [allTemplates, setAllTemplates] = useState<ApiAdminTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -900,8 +903,10 @@ export default function ManageTemplatesPage(): ReactNode {
   }, []);
 
   useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
+    if (isAdminLoggedIn) {
+      fetchTemplates();
+    }
+  }, [fetchTemplates, isAdminLoggedIn]);
 
   const handleRefresh = useCallback(() => {
     fetchTemplates();
@@ -1058,6 +1063,22 @@ export default function ManageTemplatesPage(): ReactNode {
       published: publishedCount,
     };
   }, [allTemplates]);
+
+  if (adminLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <p>Loading Admin Area...</p>
+      </div>
+    );
+  }
+
+  if (!isAdminLoggedIn) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
+        <AdminLoginForm />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
