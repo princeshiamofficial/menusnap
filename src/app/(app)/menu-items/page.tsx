@@ -53,8 +53,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
-const CLIENT_MENU_ITEMS_STORAGE_KEY = 'clientMenuItems';
-const CLIENT_CATEGORIES_STORAGE_KEY = 'clientCategories';
 
 interface Category {
   id: string; 
@@ -361,30 +359,26 @@ export default function MenuItemsPage() {
   }, [searchTerm]);
 
   const sanitizeAndPrefixData = useCallback((items: any[], categories: any[], menuType: string): { sanitizedItems: MenuItem[], sanitizedCategories: Category[] } => {
-    const idPrefix = menuType === 'restaurant' ? 'restaurant-' : 'parlour-';
-    
     const sanitizedCategories: Category[] = categories
       .filter((cat: any) => cat.visibleToUsers)
       .map((cat: any) => ({
         ...cat,
-        id: String(cat.id).startsWith(idPrefix) ? String(cat.id) : `${idPrefix}${cat.id}`,
+        id: String(cat.id),
       }));
       
     const sanitizedItems: MenuItem[] = items
       .filter((item: any) => item.visibleToUsers)
       .map((item: any, itemIndex: number) => {
         const itemIdStr = String(item.id);
-        const prefixedItemId = itemIdStr.startsWith(idPrefix) ? itemIdStr : `${idPrefix}${itemIdStr}`;
         const categoryIdStr = String(item.category || item.categoryId);
-        const prefixedCategoryId = categoryIdStr.startsWith(idPrefix) ? categoryIdStr : `${idPrefix}${categoryIdStr}`;
 
         return {
             ...item,
-            id: prefixedItemId,
-            category: prefixedCategoryId,
+            id: itemIdStr,
+            category: categoryIdStr,
             price: item.price != null ? parseFloat(String(item.price)) : 0,
             subItems: Array.isArray(item.subItems) ? item.subItems.map((sub: any, subIndex: number) => ({
-                id: sub.id ? `${idPrefix}${sub.id}` : `${prefixedItemId}-sub-${itemIndex}-${subIndex}`,
+                id: sub.id ? String(sub.id) : `${itemIdStr}-sub-${itemIndex}-${subIndex}`,
                 name: sub.name,
                 price: sub.price != null ? parseFloat(String(sub.price)) : undefined
             })).filter(si => si.name) : [],
@@ -394,7 +388,7 @@ export default function MenuItemsPage() {
     return { sanitizedItems, sanitizedCategories };
   }, []);
 
-  const fetchAndSeedData = useCallback(async (menuType: string) => {
+  const loadData = useCallback(async (menuType: string) => {
     setLoading(true);
     setError(null);
 
@@ -418,36 +412,10 @@ export default function MenuItemsPage() {
       
       const { sanitizedItems, sanitizedCategories } = sanitizeAndPrefixData(rawItems, categoriesData.data.categories, menuType);
 
-      localStorage.setItem(`${CLIENT_CATEGORIES_STORAGE_KEY}_${menuType}`, JSON.stringify(sanitizedCategories));
-      localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${menuType}`, JSON.stringify(sanitizedItems));
-
       setApiCategories(sanitizedCategories);
       setOrderedCategories(sanitizedCategories.sort((a,b) => a.name.localeCompare(b.name)));
       setAllMenuItems(sanitizedItems);
-      setSelectedCategory(sanitizedCategories.length > 0 ? sanitizedCategories[0] : null);
-
-    } catch (err: any) {
-      setError(err.message || "Could not load data.");
-    } finally {
-      setLoading(false);
-    }
-  }, [sanitizeAndPrefixData]);
-
-  const loadData = useCallback(async (menuType: string) => {
-    setLoading(true);
-    const storedCategories = localStorage.getItem(`${CLIENT_CATEGORIES_STORAGE_KEY}_${menuType}`);
-    const storedItems = localStorage.getItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${menuType}`);
-
-    if (storedCategories && storedItems) {
-      try {
-        const categories = JSON.parse(storedCategories);
-        const items = JSON.parse(storedItems);
-        const { sanitizedCategories, sanitizedItems } = sanitizeAndPrefixData(items, categories, menuType);
-        
-        setApiCategories(sanitizedCategories);
-        setOrderedCategories(sanitizedCategories.sort((a:Category, b:Category) => a.name.localeCompare(b.name)));
-        setAllMenuItems(sanitizedItems);
-        if (sanitizedCategories.length > 0) {
+       if (sanitizedCategories.length > 0) {
             const currentCatExists = sanitizedCategories.some((c: Category) => c.id === selectedCategory?.id);
             if (!currentCatExists) {
                 setSelectedCategory(sanitizedCategories[0]);
@@ -455,14 +423,13 @@ export default function MenuItemsPage() {
         } else {
             setSelectedCategory(null);
         }
-        setLoading(false);
-      } catch (e) {
-        await fetchAndSeedData(menuType);
-      }
-    } else {
-      await fetchAndSeedData(menuType);
+
+    } catch (err: any) {
+      setError(err.message || "Could not load data.");
+    } finally {
+      setLoading(false);
     }
-  }, [fetchAndSeedData, sanitizeAndPrefixData, selectedCategory?.id]);
+  }, [sanitizeAndPrefixData, selectedCategory?.id]);
 
   useEffect(() => {
     loadData(selectedMenuType);
@@ -486,7 +453,6 @@ export default function MenuItemsPage() {
     setIsSubmitting(true);
     
     let newItems;
-    const idPrefix = selectedMenuType === 'restaurant' ? 'restaurant-' : 'parlour-';
 
     if (editingItem) {
       newItems = allMenuItems.map(item =>
@@ -501,7 +467,7 @@ export default function MenuItemsPage() {
       }
       const newItem: MenuItem = {
         ...data,
-        id: `${idPrefix}item-${Date.now()}`,
+        id: `custom-item-${Date.now()}`,
         category: selectedCategory.id,
         visibleToUsers: true,
         createdAt: new Date().toISOString(),
@@ -513,24 +479,14 @@ export default function MenuItemsPage() {
     setIsFormDialogOpen(false);
     setAllMenuItems(newItems);
     setEditingItem(null);
-
-    setTimeout(() => {
-      try {
-        localStorage.setItem(`${CLIENT_MENU_ITEMS_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(newItems));
-      } catch (e) {
-        console.error("Failed to save menu items to localStorage", e);
-        toast({ title: "Save Error", description: "Could not save changes to local storage.", variant: "destructive" });
-      } finally {
-        setIsSubmitting(false);
-      }
-    }, 0);
-  }, [allMenuItems, editingItem, selectedCategory, selectedMenuType, toast]);
+    setIsSubmitting(false);
+  }, [allMenuItems, editingItem, selectedCategory, toast]);
 
   const handleAddCategory = useCallback((data: CategoryFormValues) => {
     setIsCategorySubmitting(true);
     
     const newCategory: Category = {
-      id: customSlugify(data.name),
+      id: `custom-category-${customSlugify(data.name)}`,
       name: data.name,
       icon: data.icon,
       visibleToUsers: true,
@@ -540,39 +496,26 @@ export default function MenuItemsPage() {
 
     const updatedCategories = [...apiCategories, newCategory];
     
-    setTimeout(() => {
-        try {
-            localStorage.setItem(`${CLIENT_CATEGORIES_STORAGE_KEY}_${selectedMenuType}`, JSON.stringify(updatedCategories));
-        } catch (e) {
-            console.error("Failed to save categories to localStorage", e);
-            toast({ title: "Save Error", description: "Could not save categories to local storage.", variant: "destructive" });
-        } finally {
-            setIsCategorySubmitting(false);
-        }
-    }, 0);
-
     setApiCategories(updatedCategories);
     setOrderedCategories(updatedCategories.sort((a,b) => a.name.localeCompare(b.name)));
     setIsAddCategoryDialogOpen(false);
     toast({ title: "Category Added", description: `"${data.name}" has been added.` });
-  }, [apiCategories, selectedMenuType, toast]);
+    setIsCategorySubmitting(false);
+  }, [apiCategories, toast]);
 
   const currentMenuItems = useMemo(() => {
-    const currentExpectedPrefix = selectedMenuType === 'parlour' ? 'parlour-' : 'restaurant-';
-    
-    const itemsOfCurrentType = allMenuItems.filter(item => String(item.id).startsWith(currentExpectedPrefix));
-    
-    let itemsToFilter = itemsOfCurrentType;
-    if (selectedCategory && String(selectedCategory.id).startsWith(currentExpectedPrefix)) {
-      itemsToFilter = itemsOfCurrentType.filter(item => item.category === selectedCategory.id);
+    if (!selectedCategory) {
+        return [];
     }
+
+    let itemsToFilter = allMenuItems.filter(item => item.category === selectedCategory.id);
     
     if (!debouncedSearchTerm) {
         return itemsToFilter;
     }
     
     return itemsToFilter.filter(item => item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
-  }, [selectedCategory, allMenuItems, debouncedSearchTerm, selectedMenuType]);
+  }, [selectedCategory, allMenuItems, debouncedSearchTerm]);
 
   const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => { 
     setSelectedItems(prev => {
