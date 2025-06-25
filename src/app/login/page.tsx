@@ -52,20 +52,6 @@ export default function LoginPage() {
         <CardContent className="px-8 pb-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="business-name" className="flex items-center text-muted-foreground">
-                  <Building className="h-4 w-4 mr-2" />
-                  {businessNameLabel}
-              </Label>
-              <Input
-                id="business-name"
-                type="text"
-                placeholder={businessNamePlaceholder}
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="business-type" className="flex items-center text-muted-foreground">
                 {type === 'restaurant' ? <Utensils className="h-4 w-4 mr-2" /> : type === 'parlour' ? <Sparkles className="h-4 w-4 mr-2" /> : <Building className="h-4 w-4 mr-2" />}
                 Business Type
@@ -83,6 +69,20 @@ export default function LoginPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="business-name" className="flex items-center text-muted-foreground">
+                  <Building className="h-4 w-4 mr-2" />
+                  {businessNameLabel}
+              </Label>
+              <Input
+                id="business-name"
+                type="text"
+                placeholder={businessNamePlaceholder}
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                required
+              />
             </div>
             <Button type="submit" className="w-full text-lg py-3" disabled={clientLoading || !businessName || !type}>
                 {clientLoading ? 'Logging In...' : <> <LogIn className="mr-2 h-5 w-5" /> Login </>}
