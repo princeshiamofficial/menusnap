@@ -373,6 +373,7 @@ export function MenuPreviewDialog({
         onSubmit={handleCustomerFormSubmit}
         selectedItems={selectedItems}
         isSubmitting={isSubmitting}
+        selectedMenuType={selectedMenuType}
       />
     </>
   );

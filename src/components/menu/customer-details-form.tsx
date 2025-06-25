@@ -41,6 +41,7 @@ interface CustomerDetailsFormProps {
   onSubmit: (data: CustomerDetailsFormValues) => void;
   selectedItems: MenuItem[]; // Receive selected items
   isSubmitting: boolean;
+  selectedMenuType: string;
 }
 
 export function CustomerDetailsForm({
@@ -49,6 +50,7 @@ export function CustomerDetailsForm({
   onSubmit,
   selectedItems,
   isSubmitting,
+  selectedMenuType,
 }: CustomerDetailsFormProps): ReactNode {
   const form = useForm<CustomerDetailsFormValues>({
     resolver: zodResolver(customerDetailsSchema),
@@ -62,6 +64,9 @@ export function CustomerDetailsForm({
     },
     mode: "onChange",
   });
+
+  const businessTypeLabel = selectedMenuType ? `${selectedMenuType.charAt(0).toUpperCase() + selectedMenuType.slice(1)} Name` : 'Business Name';
+  const businessNamePlaceholder = selectedMenuType ? `Your ${selectedMenuType} name` : 'Your business name';
 
   const handleFormSubmit = (data: CustomerDetailsFormValues) => {
     onSubmit(data);
@@ -129,9 +134,9 @@ export function CustomerDetailsForm({
                   name="businessName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><Building className="h-4 w-4 mr-2 text-muted-foreground"/>Business Name*</FormLabel>
+                      <FormLabel className="flex items-center"><Building className="h-4 w-4 mr-2 text-muted-foreground"/>{businessTypeLabel}*</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your business name" {...field} />
+                        <Input placeholder={businessNamePlaceholder} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
