@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -67,6 +66,9 @@ export function CustomerDetailsForm({
 
   const businessTypeLabel = selectedMenuType ? `${selectedMenuType.charAt(0).toUpperCase() + selectedMenuType.slice(1)} Name` : 'Business Name';
   const businessNamePlaceholder = selectedMenuType ? `Your ${selectedMenuType} name` : 'Your business name';
+  const addressLabel = selectedMenuType ? `${selectedMenuType.charAt(0).toUpperCase() + selectedMenuType.slice(1)} Address` : 'Delivery Address';
+  const addressPlaceholder = selectedMenuType ? `Your ${selectedMenuType}'s full address` : 'Full delivery address';
+
 
   const handleFormSubmit = (data: CustomerDetailsFormValues) => {
     onSubmit(data);
@@ -160,9 +162,9 @@ export function CustomerDetailsForm({
                   name="deliveryAddress"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-muted-foreground"/>Delivery Address*</FormLabel>
+                      <FormLabel className="flex items-center"><MapPin className="h-4 w-4 mr-2 text-muted-foreground"/>{addressLabel}*</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Full delivery address" {...field} rows={3} />
+                        <Textarea placeholder={addressPlaceholder} {...field} rows={3} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
