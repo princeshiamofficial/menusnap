@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
 import { useToast } from "@/hooks/use-toast";
+import { useClientAuth } from '@/hooks/use-client-auth';
 
 interface ApiTemplate {
   id: string;
@@ -182,6 +183,7 @@ export default function TemplatesPage(): ReactNode {
   const [showConfetti, setShowConfetti] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { clientUser, clientLoading } = useClientAuth();
 
   useEffect(() => {
     async function fetchTemplates() {
@@ -310,18 +312,35 @@ export default function TemplatesPage(): ReactNode {
     return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
   }
 
-  const filteredTemplates = templates
-    .filter(template => template.isPublished)
-    .filter(template =>
-      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-    )
-    .sort((a, b) => {
+  const filteredTemplates = useMemo(() => {
+    let filtered = templates.filter(template => template.isPublished);
+
+    // Filter by business type if the client is logged in
+    if (clientUser?.type) {
+      filtered = filtered.filter(template =>
+        template.tags.some(tag => tag.toLowerCase() === clientUser.type)
+      );
+    }
+
+    // Then filter by search term
+    if (searchTerm) {
+        filtered = filtered.filter(template =>
+            template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }
+    
+    // Then sort the results
+    return filtered.sort((a, b) => {
       if (a.isTopRated && !b.isTopRated) return -1;
       if (!a.isTopRated && b.isTopRated) return 1;
       if (a.createdAt && b.createdAt) {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        try {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        } catch {
+            return 0;
+        }
       } else if (a.createdAt) {
         return -1; 
       } else if (b.createdAt) {
@@ -329,6 +348,7 @@ export default function TemplatesPage(): ReactNode {
       }
       return 0; 
     });
+  }, [templates, searchTerm, clientUser]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -375,7 +395,7 @@ export default function TemplatesPage(): ReactNode {
       </header>
 
       <main>
-        {isLoading ? (
+        {isLoading || clientLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <TemplateSkeletonCard key={index} />
@@ -393,7 +413,7 @@ export default function TemplatesPage(): ReactNode {
         ) : filteredTemplates.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground text-lg">
-                {searchTerm ? "No published templates match your search." : "No published templates available at the moment."}
+                {searchTerm ? "No published templates match your search." : "No published templates available for your business type."}
               </p>
             </div>
         ) : (
