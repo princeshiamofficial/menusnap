@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { X, ChevronLeft, Send, ShoppingCart, FileText, GripVertical } from 'lucide-react';
 import { CustomerDetailsForm, type CustomerDetailsFormValues } from './customer-details-form';
 import { useToast } from "@/hooks/use-toast";
+import type { ClientUser } from '@/hooks/use-client-auth';
 
 
 // Interfaces matching MenuItemsPage for consistency
@@ -63,6 +64,7 @@ interface MenuPreviewDialogProps {
   allCategories: Category[];
   onRemoveItem: (itemId: string) => void;
   selectedMenuType: string;
+  clientUser: ClientUser | null;
 }
 
 const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
@@ -74,6 +76,7 @@ export function MenuPreviewDialog({
   allCategories,
   onRemoveItem,
   selectedMenuType,
+  clientUser,
 }: MenuPreviewDialogProps): ReactNode {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
@@ -374,6 +377,7 @@ export function MenuPreviewDialog({
         selectedItems={selectedItems}
         isSubmitting={isSubmitting}
         selectedMenuType={selectedMenuType}
+        clientUser={clientUser}
       />
     </>
   );

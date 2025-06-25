@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from 'react';
+import type { ReactNode, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,6 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { MenuItem } from './menu-preview-dialog'; // Import MenuItem for typing
 import { User, Phone, Mail, Building, MapPin, Briefcase } from 'lucide-react';
+import type { ClientUser } from '@/hooks/use-client-auth';
 
 const customerDetailsSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -41,6 +42,7 @@ interface CustomerDetailsFormProps {
   selectedItems: MenuItem[]; // Receive selected items
   isSubmitting: boolean;
   selectedMenuType: string;
+  clientUser: ClientUser | null;
 }
 
 export function CustomerDetailsForm({
@@ -50,6 +52,7 @@ export function CustomerDetailsForm({
   selectedItems,
   isSubmitting,
   selectedMenuType,
+  clientUser,
 }: CustomerDetailsFormProps): ReactNode {
   const form = useForm<CustomerDetailsFormValues>({
     resolver: zodResolver(customerDetailsSchema),
@@ -57,12 +60,27 @@ export function CustomerDetailsForm({
       customerName: "",
       phoneNumber: "",
       email: "",
-      businessName: "",
+      businessName: clientUser?.businessName || "",
       role: "",
       deliveryAddress: "",
     },
     mode: "onChange",
   });
+  
+  React.useEffect(() => {
+    // When the dialog opens, pre-fill the business name if a client is logged in.
+    if (isOpen) {
+      form.reset({
+        customerName: "",
+        phoneNumber: "",
+        email: "",
+        businessName: clientUser?.businessName || "",
+        role: "",
+        deliveryAddress: "",
+      });
+    }
+  }, [isOpen, clientUser, form]);
+
 
   const businessTypeLabel = selectedMenuType ? `${selectedMenuType.charAt(0).toUpperCase() + selectedMenuType.slice(1)} Name` : 'Business Name';
   const businessNamePlaceholder = selectedMenuType ? `Your ${selectedMenuType} name` : 'Your business name';
@@ -76,10 +94,7 @@ export function CustomerDetailsForm({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) form.reset(); // Reset form if dialog is closed without submitting
-      onOpenChange(open);
-    }}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="text-xl">Your Details</DialogTitle>
@@ -174,7 +189,7 @@ export function CustomerDetailsForm({
             </ScrollArea>
             <DialogFooter className="px-6 py-4 border-t mt-auto">
               <DialogClose asChild>
-                <Button type="button" variant="outline" onClick={() => form.reset()}>
+                <Button type="button" variant="outline">
                   Cancel
                 </Button>
               </DialogClose>

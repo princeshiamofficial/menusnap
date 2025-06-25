@@ -776,6 +776,7 @@ export default function MenuItemsPage() {
         allCategories={apiCategories} 
         onRemoveItem={handleRemoveItemFromPreview}
         selectedMenuType={selectedMenuType}
+        clientUser={clientUser}
       />
     </>
   );
