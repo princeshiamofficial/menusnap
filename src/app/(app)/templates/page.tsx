@@ -350,6 +350,14 @@ export default function TemplatesPage(): ReactNode {
     });
   }, [templates, searchTerm, clientUser]);
 
+  const pageTitle = clientUser?.type 
+    ? `${clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)} Templates` 
+    : "All Templates";
+  
+  const pageDescription = clientUser?.type
+    ? `Choose a template that best represents your ${clientUser.type}.`
+    : `Choose a template that best represents your brand. Perfect for various businesses and services.`
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -375,18 +383,18 @@ export default function TemplatesPage(): ReactNode {
           <div className="flex items-center gap-3">
             <Layers className="h-8 w-8 text-primary" />
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              All Templates
+              {pageTitle}
             </h1>
           </div>
           <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">
-            Choose a template that best represents your brand. Perfect for various businesses and services.
+            {pageDescription}
           </p>
         </div>
         <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search all templates..."
+            placeholder="Search templates..."
             className="pl-10 w-full sm:w-64 md:w-72 text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
