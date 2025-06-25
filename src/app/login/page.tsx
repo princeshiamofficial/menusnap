@@ -41,7 +41,7 @@ export default function LoginPage() {
                 className="object-contain mx-auto mb-4"
                 priority
             />
-          <CardDescription>Access your dedicated menu builder</CardDescription>
+          <CardDescription className="font-bold">Access your dedicated menu builder</CardDescription>
         </CardHeader>
         <CardContent className="px-8 pb-8">
           <form onSubmit={handleSubmit} className="space-y-6">
