@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { ClientAuthProvider } from '@/hooks/use-client-auth'; // Import ClientAuthProvider
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -28,10 +29,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
-        <ThemeProvider>
-          {children}
-          <ClientSideOnlyToaster />
-        </ThemeProvider>
+        <ClientAuthProvider>
+          <ThemeProvider>
+            {children}
+            <ClientSideOnlyToaster />
+          </ThemeProvider>
+        </ClientAuthProvider>
       </body>
     </html>
   );

@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ListOrdered, Layers, FileEdit, ChevronRight, Bell, User } from 'lucide-react'; 
+import { LayoutGrid, ListOrdered, Layers, FileEdit, ChevronRight, User, LogOut, Building } from 'lucide-react'; 
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/sidebar';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
+import { useClientAuth } from '@/hooks/use-client-auth'; // Import client auth hook
+import { Skeleton } from '@/components/ui/skeleton';
 
 const mainNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -23,6 +25,7 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { clientUser, logout, clientLoading } = useClientAuth(); // Use client auth
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -81,26 +84,51 @@ export function SidebarNav() {
           </div>
         )}
       </nav>
-      <div className="p-3 border-t border-sidebar-border group-data-[collapsible=icon]:hidden">
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="notifications" className="border-none">
-            <AccordionTrigger className="hover:no-underline py-2 px-2 text-sm font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground rounded-md data-[state=open]:text-sidebar-primary [&[data-state=open]>svg:last-child]:text-sidebar-primary [&[data-state=open]>svg:last-child]:rotate-90">
-              <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                <span>Notifications</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pt-1 pl-1">
-              <Link href="#" className="flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground text-sm text-sidebar-foreground/70">
-                <User className="h-4 w-4" />
-                <span>New User</span>
-              </Link>
-              {/* Add more notification items here */}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+      
+      {/* User Info and Logout Section */}
+      <div className="p-2 border-t border-sidebar-border mt-auto">
+        <div className="group-data-[collapsible=icon]:hidden p-2">
+            {clientLoading ? (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="flex-1 space-y-1">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-2 w-12" />
+                    </div>
+                </div>
+            ) : clientUser ? (
+                <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-full bg-sidebar-accent">
+                        <Building className="h-4 w-4 text-sidebar-accent-foreground" />
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                        <p className="text-sm font-semibold truncate">{clientUser.companyName}</p>
+                        <p className="text-xs text-sidebar-foreground/70 capitalize">{clientUser.type}</p>
+                    </div>
+                </div>
+            ) : null}
+        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              variant="default"
+              className={cn(
+                "w-full justify-start text-sidebar-foreground hover:bg-destructive/80 hover:text-destructive-foreground",
+                "group-data-[collapsible=icon]:justify-center"
+              )}
+              onClick={logout}
+              tooltip={{
+                  children: "Logout",
+                  className: "bg-popover text-popover-foreground border-border shadow-md",
+                  sideOffset: 10
+              }}
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="group-data-[collapsible=icon]:hidden flex-1">Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </div>
     </div>
   );
 }
-
