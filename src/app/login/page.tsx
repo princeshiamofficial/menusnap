@@ -29,6 +29,9 @@ export default function LoginPage() {
       login(businessName, type);
     }
   };
+  
+  const businessNameLabel = type === 'restaurant' ? 'Restaurant Name' : type === 'parlour' ? 'Parlour Name' : 'Business Name';
+  const businessNamePlaceholder = `Enter your ${type ? type : 'business'} name`;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted p-4">
@@ -51,12 +54,12 @@ export default function LoginPage() {
             <div className="space-y-2">
               <Label htmlFor="business-name" className="flex items-center text-muted-foreground">
                   <Building className="h-4 w-4 mr-2" />
-                  Business Name
+                  {businessNameLabel}
               </Label>
               <Input
                 id="business-name"
                 type="text"
-                placeholder="Enter your business name"
+                placeholder={businessNamePlaceholder}
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 required
