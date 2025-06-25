@@ -102,7 +102,7 @@ export function SidebarNav() {
                         <Building className="h-4 w-4 text-sidebar-accent-foreground" />
                     </div>
                     <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-semibold truncate">{clientUser.companyName}</p>
+                        <p className="text-sm font-semibold truncate">{clientUser.businessName}</p>
                         <p className="text-xs text-sidebar-foreground/70 capitalize">{clientUser.type}</p>
                     </div>
                 </div>

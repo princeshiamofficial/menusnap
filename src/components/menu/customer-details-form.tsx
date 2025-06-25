@@ -28,7 +28,7 @@ const customerDetailsSchema = z.object({
   phoneNumber: z.string().min(10, "Phone number seems too short").max(20)
     .regex(/^(\+?\d{1,3}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$/, "Invalid phone number format"),
   email: z.string().min(1, "Email is required").email("Invalid email address"),
-  companyName: z.string().min(1, "Company name is required").max(100),
+  businessName: z.string().min(1, "Business name is required").max(100),
   role: z.string().min(1, "Role is required").max(100),
   deliveryAddress: z.string().min(1, "Delivery address is required").max(250),
 });
@@ -56,7 +56,7 @@ export function CustomerDetailsForm({
       customerName: "",
       phoneNumber: "",
       email: "",
-      companyName: "",
+      businessName: "",
       role: "",
       deliveryAddress: "",
     },
@@ -126,12 +126,12 @@ export function CustomerDetailsForm({
                 />
                 <FormField
                   control={form.control}
-                  name="companyName"
+                  name="businessName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="flex items-center"><Building className="h-4 w-4 mr-2 text-muted-foreground"/>Company Name*</FormLabel>
+                      <FormLabel className="flex items-center"><Building className="h-4 w-4 mr-2 text-muted-foreground"/>Business Name*</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your company name" {...field} />
+                        <Input placeholder="Your business name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

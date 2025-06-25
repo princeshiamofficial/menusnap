@@ -243,7 +243,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
                       <Building2 className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                       <div>
                         <p className="font-medium text-foreground">{order.businessName || "N/A"}</p>
-                        <p className="text-xs text-muted-foreground">Restaurant Name</p>
+                        <p className="text-xs text-muted-foreground">Business Name</p>
                       </div>
                     </div>
                     <div className="flex items-start">
@@ -916,4 +916,3 @@ export default function ManageOrdersPage(): ReactNode {
     </div>
   );
 }
-    

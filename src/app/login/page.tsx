@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -12,7 +13,7 @@ import { Building, Utensils, Sparkles, LogIn } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function LoginPage() {
-  const [companyName, setCompanyName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [type, setType] = useState<'restaurant' | 'parlour' | ''>('');
   const { login, clientLoading } = useClientAuth();
   const { setTheme } = useTheme();
@@ -24,8 +25,8 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (companyName && type) {
-      login(companyName, type);
+    if (businessName && type) {
+      login(businessName, type);
     }
   };
 
@@ -48,26 +49,26 @@ export default function LoginPage() {
         <CardContent className="px-8 pb-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="company-name" className="flex items-center text-muted-foreground">
+              <Label htmlFor="business-name" className="flex items-center text-muted-foreground">
                   <Building className="h-4 w-4 mr-2" />
-                  Company Name
+                  Business Name
               </Label>
               <Input
-                id="company-name"
+                id="business-name"
                 type="text"
-                placeholder="Enter your company name"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Enter your business name"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="company-type" className="flex items-center text-muted-foreground">
+              <Label htmlFor="business-type" className="flex items-center text-muted-foreground">
                 {type === 'restaurant' ? <Utensils className="h-4 w-4 mr-2" /> : type === 'parlour' ? <Sparkles className="h-4 w-4 mr-2" /> : <Building className="h-4 w-4 mr-2" />}
-                Company Type
+                Business Type
               </Label>
               <Select onValueChange={handleTypeChange} required value={type}>
-                <SelectTrigger id="company-type">
+                <SelectTrigger id="business-type">
                   <SelectValue placeholder="Select your business type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -80,7 +81,7 @@ export default function LoginPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="w-full text-lg py-3" disabled={clientLoading || !companyName || !type}>
+            <Button type="submit" className="w-full text-lg py-3" disabled={clientLoading || !businessName || !type}>
                 {clientLoading ? 'Logging In...' : <> <LogIn className="mr-2 h-5 w-5" /> Login </>}
             </Button>
           </form>

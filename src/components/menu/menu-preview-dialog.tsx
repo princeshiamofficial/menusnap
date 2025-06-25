@@ -163,7 +163,7 @@ export function MenuPreviewDialog({
         email: data.email,
         phone: data.phoneNumber,
         address: data.deliveryAddress,
-        restaurant: data.companyName, 
+        restaurant: data.businessName, 
         role: data.role,
         userId: 'anonymous'
       },

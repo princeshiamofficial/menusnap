@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 const CLIENT_STORAGE_KEY = 'colorHutClientUser';
 
 interface ClientUser {
-    companyName: string;
+    businessName: string;
     type: 'restaurant' | 'parlour';
 }
 
@@ -17,7 +17,7 @@ interface ClientAuthContextType {
   clientUser: ClientUser | null;
   isClientLoggedIn: boolean;
   clientLoading: boolean;
-  login: (companyName: string, type: 'restaurant' | 'parlour') => void;
+  login: (businessName: string, type: 'restaurant' | 'parlour') => void;
   logout: () => void;
 }
 
@@ -43,23 +43,23 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback((companyName: string, type: 'restaurant' | 'parlour') => {
+  const login = useCallback((businessName: string, type: 'restaurant' | 'parlour') => {
     setClientLoading(true);
     // Mock authentication: In a real app, this would be an API call.
-    // We'll accept any company name for now as a demo.
-    if (companyName.trim() && (type === 'restaurant' || type === 'parlour')) {
-        const userToStore = { companyName: companyName.trim(), type };
+    // We'll accept any business name for now as a demo.
+    if (businessName.trim() && (type === 'restaurant' || type === 'parlour')) {
+        const userToStore = { businessName: businessName.trim(), type };
         localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
         setClientUser(userToStore);
         toast({
             title: "Login Successful",
-            description: `Welcome, ${companyName}!`,
+            description: `Welcome, ${businessName}!`,
         });
         router.push('/dashboard');
     } else {
         toast({
             title: "Login Failed",
-            description: "Please provide a valid company name and type.",
+            description: "Please provide a valid business name and type.",
             variant: "destructive",
         });
     }
