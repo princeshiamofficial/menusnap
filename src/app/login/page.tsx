@@ -33,14 +33,16 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted p-4">
       <Card className="w-full max-w-md shadow-2xl rounded-xl border-border">
         <CardHeader className="text-center p-8">
-            <Image
-                src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
-                alt="Color Hut Logo"
-                width={200}
-                height={80}
-                className="object-contain mx-auto mb-4"
-                priority
-            />
+            <div className="bg-black p-4 rounded-lg mb-4">
+                <Image
+                    src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
+                    alt="Color Hut Logo"
+                    width={200}
+                    height={80}
+                    className="object-contain mx-auto"
+                    priority
+                />
+            </div>
           <CardDescription className="font-bold text-foreground">Access your dedicated menu builder</CardDescription>
         </CardHeader>
         <CardContent className="px-8 pb-8">
