@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, FileArchive, BookOpenCheck, FileText, Building2, Globe2, Star, AlertTriangle } from "lucide-react";
 import { motion, animate } from "framer-motion";
+import { useClientAuth } from '@/hooks/use-client-auth';
 
 interface StatCardProps {
   title: string;
@@ -152,6 +153,7 @@ export default function DashboardPage() {
   const [topRatedTemplates, setTopRatedTemplates] = useState<ApiTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
+  const { clientUser, clientLoading } = useClientAuth();
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100); 
@@ -160,6 +162,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchTopRatedTemplates() {
+      if (!clientUser?.type) return;
+
       setIsLoadingTemplates(true);
       setTemplatesError(null);
       try {
@@ -186,7 +190,10 @@ export default function DashboardPage() {
         }));
 
         const filteredTopRated = fetchedTemplates.filter(
-          template => template.isPublished && template.isTopRated
+          template =>
+            template.isPublished &&
+            template.isTopRated &&
+            template.tags.some(tag => tag.toLowerCase() === clientUser.type)
         );
         setTopRatedTemplates(filteredTopRated);
 
@@ -197,8 +204,13 @@ export default function DashboardPage() {
         setIsLoadingTemplates(false);
       }
     }
-    fetchTopRatedTemplates();
-  }, []);
+
+    if (!clientLoading && clientUser?.type) {
+      fetchTopRatedTemplates();
+    } else if (!clientLoading && !clientUser) {
+        setIsLoadingTemplates(false);
+    }
+  }, [clientUser, clientLoading]);
 
   const stats = [
     { title: "Designs", value: "12365", icon: FileArchive, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
@@ -208,6 +220,8 @@ export default function DashboardPage() {
     { title: "Our Coverage Thana", value: "639", icon: Building2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
     { title: "Our Coverage County", value: "13", icon: Globe2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
   ];
+  
+  const showTemplateSkeletons = isLoadingTemplates || clientLoading;
 
   return (
     <div className="space-y-8">
@@ -232,10 +246,10 @@ export default function DashboardPage() {
           <h2 className="text-2xl font-semibold text-foreground">Top-Rated Templates</h2>
         </div>
         <p className="text-muted-foreground mb-6">
-          Our most popular professionally designed templates for your restaurant menu.
+          Our most popular professionally designed templates for your {clientUser?.type || 'business'}.
         </p>
         
-        {isLoadingTemplates ? (
+        {showTemplateSkeletons ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 4 }).map((_, index) => (
               <TemplateSkeletonCard key={index} />
@@ -262,7 +276,7 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground text-center py-4">No top-rated templates available at the moment.</p>
+          <p className="text-muted-foreground text-center py-4">No top-rated templates available for your business type at the moment.</p>
         )}
       </div>
 
