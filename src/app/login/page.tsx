@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -7,7 +6,7 @@ import { useClientAuth } from '@/hooks/use-client-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building, Utensils, Sparkles, LogIn } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
@@ -42,7 +41,6 @@ export default function LoginPage() {
                 className="object-contain mx-auto mb-4"
                 priority
             />
-          <CardTitle className="text-2xl font-bold">Client Login</CardTitle>
           <CardDescription>Access your dedicated menu builder</CardDescription>
         </CardHeader>
         <CardContent className="px-8 pb-8">
