@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useClientAuth } from '@/hooks/use-client-auth';
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
@@ -326,13 +327,14 @@ const customSlugify = (text: string): string => {
 };
 
 export default function MenuItemsPage() {
+  const { clientUser, clientLoading } = useClientAuth();
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
   const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); 
-  const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
+  const [selectedMenuType, setSelectedMenuType] = useState<string>('');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -352,6 +354,12 @@ export default function MenuItemsPage() {
   const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
 
   useEffect(() => {
+    if (!clientLoading && clientUser?.type) {
+      setSelectedMenuType(clientUser.type);
+    }
+  }, [clientUser, clientLoading]);
+
+  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 300);
@@ -362,6 +370,7 @@ export default function MenuItemsPage() {
   }, [searchTerm]);
 
   const loadData = useCallback(async (menuType: string) => {
+    if (!menuType) return;
     setLoading(true);
     setError(null);
 
@@ -638,7 +647,7 @@ export default function MenuItemsPage() {
           <div className="py-4 px-6 border-b border-border bg-card space-y-3">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
               <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
-              <Select value={selectedMenuType} onValueChange={setSelectedMenuType}>
+              <Select value={selectedMenuType} onValueChange={setSelectedMenuType} disabled={clientLoading}>
                 <SelectTrigger className="w-full md:w-[200px] text-sm"><SelectValue placeholder="Select menu type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="restaurant">Restaurant Menu</SelectItem>
@@ -771,5 +780,3 @@ export default function MenuItemsPage() {
     </>
   );
 }
-
-    
