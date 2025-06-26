@@ -2,9 +2,10 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Reorder } from "framer-motion";
+import { Reorder, motion, AnimatePresence } from "framer-motion";
+import { createPortal } from 'react-dom';
 import {
   Search,
   Save,
@@ -193,24 +194,25 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
   );
 }
 
-
-const MenuItemCard = React.memo(function MenuItemCard({ 
-  item, 
-  isSelected, 
-  onSelectItem, 
-  onEditItem, 
-  onToggleSubItems,
-  isSubItemsExpanded
-}: {
+interface MenuItemCardProps {
   item: MenuItem;
   isSelected: boolean;
   onSelectItem: (id: string, isSelected: boolean) => void;
   onEditItem: (item: MenuItem) => void;
   onToggleSubItems: (id: string) => void;
   isSubItemsExpanded: boolean;
-}) {
+}
+
+const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardProps>(function MenuItemCard({ 
+  item, 
+  isSelected, 
+  onSelectItem, 
+  onEditItem, 
+  onToggleSubItems,
+  isSubItemsExpanded
+}, ref) {
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card border border-border">
+    <Card ref={ref} className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card border border-border">
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <Checkbox id={`item-${item.id}`} checked={isSelected} onCheckedChange={(checked) => onSelectItem(item.id, !!checked)} className="mt-1" />
@@ -246,7 +248,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
       </CardContent>
     </Card>
   );
-});
+}));
 MenuItemCard.displayName = 'MenuItemCard';
 
 const categoryFormSchema = z.object({
@@ -326,6 +328,23 @@ const customSlugify = (text: string): string => {
   return firstWord;
 };
 
+function FlyingItem({ startX, startY, endX, endY, onComplete }: { startX: number, startY: number, endX: number, endY: number, onComplete: () => void }) {
+  return (
+    <motion.div
+      className="fixed top-0 left-0 h-4 w-4 bg-primary rounded-full z-[100] shadow-lg"
+      initial={{ x: startX - 8, y: startY - 8, scale: 0.5, opacity: 0.7 }}
+      animate={{
+        x: [startX - 8, (startX + endX) / 2, endX - 8],
+        y: [startY - 8, startY - 80, endY - 8], // Arc up for a nice effect
+        scale: [0.5, 1, 0.1],
+        opacity: [0.7, 1, 0],
+      }}
+      transition={{ duration: 0.6, ease: "easeInOut" }}
+      onAnimationComplete={onComplete}
+    />
+  );
+}
+
 export default function MenuItemsPage() {
   const { clientUser, clientLoading } = useClientAuth();
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
@@ -352,6 +371,15 @@ export default function MenuItemsPage() {
   
   const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
   const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
+
+  const [animations, setAnimations] = useState<{id: number, startX: number, startY: number, endX: number, endY: number}[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
+  const previewButtonRef = useRef<HTMLButtonElement>(null);
+  const itemCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!clientLoading && clientUser?.type) {
@@ -550,6 +578,24 @@ export default function MenuItemsPage() {
         }
         return newSelected;
     });
+
+    if (isSelected) {
+      const cardElement = itemCardRefs.current.get(itemId);
+      const buttonElement = previewButtonRef.current;
+
+      if (cardElement && buttonElement) {
+        const cardRect = cardElement.getBoundingClientRect();
+        const buttonRect = buttonElement.getBoundingClientRect();
+        const newAnimation = {
+          id: Date.now(),
+          startX: cardRect.left + cardRect.width / 2,
+          startY: cardRect.top + cardRect.height / 2,
+          endX: buttonRect.left + buttonRect.width / 2,
+          endY: buttonRect.top + buttonRect.height / 2,
+        };
+        setAnimations(prev => [...prev, newAnimation]);
+      }
+    }
   }, []);
 
   const selectedCount = useMemo(() => {
@@ -604,6 +650,21 @@ export default function MenuItemsPage() {
 
   return (
     <>
+      {isMounted && createPortal(
+        <AnimatePresence>
+          {animations.map(anim => (
+            <FlyingItem
+              key={anim.id}
+              {...anim}
+              onComplete={() => {
+                setAnimations(prev => prev.filter(a => a.id !== anim.id));
+              }}
+            />
+          ))}
+        </AnimatePresence>,
+        document.body
+      )}
+
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]">
         <aside className="hidden md:flex w-72 bg-card border-r border-border flex-col">
           <div className="p-4 border-b border-border flex justify-between items-center">
@@ -716,7 +777,7 @@ export default function MenuItemsPage() {
                 <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
                     <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
                     <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleSaveDraft}><Save className="h-4 w-4 mr-2" />Save Draft</Button>
-                    <Button variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}><Eye className="h-4 w-4 mr-2" />Preview ({selectedCount})</Button>
+                    <Button ref={previewButtonRef} variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}><Eye className="h-4 w-4 mr-2" />Preview ({selectedCount})</Button>
                 </div>
             </div>
           </div>
@@ -737,6 +798,10 @@ export default function MenuItemsPage() {
                   {currentMenuItems.map((item) => (
                     <MenuItemCard
                       key={item.id}
+                      ref={(el) => {
+                        if (el) itemCardRefs.current.set(item.id, el);
+                        else itemCardRefs.current.delete(item.id);
+                      }}
                       item={item}
                       isSelected={!!selectedItems[item.id]}
                       onSelectItem={handleSelectItem}
