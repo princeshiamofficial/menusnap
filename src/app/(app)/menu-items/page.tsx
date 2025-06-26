@@ -58,6 +58,50 @@ const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
 const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
 
+// Helper component for the typing animation
+function TypingAnimation({ text, className }: { text: string; className?: string; }): ReactNode {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const letterVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 12,
+      },
+    },
+  };
+
+  return (
+    <motion.span
+      className={className}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      aria-label={text}
+      style={{ display: 'flex' }}
+    >
+      {text.split("").map((char, index) => (
+        <motion.span key={`${char}-${index}`} variants={letterVariants}>
+          {char === ' ' ? '\u00A0' : char}
+        </motion.span>
+      ))}
+    </motion.span>
+  );
+}
+
 
 interface Category {
   id: string; 
@@ -795,7 +839,20 @@ export default function MenuItemsPage() {
                 <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
                     <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
                     <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleSaveDraft}><Save className="h-4 w-4 mr-2" />Save Draft</Button>
-                    <Button ref={previewButtonRef} variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}><Eye className="h-4 w-4 mr-2" />Preview ({selectedCount})</Button>
+                    <Button ref={previewButtonRef} variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}>
+                        {clientUser?.businessName ? (
+                            <div className="flex items-center gap-2">
+                                <TypingAnimation text={clientUser.businessName} />
+                                <span className="opacity-50 font-light">|</span>
+                                <span>Menu ({selectedCount})</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Eye className="h-4 w-4" />
+                                <span>Preview ({selectedCount})</span>
+                            </div>
+                        )}
+                    </Button>
                 </div>
             </div>
           </div>
