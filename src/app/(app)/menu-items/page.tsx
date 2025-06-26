@@ -329,17 +329,34 @@ const customSlugify = (text: string): string => {
 };
 
 function FlyingItem({ startX, startY, endX, endY, onComplete }: { startX: number, startY: number, endX: number, endY: number, onComplete: () => void }) {
+  const duration = 0.8 + Math.random() * 0.5;
+  const delay = Math.random() * 0.2;
+  const midX = (startX + endX) / 2 + (Math.random() - 0.5) * 100;
+  const midY = Math.min(startY, endY) - (80 + Math.random() * 60);
+  const size = 8 + Math.random() * 6;
+
+  const colors = [
+    'hsl(var(--primary))', '#fb923c', '#fde047', '#a78bfa', '#60a5fa', '#f472b6', '#34d399'
+  ];
+  const color = colors[Math.floor(Math.random() * colors.length)];
+
   return (
     <motion.div
-      className="fixed top-0 left-0 h-4 w-4 bg-primary rounded-full z-[100] shadow-lg"
-      initial={{ x: startX - 8, y: startY - 8, scale: 0.5, opacity: 0.7 }}
-      animate={{
-        x: [startX - 8, (startX + endX) / 2, endX - 8],
-        y: [startY - 8, startY - 80, endY - 8], // Arc up for a nice effect
-        scale: [0.5, 1, 0.1],
-        opacity: [0.7, 1, 0],
+      className="fixed top-0 left-0 rounded-full z-[100] pointer-events-none"
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        backgroundColor: color,
+        boxShadow: `0 0 8px ${color}`
       }}
-      transition={{ duration: 0.6, ease: "easeInOut" }}
+      initial={{ x: startX - (size / 2), y: startY - (size / 2), scale: 0.5, opacity: 1 }}
+      animate={{
+        x: [startX - (size / 2), midX, endX - (size / 2)],
+        y: [startY - (size / 2), midY, endY - (size / 2)],
+        scale: [0.5, 1, 0],
+        opacity: [1, 1, 0],
+      }}
+      transition={{ duration, ease: "easeOut", delay }}
       onAnimationComplete={onComplete}
     />
   );
@@ -586,14 +603,15 @@ export default function MenuItemsPage() {
       if (cardElement && buttonElement) {
         const cardRect = cardElement.getBoundingClientRect();
         const buttonRect = buttonElement.getBoundingClientRect();
-        const newAnimation = {
-          id: Date.now(),
+        const burstId = Date.now();
+        const newAnimations = Array.from({ length: 7 }).map((_, i) => ({
+          id: burstId + i,
           startX: cardRect.left + cardRect.width / 2,
           startY: cardRect.top + cardRect.height / 2,
           endX: buttonRect.left + buttonRect.width / 2,
           endY: buttonRect.top + buttonRect.height / 2,
-        };
-        setAnimations(prev => [...prev, newAnimation]);
+        }));
+        setAnimations(prev => [...prev, ...newAnimations]);
       }
     }
   }, []);
