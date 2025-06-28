@@ -60,18 +60,14 @@ const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
 
 // Helper component for the CSS typewriter animation
 function TypingAnimation({ text, className }: { text: string; className?: string; }): ReactNode {
-  // Create a unique animation name to avoid conflicts.
   const animationName = React.useMemo(() => `typewriter-${Math.random().toString(36).substring(2, 11)}`, []);
-
-  // Estimate width in `ch` units (character width). Works best with monospace fonts.
   const textWidth = text.length;
-  const animationDuration = `${text.length * 0.09}s`; // Adjust speed here
+  const animationDurationSeconds = text.length * 0.15; // Adjusted speed
 
-  // Define the dynamic keyframe for the typing animation
   const keyframes = `
     @keyframes ${animationName} {
-      from { width: 0; }
-      to { width: ${textWidth}ch; }
+      0%, 100% { width: 0; }
+      50% { width: ${textWidth}ch; }
     }
   `;
 
@@ -80,11 +76,10 @@ function TypingAnimation({ text, className }: { text: string; className?: string
       <style>{keyframes}</style>
       <span
         style={{
-          fontFamily: "'Anonymous Pro', monospace",
-          animation: `${animationName} ${animationDuration} steps(${text.length}) 1s 1 normal both, blinkTextCursor 500ms steps(${text.length}) infinite normal`
+          animation: `${animationName} ${animationDurationSeconds * 2}s steps(${text.length}) infinite, blinkTextCursor 500ms infinite normal`
         }}
         className={cn(
-          "inline-block overflow-hidden whitespace-nowrap border-r-2 pr-1", // pr-1 to give cursor some space
+          "inline-block overflow-hidden whitespace-nowrap border-r-2 pr-1",
           className
         )}
       >
@@ -833,8 +828,8 @@ export default function MenuItemsPage() {
                     <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleSaveDraft}><Save className="h-4 w-4 mr-2" />Save Draft</Button>
                     <Button ref={previewButtonRef} variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}>
                         {clientUser?.businessName ? (
-                            <div className="flex items-center gap-2">
-                                <TypingAnimation text={`(${clientUser.businessName})`} />
+                            <div className="flex items-center gap-1">
+                                <TypingAnimation text={`${clientUser.businessName}`} />
                                 <span>Menu ({selectedCount})</span>
                             </div>
                         ) : (
