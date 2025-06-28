@@ -58,17 +58,28 @@ const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
 const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
 
-// Helper component for the horizontal expand animation
+// Helper component for the typewriter animation
 function TypingAnimation({ text, className }: { text: string; className?: string; }): ReactNode {
   const containerVariants = {
-    hidden: { scaleX: 0, originX: 0 },
+    hidden: { opacity: 0 },
+    visible: (i = 1) => ({
+      opacity: 1,
+      transition: { staggerChildren: 0.08, delayChildren: 0.2 * i },
+    }),
+  };
+
+  const characterVariants = {
+    hidden: {
+      opacity: 0,
+      y: 10,
+    },
     visible: {
-      scaleX: 1,
-      originX: 0,
+      opacity: 1,
+      y: 0,
       transition: {
-        type: "spring",
-        stiffness: 150,
-        damping: 20,
+        type: 'spring',
+        damping: 12,
+        stiffness: 200,
       },
     },
   };
@@ -82,7 +93,15 @@ function TypingAnimation({ text, className }: { text: string; className?: string
       aria-label={text}
       style={{ display: 'inline-block', whiteSpace: 'nowrap' }}
     >
-      {text}
+      {Array.from(text).map((char, index) => (
+        <motion.span
+          key={`${char}-${index}`}
+          variants={characterVariants}
+          className="inline-block"
+        >
+          {char === " " ? "\u00A0" : char}
+        </motion.span>
+      ))}
     </motion.span>
   );
 }
