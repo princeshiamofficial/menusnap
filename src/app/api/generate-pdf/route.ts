@@ -79,8 +79,9 @@ async function generatePdfBuffer(data: { items: MenuItem[], categories: Category
 
             // Table Header
             doc.font('Helvetica-Bold').fontSize(10);
-            doc.text('Item', 70, doc.y);
-            doc.text('Price', 450, doc.y, { width: 100, align: 'right' });
+            const headerY = doc.y;
+            doc.text('Item', 70, headerY);
+            doc.text('Price', 450, headerY, { width: 100, align: 'right' });
             doc.moveDown(0.5);
             doc.strokeColor('#eeeeee').lineWidth(0.5).moveTo(70, doc.y).lineTo(550, doc.y).stroke();
             doc.moveDown(0.5);
@@ -88,29 +89,36 @@ async function generatePdfBuffer(data: { items: MenuItem[], categories: Category
             // Items in Category
             doc.font('Helvetica').fontSize(10).fillColor('#333333');
             for (const item of itemsInCategory) {
-                const yPos = doc.y;
-                doc.text(item.name, 70, yPos, { width: 360 });
-                doc.text(`৳${item.price.toLocaleString()}`, 450, yPos, { width: 100, align: 'right' });
+                const rowY = doc.y;
                 
-                const initialY = doc.y;
-                // Reset y to start description on the next line, aligned with item name
-                doc.y = yPos;
-                doc.x = 70;
+                // Write name, which might wrap, and capture the Y position after it.
+                doc.text(item.name, 70, rowY, { width: 360 });
+                const yAfterName = doc.y;
+
+                // Write the price, aligned with the top of the row.
+                doc.text(`৳${item.price.toLocaleString()}`, 450, rowY, { width: 100, align: 'right' });
+                
+                // Set the document's main cursor to be below the (potentially wrapped) name.
+                doc.y = yAfterName;
+
                 if (item.description) {
-                    // Move down slightly from the item name line to start the description
-                    doc.moveDown(1.2); 
-                    doc.fontSize(8).fillColor('#666666').text(item.description, {
+                    doc.moveDown(0.2); // Add a small space between name and description.
+                    doc.font('Helvetica-Oblique').fontSize(8).fillColor('#666666');
+                    // Explicitly set x coordinate for description to align with name
+                    doc.text(item.description, 70, doc.y, {
                         width: 360,
                         lineGap: 2,
-                        align: 'left',
-                        indent: 0,
                     });
                 }
-                const finalY = doc.y;
-                // Position the cursor at the end of the item block (either name or description)
-                doc.y = Math.max(initialY, finalY);
                 
+                // Add consistent space after the item block
                 doc.moveDown(1);
+
+                // Basic page break logic
+                if (doc.y > 700) {
+                    doc.addPage();
+                    doc.y = 50; // Reset Y position for the new page
+                }
             }
             doc.moveDown(1);
         }
