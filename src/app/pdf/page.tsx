@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -37,6 +38,7 @@ interface PdfData {
 const PDFPage = (): ReactNode => {
   const [data, setData] = useState<PdfData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generatedDate, setGeneratedDate] = useState<string | null>(null);
 
   useEffect(() => {
     const pdfDataString = localStorage.getItem('pdfData');
@@ -48,6 +50,7 @@ const PDFPage = (): ReactNode => {
         console.error("Failed to parse PDF data from localStorage", e);
       }
     }
+    setGeneratedDate(new Date().toLocaleDateString());
     setLoading(false);
   }, []);
 
@@ -131,7 +134,7 @@ const PDFPage = (): ReactNode => {
           <div className="text-right">
             <h1 className="text-3xl font-bold text-primary">Menu Selection</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Generated on: {new Date().toLocaleDateString()}
+              Generated on: {generatedDate || '...'}
             </p>
           </div>
         </header>
