@@ -834,8 +834,7 @@ export default function MenuItemsPage() {
                     <Button ref={previewButtonRef} variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={() => setIsPreviewDialogOpen(true)} disabled={selectedCount === 0}>
                         {clientUser?.businessName ? (
                             <div className="flex items-center gap-2">
-                                <TypingAnimation text={clientUser.businessName} />
-                                <span className="opacity-50 font-light">|</span>
+                                <TypingAnimation text={`(${clientUser.businessName})`} />
                                 <span>Menu ({selectedCount})</span>
                             </div>
                         ) : (
