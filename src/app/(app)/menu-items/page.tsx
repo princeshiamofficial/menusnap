@@ -253,7 +253,7 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
             {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
           </div>
           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-            {item.price > 0 && (!item.subItems || item.subItems.length === 0) && `৳${item.price.toLocaleString()}`}
+            {item.price > 0 && `৳${item.price.toLocaleString()}`}
           </div>
           <div className="flex flex-col gap-1">
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4"/></Button>
@@ -475,7 +475,12 @@ export default function MenuItemsPage() {
       const rawServerItems = Array.isArray(itemsData) ? itemsData : (itemsData.success && Array.isArray(itemsData.data)) ? itemsData.data : [];
       const serverItems: MenuItem[] = rawServerItems
         .filter((item: any) => item.visibleToUsers)
-        .map((item: any) => ({ ...item, id: String(item.id), category: String(item.category || item.categoryId) }));
+        .map((item: any) => ({ 
+          ...item,
+          id: String(item.id),
+          price: parseFloat(item.price) || 0,
+          category: String(item.category || item.categoryId) 
+        }));
 
       const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
       const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
