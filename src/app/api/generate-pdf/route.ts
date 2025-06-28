@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import PDFDocument from 'pdfkit';
 import type { MenuItem } from '@/components/menu/menu-preview-dialog';
@@ -57,12 +58,11 @@ function generatePdfBuffer(data: { items: MenuItem[], categories: Category[] }):
 
             // Items in Category
             for (const item of itemsInCategory) {
+                const itemText = ` ${item.name} - ৳${item.price.toLocaleString()}`;
                 doc
                   .fontSize(12)
                   .font('Helvetica')
-                  .list([`${item.name} - ৳${item.price.toLocaleString()}`], {
-                      bulletRadius: 2,
-                  });
+                  .text(`•${itemText}`, { lineGap: 4 });
                 
                 if (item.description) {
                     doc.fontSize(10).fillColor('grey').text(item.description, { indent: 20, lineGap: 2 });

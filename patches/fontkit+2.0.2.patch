@@ -1,0 +1,11 @@
+patch-package
+--- a/node_modules/fontkit/dist/module.mjs
++++ b/node_modules/fontkit/dist/module.mjs
+@@ -1,6 +1,6 @@
+ import $5OpyM$restructure from "restructure";
+ import {readFileSync as $5OpyM$readFileSync, readFile as $5OpyM$readFile} from "fs";
+-import {applyDecoratedDescriptor as $5OpyM$applyDecoratedDescriptor} from "@swc/helpers";
++import {_apply_decorated_descriptor as $5OpyM$applyDecoratedDescriptor} from "@swc/helpers";
+ import {Buffer as $5OpyM$Buffer} from "buffer";
+ import {resolveLength as $5OpyM$resolveLength, PropertyDescriptor as $5OpyM$PropertyDescriptor} from "restructure/src/utils.js";
+ import $5OpyM$deepequal from "deep-equal";
