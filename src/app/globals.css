@@ -1,11 +1,9 @@
 
+@import url('https://fonts.googleapis.com/css?family=Anonymous+Pro');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 @layer base {
   /* Default Theme (Orange) */
@@ -119,13 +117,17 @@ body {
     --sidebar-ring: 330 85% 65%; /* Lighter Pink */
     --chart-1: 330 85% 65%; /* Lighter Pink for chart */
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: Arial, Helvetica, sans-serif;
   }
+}
+
+@keyframes blinkTextCursor {
+  from { border-right-color: hsl(var(--primary-foreground)); }
+  to { border-right-color: transparent; }
 }

@@ -58,51 +58,39 @@ const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
 const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
 
-// Helper component for the typewriter animation
+// Helper component for the CSS typewriter animation
 function TypingAnimation({ text, className }: { text: string; className?: string; }): ReactNode {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: (i = 1) => ({
-      opacity: 1,
-      transition: { staggerChildren: 0.08, delayChildren: 0.2 * i },
-    }),
-  };
+  // Create a unique animation name to avoid conflicts.
+  const animationName = React.useMemo(() => `typewriter-${Math.random().toString(36).substring(2, 11)}`, []);
 
-  const characterVariants = {
-    hidden: {
-      opacity: 0,
-      y: 10,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: 'spring',
-        damping: 12,
-        stiffness: 200,
-      },
-    },
-  };
+  // Estimate width in `ch` units (character width). Works best with monospace fonts.
+  const textWidth = text.length;
+  const animationDuration = `${text.length * 0.09}s`; // Adjust speed here
+
+  // Define the dynamic keyframe for the typing animation
+  const keyframes = `
+    @keyframes ${animationName} {
+      from { width: 0; }
+      to { width: ${textWidth}ch; }
+    }
+  `;
 
   return (
-    <motion.span
-      className={className}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      aria-label={text}
-      style={{ display: 'inline-block', whiteSpace: 'nowrap' }}
-    >
-      {Array.from(text).map((char, index) => (
-        <motion.span
-          key={`${char}-${index}`}
-          variants={characterVariants}
-          className="inline-block"
-        >
-          {char === " " ? "\u00A0" : char}
-        </motion.span>
-      ))}
-    </motion.span>
+    <>
+      <style>{keyframes}</style>
+      <span
+        style={{
+          fontFamily: "'Anonymous Pro', monospace",
+          animation: `${animationName} ${animationDuration} steps(${text.length}) 1s 1 normal both, blinkTextCursor 500ms steps(${text.length}) infinite normal`
+        }}
+        className={cn(
+          "inline-block overflow-hidden whitespace-nowrap border-r-2 pr-1", // pr-1 to give cursor some space
+          className
+        )}
+      >
+        {text}
+      </span>
+    </>
   );
 }
 
