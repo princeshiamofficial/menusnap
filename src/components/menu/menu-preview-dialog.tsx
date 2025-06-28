@@ -19,14 +19,14 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { X, ChevronLeft, Send, ShoppingCart, FileText, GripVertical } from 'lucide-react';
+import { X, ChevronLeft, Send, ShoppingCart, FileText, GripVertical, Download } from 'lucide-react';
 import { CustomerDetailsForm, type CustomerDetailsFormValues } from './customer-details-form';
 import { useToast } from "@/hooks/use-toast";
 import type { ClientUser } from '@/hooks/use-client-auth';
 
 
 // Interfaces matching MenuItemsPage for consistency
-interface Category {
+export interface Category {
   id: string;
   originalId?: string;
   name: string;
@@ -34,7 +34,7 @@ interface Category {
   itemCount?: number;
 }
 
-interface SubMenuItem {
+export interface SubMenuItem {
   id: string;
   originalId?: string;
   name: string;
@@ -82,6 +82,7 @@ export function MenuPreviewDialog({
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -215,6 +216,58 @@ export function MenuPreviewDialog({
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleShareWithPartner = async () => {
+    setIsDownloading(true);
+    toast({
+      title: "Generating PDF...",
+      description: "Your menu is being prepared for download.",
+    });
+
+    try {
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: selectedItems, categories: orderedDialogCategories }),
+      });
+
+      if (!response.ok) {
+        let errorMsg = "Failed to generate PDF file.";
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+        } catch {
+          // ignore if response is not json
+        }
+        throw new Error(errorMsg);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `menu-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+
+      toast({
+        title: "Download Started",
+        description: "Your PDF menu should be in your downloads folder.",
+      });
+
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error: any) {
+      toast({
+        title: "Download Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -363,8 +416,23 @@ export function MenuPreviewDialog({
             >
               <ShoppingCart className="h-4 w-4 mr-2" /> Share with Color Hut
             </Button>
-            <Button variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={selectedItems.length === 0}>
-              <Send className="h-4 w-4 mr-2" /> Share with Partner
+            <Button
+              variant="default"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              disabled={selectedItems.length === 0 || isDownloading}
+              onClick={handleShareWithPartner}
+            >
+              {isDownloading ? (
+                <>
+                  <Download className="h-4 w-4 mr-2 animate-pulse" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Share with Partner
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
