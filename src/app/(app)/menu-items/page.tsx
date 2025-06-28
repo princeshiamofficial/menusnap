@@ -404,6 +404,7 @@ export default function MenuItemsPage() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); 
   const [selectedMenuType, setSelectedMenuType] = useState<string>('');
+  const [itemsToSelectFromDraft, setItemsToSelectFromDraft] = useState<string[] | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -509,6 +510,67 @@ export default function MenuItemsPage() {
   useEffect(() => {
     loadData(selectedMenuType);
   }, [selectedMenuType, loadData]);
+
+  // Effect to handle restoring a draft on page load
+  useEffect(() => {
+    const draftIdToRestore = localStorage.getItem('draftToRestoreId');
+    if (draftIdToRestore) {
+      // Remove the key immediately to prevent re-triggering on refresh
+      localStorage.removeItem('draftToRestoreId');
+      try {
+        const allDraftsRaw = localStorage.getItem(DRAFTS_STORAGE_KEY);
+        if (allDraftsRaw) {
+          const allDrafts = JSON.parse(allDraftsRaw);
+          const draftToRestore = allDrafts.find((d: any) => d.id === draftIdToRestore);
+          
+          if (draftToRestore) {
+            if (draftToRestore.primaryTag) {
+              setSelectedMenuType(draftToRestore.primaryTag);
+            }
+            if (Array.isArray(draftToRestore.items)) {
+              const itemIds = draftToRestore.items.map((item: { id: string }) => item.id);
+              setItemsToSelectFromDraft(itemIds);
+              toast({
+                title: "Draft Restored",
+                description: `Selection from "${draftToRestore.name}" is being loaded.`,
+              });
+            }
+          } else {
+            toast({
+              title: "Restore Failed",
+              description: "Could not find the specified draft to restore.",
+              variant: "destructive",
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to restore draft:", e);
+        toast({
+          title: "Restore Error",
+          description: "An error occurred while restoring the draft.",
+          variant: "destructive",
+        });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast]); // Run only on mount
+
+  // Effect to apply selections after data has finished loading
+  useEffect(() => {
+    if (!loading && itemsToSelectFromDraft) {
+      const newSelectedItems: Record<string, boolean> = {};
+      itemsToSelectFromDraft.forEach(itemId => {
+        // Only select items that exist in the currently loaded menu items
+        if (allMenuItems.some(menuItem => menuItem.id === itemId)) {
+          newSelectedItems[itemId] = true;
+        }
+      });
+      setSelectedItems(newSelectedItems);
+      // Reset the pending selection state
+      setItemsToSelectFromDraft(null);
+    }
+  }, [loading, itemsToSelectFromDraft, allMenuItems]);
+
 
   const handleOpenAddItem = () => {
     if (!selectedCategory) {
