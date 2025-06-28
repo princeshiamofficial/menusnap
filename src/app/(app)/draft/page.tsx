@@ -358,17 +358,22 @@ export default function DraftPage(): ReactNode {
     try {
       const storedDrafts = localStorage.getItem(DRAFTS_STORAGE_KEY);
       if (storedDrafts) {
-        const parsedDrafts: DraftItem[] = JSON.parse(storedDrafts);
-        const validatedDrafts = parsedDrafts.map(draft => ({
-          ...draft,
-          items: Array.isArray(draft.items) ? draft.items.map(subItem => ({
-            ...subItem,
-            // Ensure categoryId is a string; if it's number-like, convert it.
-            // If it's truly missing or null, default to 'unknown' but log this.
-            categoryId: subItem.categoryId === null || subItem.categoryId === undefined ? 'unknown' : String(subItem.categoryId)
-          })) : [],
-          previewAvatars: Array.isArray(draft.previewAvatars) ? draft.previewAvatars : [],
-        }));
+        const parsedDrafts: any[] = JSON.parse(storedDrafts);
+        const validatedDrafts = parsedDrafts.map(draft => {
+            const validatedItems = Array.isArray(draft.items) ? draft.items.map((item: any) => {
+                const finalCatId = item.categoryId || item.category; // Check for new property, fallback to old
+                return {
+                    ...item,
+                    categoryId: finalCatId === null || finalCatId === undefined ? 'unknown' : String(finalCatId),
+                };
+            }) : [];
+
+            return {
+                ...draft,
+                items: validatedItems,
+                previewAvatars: Array.isArray(draft.previewAvatars) ? draft.previewAvatars : [],
+            };
+        });
         setDrafts(validatedDrafts);
       } else {
         setDrafts([]); 
