@@ -82,7 +82,6 @@ export function MenuPreviewDialog({
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -219,56 +218,21 @@ export function MenuPreviewDialog({
     }
   };
 
-  const handleShareWithPartner = async () => {
-    setIsDownloading(true);
+  const handleShareWithPartner = () => {
     toast({
-      title: "Generating PDF...",
-      description: "Your menu is being prepared for download.",
+      title: "Preparing Printable Menu...",
+      description: "A new tab will open with your menu.",
     });
 
-    try {
-      const response = await fetch('/api/generate-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: selectedItems, categories: orderedDialogCategories }),
-      });
+    // Store data in localStorage for the new page to access
+    const dataToStore = {
+        items: selectedItems,
+        categories: orderedDialogCategories,
+    };
+    localStorage.setItem('pdfData', JSON.stringify(dataToStore));
 
-      if (!response.ok) {
-        let errorMsg = "Failed to generate PDF file.";
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.message || errorMsg;
-        } catch {
-          // ignore if response is not json
-        }
-        throw new Error(errorMsg);
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `menu-${Date.now()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-
-      toast({
-        title: "Download Started",
-        description: "Your PDF menu should be in your downloads folder.",
-      });
-
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-    } catch (error: any) {
-      toast({
-        title: "Download Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsDownloading(false);
-    }
+    // Open the /pdf page in a new tab
+    window.open('/pdf', '_blank');
   };
 
   useEffect(() => {
@@ -419,20 +383,11 @@ export function MenuPreviewDialog({
             <Button
               variant="default"
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              disabled={selectedItems.length === 0 || isDownloading}
+              disabled={selectedItems.length === 0}
               onClick={handleShareWithPartner}
             >
-              {isDownloading ? (
-                <>
-                  <Download className="h-4 w-4 mr-2 animate-pulse" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Share with Partner
-                </>
-              )}
+              <Send className="h-4 w-4 mr-2" />
+              Share with Partner
             </Button>
           </DialogFooter>
         </DialogContent>
