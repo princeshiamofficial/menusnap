@@ -61,14 +61,13 @@ const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
 // Helper component for the CSS typewriter animation
 function TypingAnimation({ text, className }: { text: string; className?: string; }): ReactNode {
   const animationName = React.useMemo(() => `typewriter-${Math.random().toString(36).substring(2, 11)}`, []);
-  const textWidth = text.length;
   // Speed is 0.1s per character. Total animation duration is typing + pausing.
   const animationDurationSeconds = text.length * 0.1;
 
   const keyframes = `
     @keyframes ${animationName} {
       0%, 100% { width: 0; } /* Start and end with no width */
-      50% { width: ${textWidth}ch; } /* Expand to full width mid-way */
+      50% { width: ${text.length}ch; } /* Expand to full width mid-way */
     }
   `;
 
@@ -719,36 +718,6 @@ export default function MenuItemsPage() {
     setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   }, []);
 
-  const handleSaveDraft = useCallback(() => {
-    const itemsToSave = allMenuItems.filter(item => selectedItems[item.id]);
-    if (itemsToSave.length === 0) {
-      toast({ title: "No items selected", description: "Please select items to save in a draft.", variant: "destructive" });
-      return;
-    }
-
-    const draftId = `draft-${Date.now()}`;
-    const draftName = `Draft - ${new Date().toLocaleString()}`;
-    const draft = {
-      id: draftId,
-      name: draftName,
-      createdAt: new Date().toISOString(),
-      itemCount: itemsToSave.length,
-      primaryTag: selectedMenuType,
-      previewAvatars: itemsToSave.slice(0, 3).map(i => i.name.charAt(0)),
-      items: itemsToSave,
-    };
-
-    try {
-      const existingDrafts = JSON.parse(localStorage.getItem(DRAFTS_STORAGE_KEY) || '[]');
-      existingDrafts.unshift(draft); // Add to the beginning
-      localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
-      toast({ title: "Draft Saved!", description: `"${draftName}" has been saved.` });
-      setSelectedItems({}); // Clear selection after saving
-    } catch (e) {
-      toast({ title: "Error Saving Draft", description: "Could not save draft to local storage.", variant: "destructive" });
-    }
-  }, [allMenuItems, selectedItems, selectedMenuType, toast]);
-
   const handlePreviewAndSave = useCallback(() => {
     const itemsToSave = allMenuItems.filter(item => selectedItems[item.id]);
     if (itemsToSave.length === 0) {
@@ -931,7 +900,6 @@ export default function MenuItemsPage() {
                 </div>
                 <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
                     <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
-                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleSaveDraft}><Save className="h-4 w-4 mr-2" />Save Draft</Button>
                     <Button ref={previewButtonRef} variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={handlePreviewAndSave} disabled={selectedCount === 0}>
                         {clientUser?.businessName ? (
                             <div className="flex items-center gap-1">
