@@ -621,6 +621,7 @@ export default function MenuItemsPage() {
       };
       newItems = [...allMenuItems, itemToSave];
       toast({ title: "Item Added", description: `"${decodeHtmlEntities(data.name)}" has been added.` });
+      setSelectedItems(prev => ({...prev, [itemToSave.id]: true}));
     }
     
     if (itemToSave.id.startsWith('custom-')) {
@@ -732,7 +733,7 @@ export default function MenuItemsPage() {
     if (itemsToSave.length === 0) {
       toast({
         title: "No items selected",
-        description: "Please select items to save and preview.",
+        description: "Please select items to preview.",
         variant: "destructive",
       });
       return;
