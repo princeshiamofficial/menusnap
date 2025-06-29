@@ -283,6 +283,26 @@ export default function TemplatesPage(): ReactNode {
           throw new Error(updateResult.message || "Failed to apply template to order.");
         }
         
+        // Step 4: Update local storage as well
+        try {
+            const localOrdersRaw = localStorage.getItem('colorHutOrders');
+            if (localOrdersRaw) {
+                const localOrders = JSON.parse(localOrdersRaw);
+                const orderIndex = localOrders.findIndex((o: any) => String(o.id) === pendingOrderId);
+                if (orderIndex > -1) {
+                    localOrders[orderIndex] = updatedOrderPayload;
+                    localStorage.setItem('colorHutOrders', JSON.stringify(localOrders));
+                }
+            }
+        } catch(e) {
+            console.error("Could not update order in local storage", e);
+            toast({
+                title: "Local History Warning",
+                description: "Your order was updated, but the local history might be out of sync.",
+                variant: "default",
+            });
+        }
+
         setShowConfetti(true);
         toast({
           title: "Template Applied!",
