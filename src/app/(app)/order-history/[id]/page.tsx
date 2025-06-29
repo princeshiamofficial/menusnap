@@ -265,7 +265,6 @@ export default function ClientOrderDetailsPage() {
                             <Skeleton className="h-8 w-48" />
                             <Skeleton className="h-5 w-64" />
                         </div>
-                        <Skeleton className="h-12 w-32" />
                     </div>
                      <div className="grid md:grid-cols-2 gap-6">
                         <Skeleton className="h-40 w-full" />
