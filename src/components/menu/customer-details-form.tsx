@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from 'react';
@@ -23,6 +24,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import type { MenuItem } from './menu-preview-dialog'; // Import MenuItem for typing
 import { User, Phone, Mail, Building, MapPin, Briefcase } from 'lucide-react';
 import type { ClientUser } from '@/hooks/use-client-auth';
+
+const CUSTOMER_DETAILS_STORAGE_KEY = 'colorHutCustomerDetails';
 
 const customerDetailsSchema = z.object({
   customerName: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -69,16 +72,34 @@ export function CustomerDetailsForm({
   });
   
   React.useEffect(() => {
-    // When the dialog opens, pre-fill the business name if a client is logged in.
+    // When the dialog opens, pre-fill with saved data or client user data.
     if (isOpen) {
-      form.reset({
+      let defaultValues: CustomerDetailsFormValues = {
         customerName: "",
         phoneNumber: "",
         email: "",
         businessName: clientUser?.businessName || "",
         role: "",
         deliveryAddress: "",
-      });
+      };
+      try {
+        const savedDetailsRaw = localStorage.getItem(CUSTOMER_DETAILS_STORAGE_KEY);
+        if (savedDetailsRaw) {
+          const savedDetails = JSON.parse(savedDetailsRaw);
+          // Pre-fill form with saved data, but prioritize logged-in user's business name
+          defaultValues = {
+            customerName: savedDetails.customerName || "",
+            phoneNumber: savedDetails.phoneNumber || "",
+            email: savedDetails.email || "",
+            businessName: clientUser?.businessName || savedDetails.businessName || "",
+            role: savedDetails.role || "",
+            deliveryAddress: savedDetails.deliveryAddress || "",
+          };
+        }
+      } catch (error) {
+        console.warn("Failed to load customer details from localStorage for form reset", error);
+      }
+      form.reset(defaultValues);
     }
   }, [isOpen, clientUser, form]);
 
@@ -90,8 +111,12 @@ export function CustomerDetailsForm({
 
 
   const handleFormSubmit = (data: CustomerDetailsFormValues) => {
+    try {
+      localStorage.setItem(CUSTOMER_DETAILS_STORAGE_KEY, JSON.stringify(data));
+    } catch(error) {
+        console.warn("Could not save customer details to localStorage", error);
+    }
     onSubmit(data);
-    // Do not reset form here, parent component handles it.
   };
 
   return (
