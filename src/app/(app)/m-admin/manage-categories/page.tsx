@@ -189,9 +189,9 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
   };
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow">
-      <ScrollArea className="flex-grow min-h-0 p-1">
-        <div className="space-y-4">
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow overflow-hidden">
+      <ScrollArea className="flex-grow min-h-0">
+        <div className="space-y-4 p-6">
           <div>
             <Label htmlFor="category-name">Category Name*</Label>
             <Input id="category-name" {...form.register("name")} placeholder="e.g., Appetizers, Beverages" />
@@ -219,7 +219,7 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
           </div>
         </div>
       </ScrollArea>
-      <DialogFooter className="pt-4 border-t mt-auto">
+      <DialogFooter className="p-6 pt-4 border-t mt-auto">
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }}>Cancel</Button>
         </DialogClose>
@@ -809,8 +809,8 @@ export default function ManageCategoriesPage(): ReactNode {
       </section>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)] p-0 gap-0">
+          <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle className="text-2xl">Add New {categoryTypeName} Category</DialogTitle>
           </DialogHeader>
           <CategoryForm 
@@ -826,8 +826,8 @@ export default function ManageCategoriesPage(): ReactNode {
             setIsEditDialogOpen(open);
             if (!open) setEditingCategoryData(null);
           }}>
-          <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)] p-0 gap-0">
+            <DialogHeader className="p-6 pb-4 border-b">
               <DialogTitle className="text-2xl">Edit {categoryTypeName} Category</DialogTitle>
             </DialogHeader>
             <CategoryForm 
@@ -869,6 +869,7 @@ export default function ManageCategoriesPage(): ReactNode {
     
 
     
+
 
 
 

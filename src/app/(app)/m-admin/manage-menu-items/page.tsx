@@ -207,14 +207,14 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
   };
   
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow">
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <DialogHeader className="px-6 py-4 border-b">
          <DialogTitle className="text-xl">
             {isEditMode ? `Edit ${decodeHtmlEntities(initialData?.name) || 'Menu Item'}` : `Add New ${categoryName ? decodeHtmlEntities(categoryName) + ' Item' : 'Menu Item'}`}
         </DialogTitle>
       </DialogHeader>
-      <ScrollArea className="flex-grow min-h-0 px-6 py-4">
-        <div className="space-y-4">
+      <ScrollArea className="flex-grow min-h-0">
+        <div className="space-y-4 p-6">
           <div>
             <Label htmlFor="item-name">Item name</Label>
             <Input id="item-name" {...form.register("name")} placeholder="Enter item name" />
