@@ -52,7 +52,7 @@ export const generateMenuDocx = async (
       );
 
       for (const item of itemsInCategory) {
-        const priceText = item.price > 0 ? `\t৳${item.price.toLocaleString()}` : '';
+        const priceText = item.price > 0 ? `\t${item.price.toLocaleString()}/-` : '';
         docChildren.push(
           new Paragraph({
             children: [
@@ -95,7 +95,7 @@ export const generateMenuDocx = async (
 
         if (item.subItems && item.subItems.length > 0) {
           for (const subItem of item.subItems) {
-            const subPriceText = typeof subItem.price === 'number' ? `\t৳${subItem.price.toLocaleString()}` : '';
+            const subPriceText = typeof subItem.price === 'number' && subItem.price > 0 ? `\t${subItem.price.toLocaleString()}/-` : '';
              docChildren.push(
                 new Paragraph({
                     children: [
