@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { MessagesSquare, X, Phone, MessageCircle } from 'lucide-react';
 
@@ -79,9 +80,11 @@ const characterVariants = {
 export function SpeedDialFAB(): ReactNode {
   const [isOpen, setIsOpen] = useState(false);
   const [showHelpTextVisual, setShowHelpTextVisual] = useState(true);
+  const [showHelpImage, setShowHelpImage] = useState(false); // State for icon cycle
   const fabControls = useAnimation();
   const fabIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const helpTextCycleTimers = useRef<{ visible?: NodeJS.Timeout, hidden?: NodeJS.Timeout }>({});
+  const iconCycleIntervalRef = useRef<NodeJS.Timeout | null>(null); // Ref for icon cycle timer
 
   useEffect(() => {
     // FAB pop animation logic
@@ -136,6 +139,28 @@ export function SpeedDialFAB(): ReactNode {
       if (helpTextCycleTimers.current.hidden) clearTimeout(helpTextCycleTimers.current.hidden);
     };
   }, [isOpen, showHelpTextVisual]);
+  
+  // Effect to cycle the main FAB icon
+  useEffect(() => {
+    if (iconCycleIntervalRef.current) {
+        clearInterval(iconCycleIntervalRef.current);
+    }
+
+    if (!isOpen) {
+        // Reset to default icon immediately when closed
+        setShowHelpImage(false);
+        // Start the timer to cycle icons
+        iconCycleIntervalRef.current = setInterval(() => {
+            setShowHelpImage(prev => !prev);
+        }, 15000); // Toggle every 15 seconds
+    }
+
+    return () => {
+        if (iconCycleIntervalRef.current) {
+            clearInterval(iconCycleIntervalRef.current);
+        }
+    };
+  }, [isOpen]);
 
 
   return (
@@ -195,7 +220,7 @@ export function SpeedDialFAB(): ReactNode {
 
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`rounded-full h-16 w-16 shadow-xl flex items-center justify-center
+        className={`rounded-full h-16 w-16 shadow-xl flex items-center justify-center overflow-hidden
                     focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
                     transition-colors duration-200
                     ${isOpen ? 'bg-gray-700 hover:bg-gray-800 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
@@ -203,7 +228,26 @@ export function SpeedDialFAB(): ReactNode {
         aria-label={isOpen ? "Close contact options" : "Open contact options"}
         animate={fabControls} 
       >
-        {isOpen ? <X className="h-8 w-8" /> : <MessagesSquare className="h-8 w-8" />}
+        <AnimatePresence mode="wait">
+            {isOpen ? (
+                <motion.div key="close-icon" initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 45 }}>
+                    <X className="h-8 w-8" />
+                </motion.div>
+            ) : showHelpImage ? (
+                <motion.div key="help-image" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="h-full w-full relative">
+                    <Image
+                        src="https://colorhutbd.xyz/help.png"
+                        alt="Help"
+                        fill
+                        className="object-contain"
+                    />
+                </motion.div>
+            ) : (
+                <motion.div key="message-icon" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
+                    <MessagesSquare className="h-8 w-8" />
+                </motion.div>
+            )}
+        </AnimatePresence>
       </motion.button>
     </div>
   );
