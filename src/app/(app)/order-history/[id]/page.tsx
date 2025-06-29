@@ -148,8 +148,8 @@ export default function ClientOrderDetailsPage() {
             setIsLoading(true);
             setError(null);
             try {
-                const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
-                    fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
+                 // Fetch categories from API
+                const [restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
                     fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
                     fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
                 ]);
@@ -169,9 +169,9 @@ export default function ClientOrderDetailsPage() {
                 }
                 setCategoryMap(newCategoryMap);
 
-                if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
-                const result = await ordersResponse.json();
-                const rawOrdersArray = result.success ? (result.data.orders || result.data) : [];
+                // Get orders from local storage
+                const storedOrdersRaw = localStorage.getItem('colorHutOrders');
+                const rawOrdersArray = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : [];
                 const orderData = rawOrdersArray.find((o:any) => String(o.id) === orderIdFromUrl);
 
                 if (orderData) {
@@ -216,7 +216,7 @@ export default function ClientOrderDetailsPage() {
                     setError(`Order with ID ${orderIdFromUrl} not found.`);
                 }
             } catch (e: any) {
-                setError(e.message || 'Failed to load order details.');
+                setError((e as Error).message || 'Failed to load order details.');
             } finally {
                 setIsLoading(false);
             }

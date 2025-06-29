@@ -207,6 +207,21 @@ export function MenuPreviewDialog({
         throw new Error(result.message || `Failed to submit order. Status: ${response.status}`);
       }
 
+      // Save order to local storage
+      try {
+        const existingOrdersRaw = localStorage.getItem('colorHutOrders');
+        const existingOrders = existingOrdersRaw ? JSON.parse(existingOrdersRaw) : [];
+        existingOrders.unshift(orderPayload);
+        localStorage.setItem('colorHutOrders', JSON.stringify(existingOrders));
+      } catch (e) {
+        console.error("Failed to save order to local storage", e);
+        toast({
+            title: "Could Not Save Locally",
+            description: "Your order was submitted but could not be saved to your device's history.",
+            variant: "destructive"
+        });
+      }
+
       // Store the order ID to be used on the templates page
       localStorage.setItem('pendingOrderIdForTemplate', orderPayload.id);
       console.log("Order ID saved to local storage:", orderPayload.id);

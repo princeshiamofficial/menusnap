@@ -102,43 +102,41 @@ export default function OrderHistoryPage() {
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const fetchOrders = useCallback(() => {
+        if (!clientUser) return;
+        setIsLoading(true);
+        setError(null);
+        try {
+            const storedOrdersRaw = localStorage.getItem('colorHutOrders');
+            const rawOrdersArray = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : [];
+            
+            const fetchedOrders: ApiOrder[] = rawOrdersArray
+                .filter((order: any) => order.customer?.restaurant === clientUser.businessName)
+                .map((order: any, index: number): ApiOrder => ({
+                    id: String(order.id || `mock-${index}-${Date.now()}`),
+                    orderId: String(order.orderId || order.id),
+                    orderDate: String(order.orderDate || order.createdAt || order.date),
+                    templateName: order.template?.name,
+                    customerName: order.customer?.name,
+                    businessName: order.customer?.restaurant,
+                    totalAmount: parseFloat(order.totalAmount || order.total || 0),
+                    itemCount: Array.isArray(order.items) ? order.items.length : 0,
+                }));
+
+            setAllOrders(fetchedOrders);
+        } catch (e: any) {
+            setError((e as Error).message || "Failed to load orders from local storage.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [clientUser]);
+
     useEffect(() => {
         if (clientLoading) return;
         if (!clientUser) return;
 
-        const fetchOrders = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } });
-                if (!response.ok) throw new Error(`API error! status: ${response.status}`);
-                
-                const result = await response.json();
-                const rawOrdersArray = result.success ? (result.data.orders || result.data) : [];
-                
-                const fetchedOrders: ApiOrder[] = rawOrdersArray
-                    .filter((order: any) => order.customer?.restaurant === clientUser.businessName)
-                    .map((order: any, index: number): ApiOrder => ({
-                        id: String(order.id || `mock-${index}-${Date.now()}`),
-                        orderId: String(order.orderId || order.id),
-                        orderDate: String(order.orderDate || order.createdAt || order.date),
-                        templateName: order.template?.name,
-                        customerName: order.customer?.name,
-                        businessName: order.customer?.restaurant,
-                        totalAmount: parseFloat(order.totalAmount || order.total || 0),
-                        itemCount: Array.isArray(order.items) ? order.items.length : 0,
-                    }));
-
-                setAllOrders(fetchedOrders);
-            } catch (e: any) {
-                setError(e.message || "Failed to load orders.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchOrders();
-    }, [clientUser, clientLoading]);
+    }, [clientUser, clientLoading, fetchOrders]);
 
     const filteredOrders = useMemo(() => {
         return allOrders
