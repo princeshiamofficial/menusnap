@@ -93,7 +93,8 @@ import {
   GripVertical
 } from "lucide-react";
 import {
-  cn
+  cn,
+  decodeHtmlEntities
 } from "@/lib/utils";
 import {
   format,
@@ -362,7 +363,7 @@ export default function ManageCategoriesPage(): ReactNode {
         throw new Error(result.message || `Failed to add category. Status: ${response.status}`);
       }
       
-      toast({ title: "Success", description: result.message || `Category "${data.name}" added.` });
+      toast({ title: "Success", description: result.message || `Category "${decodeHtmlEntities(data.name)}" added.` });
       setIsAddDialogOpen(false);
       fetchCategories(categoryType); 
     } catch (error: any) {
@@ -395,7 +396,7 @@ export default function ManageCategoriesPage(): ReactNode {
         throw new Error(result.message || `Failed to update category. Status: ${response.status}`);
       }
       
-      toast({ title: "Success", description: result.message || `Category "${data.name}" updated.` });
+      toast({ title: "Success", description: result.message || `Category "${decodeHtmlEntities(data.name)}" updated.` });
       setIsEditDialogOpen(false);
       setEditingCategoryData(null);
       fetchCategories(categoryType);
@@ -428,7 +429,7 @@ export default function ManageCategoriesPage(): ReactNode {
         throw new Error(result.message || `Failed to delete category. Status: ${response.status}`);
       }
 
-      toast({ title: "Success", description: result.message || `Category "${categoryToDeleteInfo.name}" deleted.` });
+      toast({ title: "Success", description: result.message || `Category "${decodeHtmlEntities(categoryToDeleteInfo.name)}" deleted.` });
       setIsDeleteDialogOpen(false);
       setCategoryToDeleteInfo(null);
       fetchCategories(categoryType);
@@ -468,7 +469,7 @@ export default function ManageCategoriesPage(): ReactNode {
         throw new Error(result.message || `Failed to update visibility. Status: ${response.status}`);
       }
       
-      toast({ title: "Status Updated", description: `Visibility for "${categoryToUpdate.name}" ${updatedCategoryPayload.visibleToUsers ? 'set to visible' : 'set to hidden'}.` });
+      toast({ title: "Status Updated", description: `Visibility for "${decodeHtmlEntities(categoryToUpdate.name)}" ${updatedCategoryPayload.visibleToUsers ? 'set to visible' : 'set to hidden'}.` });
       fetchCategories(categoryType);
     } catch (error: any) {
       toast({ title: "Error Updating Visibility", description: error.message, variant: "destructive" });
@@ -479,8 +480,10 @@ export default function ManageCategoriesPage(): ReactNode {
   const filteredAndSortedCategories = useMemo(() => {
     let categories = allCategories
       .filter(category => {
-        const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (category.description && category.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        const decodedName = decodeHtmlEntities(category.name);
+        const decodedDesc = decodeHtmlEntities(category.description);
+        const matchesSearch = decodedName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (decodedDesc && decodedDesc.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesStatus = statusFilter === 'all' ||
           (statusFilter === 'visible' && category.visibleToUsers) ||
           (statusFilter === 'hidden' && !category.visibleToUsers);
@@ -489,10 +492,10 @@ export default function ManageCategoriesPage(): ReactNode {
 
       switch (sortOption) {
         case 'name-asc':
-          categories = categories.sort((a, b) => a.name.localeCompare(b.name));
+          categories = categories.sort((a, b) => decodeHtmlEntities(a.name).localeCompare(decodeHtmlEntities(b.name)));
           break;
         case 'name-desc':
-          categories = categories.sort((a, b) => b.name.localeCompare(a.name));
+          categories = categories.sort((a, b) => decodeHtmlEntities(b.name).localeCompare(decodeHtmlEntities(a.name)));
           break;
         case 'items-desc':
           categories = categories.sort((a, b) => b.itemCount - a.itemCount);
@@ -515,7 +518,7 @@ export default function ManageCategoriesPage(): ReactNode {
           });
           break;
         default:
-          categories = categories.sort((a, b) => a.name.localeCompare(b.name));
+          categories = categories.sort((a, b) => decodeHtmlEntities(a.name).localeCompare(decodeHtmlEntities(b.name)));
       }
     return categories;
   }, [allCategories, searchTerm, statusFilter, sortOption]);
@@ -729,8 +732,8 @@ export default function ManageCategoriesPage(): ReactNode {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium text-foreground">{category.name}</div>
-                        {category.description && <div className="text-xs text-muted-foreground line-clamp-1">{category.description}</div>}
+                        <div className="font-medium text-foreground">{decodeHtmlEntities(category.name)}</div>
+                        {category.description && <div className="text-xs text-muted-foreground line-clamp-1">{decodeHtmlEntities(category.description)}</div>}
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="secondary" className="bg-muted text-muted-foreground">{category.itemCount} items</Badge>
@@ -845,7 +848,7 @@ export default function ManageCategoriesPage(): ReactNode {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Category</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{categoryToDeleteInfo?.name}"? This action cannot be undone. All associated menu items might also be affected.
+              Are you sure you want to delete "{decodeHtmlEntities(categoryToDeleteInfo?.name || '')}"? This action cannot be undone. All associated menu items might also be affected.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -866,6 +869,7 @@ export default function ManageCategoriesPage(): ReactNode {
     
 
     
+
 
 
 

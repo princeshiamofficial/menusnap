@@ -79,7 +79,8 @@ import {
   ListChecks
 } from "lucide-react";
 import {
-  cn
+  cn,
+  decodeHtmlEntities
 } from "@/lib/utils";
 import {
   format,
@@ -209,7 +210,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
     <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow">
       <DialogHeader className="px-6 py-4 border-b">
          <DialogTitle className="text-xl">
-            {isEditMode ? `Edit ${initialData?.name || 'Menu Item'}` : `Add New ${categoryName ? categoryName + ' Item' : 'Menu Item'}`}
+            {isEditMode ? `Edit ${decodeHtmlEntities(initialData?.name) || 'Menu Item'}` : `Add New ${categoryName ? decodeHtmlEntities(categoryName) + ' Item' : 'Menu Item'}`}
         </DialogTitle>
       </DialogHeader>
       <ScrollArea className="flex-grow min-h-0 px-6 py-4">
@@ -510,7 +511,7 @@ export default function ManageMenuItemsPage(): ReactNode {
     let items = allMenuItems.filter(item => item.categoryId === selectedCategory.id);
 
     if (searchTerm) {
-      items = items.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      items = items.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(searchTerm.toLowerCase()));
     }
     if (statusFilter !== 'all') {
       items = items.filter(item => item.status.toLowerCase() === statusFilter);
@@ -573,7 +574,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         throw new Error(errorMsg);
       }
 
-      toast({ title: "Success", description: result.message || `Item "${formData.name}" added to ${selectedCategory?.name || 'category'}.` });
+      toast({ title: "Success", description: result.message || `Item "${decodeHtmlEntities(formData.name)}" added to ${decodeHtmlEntities(selectedCategory?.name) || 'category'}.` });
       setIsAddItemDialogOpen(false);
       fetchCategoriesAndItems(menuType, true); 
     } catch (error: any) {
@@ -622,7 +623,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         throw new Error(errorMsg);
       }
 
-      toast({ title: "Success", description: result.message || `Item "${formData.name}" updated.` });
+      toast({ title: "Success", description: result.message || `Item "${decodeHtmlEntities(formData.name)}" updated.` });
       setIsEditItemDialogOpen(false);
       setEditingItemData(null);
       fetchCategoriesAndItems(menuType, true);
@@ -646,12 +647,12 @@ export default function ManageMenuItemsPage(): ReactNode {
       const result = await response.json();
       if (!response.ok || (result && result.success === false && response.status !== 404) ) { 
          if (response.status === 404 && result.message && result.message.toLowerCase().includes('not found')) {
-            toast({ title: "Item Not Found", description: result.message || `Item "${itemToDeleteInfo.name}" was already removed or did not exist.` });
+            toast({ title: "Item Not Found", description: result.message || `Item "${decodeHtmlEntities(itemToDeleteInfo.name)}" was already removed or did not exist.` });
          } else {
             throw new Error(result.message || `Failed to delete item. Status: ${response.status}`);
          }
       } else {
-        toast({ title: "Success", description: result.message || `Item "${itemToDeleteInfo.name}" deleted.` });
+        toast({ title: "Success", description: result.message || `Item "${decodeHtmlEntities(itemToDeleteInfo.name)}" deleted.` });
       }
     } catch (error: any) {
       toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
@@ -721,7 +722,7 @@ export default function ManageMenuItemsPage(): ReactNode {
                     onClick={() => setSelectedCategory(category)}
                   >
                     <span className="mr-2 text-md">{category.icon}</span>
-                    <span className="flex-1 text-left truncate">{category.name}</span>
+                    <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>
                     <Badge variant="secondary" className="ml-2 bg-muted text-muted-foreground font-normal">{category.itemCount}</Badge>
                     <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1" />
                   </Button>
@@ -823,7 +824,7 @@ export default function ManageMenuItemsPage(): ReactNode {
             {!loadingItems && !errorItems && selectedCategory && (
               <>
                 <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-2xl font-bold text-foreground">{selectedCategory.name}</h2>
+                  <h2 className="text-2xl font-bold text-foreground">{decodeHtmlEntities(selectedCategory.name)}</h2>
                   <Badge variant="secondary">{filteredMenuItems.length} items</Badge>
                 </div>
                 {filteredMenuItems.length === 0 ? (
@@ -842,7 +843,7 @@ export default function ManageMenuItemsPage(): ReactNode {
                         <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
                           <Image 
                             src={STATIC_ITEM_IMAGE_URL} 
-                            alt={item.name} 
+                            alt={decodeHtmlEntities(item.name)} 
                             width={40} 
                             height={40} 
                             className="h-full w-full object-contain" 
@@ -851,7 +852,7 @@ export default function ManageMenuItemsPage(): ReactNode {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                            <p className="text-sm font-medium text-foreground truncate">{decodeHtmlEntities(item.name)}</p>
                             <Badge 
                               variant={item.status === 'Active' ? 'default' : 'outline'}
                               className={cn(
@@ -898,7 +899,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         </ScrollArea>
         {selectedCategory && filteredMenuItems.length > 0 && (
           <div className="flex justify-start items-center py-3 px-6 border-t border-border bg-card text-sm text-muted-foreground">
-            <p>Showing {filteredMenuItems.length} items for "{selectedCategory.name}".</p>
+            <p>Showing {filteredMenuItems.length} items for "{decodeHtmlEntities(selectedCategory.name)}".</p>
           </div>
         )}
       </main>
@@ -939,7 +940,7 @@ export default function ManageMenuItemsPage(): ReactNode {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Menu Item</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{itemToDeleteInfo?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{decodeHtmlEntities(itemToDeleteInfo?.name || '')}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

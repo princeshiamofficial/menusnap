@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { X, ChevronLeft, Send, ShoppingCart, FileText, GripVertical, Download } from 'lucide-react';
 import { CustomerDetailsForm, type CustomerDetailsFormValues } from './customer-details-form';
 import { useToast } from "@/hooks/use-toast";
@@ -360,10 +360,10 @@ export function MenuPreviewDialog({
                           isSidebarCollapsed ? "justify-center px-0" : "px-2"
                         )}
                         onClick={() => setActiveCategoryId(category.id)}
-                        title={category.name}
+                        title={decodeHtmlEntities(category.name)}
                       >
                         <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
-                        {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{category.name}</span>}
+                        {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{decodeHtmlEntities(category.name)}</span>}
                         {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0" />}
                       </Button>
                     </Reorder.Item>
@@ -385,7 +385,7 @@ export function MenuPreviewDialog({
                   <div key={category.id} className="mb-8">
                     <div className="flex items-center mb-4">
                       <span className="text-xl mr-2 text-primary">{category.icon}</span>
-                      <h3 className="text-lg font-semibold text-foreground">{category.name}</h3>
+                      <h3 className="text-lg font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h3>
                       <Badge variant="secondary" className="ml-2 text-xs">{items.length}</Badge>
                     </div>
                     <div className="space-y-3">
@@ -393,16 +393,16 @@ export function MenuPreviewDialog({
                         <div key={item.id} className="flex items-center p-3 border rounded-lg bg-card shadow-sm">
                           <Image
                             src={STATIC_ITEM_IMAGE_URL}
-                            alt={item.name}
+                            alt={decodeHtmlEntities(item.name)}
                             width={48}
                             height={48}
                             className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
                             data-ai-hint="item illustration"
                           />
                           <div className="flex-1">
-                            <p className="font-medium text-sm text-foreground">{item.name}</p>
+                            <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
                             {item.description && (
-                              <p className="text-xs text-muted-foreground">{item.description}</p>
+                              <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>
                             )}
                           </div>
                           <div className="text-right">

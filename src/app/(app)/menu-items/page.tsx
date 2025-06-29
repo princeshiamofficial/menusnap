@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { cn } from '@/lib/utils';
+import { cn, decodeHtmlEntities } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -180,7 +180,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
         <DialogHeader>
-          <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${categoryName} Item` : 'Menu Item'}</DialogTitle>
+          <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'Menu Item'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
           <ScrollArea className="flex-grow min-h-0 p-4">
@@ -249,8 +249,8 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
         <div className="flex items-start gap-4">
           <Checkbox id={`item-${item.id}`} checked={isSelected} onCheckedChange={(checked) => onSelectItem(item.id, !!checked)} className="mt-1" />
           <div className="flex-1 min-w-0">
-            <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">{item.name}</label>
-            {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>}
+            <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">{decodeHtmlEntities(item.name)}</label>
+            {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{decodeHtmlEntities(item.description)}</p>}
           </div>
           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
             {item.price > 0 && `৳${item.price.toLocaleString()}`}
@@ -269,7 +269,7 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
               <div className="mt-2 pl-4 space-y-2 border-l-2 border-primary/20 pt-2 pb-1 bg-muted/30 rounded-r-md">
                 {item.subItems.map((subItem, index) => (
                   <div key={subItem.id || index} className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm">
-                    <span className="text-foreground">{subItem.name}</span>
+                    <span className="text-foreground">{decodeHtmlEntities(subItem.name)}</span>
                     {(typeof subItem.price === 'number' && subItem.price > 0) && <span className="text-foreground font-medium">৳{subItem.price.toLocaleString()}</span>}
                   </div>
                 ))}
@@ -536,7 +536,7 @@ export default function MenuItemsPage() {
               setItemsToSelectFromDraft(itemIds);
               toast({
                 title: "Draft Restored",
-                description: `Selection from "${draftToRestore.name}" is being loaded.`,
+                description: `Selection from "${decodeHtmlEntities(draftToRestore.name)}" is being loaded.`,
               });
             }
           } else {
@@ -601,7 +601,7 @@ export default function MenuItemsPage() {
       newItems = allMenuItems.map(item =>
         item.id === editingItem.id ? itemToSave : item
       );
-      toast({ title: "Item Updated", description: `"${data.name}" has been updated.` });
+      toast({ title: "Item Updated", description: `"${decodeHtmlEntities(data.name)}" has been updated.` });
     } else {
       if (!selectedCategory) {
         toast({ title: "Error", description: "Cannot add item without a selected category.", variant: "destructive" });
@@ -616,7 +616,7 @@ export default function MenuItemsPage() {
         createdAt: new Date().toISOString(),
       };
       newItems = [...allMenuItems, itemToSave];
-      toast({ title: "Item Added", description: `"${data.name}" has been added.` });
+      toast({ title: "Item Added", description: `"${decodeHtmlEntities(data.name)}" has been added.` });
     }
     
     if (itemToSave.id.startsWith('custom-')) {
@@ -661,7 +661,7 @@ export default function MenuItemsPage() {
       const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
       localCategories.push(newCategory);
       localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
-      toast({ title: "Category Added", description: `"${data.name}" has been added locally.` });
+      toast({ title: "Category Added", description: `"${decodeHtmlEntities(data.name)}" has been added locally.` });
     } catch(e) {
       toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
     }
@@ -681,7 +681,7 @@ export default function MenuItemsPage() {
         return itemsToFilter;
     }
     
-    return itemsToFilter.filter(item => item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+    return itemsToFilter.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
   }, [selectedCategory, allMenuItems, debouncedSearchTerm]);
 
   const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => { 
@@ -823,7 +823,7 @@ export default function MenuItemsPage() {
                       onClick={() => setSelectedCategory(category)}
                     >
                       <span className="mr-2 text-sm">{category.icon || <DefaultCategoryIcon className="h-4 w-4" />}</span>
-                      <span className="flex-1 text-left truncate">{category.name}</span>
+                      <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>
                       <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
                     </Button>
                   </Reorder.Item>
@@ -865,7 +865,7 @@ export default function MenuItemsPage() {
                     {selectedCategory ? (
                       <div className="flex items-center gap-2">
                         <span className="text-base">{selectedCategory.icon}</span>
-                        <span>{selectedCategory.name}</span>
+                        <span>{decodeHtmlEntities(selectedCategory.name)}</span>
                       </div>
                     ) : (
                        <span className="text-muted-foreground">Select a category...</span>
@@ -877,7 +877,7 @@ export default function MenuItemsPage() {
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">
                               <span className="text-base">{category.icon}</span>
-                              <span>{category.name}</span>
+                              <span>{decodeHtmlEntities(category.name)}</span>
                           </div>
                         </SelectItem>
                       ))
@@ -931,7 +931,7 @@ export default function MenuItemsPage() {
               <>
                 {selectedCategory && 
                   <h2 className="text-xl font-semibold text-foreground mb-4 md:hidden">
-                    {selectedCategory.name}
+                    {decodeHtmlEntities(selectedCategory.name)}
                   </h2>
                 }
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

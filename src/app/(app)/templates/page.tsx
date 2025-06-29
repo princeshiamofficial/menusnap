@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
 import { useToast } from "@/hooks/use-toast";
 import { useClientAuth } from '@/hooks/use-client-auth';
+import { decodeHtmlEntities } from '@/lib/utils';
 
 interface ApiTemplate {
   id: string;
@@ -102,7 +103,7 @@ function TemplateCard({
           <div className="aspect-[4/3] relative group">
             <Image
               src={actualImageUrl}
-              alt={title}
+              alt={decodeHtmlEntities(title)}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover"
@@ -126,8 +127,8 @@ function TemplateCard({
           </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow">
-          <h2 className="text-lg font-semibold mb-1.5 text-foreground">{title}</h2>
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{description}</p>
+          <h2 className="text-lg font-semibold mb-1.5 text-foreground">{decodeHtmlEntities(title)}</h2>
+          <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{decodeHtmlEntities(description)}</p>
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
               <Badge key={tag} variant="secondary" className="font-normal text-xs">
@@ -285,7 +286,7 @@ export default function TemplatesPage(): ReactNode {
         setShowConfetti(true);
         toast({
           title: "Template Applied!",
-          description: `Template "${templateToConfirm.name}" has been applied to order #${pendingOrderId}.`,
+          description: `Template "${decodeHtmlEntities(templateToConfirm.name)}" has been applied to order #${pendingOrderId}.`,
         });
         
         localStorage.removeItem('pendingOrderIdForTemplate');
@@ -301,7 +302,7 @@ export default function TemplatesPage(): ReactNode {
       setShowConfetti(true);
       toast({
         title: "Template Confirmed!",
-        description: `You've selected the "${templateToConfirm.name}" template.`,
+        description: `You've selected the "${decodeHtmlEntities(templateToConfirm.name)}" template.`,
       });
     }
 
@@ -325,8 +326,8 @@ export default function TemplatesPage(): ReactNode {
     // Then filter by search term
     if (searchTerm) {
         filtered = filtered.filter(template =>
-            template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            decodeHtmlEntities(template.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
+            decodeHtmlEntities(template.description).toLowerCase().includes(searchTerm.toLowerCase()) ||
             template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }
@@ -450,8 +451,8 @@ export default function TemplatesPage(): ReactNode {
             <AlertDialogTitle>Confirm Template Selection</AlertDialogTitle>
             <AlertDialogDescription>
               {pendingOrderId 
-                ? `Apply the "${templateToConfirm?.name}" template to your recent order #${pendingOrderId}?`
-                : `Are you sure you want to select the "${templateToConfirm?.name}" template? This will be the base for your new menu.`
+                ? `Apply the "${decodeHtmlEntities(templateToConfirm?.name)}" template to your recent order #${pendingOrderId}?`
+                : `Are you sure you want to select the "${decodeHtmlEntities(templateToConfirm?.name)}" template? This will be the base for your new menu.`
               }
             </AlertDialogDescription>
           </AlertDialogHeader>

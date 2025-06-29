@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Users, FileArchive, BookOpenCheck, FileText, Building2, Globe2, Star, AlertTriangle } from "lucide-react";
 import { motion, animate } from "framer-motion";
 import { useClientAuth } from '@/hooks/use-client-auth';
+import { decodeHtmlEntities } from '@/lib/utils';
 
 interface StatCardProps {
   title: string;
@@ -94,7 +95,7 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
           <div className="aspect-[4/3] relative">
             <Image
               src={actualImageUrl}
-              alt={title}
+              alt={decodeHtmlEntities(title)}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-cover"
@@ -109,8 +110,8 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
           )}
         </CardHeader>
         <CardContent className="p-4 flex-grow">
-          <CardTitle className="text-xl font-semibold mb-1">{title}</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground mb-3 min-h-[40px]">{description}</CardDescription>
+          <CardTitle className="text-xl font-semibold mb-1">{decodeHtmlEntities(title)}</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground mb-3 min-h-[40px]">{decodeHtmlEntities(description)}</CardDescription>
           <div className="flex flex-wrap gap-2 mb-4">
             {tags.map(tag => (
               <Badge key={tag} variant="secondary" className="bg-muted text-muted-foreground">{tag}</Badge>

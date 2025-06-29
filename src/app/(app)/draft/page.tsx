@@ -28,7 +28,7 @@ import {
   Sparkles,
   FolderOpen 
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 
@@ -147,7 +147,7 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
       <CardHeader className="pb-3 pt-4 px-5">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-semibold text-primary">{`${draft.name}`}</h3>
+            <h3 className="text-xl font-semibold text-primary">{`${decodeHtmlEntities(draft.name)}`}</h3>
             <div className="flex items-center space-x-3 text-xs text-muted-foreground mt-1">
               <span className="flex items-center"><Clock className="h-3.5 w-3.5 mr-1" /> {relativeTime}</span>
               <span className="flex items-center"><ListChecks className="h-3.5 w-3.5 mr-1" /> {draft.itemCount} items</span>
@@ -213,14 +213,14 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
                 <div key={category.id}>
                   <div className="flex items-center mb-2">
                     <span className="text-lg mr-2 text-primary">{category.icon || <FolderOpen className="h-5 w-5"/>}</span>
-                    <h4 className="text-md font-semibold text-foreground">{category.name}</h4>
+                    <h4 className="text-md font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h4>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                     {itemsForCategory.map((item) => (
                       <div key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-muted/50">
                         <div className="flex items-center overflow-hidden mr-2">
                           <Square className="h-4 w-4 text-muted-foreground mr-2 opacity-50 shrink-0" />
-                          <span className="text-foreground truncate" title={item.name}>{item.name}</span>
+                          <span className="text-foreground truncate" title={decodeHtmlEntities(item.name)}>{decodeHtmlEntities(item.name)}</span>
                         </div>
                         <span className="text-muted-foreground font-medium whitespace-nowrap">৳{item.price.toLocaleString()}</span>
                       </div>
@@ -420,7 +420,7 @@ export default function DraftPage(): ReactNode {
         delete newExpanded[id];
         return newExpanded;
       });
-      toast({ title: "Draft Deleted", description: `"${draftName}" has been removed.` });
+      toast({ title: "Draft Deleted", description: `"${decodeHtmlEntities(draftName)}" has been removed.` });
     } catch (e) {
       console.error("Error deleting draft from localStorage:", e);
       toast({ title: "Error", description: "Could not remove draft from storage.", variant: "destructive" });
@@ -434,7 +434,7 @@ export default function DraftPage(): ReactNode {
   const filteredDrafts = useMemo(() => {
     if (!searchTerm) return drafts;
     return drafts.filter(draft =>
-      draft.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      decodeHtmlEntities(draft.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
       extractMenuTypeFromTag(draft.primaryTag).toLowerCase().includes(searchTerm.toLowerCase()) || 
       (isValid(parseISO(draft.createdAt)) && format(parseISO(draft.createdAt), 'dd/MM/yyyy').includes(searchTerm))
     );
@@ -503,4 +503,3 @@ export default function DraftPage(): ReactNode {
     </div>
   );
 }
-

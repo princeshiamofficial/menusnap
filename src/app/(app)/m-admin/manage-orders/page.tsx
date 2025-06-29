@@ -95,7 +95,7 @@ import {
   FileArchive,
   Trash2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 
@@ -216,21 +216,21 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
                     <div className="flex items-start">
                       <User className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="font-medium text-foreground">{order.customerName || "N/A"}</p>
+                        <p className="font-medium text-foreground">{decodeHtmlEntities(order.customerName) || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">Full Name</p>
                       </div>
                     </div>
                     <div className="flex items-start">
                       <Mail className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="text-foreground">{order.customerEmail || "N/A"}</p>
+                        <p className="text-foreground">{decodeHtmlEntities(order.customerEmail) || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">Email Address</p>
                       </div>
                     </div>
                     <div className="flex items-start">
                       <Phone className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="text-foreground">{order.customerPhone || "N/A"}</p>
+                        <p className="text-foreground">{decodeHtmlEntities(order.customerPhone) || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">Phone Number</p>
                       </div>
                     </div>
@@ -242,21 +242,21 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
                     <div className="flex items-start">
                       <Building2 className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="font-medium text-foreground">{order.businessName || "N/A"}</p>
+                        <p className="font-medium text-foreground">{decodeHtmlEntities(order.businessName) || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">Business Name</p>
                       </div>
                     </div>
                     <div className="flex items-start">
                       <Briefcase className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="text-foreground">{order.businessRole || "N/A"}</p>
+                        <p className="text-foreground">{decodeHtmlEntities(order.businessRole) || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">Role</p>
                       </div>
                     </div>
                     <div className="flex items-start">
                       <MapPin className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="text-foreground">{order.customerAddress || "N/A"}</p>
+                        <p className="text-foreground">{decodeHtmlEntities(order.customerAddress) || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">Address</p>
                       </div>
                     </div>
@@ -270,7 +270,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
                     <FileArchive className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                     <div>
                       <p className="font-medium text-foreground">Bio</p>
-                      <p className="text-muted-foreground mt-1 leading-relaxed">{order.bio || "No bio information available for this customer."}</p>
+                      <p className="text-muted-foreground mt-1 leading-relaxed">{decodeHtmlEntities(order.bio) || "No bio information available for this customer."}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -321,8 +321,8 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
                         <FileTextIcon className="h-6 w-6 text-primary" />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground">{order.templateName || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground leading-snug">{order.templateDescription || 'No description provided.'}</p>
+                        <p className="font-semibold text-foreground">{decodeHtmlEntities(order.templateName) || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground leading-snug">{decodeHtmlEntities(order.templateDescription) || 'No description provided.'}</p>
                       </div>
                     </div>
                     <div>
@@ -331,7 +331,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
                         {order.templateImageUrl ? (
                           <Image 
                             src={order.templateImageUrl} 
-                            alt={order.templateName || 'Template preview'} 
+                            alt={decodeHtmlEntities(order.templateName) || 'Template preview'} 
                             fill
                             sizes="(max-width: 768px) 100vw, 50vw"
                             className="object-cover"
@@ -520,15 +520,15 @@ export default function ManageOrdersPage(): ReactNode {
 
   const uniqueTemplateNames = useMemo(() => {
     const names = new Set(allOrders.map(order => order.templateName).filter(Boolean) as string[]);
-    return Array.from(names).sort();
+    return Array.from(names).sort((a,b) => decodeHtmlEntities(a).localeCompare(decodeHtmlEntities(b)));
   }, [allOrders]);
 
   const filteredAndSortedOrders = useMemo(() => {
     let orders = allOrders.filter(order => {
       const matchesSearch =
         order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.customerName && order.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (order.templateName && order.templateName.toLowerCase().includes(searchTerm.toLowerCase()));
+        (order.customerName && decodeHtmlEntities(order.customerName).toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (order.templateName && decodeHtmlEntities(order.templateName).toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
       const matchesTemplate = templateFilter === 'all' || order.templateName === templateFilter;
       return matchesSearch && matchesStatus && matchesTemplate;
@@ -558,16 +558,16 @@ export default function ManageOrdersPage(): ReactNode {
         orders.sort((a, b) => b.status.localeCompare(a.status));
         break;
       case 'template-asc':
-        orders.sort((a, b) => (a.templateName || "").localeCompare(b.templateName || ""));
+        orders.sort((a, b) => (decodeHtmlEntities(a.templateName) || "").localeCompare(decodeHtmlEntities(b.templateName) || ""));
         break;
       case 'template-desc':
-        orders.sort((a, b) => (b.templateName || "").localeCompare(a.templateName || ""));
+        orders.sort((a, b) => (decodeHtmlEntities(b.templateName) || "").localeCompare(decodeHtmlEntities(a.templateName) || ""));
         break;
       case 'customer-asc':
-        orders.sort((a, b) => (a.customerName || "").localeCompare(b.customerName || ""));
+        orders.sort((a, b) => (decodeHtmlEntities(a.customerName) || "").localeCompare(decodeHtmlEntities(b.customerName) || ""));
         break;
       case 'customer-desc':
-        orders.sort((a, b) => (b.customerName || "").localeCompare(a.customerName || ""));
+        orders.sort((a, b) => (decodeHtmlEntities(b.customerName) || "").localeCompare(decodeHtmlEntities(a.customerName) || ""));
         break;
     }
     return orders;
@@ -686,7 +686,7 @@ export default function ManageOrdersPage(): ReactNode {
                 <SelectContent>
                   <SelectItem value="all">All Templates</SelectItem>
                   {uniqueTemplateNames.map(name => (
-                    <SelectItem key={name} value={name}>{name}</SelectItem>
+                    <SelectItem key={name} value={name}>{decodeHtmlEntities(name)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -788,13 +788,13 @@ export default function ManageOrdersPage(): ReactNode {
                           {order.templateName !== 'Unknown Template' ? (
                             <Badge variant="outline" className={cn("text-xs py-1 px-2 font-normal", templateBadgeStyle)}>
                                 <Tag className="h-3 w-3 mr-1 opacity-80"/>
-                                {order.templateName}
+                                {decodeHtmlEntities(order.templateName)}
                             </Badge>
                           ) : (
                             <span className="text-muted-foreground italic">N/A</span>
                           )}
                         </TableCell>
-                        <TableCell>{order.customerName !== 'N/A' ? order.customerName : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
+                        <TableCell>{order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={cn("text-xs py-1 px-2.5", statusColors[order.status] || statusColors.Pending)}>
                             {order.status}

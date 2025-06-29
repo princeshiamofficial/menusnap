@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { cn, decodeHtmlEntities } from '@/lib/utils';
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -86,10 +87,10 @@ const OrderItem = ({ name, description, price, quantity, subItems }: { name: str
     return (
         <div>
             <div className="flex justify-between items-baseline">
-                <h3 className="font-bold text-foreground">{name}</h3>
+                <h3 className="font-bold text-foreground">{decodeHtmlEntities(name)}</h3>
                 {price > 0 && <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>}
             </div>
-            {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
+            {description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(description)}</p>}
             
             {hasSubItems && (
                 <Button 
@@ -107,7 +108,7 @@ const OrderItem = ({ name, description, price, quantity, subItems }: { name: str
                 <div className="mt-2 pl-4 border-l-2 border-muted/50 space-y-1 bg-muted/30 p-2 rounded-r-md">
                     {subItems.map((sub, index) => (
                         <div key={sub.id || index} className="flex justify-between items-baseline text-sm text-muted-foreground p-1.5 bg-card shadow-sm rounded-md">
-                            <p className="text-foreground/90">{sub.name}</p>
+                            <p className="text-foreground/90">{decodeHtmlEntities(sub.name)}</p>
                             {typeof sub.price === 'number' && <p className="font-medium">৳{sub.price.toLocaleString()}</p>}
                         </div>
                     ))}
@@ -240,7 +241,7 @@ export default function OrderDetailsPage() {
         if (!order?.items) return {};
         return order.items.reduce((acc, item) => {
             const catId = item.categoryId;
-            const categoryName = categoryMap.get(catId) || item.categoryName || 'Uncategorized';
+            const categoryName = decodeHtmlEntities(categoryMap.get(catId)) || decodeHtmlEntities(item.categoryName) || 'Uncategorized';
             if (!acc[categoryName]) {
                 acc[categoryName] = [];
             }

@@ -1,20 +1,7 @@
 
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
-
-// Helper function to decode HTML entities
-const unescapeText = (text: string | null | undefined): string => {
-    if (!text) return '';
-    // This function will only run in the browser, where DOMParser is available.
-    try {
-        const doc = new DOMParser().parseFromString(text, 'text/html');
-        return doc.documentElement.textContent || '';
-    } catch (e) {
-        // Fallback for safety, though it should not be needed in the target environment.
-        return text;
-    }
-}
-
+import { decodeHtmlEntities } from '@/lib/utils';
 
 export const generateMenuDocx = async (
   items: MenuItem[],
@@ -34,7 +21,7 @@ export const generateMenuDocx = async (
     new Paragraph({
       children: [
         new TextRun({
-          text: unescapeText(businessName),
+          text: decodeHtmlEntities(businessName),
           bold: true,
           size: 48,
           font: "Arial",
@@ -53,7 +40,7 @@ export const generateMenuDocx = async (
         new Paragraph({
           children: [
             new TextRun({
-              text: unescapeText(category.name),
+              text: decodeHtmlEntities(category.name),
               bold: true,
               size: 32,
               font: "Arial",
@@ -71,7 +58,7 @@ export const generateMenuDocx = async (
           new Paragraph({
             children: [
               new TextRun({
-                text: unescapeText(item.name),
+                text: decodeHtmlEntities(item.name),
                 bold: true,
                 size: 24,
               }),
@@ -95,7 +82,7 @@ export const generateMenuDocx = async (
             new Paragraph({
               children: [
                 new TextRun({
-                  text: unescapeText(item.description),
+                  text: decodeHtmlEntities(item.description),
                   italics: true,
                   size: 20,
                   color: "595959",
@@ -113,7 +100,7 @@ export const generateMenuDocx = async (
                 new Paragraph({
                     children: [
                         new TextRun({
-                            text: `- ${unescapeText(subItem.name)}`,
+                            text: `- ${decodeHtmlEntities(subItem.name)}`,
                             size: 20,
                             color: "333333",
                         }),
