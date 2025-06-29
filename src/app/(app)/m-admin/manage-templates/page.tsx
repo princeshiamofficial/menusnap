@@ -402,9 +402,9 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <ScrollArea className="flex-grow min-h-0">
-        <div className="space-y-4 p-1">
+        <div className="space-y-4 p-6">
           <div>
             <Label htmlFor="templateName-add">Template Name*</Label>
             <Input id="templateName-add" {...form.register("templateName")} placeholder="Enter template name" />
@@ -509,7 +509,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
         </div>
       </ScrollArea>
-      <DialogFooter className="pt-4 border-t">
+      <DialogFooter className="p-6 pt-4 border-t">
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
         </DialogClose>
@@ -714,9 +714,9 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <ScrollArea className="flex-grow min-h-0">
-        <div className="space-y-4 p-1">
+        <div className="space-y-4 p-6">
           <div>
             <Label htmlFor={`templateName-edit-${templateData.id}`}>Template Name*</Label>
             <Input id={`templateName-edit-${templateData.id}`} {...form.register("templateName")} placeholder="Enter template name" />
@@ -820,7 +820,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
         </div>
       </ScrollArea>
-      <DialogFooter className="pt-4 border-t">
+      <DialogFooter className="p-6 pt-4 border-t">
         <DialogClose asChild>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
         </DialogClose>
@@ -1129,8 +1129,8 @@ export default function ManageTemplatesPage(): ReactNode {
       </section>
 
       <Dialog open={isAddTemplateDialogOpen} onOpenChange={setIsAddTemplateDialogOpen}>
-        <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)] p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle className="text-2xl">Add New Template</DialogTitle>
           </DialogHeader>
           <AddTemplateForm onSuccess={handleAddTemplateSuccess} onOpenChange={setIsAddTemplateDialogOpen} />
@@ -1142,20 +1142,20 @@ export default function ManageTemplatesPage(): ReactNode {
             setIsEditTemplateDialogOpen(open);
             if (!open) setEditingTemplateData(null);
         }}>
-            <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)]">
-            <DialogHeader>
+            <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)] p-0">
+              <DialogHeader className="p-6 pb-4 border-b">
                 <DialogTitle className="text-2xl">
                     Edit Template {editingTemplateData.version ? `(v${editingTemplateData.version})` : ''}
                 </DialogTitle>
-            </DialogHeader>
-            <EditTemplateForm 
-                templateData={editingTemplateData} 
-                onSuccess={handleEditTemplateSuccess} 
-                onOpenChange={(open) => {
-                    setIsEditTemplateDialogOpen(open);
-                    if (!open) setEditingTemplateData(null);
-                }}
-            />
+              </DialogHeader>
+              <EditTemplateForm 
+                  templateData={editingTemplateData} 
+                  onSuccess={handleEditTemplateSuccess} 
+                  onOpenChange={(open) => {
+                      setIsEditTemplateDialogOpen(open);
+                      if (!open) setEditingTemplateData(null);
+                  }}
+              />
             </DialogContent>
         </Dialog>
       )}
@@ -1234,5 +1234,3 @@ export default function ManageTemplatesPage(): ReactNode {
     </div>
   );
 }
-
-    
