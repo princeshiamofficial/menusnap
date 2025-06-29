@@ -24,7 +24,7 @@ export const generateMenuDocx = async (
           bold: true,
           size: 48,
           font: "Arial",
-          color: "F57C12",
+          color: "000000",
         }),
       ],
       alignment: AlignmentType.CENTER,
