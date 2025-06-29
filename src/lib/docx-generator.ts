@@ -1,3 +1,4 @@
+
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 
@@ -23,6 +24,7 @@ export const generateMenuDocx = async (
           bold: true,
           size: 48,
           font: "Arial",
+          color: "F57C12",
         }),
       ],
       alignment: AlignmentType.CENTER,
@@ -41,6 +43,7 @@ export const generateMenuDocx = async (
               bold: true,
               size: 32,
               font: "Arial",
+              color: "F57C12",
             }),
           ],
           heading: HeadingLevel.HEADING_2,
