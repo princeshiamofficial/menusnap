@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -321,7 +320,6 @@ export default function OrderDetailsPage() {
                     Back to Orders
                 </Button>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
                     <Button variant="default"><Printer className="mr-2 h-4 w-4" /> Print</Button>
                 </div>
             </header>

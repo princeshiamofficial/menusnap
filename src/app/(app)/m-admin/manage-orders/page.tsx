@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -364,7 +363,6 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
           <DialogClose asChild>
             <Button variant="outline">Close</Button>
           </DialogClose>
-          <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
           <Button variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Printer className="mr-2 h-4 w-4" /> Print Order
           </Button>
