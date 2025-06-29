@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { MenuItem } from './menu-preview-dialog'; // Import MenuItem for typing
 import { User, Phone, Mail, Building, MapPin, Briefcase } from 'lucide-react';
 import type { ClientUser } from '@/hooks/use-client-auth';
@@ -108,7 +109,10 @@ export function CustomerDetailsForm({
   const businessNamePlaceholder = selectedMenuType ? `Your ${selectedMenuType} name` : 'Your business name';
   const addressLabel = selectedMenuType ? `${selectedMenuType.charAt(0).toUpperCase() + selectedMenuType.slice(1)} Address` : 'Delivery Address';
   const addressPlaceholder = selectedMenuType ? `Your ${selectedMenuType}'s full address` : 'Full delivery address';
-
+  
+  const restaurantRoles = ["Owner", "Chef", "Manager", "Management", "Official"];
+  const parlourRoles = ["Owner", "Staff", "Management", "Official"];
+  const roles = selectedMenuType === 'restaurant' ? restaurantRoles : parlourRoles;
 
   const handleFormSubmit = (data: CustomerDetailsFormValues) => {
     try {
@@ -185,15 +189,24 @@ export function CustomerDetailsForm({
                     </FormItem>
                   )}
                 />
-                <FormField
+                 <FormField
                   control={form.control}
                   name="role"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center"><Briefcase className="h-4 w-4 mr-2 text-muted-foreground"/>Your Role*</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Owner, Manager" {...field} />
-                      </FormControl>
+                       <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {roles.map(role => (
+                            <SelectItem key={role} value={role}>{role}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
