@@ -121,7 +121,6 @@ export const generateMenuDocx = async (
             );
           }
         }
-         docChildren.push(new Paragraph({ text: "", spacing: { after: 150 } })); // space after item
       }
     }
   }
