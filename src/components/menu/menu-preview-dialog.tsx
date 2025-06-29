@@ -209,6 +209,7 @@ export function MenuPreviewDialog({
 
       // Store the order ID to be used on the templates page
       localStorage.setItem('pendingOrderIdForTemplate', orderPayload.id);
+      console.log("Order ID saved to local storage:", orderPayload.id);
 
       toast({
         title: "Order Submitted Successfully!",
