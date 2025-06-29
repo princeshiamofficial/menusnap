@@ -155,14 +155,14 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
   const form = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemFormSchema),
     defaultValues: {
-      name: initialData?.name || "",
+      name: decodeHtmlEntities(initialData?.name),
       price: initialData?.price || 0,
-      description: initialData?.description || "",
+      description: decodeHtmlEntities(initialData?.description),
       visibleToUsers: initialData ? initialData.status === 'Active' : true,
       subItems: initialData?.subItems?.map(si => ({ 
         id: si.id, 
-        name: si.name, 
-        price: si.price // Price can be undefined here
+        name: decodeHtmlEntities(si.name), 
+        price: si.price
       })) || [],
     },
     mode: 'onChange',

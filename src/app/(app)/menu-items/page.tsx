@@ -152,10 +152,10 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
   const form = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemFormSchema),
     defaultValues: {
-      name: initialData?.name || "",
+      name: decodeHtmlEntities(initialData?.name),
       price: initialData?.price || 0,
-      description: initialData?.description || "",
-      subItems: initialData?.subItems?.map(si => ({ ...si })) || [],
+      description: decodeHtmlEntities(initialData?.description),
+      subItems: initialData?.subItems?.map(si => ({ ...si, name: decodeHtmlEntities(si.name) })) || [],
     },
     mode: 'onChange',
   });
@@ -168,10 +168,10 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
   useEffect(() => {
     if (isOpen) {
       form.reset({
-        name: initialData?.name || "",
+        name: decodeHtmlEntities(initialData?.name),
         price: initialData?.price || 0,
-        description: initialData?.description || "",
-        subItems: initialData?.subItems?.map(si => ({ ...si })) || [],
+        description: decodeHtmlEntities(initialData?.description),
+        subItems: initialData?.subItems?.map(si => ({ ...si, name: decodeHtmlEntities(si.name) })) || [],
       });
     }
   }, [isOpen, initialData, form]);

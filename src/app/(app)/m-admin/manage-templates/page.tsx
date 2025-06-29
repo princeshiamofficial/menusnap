@@ -51,7 +51,7 @@ import {
   Plus,
   Save,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
@@ -557,9 +557,9 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   const form = useForm<EditTemplateFormValues>({
     resolver: zodResolver(editTemplateFormSchema),
     defaultValues: {
-      templateName: templateData.name || "",
-      description: templateData.description || "",
-      tags: templateData.tags ? templateData.tags.map(tag => ({ value: tag })) : [{ value: "" }],
+      templateName: decodeHtmlEntities(templateData.name),
+      description: decodeHtmlEntities(templateData.description),
+      tags: templateData.tags ? templateData.tags.map(tag => ({ value: decodeHtmlEntities(tag) })) : [{ value: "" }],
       isTopRated: templateData.isTopRated || false,
       isPublished: templateData.isPublished || false,
       imageFile: undefined, 
@@ -1168,7 +1168,7 @@ export default function ManageTemplatesPage(): ReactNode {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Template</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{templateToDeleteInfo?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{decodeHtmlEntities(templateToDeleteInfo?.name || '')}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

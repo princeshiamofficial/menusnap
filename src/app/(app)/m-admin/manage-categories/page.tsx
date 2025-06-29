@@ -174,8 +174,8 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
     defaultValues: {
-      name: initialData?.name || "",
-      description: initialData?.description || "",
+      name: decodeHtmlEntities(initialData?.name),
+      description: decodeHtmlEntities(initialData?.description),
       icon: initialData?.icon || "📁",
       visibleToUsers: initialData?.visibleToUsers === undefined ? true : initialData.visibleToUsers,
     },
@@ -869,6 +869,7 @@ export default function ManageCategoriesPage(): ReactNode {
     
 
     
+
 
 
 
