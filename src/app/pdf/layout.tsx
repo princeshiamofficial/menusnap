@@ -1,15 +1,6 @@
 import type { ReactNode } from 'react';
-import '../globals.css';
 
-export const metadata = {
-  title: 'Menu PDF',
-  description: 'Printable menu selection.',
-};
-
+// This layout is no longer used and can be deleted.
 export default function PdfLayout({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en" className="theme-default">
-      <body>{children}</body>
-    </html>
-  );
+  return <>{children}</>;
 }

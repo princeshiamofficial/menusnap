@@ -129,14 +129,3 @@
   from { border-right-color: hsl(var(--primary-foreground)); }
   to { border-right-color: transparent; }
 }
-
-@media print {
-  body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  @page {
-    size: A4;
-    margin: 0;
-  }
-}

@@ -6,6 +6,8 @@ import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Reorder } from "framer-motion";
+import { saveAs } from 'file-saver';
+import { generateMenuDocx } from '@/lib/docx-generator';
 import {
   Dialog,
   DialogContent,
@@ -218,21 +220,37 @@ export function MenuPreviewDialog({
     }
   };
 
-  const handleShareWithPartner = () => {
+  const handleShareWithPartner = async () => {
+    if (selectedItems.length === 0) {
+      toast({
+        title: "No items selected",
+        description: "Please select items to generate a document.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
-      title: "Preparing Printable Menu...",
-      description: "A new tab will open with your menu.",
+      title: "Generating Document...",
+      description: "Your .docx file is being prepared.",
     });
 
-    // Store data in localStorage for the new page to access
-    const dataToStore = {
-        items: selectedItems,
-        categories: orderedDialogCategories,
-    };
-    localStorage.setItem('pdfData', JSON.stringify(dataToStore));
-
-    // Open the /pdf page in a new tab
-    window.open('/pdf', '_blank');
+    try {
+      const businessName = clientUser?.businessName || 'Menu Selection';
+      const blob = await generateMenuDocx(
+        selectedItems,
+        orderedDialogCategories,
+        businessName
+      );
+      saveAs(blob, `${businessName.replace(/ /g, '_')}-Menu.docx`);
+    } catch (error) {
+      console.error("Error generating .docx file:", error);
+      toast({
+        title: "Generation Failed",
+        description: "Could not generate the document. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   useEffect(() => {
