@@ -69,18 +69,6 @@ interface ApiOrder {
     templateTags?: string[];
 }
 
-const statusColors: Record<OrderStatus, string> = {
-  "Pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600",
-  "Processing": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "Out for Delivery": "bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-400 border-blue-300 dark:border-blue-600",
-  "Shipped": "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/20 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600",
-  "Delivered": "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600",
-  "Cancelled": "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600",
-  "Refunded": "bg-gray-100 text-gray-700 dark:bg-gray-700/20 dark:text-gray-400 border-gray-300 dark:border-gray-600",
-  "On Hold": "bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-400 border-orange-300 dark:border-orange-600",
-};
-
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     <h2 className="text-xl font-semibold mb-4 border-b-2 border-primary/20 pb-2 text-primary">{children}</h2>
 );
@@ -344,11 +332,6 @@ export default function ClientOrderDetailsPage() {
                            <CalendarDays className="h-4 w-4" />
                            {formatDate(order.orderDate)}
                         </p>
-                    </div>
-                    <div className="mt-4 sm:mt-0">
-                         <Badge variant="outline" className={cn("text-sm py-1 px-3 font-medium", statusColors[order.status] || statusColors.Pending)}>
-                            {order.status}
-                        </Badge>
                     </div>
                 </div>
                 
