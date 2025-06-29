@@ -5,7 +5,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { motion } from "framer-motion"
-import { PanelLeft } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -287,7 +287,7 @@ const SidebarTrigger = React.forwardRef<
         animate={{ rotate: state === "collapsed" ? 180 : 0 }}
         transition={{ duration: 0.3 }}
       >
-        <PanelLeft />
+        <ChevronLeft />
       </motion.div>
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
