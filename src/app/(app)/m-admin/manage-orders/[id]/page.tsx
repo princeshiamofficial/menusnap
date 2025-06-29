@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -20,6 +21,10 @@ import {
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
+import { saveAs } from 'file-saver';
+import { generateMenuDocx } from '@/lib/docx-generator';
+import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
+import { useToast } from "@/hooks/use-toast";
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -127,6 +132,7 @@ export default function OrderDetailsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [categoryMap, setCategoryMap] = useState<Map<string, string>>(new Map());
+    const { toast } = useToast();
 
     useEffect(() => {
         if (!isAdminLoggedIn || !orderIdFromUrl) {
@@ -249,6 +255,46 @@ export default function OrderDetailsPage() {
         }, {} as Record<string, OrderItemDetail[]>);
     }, [order?.items, categoryMap]);
 
+    const handleDownloadDocx = async () => {
+        if (!order || !order.items) {
+            toast({ title: "Error", description: "Order data is not available.", variant: "destructive" });
+            return;
+        }
+
+        toast({ title: "Generating Document...", description: "Please wait while your DOCX file is prepared." });
+
+        try {
+            // 1. Map order items to the MenuItem structure required by the generator
+            const menuItemsForDocx: MenuItem[] = order.items.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                category: item.categoryId,
+                description: item.description || undefined,
+                subItems: item.subItems?.map(si => ({ ...si, id: si.id || si.name })),
+            }));
+
+            // 2. Get the unique categories used in the order
+            const usedCategoryIds = new Set(menuItemsForDocx.map(item => item.category));
+            const categoriesForDocx: Category[] = [];
+            usedCategoryIds.forEach(id => {
+                const name = categoryMap.get(id) || 'Uncategorized';
+                categoriesForDocx.push({ id, name, icon: '📁' }); // Icon is a placeholder as it's not available here
+            });
+            
+            // 3. Generate the DOCX blob
+            const blob = await generateMenuDocx(menuItemsForDocx, categoriesForDocx, order.businessName || "Menu Selection");
+
+            // 4. Trigger the download
+            saveAs(blob, `${order.businessName || 'menu'}_${order.orderId}.docx`);
+
+        } catch (error) {
+            console.error("Failed to generate DOCX file:", error);
+            toast({ title: "Generation Failed", description: "Could not create the document. Please try again.", variant: "destructive" });
+        }
+    };
+
+
     if (adminLoading || isLoading) {
         return (
             <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
@@ -320,7 +366,7 @@ export default function OrderDetailsPage() {
                     Back to Orders
                 </Button>
                 <div className="flex items-center gap-2">
-                    <Button variant="default"><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                    <Button variant="default" onClick={handleDownloadDocx}><Download className="mr-2 h-4 w-4" /> Download DOCX</Button>
                 </div>
             </header>
 
