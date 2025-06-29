@@ -2,6 +2,20 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 
+// Helper function to decode HTML entities
+const unescapeText = (text: string | null | undefined): string => {
+    if (!text) return '';
+    // This function will only run in the browser, where DOMParser is available.
+    try {
+        const doc = new DOMParser().parseFromString(text, 'text/html');
+        return doc.documentElement.textContent || '';
+    } catch (e) {
+        // Fallback for safety, though it should not be needed in the target environment.
+        return text;
+    }
+}
+
+
 export const generateMenuDocx = async (
   items: MenuItem[],
   categories: Category[],
@@ -20,7 +34,7 @@ export const generateMenuDocx = async (
     new Paragraph({
       children: [
         new TextRun({
-          text: businessName,
+          text: unescapeText(businessName),
           bold: true,
           size: 48,
           font: "Arial",
@@ -39,7 +53,7 @@ export const generateMenuDocx = async (
         new Paragraph({
           children: [
             new TextRun({
-              text: category.name,
+              text: unescapeText(category.name),
               bold: true,
               size: 32,
               font: "Arial",
@@ -57,7 +71,7 @@ export const generateMenuDocx = async (
           new Paragraph({
             children: [
               new TextRun({
-                text: item.name,
+                text: unescapeText(item.name),
                 bold: true,
                 size: 24,
               }),
@@ -81,14 +95,13 @@ export const generateMenuDocx = async (
             new Paragraph({
               children: [
                 new TextRun({
-                  text: item.description,
+                  text: unescapeText(item.description),
                   italics: true,
                   size: 20,
                   color: "595959",
                 }),
               ],
               indent: { left: 400 },
-              spacing: { after: 100 },
             })
           );
         }
@@ -100,7 +113,7 @@ export const generateMenuDocx = async (
                 new Paragraph({
                     children: [
                         new TextRun({
-                            text: `- ${subItem.name}`,
+                            text: `- ${unescapeText(subItem.name)}`,
                             size: 20,
                             color: "333333",
                         }),
