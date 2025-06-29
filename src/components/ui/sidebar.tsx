@@ -4,6 +4,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
+import { motion } from "framer-motion"
 import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -266,7 +267,7 @@ const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, state } = useSidebar()
 
   return (
     <Button
@@ -281,7 +282,13 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <PanelLeft />
+      <motion.div
+        initial={false}
+        animate={{ rotate: state === "collapsed" ? 180 : 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <PanelLeft />
+      </motion.div>
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
@@ -761,5 +768,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
-    
