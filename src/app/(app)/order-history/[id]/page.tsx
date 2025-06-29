@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import {
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -218,6 +220,8 @@ export default function ClientOrderDetailsPage() {
                             subItems: Array.isArray(item.subItems) ? item.subItems : [],
                         })),
                         templateImageUrl: orderData.template?.imageUrl,
+                        templateDescription: orderData.template?.description,
+                        templateTags: orderData.template?.tags,
                     };
                     setOrder(formattedOrder);
                 } else {
@@ -364,6 +368,39 @@ export default function ClientOrderDetailsPage() {
                 </div>
                 
                 <Separator className="my-8" />
+                
+                {order.templateName !== 'Custom Selection' && order.templateImageUrl && (
+                    <>
+                        <section>
+                            <SectionTitle>Selected Template</SectionTitle>
+                            <Card className="overflow-hidden shadow-sm">
+                                <div className="flex flex-col md:flex-row">
+                                    <div className="md:w-1/3 relative aspect-[4/3] bg-muted">
+                                        <Image 
+                                            src={order.templateImageUrl}
+                                            alt={decodeHtmlEntities(order.templateName) || 'Template Image'}
+                                            fill
+                                            className="object-cover"
+                                            sizes="(max-width: 768px) 100vw, 33vw"
+                                        />
+                                    </div>
+                                    <div className="flex-1 p-6">
+                                        <h3 className="text-lg font-bold text-foreground">{decodeHtmlEntities(order.templateName)}</h3>
+                                        {order.templateDescription && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(order.templateDescription)}</p>}
+                                        {order.templateTags && order.templateTags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-4">
+                                                {order.templateTags.map(tag => (
+                                                    <Badge key={tag} variant="secondary">{tag}</Badge>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </Card>
+                        </section>
+                        <Separator className="my-8" />
+                    </>
+                )}
                 
                 <section>
                     <SectionTitle>Selected Items</SectionTitle>
