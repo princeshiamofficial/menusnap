@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ListOrdered, Layers, FileEdit, ChevronRight, User, LogOut, Building } from 'lucide-react'; 
+import { LayoutGrid, ListOrdered, Layers, FileEdit, ChevronRight, User, LogOut, Building, History } from 'lucide-react'; 
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -21,6 +21,7 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
   { href: '/menu-items', label: 'Menu Items', icon: ListOrdered, hasChevron: true },
   { href: '/templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/draft', label: 'Draft', icon: FileEdit, hasChevron: true },
+  { href: '/order-history', label: 'Order History', icon: History, hasChevron: true },
 ];
 
 export function SidebarNav() {
@@ -60,10 +61,12 @@ export function SidebarNav() {
                     variant="default"
                     className={cn(
                       "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      pathname === item.href ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold" : "text-sidebar-foreground/80",
+                      (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) 
+                        ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold" 
+                        : "text-sidebar-foreground/80",
                       "group-data-[collapsible=icon]:justify-center"
                     )}
-                    isActive={pathname === item.href}
+                    isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
                     tooltip={{ 
                         children: item.label, 
                         className: "bg-popover text-popover-foreground border-border shadow-md",

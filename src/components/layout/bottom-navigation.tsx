@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ListOrdered, Layers, FileEdit } from 'lucide-react';
+import { LayoutGrid, ListOrdered, Layers, FileEdit, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/menu-items', label: 'Menu', icon: ListOrdered },
   { href: '/templates', label: 'Templates', icon: Layers },
   { href: '/draft', label: 'Drafts', icon: FileEdit },
+  { href: '/order-history', label: 'History', icon: History },
 ];
 
 export function BottomNavigation() {
@@ -26,7 +27,7 @@ export function BottomNavigation() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center rounded-md p-2 text-xs font-medium transition-colors w-1/4 h-full",
+                "flex flex-col items-center justify-center rounded-md p-2 text-xs font-medium transition-colors w-1/5 h-full",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
