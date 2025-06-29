@@ -9,39 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { History, Search, ListFilter, AlertTriangle, ShoppingCart, CalendarDays, FileText as FileTextIcon, ChevronRight } from 'lucide-react';
+import { History, Search, AlertTriangle, ShoppingCart, CalendarDays, FileText as FileTextIcon, ChevronRight } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
-
-type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
-
-const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold", "Out for Delivery"];
 
 interface ApiOrder {
   id: string;
   orderId: string;
   orderDate: string;
-  status: OrderStatus;
   templateName?: string;
   customerName?: string;
   businessName?: string;
   totalAmount?: number;
   itemCount: number;
 }
-
-const statusColors: Record<OrderStatus, string> = {
-  "Pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600",
-  "Processing": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "Out for Delivery": "bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-400 border-blue-300 dark:border-blue-600",
-  "Shipped": "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/20 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600",
-  "Delivered": "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600",
-  "Cancelled": "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600",
-  "Refunded": "bg-gray-100 text-gray-700 dark:bg-gray-700/20 dark:text-gray-400 border-gray-300 dark:border-gray-600",
-  "On Hold": "bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-400 border-orange-300 dark:border-orange-600",
-};
 
 const OrderCard = ({ order }: { order: ApiOrder }) => {
   const formattedDate = useMemo(() => {
@@ -64,9 +46,6 @@ const OrderCard = ({ order }: { order: ApiOrder }) => {
                     {formattedDate}
                 </p>
             </div>
-            <Badge variant="outline" className={cn("text-xs py-1 px-2.5", statusColors[order.status] || statusColors.Pending)}>
-                {order.status}
-            </Badge>
         </div>
       </CardHeader>
       <CardContent className="flex-grow space-y-3 text-sm">
@@ -98,7 +77,6 @@ const OrderCardSkeleton = () => (
                     <Skeleton className="h-6 w-32" />
                     <Skeleton className="h-4 w-24" />
                 </div>
-                <Skeleton className="h-6 w-20 rounded-full" />
             </div>
         </CardHeader>
         <CardContent className="flex-grow space-y-3">
@@ -123,7 +101,6 @@ export default function OrderHistoryPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
 
     useEffect(() => {
         if (clientLoading) return;
@@ -145,7 +122,6 @@ export default function OrderHistoryPage() {
                         id: String(order.id || `mock-${index}-${Date.now()}`),
                         orderId: String(order.orderId || order.id),
                         orderDate: String(order.orderDate || order.createdAt || order.date),
-                        status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : "Pending",
                         templateName: order.template?.name,
                         customerName: order.customer?.name,
                         businessName: order.customer?.restaurant,
@@ -167,12 +143,10 @@ export default function OrderHistoryPage() {
     const filteredOrders = useMemo(() => {
         return allOrders
             .filter(order => {
-                const matchesSearch = searchTerm ? order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) : true;
-                const matchesStatus = statusFilter === 'all' ? true : order.status === statusFilter;
-                return matchesSearch && matchesStatus;
+                return searchTerm ? order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) : true;
             })
             .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
-    }, [allOrders, searchTerm, statusFilter]);
+    }, [allOrders, searchTerm]);
 
     if (clientLoading) {
         return (
@@ -211,20 +185,6 @@ export default function OrderHistoryPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                 <div className="w-full sm:w-auto">
-                    <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                           <ListFilter className="h-4 w-4 mr-2 text-muted-foreground" />
-                           <SelectValue placeholder="Filter by status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            {ALL_ORDER_STATUSES.map(status => (
-                                <SelectItem key={status} value={status}>{status}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
             </div>
 
             <main>
@@ -244,7 +204,7 @@ export default function OrderHistoryPage() {
                     <div className="text-center py-16 bg-card rounded-lg shadow border border-border">
                         <ShoppingCart className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
                         <p className="text-muted-foreground text-lg font-medium">
-                            {searchTerm || statusFilter !== 'all' ? "No orders match your criteria." : "You haven't placed any orders yet."}
+                            {searchTerm ? "No orders match your search." : "You haven't placed any orders yet."}
                         </p>
                     </div>
                 ) : (
