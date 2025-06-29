@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { cn, decodeHtmlEntities } from '@/lib/utils';
+import { cn, decodeHtmlEntities } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -178,12 +178,12 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)] p-0 gap-0">
+        <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'Menu Item'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
-          <ScrollArea className="flex-grow min-h-0 p-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
+          <ScrollArea className="flex-grow min-h-0 p-6">
             <div className="space-y-4">
               <div>
                 <Label htmlFor="item-name">Item Name</Label>
@@ -216,7 +216,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter className="pt-4 border-t">
+          <DialogFooter className="p-6 pt-4 border-t">
             <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</Button>
           </DialogFooter>
