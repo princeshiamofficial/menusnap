@@ -750,10 +750,6 @@ export default function MenuItemsPage() {
       const existingDrafts = JSON.parse(localStorage.getItem(DRAFTS_STORAGE_KEY) || '[]');
       existingDrafts.unshift(draft);
       localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
-      toast({
-        title: "Draft Saved",
-        description: "Your selection was automatically saved.",
-      });
     } catch (e) {
       toast({
         title: "Error Saving Draft",
