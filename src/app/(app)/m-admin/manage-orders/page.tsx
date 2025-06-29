@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -97,13 +98,24 @@ import {
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { saveAs } from 'file-saver';
+import { generateMenuDocx } from '@/lib/docx-generator';
+import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
 
 const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold", "Out for Delivery"];
 const QUICK_STATUS_UPDATE_OPTIONS: OrderStatus[] = ["Pending", "Processing", "Delivered", "Cancelled", "Out for Delivery"];
 
-
+interface OrderItemDetailAdmin {
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    categoryId: string;
+    description?: string | null;
+    subItems?: { id?: string; name: string; price?: number }[];
+}
 interface ApiOrder {
   id: string;
   orderId: string;
@@ -118,7 +130,7 @@ interface ApiOrder {
   businessRole?: string; 
   bio?: string; 
   totalAmount?: number;
-  items?: { id: string; name: string; quantity: number; price: number }[];
+  items?: OrderItemDetailAdmin[];
   templateImageUrl?: string;
   templateDescription?: string;
   templateTags?: string[];
@@ -167,8 +179,44 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
 ];
 
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void; }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate, allCategories }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void; allCategories: Category[]; }) {
   const router = useRouter();
+  const { toast } = useToast();
+
+  const handleDownloadDocx = async () => {
+    if (!order || !order.items) {
+        toast({ title: "Error", description: "Order data is not available.", variant: "destructive" });
+        return;
+    }
+
+    toast({ title: "Generating Document...", description: "Please wait while your DOCX file is prepared." });
+
+    try {
+        const menuItemsForDocx: MenuItem[] = order.items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            category: item.categoryId,
+            description: item.description || undefined,
+            subItems: item.subItems?.map(si => ({ ...si, id: si.id || si.name, price: si.price || 0 })),
+        }));
+
+        const usedCategoryIds = new Set(menuItemsForDocx.map(item => item.category));
+        
+        const categoriesForDocx: Category[] = allCategories
+            .filter(cat => usedCategoryIds.has(String(cat.id)))
+            .map(cat => ({ id: String(cat.id), name: cat.name, icon: cat.icon || '📁' }));
+        
+        const blob = await generateMenuDocx(menuItemsForDocx, categoriesForDocx, order.businessName || "Menu Selection");
+        saveAs(blob, `${order.businessName || 'menu'}_${order.orderId}.docx`);
+
+    } catch (error) {
+        console.error("Failed to generate DOCX file:", error);
+        toast({ title: "Generation Failed", description: "Could not create the document. Please try again.", variant: "destructive" });
+    }
+  };
+
+
   if (!order) return null;
 
   const formatDate = (dateString: string, includeTime: boolean = true): string => {
@@ -363,8 +411,8 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate }: { o
           <DialogClose asChild>
             <Button variant="outline">Close</Button>
           </DialogClose>
-          <Button variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Printer className="mr-2 h-4 w-4" /> Print Order
+          <Button variant="default" onClick={handleDownloadDocx} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Download className="mr-2 h-4 w-4" /> Download DOCX
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -388,6 +436,8 @@ export default function ManageOrdersPage(): ReactNode {
 
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<ApiOrder | null>(null);
+  
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<{ id: string; orderId: string } | null>(null);
@@ -398,9 +448,31 @@ export default function ManageOrdersPage(): ReactNode {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } });
-      if (!response.ok) throw new Error(`API error! status: ${response.status}`);
-      const result = await response.json();
+      const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
+        fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
+        fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
+        fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
+      ]);
+      
+      // Process categories first to build the map
+      const combinedCategories: Category[] = [];
+      if (restaurantCategoriesResponse.ok) {
+          const resCatResult = await restaurantCategoriesResponse.json();
+          if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
+              combinedCategories.push(...resCatResult.data.categories);
+          }
+      }
+      if (parlourCategoriesResponse.ok) {
+          const parCatResult = await parlourCategoriesResponse.json();
+          if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
+              combinedCategories.push(...parCatResult.data.categories);
+          }
+      }
+      setAllCategories(combinedCategories);
+
+
+      if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
+      const result = await ordersResponse.json();
 
       let rawOrdersArray: any[] = [];
       if (result.success) {
@@ -430,10 +502,15 @@ export default function ManageOrdersPage(): ReactNode {
         businessRole: order.customer?.role,
         bio: `This is a sample bio for customer ${index+1}. They ordered template: ${order.template?.name || `Template ${index % 5 + 1}`}.`,
         totalAmount: parseFloat(order.totalAmount || order.total || (Math.random() * 1000 + 500).toFixed(2)),
-        items: order.items || [
-            { id: `item1-${index}`, name: `Menu Item A${index}`, quantity: 2, price: 150 },
-            { id: `item2-${index}`, name: `Menu Item B${index}`, quantity: 1, price: 250 },
-        ],
+        items: (order.items || []).map((item: any): OrderItemDetailAdmin => ({
+            id: String(item.id),
+            name: String(item.name),
+            quantity: Number(item.quantity || 1),
+            price: Number(item.price),
+            categoryId: String(item.categoryId || item.category),
+            description: item.description || null,
+            subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({id: String(si.id), name: String(si.name), price: si.price !== null && si.price !== undefined ? parseFloat(si.price) : undefined})) : [],
+        })),
         templateImageUrl: order.template?.imageUrl || `https://placehold.co/600x400.png`, 
         templateDescription: order.template?.description || 'A fresh and floral design, ideal for spring menus or garden cafes.',
         templateTags: order.template?.tags || ['Restaurant', 'Cafe', 'Seasonal'],
@@ -890,6 +967,7 @@ export default function ManageOrdersPage(): ReactNode {
         isOpen={isDetailsDialogOpen} 
         onOpenChange={setIsDetailsDialogOpen} 
         onStatusUpdate={handleStatusChange}
+        allCategories={allCategories}
       />
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
