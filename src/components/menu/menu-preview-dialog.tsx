@@ -86,6 +86,16 @@ export function MenuPreviewDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const [isShareSupported, setIsShareSupported] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.canShare) {
+      const dummyFile = new File([''], 'test.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      if (navigator.canShare({ files: [dummyFile] })) {
+        setIsShareSupported(true);
+      }
+    }
+  }, []);
 
   const derivedDisplayedCategories = useMemo(() => {
     const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
@@ -437,8 +447,12 @@ export function MenuPreviewDialog({
               disabled={selectedItems.length === 0}
               onClick={handleShareWithPartner}
             >
-              <Send className="h-4 w-4 mr-2" />
-              Share with Partner
+              {isShareSupported ? (
+                <Send className="h-4 w-4 mr-2" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              {isShareSupported ? 'Share with Partner' : 'Download as DOCX'}
             </Button>
           </DialogFooter>
         </DialogContent>
