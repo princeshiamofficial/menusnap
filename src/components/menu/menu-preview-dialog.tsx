@@ -242,57 +242,57 @@ export function MenuPreviewDialog({
 
     toast({
       title: "Generating Document...",
-      description: "Your menu is being prepared for sharing.",
+      description: "Your menu is being prepared.",
     });
 
+    let blob: Blob;
+    const businessName = clientUser?.businessName || 'Menu Selection';
     try {
-      const businessName = clientUser?.businessName || 'Menu Selection';
-      const blob = await generateMenuDocx(
+      blob = await generateMenuDocx(
         selectedItems,
         orderedDialogCategories,
         businessName
       );
-      
-      const fileName = `${businessName.replace(/ /g, '_')}-Menu.docx`;
-      const docxFile = new File([blob], fileName, {
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    } catch (error) {
+      console.error("Error generating .docx file:", error);
+      toast({
+        title: "Generation Failed",
+        description: "Could not generate the document. Please try again.",
+        variant: "destructive",
       });
+      return;
+    }
 
-      // Check if the Web Share API is available and can share the file
-      if (navigator.canShare && navigator.canShare({ files: [docxFile] })) {
+    const fileName = `${businessName.replace(/ /g, '_')}-Menu.docx`;
+    const docxFile = new File([blob], fileName, {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+
+    try {
+      if (isShareSupported && navigator.share) {
         await navigator.share({
           files: [docxFile],
           title: `${businessName} Menu`,
           text: `Here is the menu selection for ${businessName}.`,
         });
       } else {
-        // Fallback for browsers that don't support sharing files
+        // Fallback for browsers that don't support sharing files at all
         saveAs(blob, fileName);
       }
     } catch (error: any) {
-      // Don't show an error if the user cancels the share dialog
+      // This case handles when sharing is supported but fails (e.g., user cancels, or other error)
       if (error.name === 'AbortError') {
+        // User cancelled the share dialog, do nothing.
         return;
       }
-      console.error("Error generating or sharing .docx file:", error);
+      
+      console.warn("Sharing failed, falling back to download:", error);
       toast({
-        title: "Sharing Failed",
-        description: "Could not prepare the document for sharing. It will be downloaded instead.",
-        variant: "destructive",
+        title: "Sharing Not Available",
+        description: "Could not share the document directly. It will be downloaded instead.",
+        variant: "default", // Use default variant as it's a graceful fallback
       });
-      // As a final fallback, try to download the file if sharing failed for other reasons
-      try {
-        const businessName = clientUser?.businessName || 'Menu Selection';
-        const blob = await generateMenuDocx(selectedItems, orderedDialogCategories, businessName);
-        saveAs(blob, `${businessName.replace(/ /g, '_')}-Menu.docx`);
-      } catch (downloadError) {
-        console.error("Fallback download failed:", downloadError);
-        toast({
-          title: "Download Failed",
-          description: "Could not generate the document for download.",
-          variant: "destructive",
-        });
-      }
+      saveAs(blob, fileName);
     }
   };
 
