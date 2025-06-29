@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -50,19 +49,20 @@ const PDFPage = (): ReactNode => {
         console.error("Failed to parse PDF data from localStorage", e);
       }
     }
+    // Defer date generation to client-side only
     setGeneratedDate(new Date().toLocaleDateString());
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    if (data) {
+    if (data && !loading) { // Ensure data is loaded and not in loading state
       // Delay printing to allow for rendering
       const timer = setTimeout(() => {
         window.print();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [data]);
+  }, [data, loading]);
 
   if (loading) {
     return (
@@ -180,11 +180,6 @@ const PDFPage = (): ReactNode => {
           })}
         </section>
         
-        {/* Footer */}
-        <footer className="text-center text-xs text-gray-400 pt-8 mt-auto border-t border-gray-200">
-          <p>Thank you for choosing Color Hut!</p>
-          <p>www.colorhutbd.xyz</p>
-        </footer>
       </main>
     </div>
   );
