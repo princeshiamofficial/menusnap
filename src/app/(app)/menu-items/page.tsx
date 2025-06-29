@@ -318,23 +318,27 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting }: Category
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md flex flex-col max-h-[calc(100vh-80px)]">
         <DialogHeader>
           <DialogTitle>Add New Category</DialogTitle>
           <DialogDescription>Create a new category to organize your menu items.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div>
-            <Label htmlFor="category-name">Category Name</Label>
-            <Input id="category-name" {...form.register("name")} placeholder="e.g., Appetizers" />
-            {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
-          </div>
-          <div>
-            <Label htmlFor="category-icon">Icon (Emoji or short text)</Label>
-            <Input id="category-icon" {...form.register("icon")} placeholder="e.g., 🍔" />
-            {form.formState.errors.icon && <p className="text-sm text-destructive mt-1">{form.formState.errors.icon.message}</p>}
-          </div>
-          <DialogFooter className="pt-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
+          <ScrollArea className="flex-grow min-h-0 p-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="category-name">Category Name</Label>
+                <Input id="category-name" {...form.register("name")} placeholder="e.g., Appetizers" />
+                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="category-icon">Icon (Emoji or short text)</Label>
+                <Input id="category-icon" {...form.register("icon")} placeholder="e.g., 🍔" />
+                {form.formState.errors.icon && <p className="text-sm text-destructive mt-1">{form.formState.errors.icon.message}</p>}
+              </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter className="pt-4 border-t mt-auto">
             <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Adding...' : 'Add Category'}</Button>
           </DialogFooter>
