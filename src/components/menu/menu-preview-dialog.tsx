@@ -232,7 +232,7 @@ export function MenuPreviewDialog({
 
     toast({
       title: "Generating Document...",
-      description: "Your .docx file is being prepared.",
+      description: "Your menu is being prepared for sharing.",
     });
 
     try {
@@ -242,14 +242,47 @@ export function MenuPreviewDialog({
         orderedDialogCategories,
         businessName
       );
-      saveAs(blob, `${businessName.replace(/ /g, '_')}-Menu.docx`);
-    } catch (error) {
-      console.error("Error generating .docx file:", error);
+      
+      const fileName = `${businessName.replace(/ /g, '_')}-Menu.docx`;
+      const docxFile = new File([blob], fileName, {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+
+      // Check if the Web Share API is available and can share the file
+      if (navigator.canShare && navigator.canShare({ files: [docxFile] })) {
+        await navigator.share({
+          files: [docxFile],
+          title: `${businessName} Menu`,
+          text: `Here is the menu selection for ${businessName}.`,
+        });
+      } else {
+        // Fallback for browsers that don't support sharing files
+        saveAs(blob, fileName);
+      }
+    } catch (error: any) {
+      // Don't show an error if the user cancels the share dialog
+      if (error.name === 'AbortError') {
+        return;
+      }
+      console.error("Error generating or sharing .docx file:", error);
       toast({
-        title: "Generation Failed",
-        description: "Could not generate the document. Please try again.",
+        title: "Sharing Failed",
+        description: "Could not prepare the document for sharing. It will be downloaded instead.",
         variant: "destructive",
       });
+      // As a final fallback, try to download the file if sharing failed for other reasons
+      try {
+        const businessName = clientUser?.businessName || 'Menu Selection';
+        const blob = await generateMenuDocx(selectedItems, orderedDialogCategories, businessName);
+        saveAs(blob, `${businessName.replace(/ /g, '_')}-Menu.docx`);
+      } catch (downloadError) {
+        console.error("Fallback download failed:", downloadError);
+        toast({
+          title: "Download Failed",
+          description: "Could not generate the document for download.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
