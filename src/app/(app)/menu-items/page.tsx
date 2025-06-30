@@ -138,6 +138,36 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
     name: "subItems",
   });
 
+  const [newSubItemName, setNewSubItemName] = useState('');
+  const [newSubItemPrice, setNewSubItemPrice] = useState('');
+
+
+  const handleAddSubItemClick = () => {
+    form.clearErrors("subItems.root"); 
+    const nameVal = newSubItemName.trim();
+    const priceStr = newSubItemPrice.trim();
+
+    if (!nameVal) {
+      form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+      return;
+    }
+    
+    let priceVal: number | undefined = undefined;
+    if (priceStr !== '') {
+      const parsedPrice = parseFloat(priceStr);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        form.setError("subItems.root", { type: "manual", message: "Variation price must be a valid non-negative number if provided." });
+        return;
+      }
+      priceVal = parsedPrice;
+    }
+
+    append({ name: nameVal, price: priceVal });
+    setNewSubItemName('');
+    setNewSubItemPrice('');
+  };
+
+
   useEffect(() => {
     if (isOpen) {
       form.reset({
@@ -177,20 +207,81 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
                 <Textarea id="item-description" {...form.register("description")} placeholder="Describe the item"/>
                 {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
               </div>
-
               <div className="pt-4">
-                <Label className="font-semibold">Variations / Sizes</Label>
-                <div className="space-y-2 mt-2">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                      <Input {...form.register(`subItems.${index}.name`)} placeholder="Variation name" className="h-8"/>
-                      <Input {...form.register(`subItems.${index}.price`)} type="number" placeholder="Price (৳)" className="h-8 w-28" />
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive h-8 w-8"><X className="h-4 w-4"/></Button>
-                    </div>
-                  ))}
+                 <Label className="font-semibold">Variations / Sizes</Label>
+                 <div className="mt-2 flex items-start gap-2">
+                   <div className="flex-grow space-y-1">
+                     <Label htmlFor="new-subitem-name" className="sr-only">Variation Name</Label>
+                     <Input 
+                       id="new-subitem-name"
+                       placeholder="Variation name (e.g., Small)"
+                       value={newSubItemName}
+                       onChange={(e) => setNewSubItemName(e.target.value)}
+                     />
+                   </div>
+                   <div className="w-40 space-y-1">
+                     <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
+                     <Input 
+                       id="new-subitem-price"
+                       type="number"
+                       placeholder="Price (optional)"
+                       value={newSubItemPrice}
+                       onChange={(e) => setNewSubItemPrice(e.target.value)}
+                       step="0.01"
+                     />
+                   </div>
+                   <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick} className="mt-0 h-10 w-10 shrink-0" aria-label="Add variation">
+                     <Plus className="h-5 w-5" />
+                   </Button>
+                 </div>
+                 {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
+                 {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
+                   <div key={index}>
+                     {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
+                     {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
+                   </div>
+                 ))}
+               </div>
+
+
+              {fields.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  <Label>Added Variations: {fields.length}</Label>
+                  <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto">
+                    {fields.map((field, index) => {
+                      const currentPrice = form.watch(`subItems.${index}.price`);
+                      return (
+                        <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
+                           <div className="flex items-center gap-2 flex-grow">
+                             <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
+                             {typeof currentPrice === 'number' && (
+                               <>
+                                 <span className="text-xs text-muted-foreground">-</span>
+                                 <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                                    ৳{currentPrice.toLocaleString()}
+                                 </span>
+                               </>
+                             )}
+                             {currentPrice === undefined && (
+                               <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
+                             )}
+                          </div>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => remove(index)} 
+                            className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
+                            aria-label={`Remove ${form.watch(`subItems.${index}.name`)} variation`}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ name: "", price: undefined })} className="mt-2"><Plus className="h-4 w-4 mr-2"/>Add Variation</Button>
-              </div>
+              )}
             </div>
           </ScrollArea>
           <DialogFooter className="p-6 pt-4 border-t">
@@ -945,7 +1036,6 @@ export default function MenuItemsPage() {
                     <Input type="search" placeholder="Search menu item..." className="pl-10 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
-                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
                     <Button
                         ref={previewButtonRef}
                         onClick={handlePreviewAndSave}
@@ -966,6 +1056,7 @@ export default function MenuItemsPage() {
                             </div>
                         </div>
                     </Button>
+                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
                 </div>
             </div>
           </div>
