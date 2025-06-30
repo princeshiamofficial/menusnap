@@ -192,7 +192,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
         )}>
           <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'Menu Item'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
           <ScrollArea className="flex-1" onScroll={handleScroll}>
             <div className="space-y-4 p-6">
               <div>
@@ -226,7 +226,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter className="p-6 pt-4 border-t flex-shrink-0">
+          <DialogFooter className="p-6 pt-4 border-t">
             <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</Button>
           </DialogFooter>
