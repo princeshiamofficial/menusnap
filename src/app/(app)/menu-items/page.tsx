@@ -192,8 +192,8 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
         )}>
           <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'Menu Item'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-grow min-h-0 p-6" onScroll={handleScroll}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <ScrollArea className="flex-grow p-6" onScroll={handleScroll}>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="item-name">Item Name</Label>
