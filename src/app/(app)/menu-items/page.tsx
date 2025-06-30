@@ -185,7 +185,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)] p-0 gap-0">
+      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col h-[75vh] max-h-[750px] p-0 gap-0">
         <DialogHeader className={cn(
           "p-6 pb-4 border-b transition-shadow",
           scrolled && "shadow-md"
@@ -193,8 +193,8 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
           <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'Menu Item'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1" onScroll={handleScroll}>
-            <div className="space-y-4 p-6">
+          <ScrollArea className="flex-1 p-6" onScroll={handleScroll}>
+            <div className="space-y-4">
               <div>
                 <Label htmlFor="item-name">Item Name</Label>
                 <Input id="item-name" {...form.register("name")} placeholder="e.g., Classic Burger" />
