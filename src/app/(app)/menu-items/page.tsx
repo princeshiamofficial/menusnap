@@ -956,7 +956,7 @@ export default function MenuItemsPage() {
                         <div className="flex items-stretch h-full">
                             <div className="bg-black text-white px-4 flex items-center transition-colors hover:bg-gray-800">
                                 {clientUser?.businessName ? (
-                                    <Typewriter words={[clientUser.businessName, "Selections"]} />
+                                    <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
                                 ) : (
                                     <span>Your Menu</span>
                                 )}
