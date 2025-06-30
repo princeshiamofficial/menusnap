@@ -58,39 +58,6 @@ const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
 const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
 
-// Helper component for the CSS typewriter animation
-function TypingAnimation({ text, className }: { text: string; className?: string; }): ReactNode {
-  const animationName = React.useMemo(() => `typewriter-${Math.random().toString(36).substring(2, 11)}`, []);
-  // Speed is 0.1s per character. Total animation duration is typing + pausing.
-  const animationDurationSeconds = text.length * 0.1;
-
-  const keyframes = `
-    @keyframes ${animationName} {
-      0%, 100% { width: 0; } /* Start and end with no width */
-      50% { width: ${text.length}ch; } /* Expand to full width mid-way */
-    }
-  `;
-
-  return (
-    <>
-      <style>{keyframes}</style>
-      <span
-        style={{
-          // Total animation is twice the typing duration to include the pause/erase
-          animation: `${animationName} ${animationDurationSeconds * 2}s steps(${text.length}) infinite, blinkTextCursor 500ms infinite normal`
-        }}
-        className={cn(
-          "inline-block overflow-hidden whitespace-nowrap border-r-2 pr-1",
-          className
-        )}
-      >
-        {text}
-      </span>
-    </>
-  );
-}
-
-
 interface Category {
   id: string; 
   name: string;
@@ -192,8 +159,8 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
         )}>
           <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'Menu Item'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1 p-6" onScroll={handleScroll}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <ScrollArea className="flex-grow p-6" onScroll={handleScroll}>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="item-name">Item Name</Label>
@@ -916,12 +883,9 @@ export default function MenuItemsPage() {
                 </div>
                 <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
                     <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
-                    <Button ref={previewButtonRef} variant="default" className="text-sm bg-primary hover:bg-primary/90 text-primary-foreground flex-1 md:flex-none" onClick={handlePreviewAndSave} disabled={selectedCount === 0}>
+                    <Button ref={previewButtonRef} variant="default" className="text-sm bg-black hover:bg-gray-800 text-white flex-1 md:flex-none" onClick={handlePreviewAndSave} disabled={selectedCount === 0}>
                         {clientUser?.businessName ? (
-                            <div className="flex items-center gap-1">
-                                <TypingAnimation text={`${clientUser.businessName}`} />
-                                <span>Menu ({selectedCount})</span>
-                            </div>
+                            <span>{clientUser.businessName} Menu ({selectedCount})</span>
                         ) : (
                             <div className="flex items-center gap-2">
                                 <Eye className="h-4 w-4" />
