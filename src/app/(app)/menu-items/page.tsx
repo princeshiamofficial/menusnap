@@ -375,6 +375,40 @@ function FlyingItem({ startX, startY, endX, endY, onComplete }: { startX: number
   );
 }
 
+function Typewriter({ text, className }: { text: string; className?: string }) {
+  const characters = Array.from(text);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.06, delayChildren: 0.1 },
+    },
+  };
+
+  const childVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100, damping: 12 } },
+  };
+
+  return (
+    <motion.div
+      className={cn("flex overflow-hidden", className)}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      key={text} // Re-trigger animation if text changes
+    >
+      {characters.map((char, index) => (
+        <motion.span key={index} variants={childVariants}>
+          {char === ' ' ? '\u00A0' : char}
+        </motion.span>
+      ))}
+    </motion.div>
+  );
+}
+
+
 export default function MenuItemsPage() {
   const { clientUser, clientLoading } = useClientAuth();
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
@@ -893,7 +927,7 @@ export default function MenuItemsPage() {
                         {clientUser?.businessName ? (
                         <div className="flex items-stretch h-full">
                             <div className="bg-black text-white px-4 flex items-center transition-colors hover:bg-gray-800">
-                            {clientUser.businessName}
+                                <Typewriter text={clientUser.businessName} />
                             </div>
                             <div className="bg-primary text-primary-foreground px-4 flex items-center transition-colors hover:bg-primary/90">
                             Menu ({selectedCount})
