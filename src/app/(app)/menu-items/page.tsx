@@ -883,14 +883,27 @@ export default function MenuItemsPage() {
                 </div>
                 <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
                     <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
-                    <Button ref={previewButtonRef} variant="default" className="text-sm bg-black hover:bg-gray-800 text-white flex-1 md:flex-none" onClick={handlePreviewAndSave} disabled={selectedCount === 0}>
+                    <Button
+                        ref={previewButtonRef}
+                        onClick={handlePreviewAndSave}
+                        disabled={selectedCount === 0}
+                        className="h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden"
+                        variant="default"
+                    >
                         {clientUser?.businessName ? (
-                            <span>{clientUser.businessName} Menu ({selectedCount})</span>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <Eye className="h-4 w-4" />
-                                <span>Preview ({selectedCount})</span>
+                        <div className="flex items-stretch h-full">
+                            <div className="bg-black text-white px-4 flex items-center transition-colors hover:bg-gray-800">
+                            {clientUser.businessName}
                             </div>
+                            <div className="bg-primary text-primary-foreground px-4 flex items-center transition-colors hover:bg-primary/90">
+                            Menu ({selectedCount})
+                            </div>
+                        </div>
+                        ) : (
+                        <div className="flex items-center gap-2 bg-black text-white px-4 h-full transition-colors hover:bg-gray-800">
+                            <Eye className="h-4 w-4" />
+                            <span>Preview ({selectedCount})</span>
+                        </div>
                         )}
                     </Button>
                 </div>
