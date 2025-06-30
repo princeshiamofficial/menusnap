@@ -149,6 +149,12 @@ interface MenuItemFormProps {
 }
 
 function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryName, isSubmitting }: MenuItemFormProps) {
+  const [scrolled, setScrolled] = useState(false);
+
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    setScrolled(event.currentTarget.scrollTop > 0);
+  };
+
   const form = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemFormSchema),
     defaultValues: {
@@ -173,17 +179,21 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
         description: decodeHtmlEntities(initialData?.description),
         subItems: initialData?.subItems?.map(si => ({ ...si, name: decodeHtmlEntities(si.name) })) || [],
       });
+      setScrolled(false);
     }
   }, [isOpen, initialData, form]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)] p-0 gap-0">
-        <DialogHeader className="p-6 pb-4 border-b">
+        <DialogHeader className={cn(
+          "p-6 pb-4 border-b transition-shadow",
+          scrolled && "shadow-md"
+        )}>
           <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'Menu Item'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-grow min-h-0 p-6">
+          <ScrollArea className="flex-grow min-h-0 p-6" onScroll={handleScroll}>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="item-name">Item Name</Label>
@@ -216,7 +226,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
               </div>
             </div>
           </ScrollArea>
-          <DialogFooter className="p-6 pt-4 border-t">
+          <DialogFooter className="p-6 pt-4 border-t mt-auto">
             <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</Button>
           </DialogFooter>
