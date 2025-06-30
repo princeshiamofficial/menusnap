@@ -375,38 +375,67 @@ function FlyingItem({ startX, startY, endX, endY, onComplete }: { startX: number
   );
 }
 
-function Typewriter({ text, className }: { text: string; className?: string }) {
-  const characters = Array.from(text);
+const Typewriter = React.memo(function Typewriter({ words, className }: { words: string[]; className?: string }) {
+  const [wordIndex, setWordIndex] = useState(0);
+  const [text, setText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const typeSpeed = 150;
+  const deleteSpeed = 75;
+  const pauseDuration = 2000;
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.06, delayChildren: 0.1 },
-    },
-  };
+  useEffect(() => {
+    if (!words || words.length === 0) return;
 
-  const childVariants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100, damping: 12 } },
-  };
+    const handleTyping = () => {
+      const currentWord = words[wordIndex % words.length];
+      
+      if (isDeleting) {
+        // Deleting text
+        if (text.length > 0) {
+          setText(prev => prev.substring(0, prev.length - 1));
+        } else {
+          // Finished deleting, switch to next word
+          setIsDeleting(false);
+          setWordIndex(prev => prev + 1);
+        }
+      } else {
+        // Typing text
+        if (text.length < currentWord.length) {
+          setText(currentWord.substring(0, text.length + 1));
+        } else {
+          // Finished typing, pause then start deleting
+          setTimeout(() => setIsDeleting(true), pauseDuration);
+        }
+      }
+    };
+
+    const typingTimeout = setTimeout(handleTyping, isDeleting ? deleteSpeed : typeSpeed);
+
+    return () => clearTimeout(typingTimeout);
+  }, [text, isDeleting, wordIndex, words, deleteSpeed, typeSpeed, pauseDuration]);
+
+  const Cursor = () => (
+    <motion.span
+      className="inline-block text-lg"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }}
+    >
+      /
+    </motion.span>
+  );
 
   return (
-    <motion.div
-      className={cn("flex overflow-hidden", className)}
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      key={text} // Re-trigger animation if text changes
-    >
-      {characters.map((char, index) => (
-        <motion.span key={index} variants={childVariants}>
-          {char === ' ' ? '\u00A0' : char}
-        </motion.span>
-      ))}
-    </motion.div>
+    <span className={cn("inline-flex items-center", className)}>
+      <span>{text}</span>
+      <AnimatePresence mode="wait">
+        <Cursor />
+      </AnimatePresence>
+    </span>
   );
-}
+});
 
 
 export default function MenuItemsPage() {
@@ -924,21 +953,18 @@ export default function MenuItemsPage() {
                         className="h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden"
                         variant="default"
                     >
-                        {clientUser?.businessName ? (
                         <div className="flex items-stretch h-full">
                             <div className="bg-black text-white px-4 flex items-center transition-colors hover:bg-gray-800">
-                                <Typewriter text={clientUser.businessName} />
+                                {clientUser?.businessName ? (
+                                    <Typewriter words={[clientUser.businessName, "Selections"]} />
+                                ) : (
+                                    <span>Your Menu</span>
+                                )}
                             </div>
                             <div className="bg-primary text-primary-foreground px-4 flex items-center transition-colors hover:bg-primary/90">
-                            Menu ({selectedCount})
+                                Menu ({selectedCount})
                             </div>
                         </div>
-                        ) : (
-                        <div className="flex items-center gap-2 bg-black text-white px-4 h-full transition-colors hover:bg-gray-800">
-                            <Eye className="h-4 w-4" />
-                            <span>Preview ({selectedCount})</span>
-                        </div>
-                        )}
                     </Button>
                 </div>
             </div>
