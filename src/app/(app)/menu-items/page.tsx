@@ -981,7 +981,7 @@ export default function MenuItemsPage() {
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
           <div className="py-4 px-6 border-b border-border bg-card space-y-3">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">Select Menu Items</h1>
+              <h1 className="text-2xl font-bold text-foreground">{selectedCategory ? `Select ${decodeHtmlEntities(selectedCategory.name)} Items` : 'Select Menu Items'}</h1>
               <Select value={selectedMenuType} onValueChange={setSelectedMenuType} disabled={clientLoading}>
                 <SelectTrigger className="w-full md:w-[200px] text-sm"><SelectValue placeholder="Select menu type" /></SelectTrigger>
                 <SelectContent>
