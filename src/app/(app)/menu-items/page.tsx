@@ -284,7 +284,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
               )}
             </div>
           </ScrollArea>
-          <DialogFooter className="p-6 pt-4 border-t">
+          <DialogFooter className="p-6 pt-4 border-t mt-auto">
             <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</Button>
           </DialogFooter>
@@ -323,8 +323,21 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
             {item.price > 0 && `৳${item.price.toLocaleString()}`}
           </div>
-          <div className="flex flex-col gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4"/></Button>
+          <div className="h-7 w-7 flex items-center justify-center shrink-0">
+            <AnimatePresence>
+              {isSelected && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)} aria-label="Edit item">
+                    <Edit className="h-4 w-4"/>
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
         {item.subItems && item.subItems.length > 0 && (
