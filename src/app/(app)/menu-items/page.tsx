@@ -312,13 +312,13 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
   isSubItemsExpanded
 }, ref) {
   return (
-    <Card ref={ref} className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card border border-border">
-      <CardContent className="p-4">
+    <Card ref={ref} className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card border border-border h-full flex flex-col">
+      <CardContent className="p-4 flex flex-col flex-grow">
         <div className="flex items-start gap-4">
           <Checkbox id={`item-${item.id}`} checked={isSelected} onCheckedChange={(checked) => onSelectItem(item.id, !!checked)} className="mt-1" />
           <div className="flex-1 min-w-0">
-            <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer truncate block">{decodeHtmlEntities(item.name)}</label>
-            {item.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{decodeHtmlEntities(item.description)}</p>}
+            <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer block">{decodeHtmlEntities(item.name)}</label>
+            {item.description && <p className="text-xs text-muted-foreground mt-0.5">{decodeHtmlEntities(item.description)}</p>}
           </div>
           <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
             {item.price > 0 && `৳${item.price.toLocaleString()}`}
@@ -341,7 +341,7 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
           </div>
         </div>
         {item.subItems && item.subItems.length > 0 && (
-          <div className="mt-3 pl-2">
+          <div className="mt-3 pl-2 mt-auto pt-2">
             <Button variant="link" size="sm" onClick={() => onToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary">
               {isSubItemsExpanded ? 'Hide' : 'Show'} Variations ({item.subItems.length})
               {isSubItemsExpanded ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
@@ -620,7 +620,15 @@ export default function MenuItemsPage() {
         .filter((cat: any) => cat.visibleToUsers)
         .map((cat: any) => ({ ...cat, id: String(cat.id) }));
 
-      const rawServerItems = Array.isArray(itemsData) ? itemsData : (itemsData.success && Array.isArray(itemsData.data)) ? itemsData.data : [];
+      let rawServerItems: any[] = [];
+      if (Array.isArray(itemsData)) {
+          rawServerItems = itemsData;
+      } else if (itemsData.success && Array.isArray(itemsData.data)) {
+          rawServerItems = itemsData.data;
+      } else if (itemsData.success && itemsData.data && Array.isArray(itemsData.data.items)) {
+          rawServerItems = itemsData.data.items;
+      }
+
       const serverItems: MenuItem[] = rawServerItems
         .filter((item: any) => item.visibleToUsers)
         .map((item: any) => ({ 
@@ -768,19 +776,17 @@ export default function MenuItemsPage() {
       setSelectedItems(prev => ({...prev, [itemToSave.id]: true}));
     }
     
-    if (itemToSave.id.startsWith('custom-')) {
-      try {
-        const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
-        const existingIndex = localItems.findIndex(i => i.id === itemToSave.id);
-        if (existingIndex > -1) {
-          localItems[existingIndex] = itemToSave;
-        } else {
-          localItems.push(itemToSave);
-        }
-        localStorage.setItem(CUSTOM_MENU_ITEMS_STORAGE_KEY, JSON.stringify(localItems));
-      } catch(e) {
-        toast({ title: "Error", description: "Could not save custom item locally.", variant: "destructive" });
+    try {
+      const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
+      const existingIndex = localItems.findIndex(i => i.id === itemToSave.id);
+      if (existingIndex > -1) {
+        localItems[existingIndex] = itemToSave;
+      } else {
+        localItems.push(itemToSave);
       }
+      localStorage.setItem(CUSTOM_MENU_ITEMS_STORAGE_KEY, JSON.stringify(localItems));
+    } catch(e) {
+      toast({ title: "Error", description: "Could not save custom item locally.", variant: "destructive" });
     }
 
     setAllMenuItems(newItems);
@@ -926,6 +932,17 @@ export default function MenuItemsPage() {
       return updated;
     });
   }, []);
+  
+  const gridLayoutClasses = useMemo(() => {
+    const itemCount = currentMenuItems.length;
+    if (itemCount === 1) {
+      return "grid-cols-1";
+    }
+    if (itemCount === 2) {
+      return "md:grid-cols-2";
+    }
+    return "md:grid-cols-2 lg:grid-cols-3";
+  }, [currentMenuItems.length]);
 
   return (
     <>
@@ -1058,7 +1075,10 @@ export default function MenuItemsPage() {
                         ref={previewButtonRef}
                         onClick={handlePreviewAndSave}
                         disabled={selectedCount === 0}
-                        className="h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden"
+                        className={cn(
+                          "h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden",
+                           selectedCount > 0 && "animate-glow"
+                        )}
                         variant="default"
                     >
                         <div className="flex items-stretch h-full">
@@ -1091,7 +1111,7 @@ export default function MenuItemsPage() {
                     {decodeHtmlEntities(selectedCategory.name)}
                   </h2>
                 }
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={cn("grid grid-cols-1 gap-4", gridLayoutClasses)}>
                   {currentMenuItems.map((item) => (
                     <MenuItemCard
                       key={item.id}
