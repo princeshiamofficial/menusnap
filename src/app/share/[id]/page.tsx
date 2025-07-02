@@ -220,6 +220,14 @@ export default function SharePage() {
 
         fetchOrderAndCategoryDetails();
     }, [orderIdFromUrl]);
+
+    useEffect(() => {
+        if (order?.businessName) {
+            document.title = `Menu for ${decodeHtmlEntities(order.businessName)}`;
+        } else {
+            document.title = 'Shared Menu Selection';
+        }
+    }, [order]);
     
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';

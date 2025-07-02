@@ -12,7 +12,7 @@ import { useClientAuth } from '@/hooks/use-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function ClientAuthGuard({ children }: { children: ReactNode }) {
-    const { isClientLoggedIn, clientLoading } = useClientAuth();
+    const { isClientLoggedIn, clientLoading, clientUser } = useClientAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -20,6 +20,15 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
             router.push('/login');
         }
     }, [isClientLoggedIn, clientLoading, router]);
+
+    useEffect(() => {
+        if (clientUser?.businessName) {
+            document.title = `${clientUser.businessName} | Menu Builder`;
+        } else {
+            document.title = 'Color Hut - Menu Builder';
+        }
+    }, [clientUser]);
+
 
     if (clientLoading || !isClientLoggedIn) {
         // Show a full-page loading skeleton while checking auth or redirecting
