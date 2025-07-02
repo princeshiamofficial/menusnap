@@ -833,18 +833,23 @@ export default function MenuItemsPage() {
     return itemsToFilter.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
   }, [selectedCategory, allMenuItems, debouncedSearchTerm]);
 
-  const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => { 
+  const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => {
     setSelectedItems(prev => {
-        const newSelected = {...prev};
-        if(isSelected) {
-            newSelected[itemId] = true;
-        } else {
-            delete newSelected[itemId];
-        }
-        return newSelected;
+      const newSelected = { ...prev };
+      if (isSelected) {
+        newSelected[itemId] = true;
+      } else {
+        delete newSelected[itemId];
+      }
+      return newSelected;
     });
 
     if (isSelected) {
+      const audio = new Audio('https://colorhutbd.xyz/audio/item-select.mp3');
+      audio.play().catch(error => {
+        console.error("Item selection sound playback failed:", error);
+      });
+
       const cardElement = itemCardRefs.current.get(itemId);
       const buttonElement = previewButtonRef.current;
 
