@@ -348,7 +348,7 @@ export default function ClientOrderDetailsPage() {
                     Back to Order History
                 </Button>
                 <Button onClick={handleShare}>
-                    <Share2 className="mr-2 h-4 w-4" /> Share
+                    <Share2 className="mr-2 h-4 w-4" /> Share with partner
                 </Button>
             </header>
 
