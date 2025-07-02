@@ -76,6 +76,7 @@ interface TemplateCardProps {
   template: ApiTemplate;
   onPreview: (imageUrl: string) => void;
   onSelect: (template: ApiTemplate) => void;
+  isSelectionAllowed: boolean;
 }
 
 const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
@@ -84,6 +85,7 @@ function TemplateCard({
   template,
   onPreview,
   onSelect,
+  isSelectionAllowed,
 }: TemplateCardProps): ReactNode {
   const { imageUrl, name: title, description, tags, isTopRated } = template;
   const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
@@ -143,6 +145,8 @@ function TemplateCard({
             variant="outline"
             className="w-full"
             onClick={() => onSelect(template)}
+            disabled={!isSelectionAllowed}
+            title={!isSelectionAllowed ? "Create an order from the Menu Items page first." : "Select this template"}
           >
             Select Template
           </Button>
@@ -235,99 +239,91 @@ export default function TemplatesPage(): ReactNode {
   };
 
   const handleConfirmSelection = async () => {
-    if (!templateToConfirm) return;
+    if (!templateToConfirm || !pendingOrderId) return;
 
-    if (pendingOrderId) {
-      try {
-        // Step 1: Fetch all orders to find the one we need to update
-        const ordersResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php");
-        if (!ordersResponse.ok) {
-          throw new Error("Could not fetch existing orders to update.");
-        }
-        const existingOrdersResult = await ordersResponse.json();
-        
-        let ordersArray = [];
-        if (Array.isArray(existingOrdersResult)) {
-            ordersArray = existingOrdersResult;
-        } else if (existingOrdersResult.success && Array.isArray(existingOrdersResult.data)) {
-            ordersArray = existingOrdersResult.data;
-        } else if (existingOrdersResult.success && existingOrdersResult.data && Array.isArray(existingOrdersResult.data.orders)) {
-            ordersArray = existingOrdersResult.data.orders;
-        }
-
-        const orderToUpdate = ordersArray.find((o: any) => String(o.id) === pendingOrderId);
-        
-        if (!orderToUpdate) {
-          throw new Error(`Order #${pendingOrderId} not found on the server.`);
-        }
-        
-        // Step 2: Create the updated payload by merging
-        const updatedOrderPayload = {
-          ...orderToUpdate, // This includes the existing 'items' array
-          template: { // This adds/overwrites the template info
-            id: templateToConfirm.id,
-            name: templateToConfirm.name,
-            imageUrl: templateToConfirm.imageUrl,
-            description: templateToConfirm.description,
-            tags: templateToConfirm.tags,
-          },
-        };
-
-        // Step 3: Send the complete, updated object
-        const updateResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify(updatedOrderPayload),
-        });
-        
-        const updateResult = await updateResponse.json();
-        if (!updateResponse.ok || !updateResult.success) {
-          throw new Error(updateResult.message || "Failed to apply template to order.");
-        }
-        
-        // Step 4: Update local storage as well
-        try {
-            const localOrdersRaw = localStorage.getItem('colorHutOrders');
-            if (localOrdersRaw) {
-                const localOrders = JSON.parse(localOrdersRaw);
-                const orderIndex = localOrders.findIndex((o: any) => String(o.id) === pendingOrderId);
-                if (orderIndex > -1) {
-                    localOrders[orderIndex] = updatedOrderPayload;
-                    localStorage.setItem('colorHutOrders', JSON.stringify(localOrders));
-                }
-            }
-        } catch(e) {
-            console.error("Could not update order in local storage", e);
-            toast({
-                title: "Local History Warning",
-                description: "Your order was updated, but the local history might be out of sync.",
-                variant: "default",
-            });
-        }
-
-        setShowConfetti(true);
-        toast({
-          title: "Template Applied!",
-          description: `Template "${decodeHtmlEntities(templateToConfirm.name)}" applied. Redirecting...`,
-        });
-        
-        const orderIdToRedirect = pendingOrderId;
-        localStorage.removeItem('pendingOrderIdForTemplate');
-        setPendingOrderId(null);
-        router.push(`/order-history/${orderIdToRedirect}`);
-
-      } catch (error: any) {
-        toast({
-          title: "Update Error",
-          description: error.message,
-          variant: "destructive",
-        });
+    try {
+      // Step 1: Fetch all orders to find the one we need to update
+      const ordersResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php");
+      if (!ordersResponse.ok) {
+        throw new Error("Could not fetch existing orders to update.");
       }
-    } else {
+      const existingOrdersResult = await ordersResponse.json();
+      
+      let ordersArray = [];
+      if (Array.isArray(existingOrdersResult)) {
+          ordersArray = existingOrdersResult;
+      } else if (existingOrdersResult.success && Array.isArray(existingOrdersResult.data)) {
+          ordersArray = existingOrdersResult.data;
+      } else if (existingOrdersResult.success && existingOrdersResult.data && Array.isArray(existingOrdersResult.data.orders)) {
+          ordersArray = existingOrdersResult.data.orders;
+      }
+
+      const orderToUpdate = ordersArray.find((o: any) => String(o.id) === pendingOrderId);
+      
+      if (!orderToUpdate) {
+        throw new Error(`Order #${pendingOrderId} not found on the server.`);
+      }
+      
+      // Step 2: Create the updated payload by merging
+      const updatedOrderPayload = {
+        ...orderToUpdate, // This includes the existing 'items' array
+        template: { // This adds/overwrites the template info
+          id: templateToConfirm.id,
+          name: templateToConfirm.name,
+          imageUrl: templateToConfirm.imageUrl,
+          description: templateToConfirm.description,
+          tags: templateToConfirm.tags,
+        },
+      };
+
+      // Step 3: Send the complete, updated object
+      const updateResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(updatedOrderPayload),
+      });
+      
+      const updateResult = await updateResponse.json();
+      if (!updateResponse.ok || !updateResult.success) {
+        throw new Error(updateResult.message || "Failed to apply template to order.");
+      }
+      
+      // Step 4: Update local storage as well
+      try {
+          const localOrdersRaw = localStorage.getItem('colorHutOrders');
+          if (localOrdersRaw) {
+              const localOrders = JSON.parse(localOrdersRaw);
+              const orderIndex = localOrders.findIndex((o: any) => String(o.id) === pendingOrderId);
+              if (orderIndex > -1) {
+                  localOrders[orderIndex] = updatedOrderPayload;
+                  localStorage.setItem('colorHutOrders', JSON.stringify(localOrders));
+              }
+          }
+      } catch(e) {
+          console.error("Could not update order in local storage", e);
+          toast({
+              title: "Local History Warning",
+              description: "Your order was updated, but the local history might be out of sync.",
+              variant: "default",
+          });
+      }
+
       setShowConfetti(true);
       toast({
-        title: "Template Confirmed!",
-        description: `You've selected the "${decodeHtmlEntities(templateToConfirm.name)}" template.`,
+        title: "Template Applied!",
+        description: `Template "${decodeHtmlEntities(templateToConfirm.name)}" applied. Redirecting...`,
+      });
+      
+      const orderIdToRedirect = pendingOrderId;
+      localStorage.removeItem('pendingOrderIdForTemplate');
+      setPendingOrderId(null);
+      router.push(`/order-history/${orderIdToRedirect}`);
+
+    } catch (error: any) {
+      toast({
+        title: "Update Error",
+        description: error.message,
+        variant: "destructive",
       });
     }
 
@@ -402,6 +398,8 @@ export default function TemplatesPage(): ReactNode {
     },
   };
 
+  const isSelectionAllowed = !!pendingOrderId;
+
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -463,6 +461,7 @@ export default function TemplatesPage(): ReactNode {
                   template={template}
                   onPreview={setPreviewImageUrl}
                   onSelect={handleSelectTemplate}
+                  isSelectionAllowed={isSelectionAllowed}
                 />
               </motion.div>
             ))}
@@ -475,16 +474,13 @@ export default function TemplatesPage(): ReactNode {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Template Selection</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingOrderId 
-                ? `Apply the "${decodeHtmlEntities(templateToConfirm?.name)}" template to your recent order #${pendingOrderId}?`
-                : `Are you sure you want to select the "${decodeHtmlEntities(templateToConfirm?.name)}" template? This will be the base for your new menu.`
-              }
+              Apply the "{decodeHtmlEntities(templateToConfirm?.name)}" template to your recent order #{pendingOrderId}?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setTemplateToConfirm(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmSelection}>
-                {pendingOrderId ? 'Confirm & Apply' : 'Confirm & Continue'}
+              Confirm & Apply
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
