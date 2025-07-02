@@ -61,9 +61,19 @@ interface ApiOrder {
 
 // Sub-components
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <h2 className="text-2xl font-bold mt-10 mb-4 border-b-2 border-gray-300 dark:border-gray-600 pb-2 text-gray-800 dark:text-gray-200">
-        {children}
-    </h2>
+    <div className="mt-10 mb-6">
+        <div
+            className="inline-block relative px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
+            style={{
+                backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")',
+                backgroundSize: '100% 100%',
+                backgroundRepeat: 'no-repeat',
+                color: '#ffffff'
+            }}
+        >
+            {children}
+        </div>
+    </div>
 );
 
 const OrderItem = ({ name, description, price, quantity, subItems }: { name: string, description?: string|null, price: number, quantity: number, subItems?: SubItem[] }) => {
@@ -71,28 +81,30 @@ const OrderItem = ({ name, description, price, quantity, subItems }: { name: str
     const hasSubItems = subItems && subItems.length > 0;
 
     return (
-        <div className="py-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+        <div>
             <div className="flex justify-between items-baseline">
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{decodeHtmlEntities(name)}</h3>
-                {price > 0 && <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">৳{(price * quantity).toLocaleString()}</p>}
+                <h3 className="font-bold text-foreground">{decodeHtmlEntities(name)}</h3>
+                {price > 0 && <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>}
             </div>
-            {description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{decodeHtmlEntities(description)}</p>}
+            {description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(description)}</p>}
             
             {hasSubItems && (
-                <button 
+                <Button 
+                    variant="link" 
+                    size="sm" 
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="text-xs mt-2 text-primary hover:underline flex items-center"
+                    className="text-xs h-auto p-1 mt-2 text-primary hover:text-primary/80"
                 >
                     {isExpanded ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                    {isExpanded ? 'Hide' : 'Show'} Variations
-                </button>
+                    {isExpanded ? 'Hide' : 'Show'} Variations ({subItems.length})
+                </Button>
             )}
 
             {hasSubItems && isExpanded && (
-                <div className="mt-2 ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-600 space-y-1">
+                <div className="mt-2 pl-4 border-l-2 border-muted/50 space-y-1 bg-muted/30 p-2 rounded-r-md">
                     {subItems.map((sub, index) => (
-                        <div key={index} className="flex justify-between items-baseline text-sm text-gray-700 dark:text-gray-300">
-                            <p>• {decodeHtmlEntities(sub.name)}</p>
+                        <div key={sub.id || index} className="flex justify-between items-baseline text-sm text-muted-foreground p-1.5 bg-card shadow-sm rounded-md">
+                            <p className="text-foreground/90">{decodeHtmlEntities(sub.name)}</p>
                             {typeof sub.price === 'number' && <p className="font-medium">৳{sub.price.toLocaleString()}</p>}
                         </div>
                     ))}
@@ -234,22 +246,23 @@ export default function SharePage() {
 
     if (isLoading) {
         return (
-            <div className="bg-gray-200 dark:bg-gray-800 min-h-screen p-4 sm:p-8">
-                <main className="max-w-4xl mx-auto bg-white dark:bg-black p-12 sm:p-16 rounded-sm shadow-2xl">
-                    <header className="text-center border-b-2 border-black dark:border-white pb-6 mb-10">
-                        <Skeleton className="h-12 w-40 mx-auto mb-4" />
-                        <Skeleton className="h-12 w-3/4 mx-auto" />
-                        <Skeleton className="h-5 w-1/2 mx-auto mt-2" />
-                        <Skeleton className="h-4 w-1/3 mx-auto mt-4" />
-                    </header>
-                    <section>
-                        <Skeleton className="h-8 w-1/3 mb-6" />
-                        <div className="space-y-4">
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
+            <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
+                <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4">
+                    <Skeleton className="h-9 w-24" />
+                    <Skeleton className="h-9 w-24" />
+                </header>
+                <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
+                    <div className="flex justify-between items-start border-b pb-8 mb-8">
+                        <Skeleton className="h-14 w-1/3" />
+                        <div className="space-y-2 text-right">
+                            <Skeleton className="h-6 w-48" />
+                            <Skeleton className="h-4 w-56" />
                         </div>
-                    </section>
+                    </div>
+                    <SectionTitle><Skeleton className="h-6 w-40" /></SectionTitle>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                         {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                    </div>
                 </main>
             </div>
         )
@@ -257,11 +270,11 @@ export default function SharePage() {
     
     if (error) {
         return (
-            <div className="bg-gray-200 dark:bg-gray-800 min-h-screen p-8 flex flex-col items-center justify-center text-center">
-                <div className="bg-white dark:bg-black p-8 rounded-lg shadow-xl border border-destructive/50 max-w-lg">
+            <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center">
+                 <div className="bg-card p-8 rounded-lg shadow-xl border border-destructive/50 max-w-lg">
                     <AlertTriangle className="h-12 w-12 text-destructive mb-4 mx-auto" />
                     <h2 className="text-xl font-semibold text-destructive mb-2">Could Not Load Selection</h2>
-                    <p className="text-gray-600 dark:text-gray-400">{error}</p>
+                    <p className="text-muted-foreground">{error}</p>
                 </div>
             </div>
         );
@@ -272,41 +285,38 @@ export default function SharePage() {
     }
 
     return (
-        <div className="bg-gray-200 dark:bg-gray-800 min-h-screen p-4 sm:p-8 font-serif">
-             <div className="max-w-4xl mx-auto flex justify-end gap-2 mb-4 print:hidden">
-                <Button variant="outline" size="sm" onClick={() => window.print()} className="bg-white/80 dark:bg-black/80 backdrop-blur-sm"><Printer className="h-4 w-4 mr-2" /> Print</Button>
-                {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})} className="bg-white/80 dark:bg-black/80 backdrop-blur-sm"><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
-            </div>
-            <main className="max-w-4xl mx-auto bg-white dark:bg-black text-black dark:text-white p-12 sm:p-16 rounded-sm shadow-2xl printable-area">
-                <header className="text-center border-b-2 border-black dark:border-white pb-6 mb-10">
-                    <Image
-                        src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
-                        alt="Color Hut Logo"
-                        width={150}
-                        height={50}
-                        className="object-contain mx-auto mb-4"
-                    />
-                    <h1 className="text-4xl sm:text-5xl font-bold tracking-wider uppercase">
-                        {decodeHtmlEntities(order.businessName) || "Menu Selection"}
+        <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
+            <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4">
+                <Button variant="outline" size="sm" onClick={() => window.print()} className="bg-card"><Printer className="h-4 w-4 mr-2" /> Print</Button>
+                {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})} className="bg-card"><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
+            </header>
+            <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
+                 <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
+                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground">
+                        Menu Selection
                     </h1>
-                    <p className="text-md text-gray-500 dark:text-gray-400 mt-2 font-sans-alt">
-                       Shared by {decodeHtmlEntities(order.customerName) || 'our valued client'}.
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 font-sans-alt">
-                        {formatDate(order.orderDate)}
-                    </p>
-                </header>
+                    <div className="text-right text-muted-foreground text-sm space-y-1">
+                        <p className="font-bold text-lg text-foreground">For: {decodeHtmlEntities(order.businessName)}</p>
+                        <p className="flex items-center justify-end gap-2">
+                           <CalendarDays className="h-4 w-4" />
+                           {formatDate(order.orderDate)}
+                        </p>
+                    </div>
+                </div>
                 
                 <section>
+                    <SectionTitle>Selected Items</SectionTitle>
                     {groupedItems && Object.keys(groupedItems).length > 0 ? (
-                        <div className="space-y-10">
+                        <div className="space-y-8">
                             {Object.entries(groupedItems).map(([categoryName, items]) => (
                                 <div key={categoryName}>
-                                    <SectionTitle>{categoryName}</SectionTitle>
-                                    <div className="space-y-2">
-                                        {items.map((item) => (
+                                    <h3 className="text-xl font-semibold mb-4 border-b-2 border-primary/20 pb-2 text-primary">
+                                        {categoryName}
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                                        {items.map((item, index) => (
                                             <OrderItem
-                                                key={item.id}
+                                                key={`${item.id}-${index}`}
                                                 name={item.name}
                                                 description={item.description}
                                                 quantity={item.quantity}
@@ -319,36 +329,14 @@ export default function SharePage() {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-gray-500 text-center py-4">No items were found in this selection.</p>
+                        <p className="text-muted-foreground text-center py-4">No items were found in this selection.</p>
                     )}
                 </section>
-
+                <footer className="text-center text-muted-foreground text-xs mt-12 pt-8 border-t border-border">
+                    <p>Menu selection prepared with Color Hut Menu Builder.</p>
+                    <p>For inquiries, please contact Color Hut at +8801919760626.</p>
+                </footer>
             </main>
-             <footer className="text-center text-gray-500 dark:text-gray-400 text-xs mt-8 print:hidden font-sans-alt">
-                <p>Powered by Color Hut | For inquiries, call +8801919760626</p>
-            </footer>
-             <style jsx global>{`
-                @media print {
-                    body {
-                        background-color: #fff !important;
-                    }
-                    .printable-area {
-                        margin: 0;
-                        padding: 0;
-                        box-shadow: none;
-                        border: none;
-                    }
-                    .print\\:hidden {
-                        display: none;
-                    }
-                }
-                .font-serif {
-                    font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
-                }
-                .font-sans-alt {
-                     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-                }
-            `}</style>
         </div>
     );
 }
