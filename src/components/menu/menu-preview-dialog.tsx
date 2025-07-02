@@ -373,7 +373,10 @@ export function MenuPreviewDialog({
           <DialogFooter className="px-6 py-4 border-t mt-auto">
             <Button
               variant="secondary"
-              className="bg-foreground text-background hover:bg-foreground/90"
+              className={cn(
+                "bg-foreground text-background hover:bg-foreground/90",
+                selectedItems.length > 0 && "animate-glow"
+              )}
               onClick={() => setIsCustomerFormOpen(true)}
               disabled={selectedItems.length === 0}
             >

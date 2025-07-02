@@ -90,11 +90,20 @@ export default {
           '0%': { 'background-position': '-200% 0' },
           '100%': { 'background-position': '200% 0' },
         },
+        glow: {
+          '0%, 100%': {
+            boxShadow: '0 0 5px -1px hsl(var(--primary))'
+          },
+          '50%': {
+            boxShadow: '0 0 10px 2px hsl(var(--primary))'
+          }
+        }
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
         shimmer: 'shimmer 1.5s infinite linear',
+        glow: 'glow 3s ease-in-out infinite',
   		}
   	}
   },
