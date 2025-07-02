@@ -292,11 +292,11 @@ export default function SharePage() {
     }
 
     return (
-        <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
-            <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4">
+        <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
+            <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4 print:hidden">
                 {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})} className="bg-card"><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
             </header>
-            <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg bg-watermark">
+            <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg bg-watermark print:shadow-none print:border-none print:rounded-none">
                  <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
                     <div className="bg-black p-4 rounded-lg">
                         <Image
@@ -345,7 +345,7 @@ export default function SharePage() {
                         <p className="text-muted-foreground text-center py-4">No items were found in this selection.</p>
                     )}
                 </section>
-                <footer className="text-center text-muted-foreground text-xs mt-12 pt-8 border-t border-border">
+                <footer className="text-center text-muted-foreground text-xs mt-12 pt-8 border-t border-border print:hidden">
                     <p>Menu selection prepared with Color Hut Menu Builder.</p>
                     <p>For inquiries, please contact Color Hut at +8801919760626.</p>
                 </footer>

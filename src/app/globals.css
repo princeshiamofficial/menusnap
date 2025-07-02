@@ -124,3 +124,12 @@
     font-family: Arial, Helvetica, sans-serif;
   }
 }
+
+@layer utilities {
+  @media print {
+    .bg-watermark {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+  }
+}
