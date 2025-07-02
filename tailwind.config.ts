@@ -9,6 +9,9 @@ export default {
   ],
   theme: {
   	extend: {
+      backgroundImage: {
+        'watermark': `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3e%3ctext x='50%25' y='50%25' font-family='Arial, sans-serif' font-size='24' fill='rgba(0,0,0,0.06)' text-anchor='middle' dominant-baseline='middle' transform='rotate(-30, 150, 100)'%3eCOLOR HUT%3c/text%3e%3c/svg%3e")`,
+      },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

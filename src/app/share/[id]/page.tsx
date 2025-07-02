@@ -296,7 +296,7 @@ export default function SharePage() {
             <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4">
                 {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})} className="bg-card"><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
             </header>
-            <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
+            <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg bg-watermark">
                  <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
                     <div className="bg-black p-4 rounded-lg">
                         <Image
