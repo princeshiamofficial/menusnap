@@ -6,8 +6,6 @@ import { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Reorder } from "framer-motion";
-import { saveAs } from 'file-saver';
-import { generateMenuDocx } from '@/lib/docx-generator';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
-import { X, ChevronLeft, Send, ShoppingCart, FileText, GripVertical, Download } from 'lucide-react';
+import { X, ChevronLeft, ShoppingCart, FileText, GripVertical } from 'lucide-react';
 import { CustomerDetailsForm, type CustomerDetailsFormValues } from './customer-details-form';
 import { useToast } from "@/hooks/use-toast";
 import type { ClientUser } from '@/hooks/use-client-auth';
@@ -86,17 +84,7 @@ export function MenuPreviewDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const [isShareSupported, setIsShareSupported] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && navigator.canShare) {
-      const dummyFile = new File([''], 'test.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      if (navigator.canShare({ files: [dummyFile] })) {
-        setIsShareSupported(true);
-      }
-    }
-  }, []);
-
+  
   const derivedDisplayedCategories = useMemo(() => {
     const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
     return allCategories
@@ -246,72 +234,6 @@ export function MenuPreviewDialog({
     }
   };
 
-  const handleShareWithPartner = async () => {
-    if (selectedItems.length === 0) {
-      toast({
-        title: "No items selected",
-        description: "Please select items to generate a document.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    toast({
-      title: "Generating Document...",
-      description: "Your menu is being prepared.",
-    });
-
-    let blob: Blob;
-    const businessName = clientUser?.businessName || 'Menu Selection';
-    try {
-      blob = await generateMenuDocx(
-        selectedItems,
-        orderedDialogCategories,
-        businessName
-      );
-    } catch (error) {
-      console.error("Error generating .docx file:", error);
-      toast({
-        title: "Generation Failed",
-        description: "Could not generate the document. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const fileName = `${businessName.replace(/ /g, '_')}-Menu.docx`;
-    const docxFile = new File([blob], fileName, {
-      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    });
-
-    try {
-      if (isShareSupported && navigator.share) {
-        await navigator.share({
-          files: [docxFile],
-          title: `${businessName} Menu`,
-          text: `Here is the menu selection for ${businessName}.`,
-        });
-      } else {
-        // Fallback for browsers that don't support sharing files at all
-        saveAs(blob, fileName);
-      }
-    } catch (error: any) {
-      // This case handles when sharing is supported but fails (e.g., user cancels, or other error)
-      if (error.name === 'AbortError') {
-        // User cancelled the share dialog, do nothing.
-        return;
-      }
-      
-      console.warn("Sharing failed, falling back to download:", error);
-      toast({
-        title: "Sharing Not Available",
-        description: "Could not share the document directly. It will be downloaded instead.",
-        variant: "default", // Use default variant as it's a graceful fallback
-      });
-      saveAs(blob, fileName);
-    }
-  };
-
   useEffect(() => {
     if (isOpen && activeCategoryId && !derivedDisplayedCategories.some(cat => cat.id === activeCategoryId)) {
       setActiveCategoryId(null);
@@ -456,19 +378,6 @@ export function MenuPreviewDialog({
               disabled={selectedItems.length === 0}
             >
               <ShoppingCart className="h-4 w-4 mr-2" /> Share with Color Hut
-            </Button>
-            <Button
-              variant="default"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              disabled={selectedItems.length === 0}
-              onClick={handleShareWithPartner}
-            >
-              {isShareSupported ? (
-                <Send className="h-4 w-4 mr-2" />
-              ) : (
-                <Download className="h-4 w-4 mr-2" />
-              )}
-              {isShareSupported ? 'Share with Partner' : 'Download as DOCX'}
             </Button>
           </DialogFooter>
         </DialogContent>
