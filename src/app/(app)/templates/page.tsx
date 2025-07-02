@@ -141,15 +141,16 @@ function TemplateCard({
           </div>
         </CardContent>
         <CardFooter className="p-4 border-t mt-auto">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => onSelect(template)}
-            disabled={!isSelectionAllowed}
-            title={!isSelectionAllowed ? "Create an order from the Menu Items page first." : "Select this template"}
-          >
-            Select Template
-          </Button>
+          {isSelectionAllowed && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => onSelect(template)}
+              title="Select this template"
+            >
+              Select Template
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </motion.div>
