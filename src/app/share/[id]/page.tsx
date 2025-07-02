@@ -115,6 +115,11 @@ export default function SharePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [categoryMap, setCategoryMap] = useState<Map<string, string>>(new Map());
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     useEffect(() => {
         if (!orderIdFromUrl) return;
@@ -274,7 +279,7 @@ export default function SharePage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print</Button>
-                    {navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})}><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
+                    {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})}><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
                 </div>
             </header>
             <main className="max-w-4xl mx-auto bg-card text-card-foreground p-8 sm:p-12 rounded-lg shadow-2xl printable-area">
@@ -306,7 +311,6 @@ export default function SharePage() {
                             {Object.entries(groupedItems).map(([categoryName, items]) => (
                                 <div key={categoryName}>
                                     <h3 className="text-xl font-semibold mb-4 text-foreground/90 flex items-center gap-2">
-                                        <Badge variant="secondary" className="text-lg">{items[0]?.icon || '🍴'}</Badge> 
                                         {categoryName}
                                     </h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -328,26 +332,10 @@ export default function SharePage() {
                         <p className="text-muted-foreground text-center py-4">No items were found in this selection.</p>
                     )}
                 </section>
-                <style jsx global>{\`
-                    @media print {
-                        body {
-                            background-color: #fff;
-                        }
-                        .printable-area {
-                            box-shadow: none !important;
-                            margin: 0;
-                            max-width: 100%;
-                            border-radius: 0;
-                        }
-                        header {
-                           display: none;
-                        }
-                    }
-                \`}</style>
             </main>
              <footer className="text-center text-muted-foreground text-xs mt-8">
                 <p>Powered by Color Hut | For inquiries, call +8801919760626</p>
             </footer>
         </div>
-    )
+    );
 }
