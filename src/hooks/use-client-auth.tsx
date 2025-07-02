@@ -55,6 +55,14 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
             title: "Login Successful",
             description: `Welcome, ${businessName}!`,
         });
+
+        // Play welcome sound
+        const welcomeSound = new Audio('https://colorhutbd.xyz/audio/welcome.mp3');
+        welcomeSound.play().catch(error => {
+            console.error("Welcome sound playback failed:", error);
+            // We don't need to bother the user if the sound fails to play.
+        });
+
         router.push('/dashboard');
     } else {
         toast({
