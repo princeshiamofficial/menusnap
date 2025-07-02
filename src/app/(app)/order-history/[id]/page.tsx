@@ -22,11 +22,13 @@ import {
   ChevronDown,
   ChevronRight,
   ShieldAlert,
+  Share2,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
+import { useToast } from "@/hooks/use-toast";
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -135,6 +137,7 @@ export default function ClientOrderDetailsPage() {
     const [error, setError] = useState<string | null>(null);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [categoryMap, setCategoryMap] = useState<Map<string, string>>(new Map());
+    const { toast } = useToast();
 
     useEffect(() => {
         if (clientLoading) return;
@@ -253,6 +256,31 @@ export default function ClientOrderDetailsPage() {
         }, {} as Record<string, OrderItemDetail[]>);
     }, [order?.items, categoryMap]);
 
+    const handleShare = () => {
+        if (!order) {
+            toast({
+                title: "Error",
+                description: "Cannot share. Order details not loaded yet.",
+                variant: "destructive",
+            });
+            return;
+        }
+        const shareUrl = `${window.location.origin}/share/${order.id}`;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            toast({
+                title: "Link Copied!",
+                description: "A shareable link is now on your clipboard.",
+            });
+        }).catch(err => {
+            console.error('Failed to copy link: ', err);
+            toast({
+                title: "Copy Failed",
+                description: "Could not copy the link to your clipboard.",
+                variant: "destructive"
+            });
+        });
+    };
+
     if (isLoading || clientLoading) {
         return (
             <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -318,6 +346,9 @@ export default function ClientOrderDetailsPage() {
                 <Button variant="outline" onClick={() => router.push('/order-history')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Order History
+                </Button>
+                <Button onClick={handleShare}>
+                    <Share2 className="mr-2 h-4 w-4" /> Share
                 </Button>
             </header>
 
