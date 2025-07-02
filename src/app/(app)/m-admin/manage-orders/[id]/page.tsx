@@ -13,10 +13,9 @@ import {
   CalendarDays,
   FileText as FileTextIcon,
   AlertTriangle,
-  Printer,
-  Download,
   ChevronDown,
   ChevronRight,
+  Share2,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -294,6 +293,31 @@ export default function OrderDetailsPage() {
         }
     };
 
+    const handleShare = () => {
+        if (!order) {
+            toast({
+                title: "Error",
+                description: "Cannot share. Order details not loaded yet.",
+                variant: "destructive",
+            });
+            return;
+        }
+        const shareUrl = `${window.location.origin}/share/${order.id}`;
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            toast({
+                title: "Link Copied!",
+                description: "The shareable link is now on your clipboard.",
+            });
+        }).catch(err => {
+            console.error('Failed to copy link: ', err);
+            toast({
+                title: "Copy Failed",
+                description: "Could not copy the link. Please try again.",
+                variant: "destructive"
+            });
+        });
+    };
+
 
     if (adminLoading || isLoading) {
         return (
@@ -366,7 +390,7 @@ export default function OrderDetailsPage() {
                     Back to Orders
                 </Button>
                 <div className="flex items-center gap-2">
-                    <Button variant="default" onClick={handleDownloadDocx}><Download className="mr-2 h-4 w-4" /> Download DOCX</Button>
+                    <Button variant="default" onClick={handleShare}><Share2 className="mr-2 h-4 w-4" /> Share Link</Button>
                 </div>
             </header>
 
