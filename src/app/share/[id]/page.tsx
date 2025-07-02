@@ -2,10 +2,9 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   CalendarDays,
@@ -17,7 +16,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
-import { cn, decodeHtmlEntities } from '@/lib/utils';
+import { decodeHtmlEntities } from '@/lib/utils';
 
 // Interfaces
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -109,7 +108,6 @@ const OrderItem = ({ name, description, price, quantity, subItems }: { name: str
 // Main Page Component
 export default function SharePage() {
     const params = useParams();
-    const router = useRouter();
     const orderIdFromUrl = params.id as string;
     const [order, setOrder] = useState<ApiOrder | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -122,7 +120,11 @@ export default function SharePage() {
     }, []);
 
     useEffect(() => {
-        if (!orderIdFromUrl) return;
+        if (!orderIdFromUrl) {
+            setError("No selection ID provided in the URL.");
+            setIsLoading(false);
+            return;
+        };
 
         const fetchOrderAndCategoryDetails = async () => {
             setIsLoading(true);
@@ -155,10 +157,16 @@ export default function SharePage() {
                 const result = await ordersResponse.json();
 
                 let rawOrdersArray: any[] = [];
-                if (result.success && result.data && Array.isArray(result.data.orders)) {
-                    rawOrdersArray = result.data.orders;
-                } else if (result.success && Array.isArray(result.data)) {
-                    rawOrdersArray = result.data;
+                if (result.success) {
+                    if (result.data && Array.isArray(result.data.orders)) {
+                        rawOrdersArray = result.data.orders;
+                    } else if (Array.isArray(result.data)) {
+                        rawOrdersArray = result.data;
+                    } else {
+                        throw new Error('Invalid data format from API for orders.');
+                    }
+                } else {
+                    throw new Error(result.message || 'API request for orders was not successful.');
                 }
                 
                 const orderData = rawOrdersArray.find(o => String(o.id) === orderIdFromUrl);
@@ -256,6 +264,7 @@ export default function SharePage() {
                     <AlertTriangle className="h-12 w-12 text-destructive mb-4 mx-auto" />
                     <h2 className="text-xl font-semibold text-destructive mb-2">Could Not Load Selection</h2>
                     <p className="text-muted-foreground">{error}</p>
+
                 </div>
             </div>
         );
@@ -332,6 +341,7 @@ export default function SharePage() {
                         <p className="text-muted-foreground text-center py-4">No items were found in this selection.</p>
                     )}
                 </section>
+
             </main>
              <footer className="text-center text-muted-foreground text-xs mt-8">
                 <p>Powered by Color Hut | For inquiries, call +8801919760626</p>
