@@ -292,9 +292,16 @@ export default function SharePage() {
             </header>
             <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
                  <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
-                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground">
-                        Menu Selection
-                    </h1>
+                    <div>
+                        <Image
+                            src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
+                            alt="Color Hut Logo"
+                            width={180}
+                            height={72}
+                            className="object-contain"
+                            priority
+                        />
+                    </div>
                     <div className="text-right text-muted-foreground text-sm space-y-1">
                         <p className="font-bold text-lg text-foreground">For: {decodeHtmlEntities(order.businessName)}</p>
                         <p className="flex items-center justify-end gap-2">
