@@ -292,7 +292,7 @@ export default function SharePage() {
             </header>
             <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
                  <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
-                    <div>
+                    <div className="bg-black p-4 rounded-lg">
                         <Image
                             src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
                             alt="Color Hut Logo"
