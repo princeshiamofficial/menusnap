@@ -249,7 +249,6 @@ export default function SharePage() {
             <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
                 <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4">
                     <Skeleton className="h-9 w-24" />
-                    <Skeleton className="h-9 w-24" />
                 </header>
                 <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
                     <div className="flex justify-between items-start border-b pb-8 mb-8">
@@ -287,7 +286,6 @@ export default function SharePage() {
     return (
         <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
             <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4">
-                <Button variant="outline" size="sm" onClick={() => window.print()} className="bg-card"><Printer className="h-4 w-4 mr-2" /> Print</Button>
                 {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})} className="bg-card"><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
             </header>
             <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
