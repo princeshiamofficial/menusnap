@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { decodeHtmlEntities } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 // Interfaces
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -60,7 +61,7 @@ interface ApiOrder {
 
 // Sub-components
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <h2 className="text-2xl font-bold mb-4 border-b-2 border-primary/30 pb-2 text-primary flex items-center gap-3">
+    <h2 className="text-2xl font-bold mt-10 mb-4 border-b-2 border-gray-300 dark:border-gray-600 pb-2 text-gray-800 dark:text-gray-200">
         {children}
     </h2>
 );
@@ -70,33 +71,29 @@ const OrderItem = ({ name, description, price, quantity, subItems }: { name: str
     const hasSubItems = subItems && subItems.length > 0;
 
     return (
-        <div className="bg-white dark:bg-card border p-4 rounded-lg shadow-sm transition-shadow hover:shadow-md">
-            <div className="flex justify-between items-start">
-                <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{decodeHtmlEntities(name)}</h3>
-                    {description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{decodeHtmlEntities(description)}</p>}
-                </div>
-                {price > 0 && <p className="font-semibold text-foreground ml-4 whitespace-nowrap">৳ {(price * quantity).toLocaleString()}</p>}
+        <div className="py-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+            <div className="flex justify-between items-baseline">
+                <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{decodeHtmlEntities(name)}</h3>
+                {price > 0 && <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">৳{(price * quantity).toLocaleString()}</p>}
             </div>
+            {description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{decodeHtmlEntities(description)}</p>}
             
             {hasSubItems && (
-                <Button 
-                    variant="link" 
-                    size="sm" 
+                <button 
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="text-xs h-auto p-1 mt-2 text-primary hover:text-primary/80"
+                    className="text-xs mt-2 text-primary hover:underline flex items-center"
                 >
                     {isExpanded ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                    {isExpanded ? 'Hide' : 'Show'} Variations ({subItems.length})
-                </Button>
+                    {isExpanded ? 'Hide' : 'Show'} Variations
+                </button>
             )}
 
             {hasSubItems && isExpanded && (
-                <div className="mt-2 pl-4 border-l-2 border-primary/20 space-y-1 bg-muted/50 p-3 rounded-r-md">
+                <div className="mt-2 ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-600 space-y-1">
                     {subItems.map((sub, index) => (
-                        <div key={sub.id || index} className="flex justify-between items-baseline text-sm p-1.5 bg-card/50 rounded-md">
-                            <p className="text-foreground/90">{decodeHtmlEntities(sub.name)}</p>
-                            {typeof sub.price === 'number' && <p className="font-medium">৳ {sub.price.toLocaleString()}</p>}
+                        <div key={index} className="flex justify-between items-baseline text-sm text-gray-700 dark:text-gray-300">
+                            <p>• {decodeHtmlEntities(sub.name)}</p>
+                            {typeof sub.price === 'number' && <p className="font-medium">৳{sub.price.toLocaleString()}</p>}
                         </div>
                     ))}
                 </div>
@@ -104,6 +101,7 @@ const OrderItem = ({ name, description, price, quantity, subItems }: { name: str
         </div>
     );
 };
+
 
 // Main Page Component
 export default function SharePage() {
@@ -215,7 +213,7 @@ export default function SharePage() {
         if (!dateString) return 'N/A';
         try {
           const date = parseISO(dateString);
-          return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
+          return isValidDate(date) ? format(date, "MMMM d, yyyy") : "Invalid Date";
         } catch {
           return "Invalid Date";
         }
@@ -236,22 +234,22 @@ export default function SharePage() {
 
     if (isLoading) {
         return (
-            <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-12">
-                <main className="max-w-4xl mx-auto bg-card text-card-foreground p-8 sm:p-12 rounded-lg shadow-2xl">
-                    <div className="flex justify-between items-start border-b pb-8 mb-8">
-                        <div className="space-y-3">
-                            <Skeleton className="h-10 w-56" />
-                            <Skeleton className="h-5 w-72" />
-                        </div>
-                    </div>
-                    <div>
+            <div className="bg-gray-200 dark:bg-gray-800 min-h-screen p-4 sm:p-8">
+                <main className="max-w-4xl mx-auto bg-white dark:bg-black p-12 sm:p-16 rounded-sm shadow-2xl">
+                    <header className="text-center border-b-2 border-black dark:border-white pb-6 mb-10">
+                        <Skeleton className="h-12 w-40 mx-auto mb-4" />
+                        <Skeleton className="h-12 w-3/4 mx-auto" />
+                        <Skeleton className="h-5 w-1/2 mx-auto mt-2" />
+                        <Skeleton className="h-4 w-1/3 mx-auto mt-4" />
+                    </header>
+                    <section>
                         <Skeleton className="h-8 w-1/3 mb-6" />
                         <div className="space-y-4">
-                            <Skeleton className="h-20 w-full" />
-                            <Skeleton className="h-20 w-full" />
-                            <Skeleton className="h-20 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
                         </div>
-                    </div>
+                    </section>
                 </main>
             </div>
         )
@@ -259,73 +257,56 @@ export default function SharePage() {
     
     if (error) {
         return (
-            <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center">
-                <div className="bg-card p-8 rounded-lg shadow-xl border border-destructive/50 max-w-lg">
+            <div className="bg-gray-200 dark:bg-gray-800 min-h-screen p-8 flex flex-col items-center justify-center text-center">
+                <div className="bg-white dark:bg-black p-8 rounded-lg shadow-xl border border-destructive/50 max-w-lg">
                     <AlertTriangle className="h-12 w-12 text-destructive mb-4 mx-auto" />
                     <h2 className="text-xl font-semibold text-destructive mb-2">Could Not Load Selection</h2>
-                    <p className="text-muted-foreground">{error}</p>
-
+                    <p className="text-gray-600 dark:text-gray-400">{error}</p>
                 </div>
             </div>
         );
     }
 
     if (!order) {
-        return null; // Should be covered by error state
+        return null;
     }
 
     return (
-        <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-12 font-sans">
-             <header className="max-w-4xl mx-auto mb-4 flex justify-between items-center">
-                <div className="flex items-center gap-4">
+        <div className="bg-gray-200 dark:bg-gray-800 min-h-screen p-4 sm:p-8 font-serif">
+             <div className="max-w-4xl mx-auto flex justify-end gap-2 mb-4 print:hidden">
+                <Button variant="outline" size="sm" onClick={() => window.print()} className="bg-white/80 dark:bg-black/80 backdrop-blur-sm"><Printer className="h-4 w-4 mr-2" /> Print</Button>
+                {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})} className="bg-white/80 dark:bg-black/80 backdrop-blur-sm"><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
+            </div>
+            <main className="max-w-4xl mx-auto bg-white dark:bg-black text-black dark:text-white p-12 sm:p-16 rounded-sm shadow-2xl printable-area">
+                <header className="text-center border-b-2 border-black dark:border-white pb-6 mb-10">
                     <Image
                         src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
                         alt="Color Hut Logo"
-                        width={120}
-                        height={40}
-                        className="object-contain"
+                        width={150}
+                        height={50}
+                        className="object-contain mx-auto mb-4"
                     />
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print</Button>
-                    {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})}><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
-                </div>
-            </header>
-            <main className="max-w-4xl mx-auto bg-card text-card-foreground p-8 sm:p-12 rounded-lg shadow-2xl printable-area">
-                 <div className="flex flex-col sm:flex-row justify-between items-start border-b pb-8 mb-8 border-border">
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
-                            {decodeHtmlEntities(order.businessName) || "Menu Selection"}
-                        </h1>
-                        <p className="text-md text-muted-foreground mt-2">
-                           Shared by {decodeHtmlEntities(order.customerName) || 'one of our clients'}.
-                        </p>
-                    </div>
-                    <div className="text-right text-muted-foreground text-sm space-y-1 mt-4 sm:mt-0">
-                        <p className="font-bold text-lg text-foreground">Order ID: {order.orderId}</p>
-                        <p className="flex items-center justify-end gap-2">
-                           <CalendarDays className="h-4 w-4" />
-                           {formatDate(order.orderDate)}
-                        </p>
-                    </div>
-                </div>
+                    <h1 className="text-4xl sm:text-5xl font-bold tracking-wider uppercase">
+                        {decodeHtmlEntities(order.businessName) || "Menu Selection"}
+                    </h1>
+                    <p className="text-md text-gray-500 dark:text-gray-400 mt-2 font-sans-alt">
+                       Shared by {decodeHtmlEntities(order.customerName) || 'our valued client'}.
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-4 font-sans-alt">
+                        {formatDate(order.orderDate)}
+                    </p>
+                </header>
                 
                 <section>
-                    <SectionTitle>
-                       <FileTextIcon className="h-6 w-6" />
-                       Selected Items
-                    </SectionTitle>
                     {groupedItems && Object.keys(groupedItems).length > 0 ? (
-                        <div className="space-y-8">
+                        <div className="space-y-10">
                             {Object.entries(groupedItems).map(([categoryName, items]) => (
                                 <div key={categoryName}>
-                                    <h3 className="text-xl font-semibold mb-4 text-foreground/90 flex items-center gap-2">
-                                        {categoryName}
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {items.map((item, index) => (
+                                    <SectionTitle>{categoryName}</SectionTitle>
+                                    <div className="space-y-2">
+                                        {items.map((item) => (
                                             <OrderItem
-                                                key={`${item.id}-${index}`}
+                                                key={item.id}
                                                 name={item.name}
                                                 description={item.description}
                                                 quantity={item.quantity}
@@ -338,14 +319,36 @@ export default function SharePage() {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-muted-foreground text-center py-4">No items were found in this selection.</p>
+                        <p className="text-gray-500 text-center py-4">No items were found in this selection.</p>
                     )}
                 </section>
 
             </main>
-             <footer className="text-center text-muted-foreground text-xs mt-8">
+             <footer className="text-center text-gray-500 dark:text-gray-400 text-xs mt-8 print:hidden font-sans-alt">
                 <p>Powered by Color Hut | For inquiries, call +8801919760626</p>
             </footer>
+             <style jsx global>{`
+                @media print {
+                    body {
+                        background-color: #fff !important;
+                    }
+                    .printable-area {
+                        margin: 0;
+                        padding: 0;
+                        box-shadow: none;
+                        border: none;
+                    }
+                    .print\\:hidden {
+                        display: none;
+                    }
+                }
+                .font-serif {
+                    font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+                }
+                .font-sans-alt {
+                     font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+                }
+            `}</style>
         </div>
     );
 }
