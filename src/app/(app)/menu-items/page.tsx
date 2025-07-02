@@ -1062,14 +1062,14 @@ export default function MenuItemsPage() {
                         variant="default"
                     >
                         <div className="flex items-stretch h-full">
-                            <div className="bg-black text-white px-4 flex items-center transition-colors hover:bg-gray-800">
+                            <div className="hidden md:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
                                 {clientUser?.businessName ? (
                                     <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
                                 ) : (
                                     <span>Your Menu</span>
                                 )}
                             </div>
-                            <div className="bg-primary text-primary-foreground px-4 flex items-center transition-colors hover:bg-primary/90">
+                            <div className="bg-primary text-primary-foreground px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
                                 Menu ({selectedCount})
                             </div>
                         </div>
