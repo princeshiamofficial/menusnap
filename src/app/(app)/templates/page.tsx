@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -185,6 +186,7 @@ export default function TemplatesPage(): ReactNode {
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const { toast } = useToast();
   const { clientUser, clientLoading } = useClientAuth();
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchTemplates() {
@@ -306,11 +308,14 @@ export default function TemplatesPage(): ReactNode {
         setShowConfetti(true);
         toast({
           title: "Template Applied!",
-          description: `Template "${decodeHtmlEntities(templateToConfirm.name)}" has been applied to order #${pendingOrderId}.`,
+          description: `Template "${decodeHtmlEntities(templateToConfirm.name)}" applied. Redirecting...`,
         });
         
+        const orderIdToRedirect = pendingOrderId;
         localStorage.removeItem('pendingOrderIdForTemplate');
         setPendingOrderId(null);
+        router.push(`/order-history/${orderIdToRedirect}`);
+
       } catch (error: any) {
         toast({
           title: "Update Error",
