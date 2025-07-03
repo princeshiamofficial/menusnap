@@ -20,6 +20,7 @@ import {
   Save,
   Plus,
   X,
+  PlusCircle,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -38,6 +39,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogClose,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -89,7 +91,6 @@ const menuItemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100, "Name must be 100 characters or less"),
   price: z.coerce.number().min(0, "Price must be a non-negative number. If using variations, this can be 0."),
   description: z.string().max(500, "Description must be 500 characters or less").optional().nullable(),
-  visibleToUsers: z.boolean().default(true),
   subItems: z.array(
     z.object({
       id: z.string().optional(),
@@ -116,7 +117,6 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
       name: decodeHtmlEntities(initialData?.name),
       price: initialData?.price || 0,
       description: decodeHtmlEntities(initialData?.description),
-      visibleToUsers: true,
       subItems: initialData?.subItems?.map(si => ({ 
         id: si.id, 
         name: decodeHtmlEntities(si.name), 
@@ -293,7 +293,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
           disabled={form.formState.isSubmitting}
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {form.formState.isSubmitting ? "Saving..." : <><Save className="h-4 w-4 mr-2"/>Save Changes</>}
+          {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Adding...") : <><Save className="h-4 w-4 mr-2"/>{isEditMode ? "Save Changes" : "Add Item"}</>}
         </Button>
       </DialogFooter>
     </form>
@@ -377,16 +377,12 @@ export default function OrderDetailsPage() {
     const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
     const [editingItemData, setEditingItemData] = useState<OrderItemDetail | null>(null);
 
-    const menuType = useMemo(() => {
-        if (order?.templateTags?.some(tag => tag.toLowerCase() === 'parlour')) {
-          return 'parlour';
-        }
-        return 'restaurant';
-    }, [order?.templateTags]);
+    const [isEditCategoryDialogOpen, setIsEditCategoryDialogOpen] = useState(false);
+    const [categoryToEdit, setCategoryToEdit] = useState<{ id: string; name: string } | null>(null);
+    const [newCategoryName, setNewCategoryName] = useState('');
 
-    const getMenuItemsApiUrl = (type: 'restaurant' | 'parlour') => type === 'parlour'
-      ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
-      : 'https://colorhutbd.xyz/vm/api/menu-items.php';
+    const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+    const [addingItemToCategory, setAddingItemToCategory] = useState<Category | null>(null);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -484,49 +480,91 @@ export default function OrderDetailsPage() {
         setIsEditItemDialogOpen(true);
     };
     
-    const handleEditMenuItem = async (formData: MenuItemFormValues) => {
-      if (!editingItemData) {
-        toast({ title: "Error", description: "No item selected for editing.", variant: "destructive" });
-        return;
-      }
-      const payload = { 
-          id: editingItemData.id, 
-          name: formData.name,
-          price: formData.price,
-          description: formData.description,
-          category: editingItemData.categoryId, 
-          status: formData.visibleToUsers ? 'Active' : 'Inactive', 
-          visibleToUsers: formData.visibleToUsers, 
-          subItems: formData.subItems ? formData.subItems.map(si => {
-              const subItemPayload: any = { name: si.name };
-              if (si.id) subItemPayload.id = si.id; 
-              if (si.price !== undefined) subItemPayload.price = si.price;
-              return subItemPayload;
-          }) : [],
-      };
-      try {
-        const response = await fetch(getMenuItemsApiUrl(menuType), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload), 
-        });
-        const result = await response.json();
+    const handleOpenAddItemDialog = (categoryId: string, categoryName: string) => {
+        setAddingItemToCategory({ id: categoryId, name: categoryName, icon: '' });
+        setIsAddItemDialogOpen(true);
+    };
 
-        if (!response.ok || !result.success || !result.data || !result.data.item ) {
-          let errorMsg = result.message || `Request failed with status: ${response.status}`;
-          if (response.ok && result.success && (!result.data || !result.data.item)) {
-               errorMsg = "API reported success but item data was missing in the response.";
-          }
-          throw new Error(errorMsg);
+    const handleOpenEditCategoryDialog = (categoryId: string, currentName: string) => {
+        setCategoryToEdit({ id: categoryId, name: currentName });
+        setNewCategoryName(currentName);
+        setIsEditCategoryDialogOpen(true);
+    };
+
+    const saveOrderUpdate = async (updatedOrder: ApiOrder, successMessage: string) => {
+        const originalOrder = order;
+        setOrder(updatedOrder); // Optimistic UI update
+
+        try {
+            const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(updatedOrder),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || "Failed to save order changes.");
+            }
+            toast({ title: "Success", description: successMessage });
+            await fetchOrderAndCategoryDetails();
+        } catch (e: any) {
+            toast({ title: "Save Error", description: e.message, variant: "destructive" });
+            setOrder(originalOrder); // Revert on failure
         }
-
-        toast({ title: "Success", description: `Item "${decodeHtmlEntities(formData.name)}" updated.` });
+    };
+    
+    const handleEditMenuItem = async (formData: MenuItemFormValues) => {
+        if (!editingItemData || !order) {
+            toast({ title: "Error", description: "No item or order data available for editing.", variant: "destructive" });
+            return;
+        }
+        const updatedItems = order.items?.map(item => 
+            item.id === editingItemData.id 
+                ? { ...item, name: formData.name, price: formData.price, description: formData.description, subItems: formData.subItems }
+                : item
+        );
+        await saveOrderUpdate({ ...order, items: updatedItems }, `Item "${decodeHtmlEntities(formData.name)}" updated.`);
         setIsEditItemDialogOpen(false);
         setEditingItemData(null);
-        await fetchOrderAndCategoryDetails();
-      } catch (error: any) {
-        toast({ title: "Error Updating Item", description: error.message, variant: "destructive" });
-      }
+    };
+
+    const handleAddItem = async (formData: MenuItemFormValues) => {
+        if (!addingItemToCategory || !order) {
+            toast({ title: "Error", description: "Cannot add item without a category context.", variant: "destructive" });
+            return;
+        }
+        const newItem: OrderItemDetail = {
+            id: `custom-item-${Date.now()}`,
+            name: formData.name,
+            price: formData.price,
+            description: formData.description,
+            subItems: formData.subItems,
+            quantity: 1,
+            categoryId: addingItemToCategory.id,
+            categoryName: addingItemToCategory.name,
+        };
+        const updatedItems = [...(order.items || []), newItem];
+        await saveOrderUpdate({ ...order, items: updatedItems }, `Item "${decodeHtmlEntities(formData.name)}" added to order.`);
+        setIsAddItemDialogOpen(false);
+        setAddingItemToCategory(null);
+    };
+
+    const handleUpdateCategoryName = async () => {
+        if (!categoryToEdit || !order || !newCategoryName.trim()) {
+            toast({ title: "Error", description: "Invalid data for category update.", variant: "destructive" });
+            return;
+        }
+        const updatedItems = order.items?.map(item =>
+            item.categoryId === categoryToEdit.id ? { ...item, categoryName: newCategoryName.trim() } : item
+        );
+        await saveOrderUpdate({ ...order, items: updatedItems }, `Category name updated to "${decodeHtmlEntities(newCategoryName)}".`);
+        
+        const newMap = new Map(categoryMap);
+        newMap.set(categoryToEdit.id, newCategoryName.trim());
+        setCategoryMap(newMap);
+
+        setIsEditCategoryDialogOpen(false);
+        setCategoryToEdit(null);
     };
     
     const formatDate = (dateString?: string): string => {
@@ -578,7 +616,7 @@ export default function OrderDetailsPage() {
             const usedCategoryIds = new Set(menuItemsForDocx.map(item => item.category));
             const categoriesForDocx: Category[] = Array.from(usedCategoryIds).map(id => ({
                 id,
-                name: categoryMap.get(id) || 'Uncategorized',
+                name: categoryMap.get(id) || order.items?.find(i => i.categoryId === id)?.categoryName || 'Uncategorized',
                 icon: '📁',
             }));
             
@@ -709,11 +747,21 @@ export default function OrderDetailsPage() {
                     <SectionTitle>Order Summary</SectionTitle>
                     {groupedItems && Object.keys(groupedItems).length > 0 ? (
                         <div className="space-y-8">
-                            {Object.entries(groupedItems).map(([categoryName, items]) => (
+                            {Object.entries(groupedItems).map(([categoryName, items]) => {
+                                const categoryId = items[0]?.categoryId;
+                                return (
                                 <div key={categoryName}>
-                                    <h3 className="text-xl font-semibold mb-4 border-b-2 border-primary/20 pb-2 text-primary">
-                                        {categoryName}
-                                    </h3>
+                                    <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
+                                        <h3 className="text-xl font-semibold text-primary">
+                                            {categoryName}
+                                        </h3>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => handleOpenEditCategoryDialog(categoryId, categoryName)}>
+                                            <Edit3 className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => handleOpenAddItemDialog(categoryId, categoryName)}>
+                                            <PlusCircle className="h-4 w-4 mr-2" /> Add Item
+                                        </Button>
+                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                                         {items.map((item, index) => (
                                             <OrderItem
@@ -724,7 +772,7 @@ export default function OrderDetailsPage() {
                                         ))}
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     ) : (
                         <p className="text-muted-foreground text-center py-4">No items were found in this order.</p>
@@ -751,6 +799,53 @@ export default function OrderDetailsPage() {
                   />
                 </DialogContent>
               </Dialog>
+            )}
+
+            {addingItemToCategory && (
+                <Dialog open={isAddItemDialogOpen} onOpenChange={(open) => {
+                    setIsAddItemDialogOpen(open);
+                    if(!open) setAddingItemToCategory(null);
+                }}>
+                   <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
+                     <MenuItemForm 
+                       onSubmit={handleAddItem} 
+                       onOpenChange={(open) => {
+                           setIsAddItemDialogOpen(open);
+                           if(!open) setAddingItemToCategory(null);
+                       }}
+                       isEditMode={false}
+                       categoryName={addingItemToCategory.name}
+                     />
+                   </DialogContent>
+                </Dialog>
+            )}
+
+            {isEditCategoryDialogOpen && categoryToEdit && (
+                <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Edit Category Name</DialogTitle>
+                            <DialogDescription>
+                                Change the name of the category for this order only.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="category-name-edit" className="text-right">Name</Label>
+                                <Input
+                                    id="category-name-edit"
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsEditCategoryDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleUpdateCategoryName}>Save Changes</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             )}
         </div>
     )
