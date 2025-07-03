@@ -67,24 +67,32 @@ interface OrderItemDetail {
     subItems?: SubItem[];
 }
 
+interface CustomerData {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    restaurant?: string;
+    role?: string;
+    bio?: string;
+}
+
+interface TemplateData {
+    name?: string;
+    imageUrl?: string;
+    description?: string;
+    tags?: string[];
+}
+
 interface ApiOrder {
     id: string;
     orderId: string;
     orderDate: string;
     status: OrderStatus;
-    templateName?: string;
-    customerName?: string;
-    customerEmail?: string;
-    customerPhone?: string;
-    customerAddress?: string; 
-    businessName?: string; 
-    businessRole?: string; 
-    bio?: string; 
+    customer?: CustomerData;
+    template?: TemplateData;
     totalAmount?: number;
     items?: OrderItemDetail[];
-    templateImageUrl?: string;
-    templateDescription?: string;
-    templateTags?: string[];
 }
 
 const menuItemFormSchema = z.object({
@@ -580,16 +588,11 @@ export default function OrderDetailsPage() {
             if (orderData) {
                 const formattedOrder: ApiOrder = {
                     id: String(orderData.id),
-                    orderId: String(orderData.orderId || orderData.id), 
+                    orderId: String(orderData.orderId || orderData.id),
                     orderDate: String(orderData.orderDate || orderData.createdAt || orderData.date || new Date().toISOString()),
                     status: ALL_ORDER_STATUSES.includes(orderData.status) ? orderData.status : "Pending",
-                    templateName: orderData.template?.name ? String(orderData.template.name) : 'Unknown Template',
-                    customerName: orderData.customer?.name ? String(orderData.customer.name) : 'N/A',
-                    customerEmail: orderData.customer?.email,
-                    customerPhone: orderData.customer?.phone,
-                    customerAddress: orderData.customer?.address,
-                    businessName: orderData.customer?.restaurant,
-                    businessRole: orderData.customer?.role,
+                    customer: orderData.customer,
+                    template: orderData.template,
                     totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
                     items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
                         id: String(item.id),
@@ -601,8 +604,6 @@ export default function OrderDetailsPage() {
                         description: item.description || null,
                         subItems: Array.isArray(item.subItems) ? item.subItems : [],
                     })),
-                    templateImageUrl: orderData.template?.imageUrl,
-                    templateTags: orderData.template?.tags || [],
                 };
                 setOrder(formattedOrder);
             } else {
@@ -788,8 +789,8 @@ export default function OrderDetailsPage() {
                 icon: '📁',
             }));
             
-            const blob = await generateMenuDocx(menuItemsForDocx, categoriesForDocx, order.businessName || "Menu Selection");
-            saveAs(blob, `${order.businessName || 'menu'}_${order.orderId}.docx`);
+            const blob = await generateMenuDocx(menuItemsForDocx, categoriesForDocx, order.customer?.restaurant || "Menu Selection");
+            saveAs(blob, `${order.customer?.restaurant || 'menu'}_${order.orderId}.docx`);
 
         } catch (error) {
             console.error("Failed to generate DOCX file:", error);
