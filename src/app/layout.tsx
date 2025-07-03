@@ -19,6 +19,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Color Hut - Menu Builder',
   description: 'Design and build beautiful menus with Color Hut.',
+  icons: {
+    icon: 'https://colorhutbd.xyz/favicon.ico',
+  },
 };
 
 export default function RootLayout({
