@@ -99,8 +99,24 @@ const menuItemFormSchema = z.object({
     })
   ).optional(),
 });
-
 type MenuItemFormValues = z.infer<typeof menuItemFormSchema>;
+
+
+const addCategoryFormSchema = z.object({
+  categoryName: z.string().min(1, "Category name is required."),
+  name: z.string().min(1, "Item name is required").max(100),
+  price: z.coerce.number().min(0, "Price must be non-negative."),
+  description: z.string().max(500).optional().nullable(),
+  subItems: z.array(
+    z.object({
+      id: z.string().optional(),
+      name: z.string().min(1, "Variation name is required."),
+      price: z.coerce.number().min(0).optional(),
+    })
+  ).optional(),
+});
+type AddCategoryFormValues = z.infer<typeof addCategoryFormSchema>;
+
 
 interface MenuItemFormProps {
   initialData?: Partial<OrderItemDetail>;
@@ -282,6 +298,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
               </div>
             </div>
           )}
+
         </div>
       </ScrollArea>
       <DialogFooter className="px-6 py-4 border-t mt-auto">
@@ -301,19 +318,150 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
 }
 
 
-const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <div className="mt-10 mb-6">
-        <div
-            className="inline-block relative px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
-            style={{
-                backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")',
-                backgroundSize: '100% 100%',
-                backgroundRepeat: 'no-repeat',
-                color: '#ffffff'
-            }}
-        >
-            {children}
+interface AddCategoryAndItemFormProps {
+  onSubmit: (categoryName: string, itemData: MenuItemFormValues) => Promise<void>;
+  onOpenChange: (open: boolean) => void;
+}
+
+function AddCategoryAndItemForm({ onSubmit, onOpenChange }: AddCategoryAndItemFormProps) {
+  const form = useForm<AddCategoryFormValues>({
+    resolver: zodResolver(addCategoryFormSchema),
+    defaultValues: { categoryName: '', name: '', price: 0, description: '', subItems: [] },
+    mode: 'onChange'
+  });
+
+  const { isSubmitting } = form.formState;
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: "subItems" });
+  
+  const [newSubItemName, setNewSubItemName] = useState('');
+  const [newSubItemPrice, setNewSubItemPrice] = useState('');
+
+  const handleAddSubItemClick = () => {
+    form.clearErrors("subItems.root");
+    const nameVal = newSubItemName.trim();
+    const priceStr = newSubItemPrice.trim();
+
+    if (!nameVal) {
+      form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+      return;
+    }
+    
+    let priceVal: number | undefined = undefined;
+    if (priceStr !== '') {
+      const parsedPrice = parseFloat(priceStr);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        form.setError("subItems.root", { type: "manual", message: "Variation price must be a valid non-negative number if provided." });
+        return;
+      }
+      priceVal = parsedPrice;
+    }
+
+    append({ name: nameVal, price: priceVal });
+    setNewSubItemName('');
+    setNewSubItemPrice('');
+  };
+
+  const handleFormSubmit = async (data: AddCategoryFormValues) => {
+    const { categoryName, ...itemData } = data;
+    await onSubmit(categoryName, itemData);
+  };
+  
+  return (
+    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col flex-grow overflow-hidden">
+      <DialogHeader className="px-6 py-4 border-b">
+         <DialogTitle className="text-xl">Add New Category to Order</DialogTitle>
+         <DialogDescription>Create a new category and add its first item to this order.</DialogDescription>
+      </DialogHeader>
+      <ScrollArea className="flex-grow min-h-0">
+        <div className="space-y-4 p-6">
+          <div>
+            <Label htmlFor="category-name-new">Category Name</Label>
+            <Input id="category-name-new" {...form.register("categoryName")} placeholder="e.g., Desserts"/>
+            {form.formState.errors.categoryName && <p className="text-sm text-destructive mt-1">{form.formState.errors.categoryName.message}</p>}
+          </div>
+
+          <Separator className="my-6" />
+
+          <h4 className="font-semibold text-md">First Item Details</h4>
+          
+          <div>
+            <Label htmlFor="item-name-newcat">Item name</Label>
+            <Input id="item-name-newcat" {...form.register("name")} placeholder="Enter item name" />
+            {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="item-price-newcat">Base Price</Label>
+            <Input id="item-price-newcat" type="number" {...form.register("price")} placeholder="Enter base price (0 if only variations)" step="0.01"/>
+            {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="item-description-newcat">Description (optional)</Label>
+            <Textarea id="item-description-newcat" {...form.register("description")} placeholder="Enter item description" rows={3} />
+            {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
+          </div>
+          
+          <Separator className="my-4" />
+          
+          <div>
+            <Label className="text-base font-semibold">Item Variations / Sizes</Label>
+            <div className="mt-3 flex items-start gap-2">
+              <div className="flex-grow space-y-1">
+                <Input placeholder="Variation name" value={newSubItemName} onChange={(e) => setNewSubItemName(e.target.value)} />
+              </div>
+              <div className="w-40 space-y-1">
+                <Input type="number" placeholder="Price (optional)" value={newSubItemPrice} onChange={(e) => setNewSubItemPrice(e.target.value)} step="0.01" />
+              </div>
+              <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick} className="mt-0 h-10 w-10 shrink-0" aria-label="Add variation">
+                <Plus className="h-5 w-5" />
+              </Button>
+            </div>
+             {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
+             {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
+              <div key={index}>
+                {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
+                {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
+              </div>
+            ))}
+          </div>
+
+          {fields.length > 0 && (
+            <div className="mt-4 space-y-3">
+              <div className="space-y-2 rounded-md border p-3 max-h-48 overflow-y-auto bg-muted/30">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
+                    <div className="flex items-center gap-2 flex-grow">
+                      <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
+                      {typeof form.watch(`subItems.${index}.price`) === 'number' && <span className="text-sm font-medium text-foreground whitespace-nowrap">- ৳{form.watch(`subItems.${index}.price`)}</span>}
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"><X className="h-4 w-4" /></Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+      </ScrollArea>
+      <DialogFooter className="px-6 py-4 border-t mt-auto">
+        <DialogClose asChild><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button></DialogClose>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Adding..." : <><Save className="h-4 w-4 mr-2"/>Add Category & Item</>}
+        </Button>
+      </DialogFooter>
+    </form>
+  )
+}
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <div
+        className="inline-block relative px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
+        style={{
+            backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")',
+            backgroundSize: '100% 100%',
+            backgroundRepeat: 'no-repeat',
+            color: '#ffffff'
+        }}
+    >
+        {children}
     </div>
 );
 
@@ -383,6 +531,8 @@ export default function OrderDetailsPage() {
 
     const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
     const [addingItemToCategory, setAddingItemToCategory] = useState<Category | null>(null);
+    
+    const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -549,6 +699,24 @@ export default function OrderDetailsPage() {
         setAddingItemToCategory(null);
     };
 
+    const handleAddCategoryAndItem = async (categoryName: string, itemData: MenuItemFormValues) => {
+        if (!order) return;
+        const newCategoryId = `custom-cat-${Date.now()}`;
+        const newItem: OrderItemDetail = {
+            id: `custom-item-${Date.now()}`,
+            name: itemData.name,
+            price: itemData.price,
+            description: itemData.description,
+            subItems: itemData.subItems,
+            quantity: 1,
+            categoryId: newCategoryId,
+            categoryName: categoryName.trim(),
+        };
+        const updatedItems = [...(order.items || []), newItem];
+        await saveOrderUpdate({ ...order, items: updatedItems }, `Category "${decodeHtmlEntities(categoryName)}" with 1 item added to order.`);
+        setIsAddCategoryModalOpen(false);
+    };
+
     const handleUpdateCategoryName = async () => {
         if (!categoryToEdit || !order || !newCategoryName.trim()) {
             toast({ title: "Error", description: "Invalid data for category update.", variant: "destructive" });
@@ -674,7 +842,9 @@ export default function OrderDetailsPage() {
                             <Skeleton className="h-6 w-24 ml-auto" />
                         </div>
                     </div>
-                    <SectionTitle><Skeleton className="h-6 w-40" /></SectionTitle>
+                    <div className="mt-10 mb-6">
+                        <Skeleton className="h-10 w-48" />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                     </div>
@@ -711,7 +881,7 @@ export default function OrderDetailsPage() {
                 <h2 className="text-xl font-semibold mb-2">Order Not Found</h2>
                 <p className="text-muted-foreground max-w-md">The requested order could not be found.</p>
                 <Button variant="outline" onClick={() => router.back()} className="mt-6">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Go to Order History
                 </Button>
             </div>
         );
@@ -744,7 +914,13 @@ export default function OrderDetailsPage() {
                 </div>
                 
                 <section>
-                    <SectionTitle>Order Summary</SectionTitle>
+                    <div className="flex justify-between items-center mb-6">
+                        <SectionTitle>Order Summary</SectionTitle>
+                        <Button variant="outline" onClick={() => setIsAddCategoryModalOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add New Category
+                        </Button>
+                    </div>
                     {groupedItems && Object.keys(groupedItems).length > 0 ? (
                         <div className="space-y-8">
                             {Object.entries(groupedItems).map(([categoryName, items]) => {
@@ -819,6 +995,15 @@ export default function OrderDetailsPage() {
                    </DialogContent>
                 </Dialog>
             )}
+
+            <Dialog open={isAddCategoryModalOpen} onOpenChange={setIsAddCategoryModalOpen}>
+                <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
+                    <AddCategoryAndItemForm
+                        onSubmit={handleAddCategoryAndItem}
+                        onOpenChange={setIsAddCategoryModalOpen}
+                    />
+                </DialogContent>
+            </Dialog>
 
             {isEditCategoryDialogOpen && categoryToEdit && (
                 <Dialog open={isEditCategoryDialogOpen} onOpenChange={setIsEditCategoryDialogOpen}>
