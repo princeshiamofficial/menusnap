@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -16,6 +16,10 @@ import {
   ChevronDown,
   ChevronRight,
   Share2,
+  Edit3,
+  Save,
+  Plus,
+  X,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
@@ -24,6 +28,21 @@ import { saveAs } from 'file-saver';
 import { generateMenuDocx } from '@/lib/docx-generator';
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 import { useToast } from "@/hooks/use-toast";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -66,6 +85,222 @@ interface ApiOrder {
     templateTags?: string[];
 }
 
+const menuItemFormSchema = z.object({
+  name: z.string().min(1, "Item name is required").max(100, "Name must be 100 characters or less"),
+  price: z.coerce.number().min(0, "Price must be a non-negative number. If using variations, this can be 0."),
+  description: z.string().max(500, "Description must be 500 characters or less").optional().nullable(),
+  visibleToUsers: z.boolean().default(true),
+  subItems: z.array(
+    z.object({
+      id: z.string().optional(),
+      name: z.string().min(1, "Variation name is required."),
+      price: z.number().nonnegative("Price must be a non-negative number.").optional(),
+    })
+  ).optional(),
+});
+
+type MenuItemFormValues = z.infer<typeof menuItemFormSchema>;
+
+interface MenuItemFormProps {
+  initialData?: Partial<OrderItemDetail>;
+  onSubmit: (data: MenuItemFormValues) => Promise<void>;
+  onOpenChange: (open: boolean) => void;
+  isEditMode: boolean;
+  categoryName?: string; 
+}
+
+function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categoryName }: MenuItemFormProps) {
+  const form = useForm<MenuItemFormValues>({
+    resolver: zodResolver(menuItemFormSchema),
+    defaultValues: {
+      name: decodeHtmlEntities(initialData?.name),
+      price: initialData?.price || 0,
+      description: decodeHtmlEntities(initialData?.description),
+      visibleToUsers: true,
+      subItems: initialData?.subItems?.map(si => ({ 
+        id: si.id, 
+        name: decodeHtmlEntities(si.name), 
+        price: si.price
+      })) || [],
+    },
+    mode: 'onChange',
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "subItems",
+  });
+
+  const [newSubItemName, setNewSubItemName] = useState('');
+  const [newSubItemPrice, setNewSubItemPrice] = useState('');
+
+  const handleAddSubItemClick = () => {
+    form.clearErrors("subItems.root"); 
+    const nameVal = newSubItemName.trim();
+    const priceStr = newSubItemPrice.trim();
+
+    if (!nameVal) {
+      form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+      return;
+    }
+    
+    let priceVal: number | undefined = undefined;
+    if (priceStr !== '') {
+      const parsedPrice = parseFloat(priceStr);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        form.setError("subItems.root", { type: "manual", message: "Variation price must be a valid non-negative number if provided." });
+        return;
+      }
+      priceVal = parsedPrice;
+    }
+
+    append({ name: nameVal, price: priceVal });
+    setNewSubItemName('');
+    setNewSubItemPrice('');
+  };
+
+
+  const handleSubmit = async (data: MenuItemFormValues) => {
+    await onSubmit(data);
+  };
+  
+  return (
+    <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow overflow-hidden">
+      <DialogHeader className="px-6 py-4 border-b">
+         <DialogTitle className="text-xl">
+            {isEditMode ? `Edit ${decodeHtmlEntities(initialData?.name) || 'Menu Item'}` : `Add New ${categoryName ? decodeHtmlEntities(categoryName) + ' Item' : 'Menu Item'}`}
+        </DialogTitle>
+      </DialogHeader>
+      <ScrollArea className="flex-grow min-h-0">
+        <div className="space-y-4 p-6">
+          <div>
+            <Label htmlFor="item-name">Item name</Label>
+            <Input id="item-name" {...form.register("name")} placeholder="Enter item name" />
+            {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="item-price">Base Price</Label>
+            <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price (0 if only variations)" step="0.01"/>
+            {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
+          </div>
+          <div>
+            <Label htmlFor="item-description">Description (optional)</Label>
+            <Textarea 
+              id="item-description" 
+              {...form.register("description")} 
+              placeholder="Enter item description" 
+              rows={3} 
+            />
+            {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
+          </div>
+
+          <Separator className="my-6" />
+
+          <div>
+            <Label className="text-base font-semibold">Item Variations / Sizes (Optional)</Label>
+            <p className="text-xs text-muted-foreground mb-2">Add different sizes or variations for this item, like Small, Medium, Large.</p>
+            <div className="mt-3 flex items-start gap-2">
+              <div className="flex-grow space-y-1">
+                <Label htmlFor="new-subitem-name" className="sr-only">Variation Name</Label>
+                <Input 
+                  id="new-subitem-name"
+                  placeholder="Variation name (e.g., Small)"
+                  value={newSubItemName}
+                  onChange={(e) => setNewSubItemName(e.target.value)}
+                />
+              </div>
+              <div className="w-40 space-y-1">
+                <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
+                <Input 
+                  id="new-subitem-price"
+                  type="number"
+                  placeholder="Price (optional)"
+                  value={newSubItemPrice}
+                  onChange={(e) => setNewSubItemPrice(e.target.value)}
+                  step="0.01"
+                />
+              </div>
+              <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick} className="mt-0 h-10 w-10 shrink-0" aria-label="Add variation">
+                <Plus className="h-5 w-5" />
+              </Button>
+            </div>
+            {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
+             {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
+              <div key={index}>
+                {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
+                {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
+              </div>
+            ))}
+          </div>
+
+          {fields.length > 0 && (
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-medium text-foreground">Added Variations: {fields.length}</Label>
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  size="sm" 
+                  className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs" 
+                  onClick={() => remove()} 
+                >
+                  Clear All
+                </Button>
+              </div>
+              <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto">
+                {fields.map((field, index) => {
+                  const currentPrice = form.watch(`subItems.${index}.price`);
+                  return (
+                    <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
+                      <div className="flex items-center gap-2 flex-grow">
+                         <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
+                         {typeof currentPrice === 'number' && (
+                           <>
+                             <span className="text-xs text-muted-foreground">-</span>
+                             <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                                ৳{currentPrice.toLocaleString()}
+                             </span>
+                           </>
+                         )}
+                         {currentPrice === undefined && (
+                           <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
+                         )}
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => remove(index)} 
+                        className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
+                        aria-label={`Remove ${form.watch(`subItems.${index}.name`)} variation`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+      <DialogFooter className="px-6 py-4 border-t mt-auto">
+        <DialogClose asChild>
+          <Button type="button" variant="outline" onClick={() => { form.reset(); onOpenChange(false); }}>Cancel</Button>
+        </DialogClose>
+        <Button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          {form.formState.isSubmitting ? "Saving..." : <><Save className="h-4 w-4 mr-2"/>Save Changes</>}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     <div className="mt-10 mb-6">
         <div
@@ -83,15 +318,21 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 );
 
 
-const OrderItem = ({ name, description, price, quantity, subItems }: { name: string, description?: string|null, price: number, quantity: number, subItems?: SubItem[] }) => {
+const OrderItem = ({ item, onEdit }: { item: OrderItemDetail, onEdit: (item: OrderItemDetail) => void }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const { name, description, price, quantity, subItems } = item;
     const hasSubItems = subItems && subItems.length > 0;
 
     return (
         <div>
-            <div className="flex justify-between items-baseline">
+            <div className="flex justify-between items-start">
                 <h3 className="font-bold text-foreground">{decodeHtmlEntities(name)}</h3>
-                {price > 0 && <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>}
+                <div className="flex items-center gap-2">
+                  {price > 0 && <p className="font-bold text-foreground">৳{(price * quantity).toLocaleString()}</p>}
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => onEdit(item)} aria-label={`Edit ${name}`}>
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
+                </div>
             </div>
             {description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(description)}</p>}
             
@@ -133,6 +374,101 @@ export default function OrderDetailsPage() {
     const [categoryMap, setCategoryMap] = useState<Map<string, string>>(new Map());
     const { toast } = useToast();
 
+    const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
+    const [editingItemData, setEditingItemData] = useState<OrderItemDetail | null>(null);
+
+    const menuType = useMemo(() => {
+        if (order?.templateTags?.some(tag => tag.toLowerCase() === 'parlour')) {
+          return 'parlour';
+        }
+        return 'restaurant';
+    }, [order?.templateTags]);
+
+    const getMenuItemsApiUrl = (type: 'restaurant' | 'parlour') => type === 'parlour'
+      ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
+      : 'https://colorhutbd.xyz/vm/api/menu-items.php';
+
+    const fetchOrderAndCategoryDetails = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
+                fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
+                fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
+                fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
+            ]);
+
+            const newCategoryMap = new Map<string, string>();
+            if (restaurantCategoriesResponse.ok) {
+                const resCatResult = await restaurantCategoriesResponse.json();
+                if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
+                    resCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
+                }
+            }
+            if (parlourCategoriesResponse.ok) {
+                const parCatResult = await parlourCategoriesResponse.json();
+                if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
+                    parCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
+                }
+            }
+            setCategoryMap(newCategoryMap);
+
+            if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
+            const result = await ordersResponse.json();
+
+            let rawOrdersArray: any[] = [];
+            if (result.success) {
+                if (result.data && Array.isArray(result.data.orders)) {
+                    rawOrdersArray = result.data.orders;
+                } else if (Array.isArray(result.data)) {
+                    rawOrdersArray = result.data;
+                } else {
+                    throw new Error('Invalid data format from API for orders.');
+                }
+            } else {
+                throw new Error(result.message || 'API request for orders was not successful.');
+            }
+            
+            const orderData = rawOrdersArray.find(o => String(o.id) === orderIdFromUrl);
+
+            if (orderData) {
+                const formattedOrder: ApiOrder = {
+                    id: String(orderData.id),
+                    orderId: String(orderData.orderId || orderData.id), 
+                    orderDate: String(orderData.orderDate || orderData.createdAt || orderData.date || new Date().toISOString()),
+                    status: ALL_ORDER_STATUSES.includes(orderData.status) ? orderData.status : "Pending",
+                    templateName: orderData.template?.name ? String(orderData.template.name) : 'Unknown Template',
+                    customerName: orderData.customer?.name ? String(orderData.customer.name) : 'N/A',
+                    customerEmail: orderData.customer?.email,
+                    customerPhone: orderData.customer?.phone,
+                    customerAddress: orderData.customer?.address,
+                    businessName: orderData.customer?.restaurant,
+                    businessRole: orderData.customer?.role,
+                    totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
+                    items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
+                        id: String(item.id),
+                        name: String(item.name),
+                        quantity: Number(item.quantity || 1),
+                        price: Number(item.price),
+                        categoryId: String(item.categoryId || item.category || `custom-${index}`),
+                        categoryName: item.categoryName,
+                        description: item.description || null,
+                        subItems: Array.isArray(item.subItems) ? item.subItems : [],
+                    })),
+                    templateImageUrl: orderData.template?.imageUrl,
+                    templateTags: orderData.template?.tags || [],
+                };
+                setOrder(formattedOrder);
+            } else {
+                setError(`Order with ID ${orderIdFromUrl} not found.`);
+            }
+        } catch (e: any) {
+            setError(e.message || 'Failed to load order details.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [orderIdFromUrl]);
+
     useEffect(() => {
         if (!isAdminLoggedIn || !orderIdFromUrl) {
             if (!adminLoading) {
@@ -140,91 +476,58 @@ export default function OrderDetailsPage() {
             }
             return;
         }
-
-        const fetchOrderAndCategoryDetails = async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-                const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
-                    fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
-                    fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
-                    fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
-                ]);
-    
-                // Process categories first to build the map
-                const newCategoryMap = new Map<string, string>();
-                if (restaurantCategoriesResponse.ok) {
-                    const resCatResult = await restaurantCategoriesResponse.json();
-                    if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
-                        resCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
-                    }
-                }
-                if (parlourCategoriesResponse.ok) {
-                    const parCatResult = await parlourCategoriesResponse.json();
-                    if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
-                        parCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
-                    }
-                }
-                setCategoryMap(newCategoryMap);
-
-                // Process orders
-                if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
-                const result = await ordersResponse.json();
-
-                let rawOrdersArray: any[] = [];
-                if (result.success) {
-                    if (result.data && Array.isArray(result.data.orders)) {
-                        rawOrdersArray = result.data.orders;
-                    } else if (Array.isArray(result.data)) {
-                        rawOrdersArray = result.data;
-                    } else {
-                        throw new Error('Invalid data format from API for orders.');
-                    }
-                } else {
-                    throw new Error(result.message || 'API request for orders was not successful.');
-                }
-                
-                const orderData = rawOrdersArray.find(o => String(o.id) === orderIdFromUrl);
-
-                if (orderData) {
-                    const formattedOrder: ApiOrder = {
-                        id: String(orderData.id),
-                        orderId: String(orderData.orderId || orderData.id), 
-                        orderDate: String(orderData.orderDate || orderData.createdAt || orderData.date || new Date().toISOString()),
-                        status: ALL_ORDER_STATUSES.includes(orderData.status) ? orderData.status : "Pending",
-                        templateName: orderData.template?.name ? String(orderData.template.name) : 'Unknown Template',
-                        customerName: orderData.customer?.name ? String(orderData.customer.name) : 'N/A',
-                        customerEmail: orderData.customer?.email,
-                        customerPhone: orderData.customer?.phone,
-                        customerAddress: orderData.customer?.address,
-                        businessName: orderData.customer?.restaurant,
-                        businessRole: orderData.customer?.role,
-                        totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
-                        items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
-                            id: String(item.id),
-                            name: String(item.name),
-                            quantity: Number(item.quantity || 1),
-                            price: Number(item.price),
-                            categoryId: String(item.categoryId || item.category || `custom-${index}`),
-                            categoryName: item.categoryName,
-                            description: item.description || null,
-                            subItems: Array.isArray(item.subItems) ? item.subItems : [],
-                        })),
-                        templateImageUrl: orderData.template?.imageUrl,
-                    };
-                    setOrder(formattedOrder);
-                } else {
-                    setError(`Order with ID ${orderIdFromUrl} not found.`);
-                }
-            } catch (e: any) {
-                setError(e.message || 'Failed to load order details.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchOrderAndCategoryDetails();
-    }, [orderIdFromUrl, isAdminLoggedIn, adminLoading]);
+    }, [orderIdFromUrl, isAdminLoggedIn, adminLoading, fetchOrderAndCategoryDetails]);
+
+    const handleOpenEditDialog = (item: OrderItemDetail) => {
+        setEditingItemData(item);
+        setIsEditItemDialogOpen(true);
+    };
+    
+    const handleEditMenuItem = async (formData: MenuItemFormValues) => {
+      if (!editingItemData) {
+        toast({ title: "Error", description: "No item selected for editing.", variant: "destructive" });
+        return;
+      }
+      const payload = { 
+          id: editingItemData.id, 
+          name: formData.name,
+          price: formData.price,
+          description: formData.description,
+          category: editingItemData.categoryId, 
+          status: formData.visibleToUsers ? 'Active' : 'Inactive', 
+          visibleToUsers: formData.visibleToUsers, 
+          subItems: formData.subItems ? formData.subItems.map(si => {
+              const subItemPayload: any = { name: si.name };
+              if (si.id) subItemPayload.id = si.id; 
+              if (si.price !== undefined) subItemPayload.price = si.price;
+              return subItemPayload;
+          }) : [],
+      };
+      try {
+        const response = await fetch(getMenuItemsApiUrl(menuType), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload), 
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success || !result.data || !result.data.item ) {
+          let errorMsg = result.message || `Request failed with status: ${response.status}`;
+          if (response.ok && result.success && (!result.data || !result.data.item)) {
+               errorMsg = "API reported success but item data was missing in the response.";
+          }
+          throw new Error(errorMsg);
+        }
+
+        toast({ title: "Success", description: `Item "${decodeHtmlEntities(formData.name)}" updated.` });
+        setIsEditItemDialogOpen(false);
+        setEditingItemData(null);
+        await fetchOrderAndCategoryDetails();
+      } catch (error: any) {
+        toast({ title: "Error Updating Item", description: error.message, variant: "destructive" });
+      }
+    };
     
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
@@ -263,7 +566,6 @@ export default function OrderDetailsPage() {
         toast({ title: "Generating Document...", description: "Please wait while your DOCX file is prepared." });
 
         try {
-            // 1. Map order items to the MenuItem structure required by the generator
             const menuItemsForDocx: MenuItem[] = order.items.map(item => ({
                 id: item.id,
                 name: item.name,
@@ -272,19 +574,15 @@ export default function OrderDetailsPage() {
                 description: item.description || undefined,
                 subItems: item.subItems?.map(si => ({ ...si, id: si.id || si.name })),
             }));
-
-            // 2. Get the unique categories used in the order
-            const usedCategoryIds = new Set(menuItemsForDocx.map(item => item.category));
-            const categoriesForDocx: Category[] = [];
-            usedCategoryIds.forEach(id => {
-                const name = categoryMap.get(id) || 'Uncategorized';
-                categoriesForDocx.push({ id, name, icon: '📁' }); // Icon is a placeholder as it's not available here
-            });
             
-            // 3. Generate the DOCX blob
+            const usedCategoryIds = new Set(menuItemsForDocx.map(item => item.category));
+            const categoriesForDocx: Category[] = Array.from(usedCategoryIds).map(id => ({
+                id,
+                name: categoryMap.get(id) || 'Uncategorized',
+                icon: '📁',
+            }));
+            
             const blob = await generateMenuDocx(menuItemsForDocx, categoriesForDocx, order.businessName || "Menu Selection");
-
-            // 4. Trigger the download
             saveAs(blob, `${order.businessName || 'menu'}_${order.orderId}.docx`);
 
         } catch (error) {
@@ -338,7 +636,6 @@ export default function OrderDetailsPage() {
                             <Skeleton className="h-6 w-24 ml-auto" />
                         </div>
                     </div>
-                    {/* The customer info skeleton section would have been here, it is now removed */}
                     <SectionTitle><Skeleton className="h-6 w-40" /></SectionTitle>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
                          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -421,11 +718,8 @@ export default function OrderDetailsPage() {
                                         {items.map((item, index) => (
                                             <OrderItem
                                                 key={`${item.id}-${index}`}
-                                                name={item.name}
-                                                description={item.description}
-                                                quantity={item.quantity}
-                                                price={item.price}
-                                                subItems={item.subItems}
+                                                item={item}
+                                                onEdit={handleOpenEditDialog}
                                             />
                                         ))}
                                     </div>
@@ -438,6 +732,26 @@ export default function OrderDetailsPage() {
                 </section>
 
             </main>
+
+            {editingItemData && (
+              <Dialog open={isEditItemDialogOpen} onOpenChange={(open) => {
+                  setIsEditItemDialogOpen(open);
+                  if (!open) setEditingItemData(null);
+                }}>
+                <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
+                  <MenuItemForm 
+                    initialData={editingItemData}
+                    onSubmit={handleEditMenuItem} 
+                    onOpenChange={(open) => {
+                      setIsEditItemDialogOpen(open);
+                      if (!open) setEditingItemData(null);
+                    }}
+                    isEditMode={true}
+                    categoryName={categoryMap.get(editingItemData.categoryId)}
+                  />
+                </DialogContent>
+              </Dialog>
+            )}
         </div>
     )
 }
