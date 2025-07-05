@@ -341,18 +341,41 @@ export default function OrderDetailsPage() {
 
     if (adminLoading || isLoading) {
         return (
-            <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
-                 <header className="flex items-center justify-between mb-6 max-w-5xl mx-auto">
-                    <Skeleton className="h-10 w-36" />
-                    <div className="flex items-center gap-2"><Skeleton className="h-10 w-36" /><Skeleton className="h-10 w-28" /></div>
-                </header>
-                <main className="max-w-5xl mx-auto bg-card p-8 sm:p-12 shadow-2xl rounded-lg">
-                    <div className="flex justify-between items-start border-b pb-8 mb-8"><Skeleton className="h-14 w-1/3" />
-                        <div className="space-y-2 text-right"><Skeleton className="h-6 w-48" /><Skeleton className="h-4 w-56" /><Skeleton className="h-6 w-24 ml-auto" /></div>
+            <div className="bg-muted min-h-screen flex flex-col">
+                <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
+                    <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="h-9 w-24" />
+                            <div className="space-y-1">
+                                <Skeleton className="h-5 w-48" />
+                                <Skeleton className="h-3 w-32" />
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="h-9 w-24" />
+                            <Skeleton className="h-9 w-24" />
+                        </div>
                     </div>
-                    <div className="mt-10 mb-6"><Skeleton className="h-10 w-48" /></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-                </main>
+                </header>
+                <div className="flex-grow p-4 sm:p-6 lg:p-8">
+                    <main className="max-w-5xl mx-auto bg-card p-8 sm:p-12 shadow-lg rounded-lg border border-border/50">
+                        <div className="flex justify-between items-start border-b pb-8 mb-8">
+                            <div className="space-y-2">
+                                <Skeleton className="h-10 w-64" />
+                                <Skeleton className="h-6 w-48" />
+                            </div>
+                            <div className="space-y-2 text-right">
+                                <Skeleton className="h-5 w-56" />
+                            </div>
+                        </div>
+                        <div className="mt-10 mb-6">
+                            <Skeleton className="h-10 w-48" />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                        </div>
+                    </main>
+                </div>
             </div>
         )
     }
@@ -362,45 +385,68 @@ export default function OrderDetailsPage() {
     if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Order Not Found</h2><p className="text-muted-foreground max-w-md">The requested order could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Order History</Button></div>;
 
     return (
-        <div className="bg-muted min-h-screen">
-            <AnimatePresence>
-            {isDirty && (
-                <motion.div 
-                    className="sticky top-0 z-50 bg-yellow-400 text-yellow-900 shadow-lg py-2 px-4"
-                    initial={{ y: -60, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -60, opacity: 0 }}
-                >
-                    <div className="max-w-5xl mx-auto flex items-center justify-between">
-                        <span className="font-semibold text-sm">You have unsaved changes.</span>
-                        <div className="flex items-center gap-2">
-                            <Button size="sm" variant="ghost" className="hover:bg-yellow-500/50" onClick={handleDiscardChanges}><Undo2 className="mr-2 h-4 w-4"/>Discard</Button>
-                            <Button size="sm" className="bg-yellow-900 text-yellow-50 hover:bg-black" onClick={handleSaveChanges}><Save className="mr-2 h-4 w-4"/>Save Changes</Button>
-                        </div>
-                    </div>
-                </motion.div>
-            )}
-            </AnimatePresence>
-
-            <div className="p-4 sm:p-6 lg:p-8">
-                <header className="flex items-center justify-between mb-6 max-w-5xl mx-auto">
-                    <Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')}><ArrowLeft className="mr-2 h-4 w-4" />Back to Orders</Button>
-                    <Button variant="default"><Share2 className="mr-2 h-4 w-4" /> Share</Button>
-                </header>
-
-                <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
-                    <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
-                         <div className="w-1/2">
-                            <EditableField
+        <div className="bg-muted min-h-screen flex flex-col">
+            <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
+                <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center gap-2 sm:gap-4">
+                        <Button variant="outline" size="sm" onClick={() => router.push('/m-admin/manage-orders')}>
+                            <ArrowLeft className="h-4 w-4" />
+                            <span className="hidden sm:inline ml-2">Orders</span>
+                        </Button>
+                        <div className="h-6 border-l border-border"></div>
+                        <div className="flex flex-col">
+                             <EditableField
                                 value={order.customer?.restaurant}
                                 onSave={(val) => handleOrderUpdate({ ...order, customer: { ...order.customer, restaurant: val } })}
                                 placeholder="Business Name"
-                                className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground"
-                                inputClassName="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
+                                className="text-lg font-semibold text-foreground"
+                                inputClassName="text-lg font-semibold"
                             />
+                            <p className="text-xs text-muted-foreground">Order ID: {order.orderId}</p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <AnimatePresence>
+                            {isDirty && (
+                                <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
+                                    <Button size="sm" variant="ghost" onClick={handleDiscardChanges} className="text-muted-foreground">Discard</Button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                         <AnimatePresence>
+                            {isDirty && (
+                                <motion.p 
+                                    initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                                    className="text-xs text-yellow-600 hidden lg:block"
+                                >
+                                    Unsaved changes
+                                </motion.p>
+                            )}
+                        </AnimatePresence>
+
+                        <Button size="sm" onClick={handleSaveChanges} disabled={!isDirty}>
+                            <Save className="h-4 w-4 sm:mr-2"/>
+                            <span className="hidden sm:inline">Save</span>
+                        </Button>
+                        <Button variant="outline" size="sm">
+                            <Share2 className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Share</span>
+                        </Button>
+                    </div>
+                </div>
+            </header>
+
+            <div className="flex-grow p-4 sm:p-6 lg:p-8">
+                <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-lg rounded-lg border border-border/50">
+                    <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
+                         <div>
+                             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground">
+                                {decodeHtmlEntities(order.customer?.restaurant) || "Order"}
+                            </h1>
+                             <p className="font-bold text-lg text-muted-foreground mt-2">Order ID: {order.orderId}</p>
                         </div>
                         <div className="text-right text-muted-foreground text-sm space-y-1">
-                            <p className="font-bold text-lg text-foreground">Order ID: {order.orderId}</p>
                             <p className="flex items-center justify-end gap-2"><CalendarDays className="h-4 w-4" />{formatDate(order.orderDate)}</p>
                         </div>
                     </div>
@@ -462,7 +508,9 @@ export default function OrderDetailsPage() {
                         ))}
                         </Reorder.Group>
 
-                        <Button variant="outline" onClick={handleAddCategory}><Plus className="mr-2 h-4 w-4"/>Add Category</Button>
+                        <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
+                           <Plus className="mr-2 h-4 w-4"/>Add Category
+                        </Button>
                     </section>
                 </main>
             </div>
