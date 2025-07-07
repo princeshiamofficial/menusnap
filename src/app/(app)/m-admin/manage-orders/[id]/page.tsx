@@ -21,7 +21,9 @@ import {
   X,
   PlusCircle,
   Undo2,
-  GripVertical
+  GripVertical,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -157,6 +159,7 @@ export default function OrderDetailsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isDirty, setIsDirty] = useState(false);
+    const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
     
     const { toast } = useToast();
 
@@ -345,6 +348,50 @@ export default function OrderDetailsPage() {
         handleOrderUpdate({ ...order, items: newMasterItemsList });
     };
 
+    const handleToggleSubItems = (itemId: string) => {
+        setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+    };
+
+    const handleSubItemChange = (itemId: string, subItemIndex: number, field: 'name' | 'price', value: any) => {
+        if (!order) return;
+        const newItems = order.items?.map(item => {
+            if (item.id === itemId) {
+                const newSubItems = [...(item.subItems || [])];
+                if (newSubItems[subItemIndex]) {
+                    newSubItems[subItemIndex] = { ...newSubItems[subItemIndex], [field]: value };
+                }
+                return { ...item, subItems: newSubItems };
+            }
+            return item;
+        });
+        handleOrderUpdate({ ...order, items: newItems });
+    };
+
+    const handleAddSubItem = (itemId: string) => {
+        if (!order) return;
+        const newSubItem: SubItem = { id: `custom-sub-${Date.now()}`, name: 'New Variation', price: 0 };
+        const newItems = order.items?.map(item => {
+            if (item.id === itemId) {
+                return { ...item, subItems: [...(item.subItems || []), newSubItem] };
+            }
+            return item;
+        });
+        handleOrderUpdate({ ...order, items: newItems });
+    };
+
+    const handleRemoveSubItem = (itemId: string, subItemIndex: number) => {
+        if (!order) return;
+        const newItems = order.items?.map(item => {
+            if (item.id === itemId) {
+                const newSubItems = [...(item.subItems || [])];
+                newSubItems.splice(subItemIndex, 1);
+                return { ...item, subItems: newSubItems };
+            }
+            return item;
+        });
+        handleOrderUpdate({ ...order, items: newItems });
+    };
+
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
         try {
@@ -519,6 +566,49 @@ export default function OrderDetailsPage() {
                                                             </div>
                                                         </div>
                                                         <EditableField value={item.description} onSave={val => handleItemChange(item.id, 'description', val)} multiline placeholder="Item description..." className="text-sm text-muted-foreground mt-1" inputClassName="text-sm" />
+                                                        
+                                                        <div className="pl-2 pt-2">
+                                                            {item.subItems && item.subItems.length > 0 && (
+                                                                <Button variant="link" size="sm" onClick={() => handleToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary -ml-1">
+                                                                    {expandedSubItems[item.id] ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+                                                                    {expandedSubItems[item.id] ? 'Hide' : 'Show'} Variations ({item.subItems.length})
+                                                                </Button>
+                                                            )}
+                                                            {expandedSubItems[item.id] && (
+                                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
+                                                                    {item.subItems?.map((subItem, index) => (
+                                                                        <div key={subItem.id || index} className="flex items-center gap-2 group/subitem">
+                                                                            <div className="flex-grow flex items-center gap-2">
+                                                                                <span className="text-muted-foreground">-</span>
+                                                                                <EditableField
+                                                                                    value={subItem.name}
+                                                                                    onSave={val => handleSubItemChange(item.id, index, 'name', val)}
+                                                                                    placeholder="Variation Name"
+                                                                                    className="text-sm"
+                                                                                    inputClassName="text-sm"
+                                                                                />
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1 w-28">
+                                                                                <span className="text-muted-foreground text-sm">৳</span>
+                                                                                <EditableField
+                                                                                    value={subItem.price}
+                                                                                    onSave={val => handleSubItemChange(item.id, index, 'price', Number(val))}
+                                                                                    placeholder="0"
+                                                                                    className="text-sm text-right"
+                                                                                    inputClassName="text-sm text-right"
+                                                                                />
+                                                                            </div>
+                                                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive opacity-0 group-hover/subitem:opacity-100" onClick={() => handleRemoveSubItem(item.id, index)}>
+                                                                                <X className="h-3 w-3"/>
+                                                                            </Button>
+                                                                        </div>
+                                                                    ))}
+                                                                    <Button variant="outline" size="sm" onClick={() => handleAddSubItem(item.id)} className="h-7 text-xs mt-2">
+                                                                        <Plus className="h-3 w-3 mr-1" /> Add Variation
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-destructive opacity-0 group-hover/item:opacity-100" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4"/></Button>
