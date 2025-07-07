@@ -499,7 +499,7 @@ export default function OrderDetailsPage() {
                                     <AnimatePresence>
                                         {category.items.map((item) => (
                                             <Reorder.Item
-                                                as={motion.div}
+                                                as="div"
                                                 key={item.id}
                                                 value={item}
                                                 layout
