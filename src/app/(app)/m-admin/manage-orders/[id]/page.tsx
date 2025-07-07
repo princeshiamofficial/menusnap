@@ -330,6 +330,21 @@ export default function OrderDetailsPage() {
         handleOrderUpdate({ ...order, items: updatedItems });
     };
 
+    const handleItemReorder = (categoryId: string, reorderedItemsForCategory: OrderItemDetail[]) => {
+        if (!order) return;
+    
+        const categoryItemsMap = new Map<string, OrderItemDetail[]>();
+        orderedCategories.forEach(cat => {
+            categoryItemsMap.set(cat.id, cat.items);
+        });
+    
+        categoryItemsMap.set(categoryId, reorderedItemsForCategory);
+    
+        const newMasterItemsList = orderedCategories.flatMap(cat => categoryItemsMap.get(cat.id) || []);
+    
+        handleOrderUpdate({ ...order, items: newMasterItemsList });
+    };
+
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
         try {
@@ -459,10 +474,11 @@ export default function OrderDetailsPage() {
                             Order Summary
                         </div>
 
-                         <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} onPointerUp={() => {
-                            const reorderedItems = orderedCategories.flatMap(cat => cat.items);
-                            handleOrderUpdate({ ...order, items: reorderedItems });
-                        }}>
+                         <Reorder.Group as="div" axis="y" values={orderedCategories} onReorder={(reorderedCats) => {
+                            const newMasterItemsList = reorderedCats.flatMap(cat => cat.items);
+                            setOrderedCategories(reorderedCats);
+                            handleOrderUpdate({ ...order, items: newMasterItemsList });
+                         }}>
                         {orderedCategories.map((category) => (
                           <Reorder.Item key={category.id} value={category}>
                             <div className="mb-8 group/category">
@@ -479,30 +495,37 @@ export default function OrderDetailsPage() {
                                     <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => handleAddItem(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
                                 </div>
                                 
-                                <AnimatePresence>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {category.items.map((item) => (
-                                        <motion.div 
-                                            key={item.id} 
-                                            className="p-3 border rounded-lg bg-card shadow-sm hover:border-primary/50 group/item relative"
-                                            layout
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-                                        >
-                                            <Button variant="ghost" size="icon" className="absolute -top-2 -right-2 h-6 w-6 text-destructive opacity-0 group-hover/item:opacity-100" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4"/></Button>
-                                            <div className="flex justify-between items-start gap-4">
-                                                <EditableField value={item.name} onSave={val => handleItemChange(item.id, 'name', val)} placeholder="Item Name" className="font-bold text-foreground" inputClassName="font-bold" />
-                                                <div className="flex items-center gap-1">
-                                                    <span className="text-muted-foreground">৳</span>
-                                                    <EditableField value={item.price} onSave={val => handleItemChange(item.id, 'price', Number(val))} placeholder="0" className="font-bold text-foreground text-right w-20" inputClassName="font-bold text-right" />
+                                <Reorder.Group as="div" axis="y" values={category.items} onReorder={(newOrder) => handleItemReorder(category.id, newOrder)} className="space-y-3">
+                                    <AnimatePresence>
+                                        {category.items.map((item) => (
+                                            <Reorder.Item
+                                                as={motion.div}
+                                                key={item.id}
+                                                value={item}
+                                                layout
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
+                                                className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
+                                            >
+                                                <div className="flex items-start gap-2">
+                                                    <GripVertical className="h-5 w-5 text-muted-foreground/50 cursor-grab mt-1 shrink-0" />
+                                                    <div className="flex-grow">
+                                                        <div className="flex justify-between items-start gap-4">
+                                                            <EditableField value={item.name} onSave={val => handleItemChange(item.id, 'name', val)} placeholder="Item Name" className="font-bold text-foreground" inputClassName="font-bold" />
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="text-muted-foreground">৳</span>
+                                                                <EditableField value={item.price} onSave={val => handleItemChange(item.id, 'price', Number(val))} placeholder="0" className="font-bold text-foreground text-right w-20" inputClassName="font-bold text-right" />
+                                                            </div>
+                                                        </div>
+                                                        <EditableField value={item.description} onSave={val => handleItemChange(item.id, 'description', val)} multiline placeholder="Item description..." className="text-sm text-muted-foreground mt-1" inputClassName="text-sm" />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <EditableField value={item.description} onSave={val => handleItemChange(item.id, 'description', val)} multiline placeholder="Item description..." className="text-sm text-muted-foreground mt-1" inputClassName="text-sm" />
-                                        </motion.div>
-                                    ))}
-                                </div>
-                                </AnimatePresence>
+                                                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-destructive opacity-0 group-hover/item:opacity-100" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4"/></Button>
+                                            </Reorder.Item>
+                                        ))}
+                                    </AnimatePresence>
+                                </Reorder.Group>
                             </div>
                            </Reorder.Item>
                         ))}
