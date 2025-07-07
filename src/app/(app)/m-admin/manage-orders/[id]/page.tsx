@@ -259,6 +259,50 @@ export default function OrderDetailsPage() {
         toast({ title: "Changes Discarded", description: "Your edits have been reverted." });
     };
 
+    const handleShare = () => {
+        if (!order) {
+            toast({
+                title: "Error",
+                description: "Cannot share. Order details not loaded yet.",
+                variant: "destructive",
+            });
+            return;
+        }
+        const shareUrl = `${window.location.origin}/share/${order.id}`;
+        
+        const copyToClipboard = (text: string) => {
+            navigator.clipboard.writeText(text).then(() => {
+                toast({
+                    title: "Link Copied!",
+                    description: "A shareable link is now on your clipboard.",
+                });
+            }).catch(err => {
+                console.error('Failed to copy link: ', err);
+                toast({
+                    title: "Copy Failed",
+                    description: "Could not copy the link to your clipboard.",
+                    variant: "destructive"
+                });
+            });
+        };
+
+        if (navigator.share) {
+            navigator.share({
+                title: `Order for ${order.customer?.restaurant || 'a client'}`,
+                text: `View the details for order #${order.orderId}`,
+                url: shareUrl,
+            })
+            .catch((error) => {
+                if (error.name !== 'AbortError') {
+                    console.error('Error sharing:', error);
+                    copyToClipboard(shareUrl); // Fallback to clipboard on error
+                }
+            });
+        } else {
+            copyToClipboard(shareUrl);
+        }
+    };
+
     const groupedItems = useMemo(() => {
         if (!order?.items) return [];
         const categoryMap = new Map<string, {name: string, items: OrderItemDetail[]}>();
@@ -491,7 +535,7 @@ export default function OrderDetailsPage() {
                             <Save className="h-4 w-4 sm:mr-2"/>
                             <span className="hidden sm:inline">Save</span>
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={handleShare}>
                             <Share2 className="h-4 w-4 sm:mr-2" />
                             <span className="hidden sm:inline">Share</span>
                         </Button>
@@ -527,7 +571,7 @@ export default function OrderDetailsPage() {
                             handleOrderUpdate({ ...order, items: newMasterItemsList });
                          }}>
                         {orderedCategories.map((category) => (
-                          <Reorder.Item key={category.id} value={category}>
+                          <Reorder.Item as="div" key={category.id} value={category}>
                             <div className="mb-8 group/category">
                                 <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
                                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab"/>
