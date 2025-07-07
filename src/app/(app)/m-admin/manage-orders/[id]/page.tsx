@@ -261,28 +261,17 @@ export default function OrderDetailsPage() {
 
     const handleShare = () => {
         if (!order) {
-            toast({
-                title: "Error",
-                description: "Cannot share. Order details not loaded yet.",
-                variant: "destructive",
-            });
+            toast({ title: "Error", description: "Cannot share. Order details not loaded yet.", variant: "destructive" });
             return;
         }
         const shareUrl = `${window.location.origin}/share/${order.id}`;
         
         const copyToClipboard = (text: string) => {
             navigator.clipboard.writeText(text).then(() => {
-                toast({
-                    title: "Link Copied!",
-                    description: "A shareable link is now on your clipboard.",
-                });
+                toast({ title: "Link Copied!", description: "A shareable link is now on your clipboard." });
             }).catch(err => {
                 console.error('Failed to copy link: ', err);
-                toast({
-                    title: "Copy Failed",
-                    description: "Could not copy the link to your clipboard.",
-                    variant: "destructive"
-                });
+                toast({ title: "Copy Failed", description: "Could not copy the link to your clipboard.", variant: "destructive" });
             });
         };
 
@@ -295,7 +284,7 @@ export default function OrderDetailsPage() {
             .catch((error) => {
                 if (error.name !== 'AbortError') {
                     console.error('Error sharing:', error);
-                    copyToClipboard(shareUrl); // Fallback to clipboard on error
+                    copyToClipboard(shareUrl);
                 }
             });
         } else {
@@ -303,7 +292,7 @@ export default function OrderDetailsPage() {
         }
     };
 
-    const groupedItems = useMemo(() => {
+    const categoriesForRender = useMemo(() => {
         if (!order?.items) return [];
         const categoryMap = new Map<string, {name: string, items: OrderItemDetail[]}>();
         order.items.forEach(item => {
@@ -313,11 +302,13 @@ export default function OrderDetailsPage() {
             }
             categoryMap.get(catId)!.items.push(item);
         });
-        return Array.from(categoryMap.entries()).map(([id, data]) => ({ id, ...data }));
+        const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
+        
+        return orderedCategoryIds.map(id => {
+            const data = categoryMap.get(id)!;
+            return { id, ...data };
+        });
     }, [order?.items]);
-
-    const [orderedCategories, setOrderedCategories] = useState(groupedItems);
-    useEffect(() => { setOrderedCategories(groupedItems) }, [groupedItems]);
     
     const handleItemChange = (itemId: string, field: keyof OrderItemDetail, value: any) => {
         if (!order) return;
@@ -333,7 +324,7 @@ export default function OrderDetailsPage() {
 
     const handleAddItem = (categoryId: string) => {
         if (!order) return;
-        const category = orderedCategories.find(c => c.id === categoryId);
+        const category = categoriesForRender.find(c => c.id === categoryId);
         const newItem: OrderItemDetail = {
             id: `custom-item-${Date.now()}`,
             name: 'New Item',
@@ -376,19 +367,33 @@ export default function OrderDetailsPage() {
         const updatedItems = order.items?.filter(item => item.categoryId !== categoryId);
         handleOrderUpdate({ ...order, items: updatedItems });
     };
-
-    const handleItemReorder = (categoryId: string, reorderedItemsForCategory: OrderItemDetail[]) => {
+    
+    const handleCategoryReorder = (reorderedCategories: typeof categoriesForRender) => {
         if (!order) return;
+        const newMasterItemsList = reorderedCategories.flatMap(cat => cat.items);
+        handleOrderUpdate({ ...order, items: newMasterItemsList });
+    };
     
-        const categoryItemsMap = new Map<string, OrderItemDetail[]>();
-        orderedCategories.forEach(cat => {
-            categoryItemsMap.set(cat.id, cat.items);
-        });
-    
-        categoryItemsMap.set(categoryId, reorderedItemsForCategory);
-    
-        const newMasterItemsList = orderedCategories.flatMap(cat => categoryItemsMap.get(cat.id) || []);
-    
+    const handleItemReorder = (categoryId: string, reorderedItemsForCategory: OrderItemDetail[]) => {
+        if (!order || !order.items) return;
+
+        const newMasterItemsList: OrderItemDetail[] = [];
+        const processedCategoryIds = new Set<string>();
+
+        for (const item of order.items) {
+            if (processedCategoryIds.has(item.categoryId)) {
+                continue;
+            }
+
+            if (item.categoryId === categoryId) {
+                newMasterItemsList.push(...reorderedItemsForCategory);
+            } else {
+                const itemsInThisCategory = order.items.filter(i => i.categoryId === item.categoryId);
+                newMasterItemsList.push(...itemsInThisCategory);
+            }
+            processedCategoryIds.add(item.categoryId);
+        }
+        
         handleOrderUpdate({ ...order, items: newMasterItemsList });
     };
 
@@ -565,12 +570,8 @@ export default function OrderDetailsPage() {
                             Order Summary
                         </div>
 
-                         <Reorder.Group as="div" axis="y" values={orderedCategories} onReorder={(reorderedCats) => {
-                            const newMasterItemsList = reorderedCats.flatMap(cat => cat.items);
-                            setOrderedCategories(reorderedCats);
-                            handleOrderUpdate({ ...order, items: newMasterItemsList });
-                         }}>
-                        {orderedCategories.map((category) => (
+                         <Reorder.Group as="div" axis="y" values={categoriesForRender} onReorder={handleCategoryReorder}>
+                        {categoriesForRender.map((category) => (
                           <Reorder.Item as="div" key={category.id} value={category}>
                             <div className="mb-8 group/category">
                                 <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
