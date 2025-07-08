@@ -227,7 +227,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       <div
-        className={`grid grid-cols-3 gap-6 transform transition-all duration-700 ease-out ${
+        className={`grid grid-cols-2 md:grid-cols-3 gap-6 transform transition-all duration-700 ease-out ${
           isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
         }`}
       >
