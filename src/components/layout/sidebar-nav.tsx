@@ -4,16 +4,35 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ListOrdered, Layers, FileEdit, ChevronRight, User, LogOut, Building, History } from 'lucide-react'; 
+import { 
+  LayoutGrid, 
+  ListOrdered, 
+  Layers, 
+  FileEdit, 
+  ChevronRight, 
+  LogOut, 
+  Building, 
+  History,
+  MoreHorizontal,
+  HelpCircle,
+  MessageSquare,
+  Info
+} from 'lucide-react'; 
 import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { useClientAuth } from '@/hooks/use-client-auth'; // Import client auth hook
+import { useClientAuth } from '@/hooks/use-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const mainNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
@@ -26,23 +45,23 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { clientUser, logout, clientLoading } = useClientAuth(); // Use client auth
+  const { clientUser, logout, clientLoading } = useClientAuth();
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       <div className={cn(
         "flex items-center justify-between border-b border-sidebar-border",
         "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2.5",
-        "group-data-[state=expanded]:p-4 group-data-[state=expanded]:h-[80px]" // Adjusted height
+        "group-data-[state=expanded]:p-4 group-data-[state=expanded]:h-[80px]"
       )}>
         <Link href="/dashboard" passHref legacyBehavior>
           <a className="group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded-sm flex items-center">
-            <div className="relative h-12 w-44 sm:w-48"> {/* Increased logo container size */}
+            <div className="relative h-12 w-44 sm:w-48">
               <Image
                 src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
                 alt="Color Hut Logo"
                 fill
-                sizes="(max-width: 640px) 176px, 192px" // Adjusted sizes
+                sizes="(max-width: 640px) 176px, 192px"
                 className="object-contain"
                 priority 
               />
@@ -80,6 +99,43 @@ export function SidebarNav() {
                 </Link>
               </SidebarMenuItem>
             ))}
+            {/* More Options Dropdown */}
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton
+                    variant="default"
+                    className={cn(
+                      "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      "group-data-[collapsible=icon]:justify-center"
+                    )}
+                    tooltip={{
+                      children: "More options",
+                      className: "bg-popover text-popover-foreground border-border shadow-md",
+                      sideOffset: 10,
+                    }}
+                  >
+                    <MoreHorizontal className="h-5 w-5" />
+                    <span className="group-data-[collapsible=icon]:hidden flex-1">More</span>
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" sideOffset={10} className="w-56">
+                  <DropdownMenuItem>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    <span>Help & Support</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    <span>Send Feedback</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Info className="mr-2 h-4 w-4" />
+                    <span>About Color Hut</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
           </SidebarMenu>
         ) : (
           <div className="p-4 text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
