@@ -49,7 +49,9 @@ export function BottomNavigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card md:hidden">
-      <div className="relative mx-auto flex h-16 max-w-md items-stretch justify-around px-2 border-t border-border">
+      {/* A dedicated div for the border ensures it's layered correctly under the indicator scoop */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-border" />
+      <div className="relative mx-auto flex h-16 max-w-md items-stretch justify-around px-2">
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -85,7 +87,8 @@ export function BottomNavigation() {
                     damping: 30,
                 }}
             >
-                <div className="absolute top-0 w-full h-4 bg-card">
+                {/* This is the part that creates the dip. bg-card covers the border div */}
+                <div className="absolute -top-4 w-16 h-4 bg-card">
                     <div className="absolute -left-4 top-0 h-4 w-4 rounded-br-lg shadow-[4px_4px_0_0_hsl(var(--card))]" />
                     <div className="absolute -right-4 top-0 h-4 w-4 rounded-bl-lg shadow-[-4px_4px_0_0_hsl(var(--card))]" />
                 </div>
