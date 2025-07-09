@@ -277,18 +277,6 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate, allCa
                   </CardContent>
                 </Card>
               </div>
-              <Card className="shadow-sm">
-                <CardHeader><CardTitle className="text-base">Additional Information</CardTitle></CardHeader>
-                <CardContent className="text-sm">
-                  <div className="flex items-start">
-                    <FileArchive className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">Bio</p>
-                      <p className="text-muted-foreground mt-1 leading-relaxed">{decodeHtmlEntities(order.bio) || "No bio information available for this customer."}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
             <TabsContent value="status-template" className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -507,24 +495,57 @@ export default function ManageOrdersPage(): ReactNode {
   }, [fetchOrders]);
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    setIsLoading(true); 
-    await new Promise(resolve => setTimeout(resolve, 700)); 
-    
+    const originalOrder = allOrders.find(o => o.id === orderId);
+    if (!originalOrder) return;
+  
+    // Optimistically update UI
     setAllOrders(prevOrders =>
       prevOrders.map(order =>
         order.id === orderId ? { ...order, status: newStatus } : order
       )
     );
-
     if (selectedOrderForDetails && selectedOrderForDetails.id === orderId) {
         setSelectedOrderForDetails(prev => prev ? {...prev, status: newStatus} : null);
     }
-
-    toast({
-      title: "Status Updated",
-      description: `Order ${allOrders.find(o => o.id === orderId)?.orderId || orderId} status changed to ${newStatus}.`,
-    });
-    setIsLoading(false); 
+  
+    try {
+      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ id: orderId, status: newStatus }),
+      });
+  
+      const result = await response.json();
+  
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Failed to update status. Status: ${response.status}`);
+      }
+      
+      toast({
+        title: "Status Updated",
+        description: `Order #${originalOrder.orderId} status changed to ${newStatus}.`,
+      });
+  
+      // Optional: Refetch to ensure data consistency, though optimistic update handles the immediate UI change.
+      // fetchOrders();
+  
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+  
+      // Revert optimistic update on failure
+      setAllOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? originalOrder : order
+        )
+      );
+      if (selectedOrderForDetails && selectedOrderForDetails.id === orderId) {
+        setSelectedOrderForDetails(originalOrder);
+      }
+    }
   };
 
   const handleViewDetails = (order: ApiOrder) => {
