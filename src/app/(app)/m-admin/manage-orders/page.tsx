@@ -741,7 +741,7 @@ export default function ManageOrdersPage(): ReactNode {
                     >
                         <TableHead className="w-[200px]">Date</TableHead>
                         <TableHead className="w-[150px]">Order ID</TableHead>
-                        <TableHead>Company Name</TableHead>
+                        <TableHead>Company</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead className="w-[150px]">Status</TableHead>
                         <TableHead className="text-right w-[100px]">Action</TableHead>
@@ -784,7 +784,7 @@ export default function ManageOrdersPage(): ReactNode {
                   >
                     <TableHead className="w-[200px]">Date</TableHead>
                     <TableHead className="w-[150px]">Order ID</TableHead>
-                    <TableHead>Company Name</TableHead>
+                    <TableHead>Company</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead className="w-[150px]">Status</TableHead>
                     <TableHead className="text-right w-[100px]">Action</TableHead>
