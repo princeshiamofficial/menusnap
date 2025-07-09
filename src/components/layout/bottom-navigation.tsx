@@ -87,10 +87,10 @@ export function BottomNavigation() {
                     damping: 30,
                 }}
             >
-                {/* This is the part that creates the dip. bg-card covers the border div */}
-                <div className="absolute -top-4 w-16 h-4 bg-card">
-                    <div className="absolute -left-4 top-0 h-4 w-4 rounded-br-lg shadow-[4px_4px_0_0_hsl(var(--card))]" />
-                    <div className="absolute -right-4 top-0 h-4 w-4 rounded-bl-lg shadow-[-4px_4px_0_0_hsl(var(--card))]" />
+                {/* This is the part that creates the dip. bg-background covers the border div */}
+                <div className="absolute -top-4 w-16 h-4 bg-background">
+                    <div className="absolute -left-4 top-0 h-4 w-4 rounded-br-lg shadow-[4px_4px_0_0_hsl(var(--background))]" />
+                    <div className="absolute -right-4 top-0 h-4 w-4 rounded-bl-lg shadow-[-4px_4px_0_0_hsl(var(--background))]" />
                 </div>
                 
                 <div className="w-14 h-14 -mt-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
