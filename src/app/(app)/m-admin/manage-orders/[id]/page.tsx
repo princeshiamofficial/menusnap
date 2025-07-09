@@ -225,7 +225,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
+      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col h-[80vh] max-h-[750px] p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="text-xl">
             {initialData ? `Edit "${decodeHtmlEntities(initialData.name)}"` : `Add New Item to "${categoryName}"`}
@@ -775,3 +775,5 @@ export default function OrderDetailsPage() {
         </>
     )
 }
+
+    
