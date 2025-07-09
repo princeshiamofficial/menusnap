@@ -855,27 +855,6 @@ export default function ManageOrdersPage(): ReactNode {
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuSub>
-                                  <DropdownMenuSubTrigger>
-                                      <Edit3 className="mr-2 h-4 w-4" />
-                                      <span>Change Status</span>
-                                  </DropdownMenuSubTrigger>
-                                  <DropdownMenuPortal>
-                                  <DropdownMenuSubContent>
-                                      <DropdownMenuRadioGroup 
-                                          value={order.status} 
-                                          onValueChange={(newStatus) => handleStatusChange(order.id, newStatus as OrderStatus)}
-                                      >
-                                      {ALL_ORDER_STATUSES.map(s => (
-                                          <DropdownMenuRadioItem key={s} value={s} className="text-xs">
-                                          {s}
-                                          </DropdownMenuRadioItem>
-                                      ))}
-                                      </DropdownMenuRadioGroup>
-                                  </DropdownMenuSubContent>
-                                  </DropdownMenuPortal>
-                              </DropdownMenuSub>
-                              <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleDeleteOrder(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Order
                               </DropdownMenuItem>
@@ -960,5 +939,3 @@ export default function ManageOrdersPage(): ReactNode {
     </div>
   );
 }
-
-    
