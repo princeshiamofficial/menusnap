@@ -154,8 +154,8 @@ type SortOptionOrders =
   | 'oldest'
   | 'status-asc'
   | 'status-desc'
-  | 'template-asc'
-  | 'template-desc'
+  | 'company-asc'
+  | 'company-desc'
   | 'customer-asc'
   | 'customer-desc'
   | 'orderId-asc'
@@ -166,8 +166,8 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
   { value: 'oldest', label: 'Date (Oldest First)' },
   { value: 'orderId-asc', label: 'Order ID (Asc)' },
   { value: 'orderId-desc', label: 'Order ID (Desc)' },
-  { value: 'template-asc', label: 'Template (A-Z)' },
-  { value: 'template-desc', label: 'Template (Z-A)' },
+  { value: 'company-asc', label: 'Company (A-Z)' },
+  { value: 'company-desc', label: 'Company (Z-A)' },
   { value: 'customer-asc', label: 'Customer (A-Z)' },
   { value: 'customer-desc', label: 'Customer (Z-A)' },
   { value: 'status-asc', label: 'Status (A-Z)' },
@@ -565,7 +565,7 @@ export default function ManageOrdersPage(): ReactNode {
       const matchesSearch =
         order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (order.customerName && decodeHtmlEntities(order.customerName).toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (order.templateName && decodeHtmlEntities(order.templateName).toLowerCase().includes(searchTerm.toLowerCase()));
+        (order.businessName && decodeHtmlEntities(order.businessName).toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -593,11 +593,11 @@ export default function ManageOrdersPage(): ReactNode {
       case 'status-desc':
         orders.sort((a, b) => b.status.localeCompare(a.status));
         break;
-      case 'template-asc':
-        orders.sort((a, b) => (decodeHtmlEntities(a.templateName) || "").localeCompare(decodeHtmlEntities(b.templateName) || ""));
+      case 'company-asc':
+        orders.sort((a, b) => (decodeHtmlEntities(a.businessName) || "").localeCompare(decodeHtmlEntities(b.businessName) || ""));
         break;
-      case 'template-desc':
-        orders.sort((a, b) => (decodeHtmlEntities(b.templateName) || "").localeCompare(decodeHtmlEntities(a.templateName) || ""));
+      case 'company-desc':
+        orders.sort((a, b) => (decodeHtmlEntities(b.businessName) || "").localeCompare(decodeHtmlEntities(a.businessName) || ""));
         break;
       case 'customer-asc':
         orders.sort((a, b) => (decodeHtmlEntities(a.customerName) || "").localeCompare(decodeHtmlEntities(b.customerName) || ""));
@@ -695,7 +695,7 @@ export default function ManageOrdersPage(): ReactNode {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search by Order ID, Template, or Customer..."
+                placeholder="Search by Order ID, Company, or Customer..."
                 className="pl-10 w-full h-9 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -739,9 +739,9 @@ export default function ManageOrdersPage(): ReactNode {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.5 }}
                     >
-                        <TableHead className="w-[180px]">Date</TableHead>
+                        <TableHead className="w-[200px]">Date</TableHead>
                         <TableHead className="w-[150px]">Order ID</TableHead>
-                        <TableHead>Template</TableHead>
+                        <TableHead>Company Name</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead className="w-[150px]">Status</TableHead>
                         <TableHead className="text-right w-[100px]">Action</TableHead>
@@ -784,7 +784,7 @@ export default function ManageOrdersPage(): ReactNode {
                   >
                     <TableHead className="w-[200px]">Date</TableHead>
                     <TableHead className="w-[150px]">Order ID</TableHead>
-                    <TableHead>Template</TableHead>
+                    <TableHead>Company Name</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead className="w-[150px]">Status</TableHead>
                     <TableHead className="text-right w-[100px]">Action</TableHead>
@@ -808,16 +808,7 @@ export default function ManageOrdersPage(): ReactNode {
                             </div>
                         </TableCell>
                         <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}>{order.orderId}</TableCell>
-                        <TableCell>
-                          {order.templateName !== 'Unknown Template' ? (
-                            <Badge variant="outline" className={cn("text-xs py-1 px-2 font-normal", templateBadgeStyle)}>
-                                <Tag className="h-3 w-3 mr-1 opacity-80"/>
-                                {decodeHtmlEntities(order.templateName)}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground italic">N/A</span>
-                          )}
-                        </TableCell>
+                        <TableCell>{order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
                         <TableCell>{order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className={cn("text-xs py-1 px-2.5", statusColors[order.status] || statusColors.Pending)}>
