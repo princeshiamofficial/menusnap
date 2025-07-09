@@ -164,10 +164,10 @@ export function SpeedDialFAB(): ReactNode {
 
 
   return (
-    <div className="fixed top-6 right-4 flex flex-col items-end z-50">
+    <div className="fixed top-4 right-4 flex flex-col items-end z-50">
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`rounded-full h-16 w-16 shadow-xl flex items-center justify-center overflow-hidden
+        className={`rounded-full h-12 w-12 shadow-xl flex items-center justify-center overflow-hidden
                     focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
                     transition-colors duration-200
                     ${isOpen ? 'bg-gray-700 hover:bg-gray-800 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
@@ -178,7 +178,7 @@ export function SpeedDialFAB(): ReactNode {
         <AnimatePresence mode="wait">
             {isOpen ? (
                 <motion.div key="close-icon" initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 45 }}>
-                    <X className="h-8 w-8" />
+                    <X className="h-6 w-6" />
                 </motion.div>
             ) : showHelpImage ? (
                 <motion.div key="help-image" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="h-full w-full relative">
@@ -191,14 +191,14 @@ export function SpeedDialFAB(): ReactNode {
                 </motion.div>
             ) : (
                 <motion.div key="message-icon" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-                    <MessagesSquare className="h-8 w-8" />
+                    <MessagesSquare className="h-6 w-6" />
                 </motion.div>
             )}
         </AnimatePresence>
       </motion.button>
 
       <motion.div 
-        className={`flex flex-col items-end space-y-3 overflow-hidden mt-3`}
+        className={`flex flex-col items-end space-y-2 overflow-hidden mt-2`}
         initial={{ opacity: 0, height: 0 }}
         animate={{ opacity: isOpen ? 1 : 0, height: isOpen ? 'auto' : 0 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -207,20 +207,20 @@ export function SpeedDialFAB(): ReactNode {
         {contactOptionsList.map((option, index) => (
           <motion.div
             key={option.name}
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: isOpen ? 1 : 0, y: isOpen ? 0 : -20 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: isOpen ? 1 : 0, y: isOpen ? 0 : 20 }}
             transition={{ duration: 0.2, delay: isOpen ? index * 0.05 : (contactOptionsList.length - index - 1) * 0.03, ease: "easeOut" }}
           >
             <Button
               onClick={option.action}
               variant="default" 
-              className="flex items-center justify-between w-48 h-12 rounded-full shadow-lg bg-card text-card-foreground hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring pl-6 pr-2 py-2"
+              className="flex items-center justify-between w-40 h-10 rounded-full shadow-lg bg-card text-card-foreground hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring pl-6 pr-2 py-2"
               aria-label={option.ariaLabel}
               tabIndex={isOpen ? 0 : -1}
             >
               <span className="text-sm font-medium mr-auto">{option.name}</span>
-              <div className={`p-2 rounded-full ${option.bgColor} ml-2 shrink-0`}>
-                <option.IconComponent className={`h-5 w-5 ${option.iconColor}`} />
+              <div className={`p-1.5 rounded-full ${option.bgColor} ml-2 shrink-0`}>
+                <option.IconComponent className={`h-4 w-4 ${option.iconColor}`} />
               </div>
             </Button>
           </motion.div>
@@ -230,7 +230,7 @@ export function SpeedDialFAB(): ReactNode {
       <AnimatePresence>
         {showHelpTextVisual && !isOpen && (
           <motion.div
-            className="mt-2 px-3 py-1.5 bg-card text-card-foreground text-sm font-medium rounded-full shadow-lg border border-border flex overflow-hidden"
+            className="mt-2 px-3 py-1 bg-card text-card-foreground text-xs font-medium rounded-full shadow-lg border border-border flex overflow-hidden"
             variants={textContainerVariants}
             initial="hidden"
             animate="visible"
