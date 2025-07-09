@@ -48,8 +48,8 @@ export function BottomNavigation() {
   }, [activeItem]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card shadow-[inset_0_1px_0_0_hsl(var(--border))] md:hidden">
-      <div className="relative mx-auto flex h-16 max-w-md items-stretch justify-around px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card md:hidden">
+      <div className="relative mx-auto flex h-16 max-w-md items-stretch justify-around px-2 border-t border-border">
         {navItems.map((item) => (
           <Link
             key={item.href}
@@ -74,10 +74,11 @@ export function BottomNavigation() {
         <AnimatePresence>
         {indicatorStyle.opacity === 1 && (
             <motion.div
-                className="absolute top-0 h-16 flex flex-col items-center"
+                className="absolute h-16 flex flex-col items-center"
                 style={{
                     left: indicatorStyle.left,
                     width: indicatorStyle.width,
+                    top: '-1px', // Position the indicator to perfectly cover the top border
                 }}
                 transition={{
                     type: "spring",
@@ -85,9 +86,9 @@ export function BottomNavigation() {
                     damping: 30,
                 }}
             >
-                {/* This is the new, simpler scoop element that creates the cutout illusion */}
-                <div className="absolute -top-3 w-20 h-10 bg-background rounded-b-full" />
-                
+                {/* This div creates the cutout illusion. It MUST match the page background. */}
+                <div className="absolute top-0 w-20 h-4 bg-background" />
+
                 <div className="w-14 h-14 -mt-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg relative z-10">
                     <AnimatePresence mode="wait">
                       <motion.div
