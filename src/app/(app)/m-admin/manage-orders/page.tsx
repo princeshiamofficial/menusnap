@@ -443,6 +443,7 @@ export default function ManageOrdersPage(): ReactNode {
   const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<{ id: string; orderId: string } | null>(null);
 
   const { toast } = useToast();
+  const router = useRouter();
 
   const fetchOrders = useCallback(async () => {
     setIsLoading(true);
@@ -858,7 +859,7 @@ export default function ManageOrdersPage(): ReactNode {
                                 {formatDateForDisplay(order.orderDate)}
                             </div>
                         </TableCell>
-                        <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => handleViewDetails(order)}>{order.orderId}</TableCell>
+                        <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}>{order.orderId}</TableCell>
                         <TableCell>
                           {order.templateName !== 'Unknown Template' ? (
                             <Badge variant="outline" className={cn("text-xs py-1 px-2 font-normal", templateBadgeStyle)}>
