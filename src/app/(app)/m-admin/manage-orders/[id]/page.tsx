@@ -24,7 +24,8 @@ import {
   GripVertical,
   ChevronDown,
   ChevronRight,
-  Edit
+  Edit,
+  FileArchive,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -45,6 +46,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { generateMenuDocx } from '@/lib/docx-generator';
+import { saveAs } from 'file-saver';
+import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -290,6 +294,7 @@ export default function OrderDetailsPage() {
     
     const [order, setOrder] = useState<ApiOrder | null>(null);
     const [originalOrder, setOriginalOrder] = useState<ApiOrder | null>(null);
+    const [allCategories, setAllCategories] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isDirty, setIsDirty] = useState(false);
@@ -306,8 +311,29 @@ export default function OrderDetailsPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const ordersResponse = await fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } });
+            const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
+                fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
+                fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
+                fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
+            ]);
             
+            // Process all categories first
+            const combinedCategories: any[] = [];
+            if (restaurantCategoriesResponse.ok) {
+                const resCatResult = await restaurantCategoriesResponse.json();
+                if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
+                    combinedCategories.push(...resCatResult.data.categories);
+                }
+            }
+            if (parlourCategoriesResponse.ok) {
+                const parCatResult = await parlourCategoriesResponse.json();
+                if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
+                    combinedCategories.push(...parCatResult.data.categories);
+                }
+            }
+            setAllCategories(combinedCategories);
+
+            // Process orders
             if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
             const result = await ordersResponse.json();
 
@@ -428,6 +454,41 @@ export default function OrderDetailsPage() {
             });
         } else {
             copyToClipboard(shareUrl);
+        }
+    };
+    
+    const handleDownloadDocx = async () => {
+        if (!order || !order.items) {
+            toast({ title: "Error", description: "Order data is not available.", variant: "destructive" });
+            return;
+        }
+        toast({ title: "Generating Document...", description: "Please wait, your DOCX file is being prepared." });
+
+        try {
+            const menuItemsForDocx: MenuItem[] = order.items.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                category: item.categoryId,
+                description: item.description || undefined,
+                subItems: item.subItems?.map(si => ({ ...si, id: si.id || si.name, price: si.price || 0 })),
+            }));
+            
+            const reorderedCategoriesForDocx: Category[] = categoriesForRender.map(c => {
+                const fullCategory = allCategories.find(ac => String(ac.id) === c.id);
+                return {
+                    id: c.id,
+                    name: c.name,
+                    icon: fullCategory?.icon || '📁'
+                };
+            });
+
+            const blob = await generateMenuDocx(menuItemsForDocx, reorderedCategoriesForDocx, order.customer?.restaurant || "Menu Selection");
+            saveAs(blob, `${order.customer?.restaurant || 'menu'}_${order.orderId}.docx`);
+
+        } catch (error) {
+            console.error("Failed to generate DOCX file:", error);
+            toast({ title: "Generation Failed", description: "Could not create the document.", variant: "destructive" });
         }
     };
 
@@ -652,6 +713,10 @@ export default function OrderDetailsPage() {
                             <Save className="h-4 w-4 sm:mr-2"/>
                             <span className="hidden sm:inline">Save</span>
                         </Button>
+                         <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
+                            <FileArchive className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Download</span>
+                        </Button>
                         <Button variant="outline" size="sm" onClick={handleShare}>
                             <Share2 className="h-4 w-4 sm:mr-2" />
                             <span className="hidden sm:inline">Share</span>
@@ -775,5 +840,3 @@ export default function OrderDetailsPage() {
         </>
     )
 }
-
-    

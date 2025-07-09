@@ -58,12 +58,7 @@ export const generateMenuDocx = async (
           new Paragraph({
             children: [
               new TextRun({
-                text: decodeHtmlEntities(item.name),
-                bold: true,
-                size: 24,
-              }),
-              new TextRun({
-                text: priceText,
+                text: `${decodeHtmlEntities(item.name)}${priceText}`,
                 bold: true,
                 size: 24,
               }),
@@ -100,12 +95,7 @@ export const generateMenuDocx = async (
                 new Paragraph({
                     children: [
                         new TextRun({
-                            text: `- ${decodeHtmlEntities(subItem.name)}`,
-                            size: 20,
-                            color: "333333",
-                        }),
-                         new TextRun({
-                            text: subPriceText,
+                            text: `- ${decodeHtmlEntities(subItem.name)}${subPriceText}`,
                             size: 20,
                             color: "333333",
                         }),
