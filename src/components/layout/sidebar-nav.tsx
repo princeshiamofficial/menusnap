@@ -15,9 +15,6 @@ import {
   Building, 
   History,
   MoreHorizontal,
-  HelpCircle,
-  MessageSquare,
-  Info
 } from 'lucide-react'; 
 import {
   SidebarMenu,
@@ -28,13 +25,12 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MoreMenuContent } from '@/components/layout/more-menu-content';
 
 const mainNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -126,19 +122,7 @@ export function SidebarNav() {
                     </SidebarMenuButton>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent side="right" align="start" sideOffset={10} className="w-56">
-                    <DropdownMenuItem className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                      <HelpCircle className="mr-2 h-4 w-4" />
-                      <span>Help & Support</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                      <MessageSquare className="mr-2 h-4 w-4" />
-                      <span>Send Feedback</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                      <Info className="mr-2 h-4 w-4" />
-                      <span>About Color Hut</span>
-                    </DropdownMenuItem>
+                    <MoreMenuContent />
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
