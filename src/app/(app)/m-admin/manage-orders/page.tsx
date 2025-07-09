@@ -363,7 +363,6 @@ export default function ManageOrdersPage(): ReactNode {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
-  const [templateFilter, setTemplateFilter] = useState<string>('all');
   const [sortOption, setSortOption] = useState<SortOptionOrders>('newest');
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -468,7 +467,7 @@ export default function ManageOrdersPage(): ReactNode {
   
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, templateFilter, sortOption]);
+  }, [searchTerm, statusFilter, sortOption]);
 
 
   const handleRefresh = useCallback(() => {
@@ -561,11 +560,6 @@ export default function ManageOrdersPage(): ReactNode {
     }
   };
 
-  const uniqueTemplateNames = useMemo(() => {
-    const names = new Set(allOrders.map(order => order.templateName).filter(Boolean) as string[]);
-    return Array.from(names).sort((a,b) => decodeHtmlEntities(a).localeCompare(decodeHtmlEntities(b)));
-  }, [allOrders]);
-
   const filteredAndSortedOrders = useMemo(() => {
     let orders = allOrders.filter(order => {
       const matchesSearch =
@@ -573,8 +567,7 @@ export default function ManageOrdersPage(): ReactNode {
         (order.customerName && decodeHtmlEntities(order.customerName).toLowerCase().includes(searchTerm.toLowerCase())) ||
         (order.templateName && decodeHtmlEntities(order.templateName).toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-      const matchesTemplate = templateFilter === 'all' || order.templateName === templateFilter;
-      return matchesSearch && matchesStatus && matchesTemplate;
+      return matchesSearch && matchesStatus;
     });
 
     switch (sortOption) {
@@ -614,7 +607,7 @@ export default function ManageOrdersPage(): ReactNode {
         break;
     }
     return orders;
-  }, [allOrders, searchTerm, statusFilter, templateFilter, sortOption]);
+  }, [allOrders, searchTerm, statusFilter, sortOption]);
 
   const totalPages = useMemo(() => {
     return Math.ceil(filteredAndSortedOrders.length / ITEMS_PER_PAGE);
@@ -718,18 +711,6 @@ export default function ManageOrdersPage(): ReactNode {
                   <SelectItem value="all">All Statuses</SelectItem>
                   {ALL_ORDER_STATUSES.map(status => (
                     <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={templateFilter} onValueChange={setTemplateFilter}>
-                <SelectTrigger className="w-full sm:w-auto min-w-[150px] h-9 text-sm">
-                  <FileTextIcon className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                  <SelectValue placeholder="All Templates" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Templates</SelectItem>
-                  {uniqueTemplateNames.map(name => (
-                    <SelectItem key={name} value={name}>{decodeHtmlEntities(name)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
