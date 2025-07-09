@@ -1,9 +1,10 @@
+
 "use client";
 
 import Link from 'next/link';
-import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { HelpCircle, MessageSquare, Info, ChevronRight } from 'lucide-react';
+import { Card, CardTitle } from '@/components/ui/card';
+import { HelpCircle, MessageSquare, Info, MoreHorizontal } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const moreMenuItems = [
     { text: 'Help & Support', icon: HelpCircle, href: '#' },
@@ -11,42 +12,77 @@ const moreMenuItems = [
     { text: 'About Color Hut', icon: Info, href: '#' },
 ];
 
-export default function MorePage() {
+function MoreOptionCard({ icon: Icon, text, href }: { icon: React.ElementType, text: string, href: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-sm shadow-lg">
-        <CardHeader className="text-center">
-            <Image
-                src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
-                alt="Color Hut Logo"
-                width={150}
-                height={60}
-                className="object-contain mx-auto mb-4"
-                priority
-            />
-          <CardTitle>More Options</CardTitle>
-          <CardDescription>
-            Additional resources and information.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {moreMenuItems.map((item) => (
-              <li key={item.text}>
-                <Link href={item.href} passHref legacyBehavior>
-                  <a className="flex items-center justify-between rounded-md p-3 transition-colors hover:bg-accent hover:text-accent-foreground">
-                    <div className="flex items-center">
-                      <item.icon className="mr-3 h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium">{item.text}</span>
+    <motion.div
+      className="h-full"
+      whileHover={{ y: -5, scale: 1.05 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+    >
+        <Link href={href} passHref legacyBehavior>
+            <a className="h-full block">
+                <Card className="h-full shadow-md hover:shadow-xl hover:border-primary transition-all duration-300 flex flex-col items-center justify-center p-8 text-center bg-card">
+                    <div className="p-4 bg-primary/10 rounded-full mb-4">
+                        <Icon className="h-10 w-10 text-primary" />
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </a>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+                    <CardTitle className="text-xl font-semibold text-foreground">{text}</CardTitle>
+                </Card>
+            </a>
+        </Link>
+    </motion.div>
+  );
+}
+
+export default function MorePage() {
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+          opacity: 1,
+          transition: {
+            staggerChildren: 0.1,
+          },
+        },
+      };
+    
+      const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+          y: 0,
+          opacity: 1,
+        },
+      };
+
+  return (
+    <div className="bg-muted min-h-screen">
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+            <header>
+                <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 bg-card border rounded-full">
+                    <MoreHorizontal className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-foreground">More Options</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Find additional resources and information about our services.
+                    </p>
+                </div>
+                </div>
+            </header>
+            <main>
+                <motion.div
+                    className="grid grid-cols-1 md:grid-cols-3 gap-6"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    {moreMenuItems.map((item) => (
+                         <motion.div key={item.text} variants={itemVariants}>
+                            <MoreOptionCard icon={item.icon} text={item.text} href={item.href} />
+                        </motion.div>
+                    ))}
+                </motion.div>
+            </main>
+        </div>
     </div>
   );
 }
