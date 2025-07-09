@@ -23,7 +23,8 @@ import {
   Undo2,
   GripVertical,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Edit
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -31,6 +32,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Reorder } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
 
@@ -147,6 +162,125 @@ const EditableField = ({ value, onSave, placeholder = "Click to edit", multiline
     );
 };
 
+// --- Add/Edit Item Form ---
+const menuItemFormSchema = z.object({
+  name: z.string().min(1, "Item name is required"),
+  price: z.coerce.number().min(0, "Price must be non-negative"),
+  description: z.string().optional().nullable(),
+  subItems: z.array(
+    z.object({
+      id: z.string().optional(),
+      name: z.string().min(1, "Variation name is required."),
+      price: z.coerce.number().min(0).optional(),
+    })
+  ).optional(),
+});
+type MenuItemFormValues = z.infer<typeof menuItemFormSchema>;
+
+interface MenuItemFormProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: MenuItemFormValues) => void;
+  initialData?: Partial<OrderItemDetail> | null;
+  categoryName?: string;
+}
+
+function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryName }: MenuItemFormProps) {
+  const form = useForm<MenuItemFormValues>({
+    resolver: zodResolver(menuItemFormSchema),
+    mode: 'onChange',
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "subItems",
+  });
+
+  const [newSubItemName, setNewSubItemName] = useState('');
+  const [newSubItemPrice, setNewSubItemPrice] = useState('');
+  
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        name: decodeHtmlEntities(initialData?.name) || "",
+        price: initialData?.price || 0,
+        description: decodeHtmlEntities(initialData?.description) || "",
+        subItems: initialData?.subItems?.map(si => ({...si, name: decodeHtmlEntities(si.name) || "" })) || [],
+      });
+    }
+  }, [isOpen, initialData, form]);
+
+  const handleAddSubItemClick = () => {
+    form.clearErrors("subItems.root");
+    const nameVal = newSubItemName.trim();
+    if (!nameVal) {
+      form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+      return;
+    }
+    const priceVal = newSubItemPrice ? parseFloat(newSubItemPrice) : undefined;
+    append({ name: nameVal, price: priceVal });
+    setNewSubItemName('');
+    setNewSubItemPrice('');
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="text-xl">
+            {initialData ? `Edit "${decodeHtmlEntities(initialData.name)}"` : `Add New Item to "${categoryName}"`}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <ScrollArea className="flex-grow p-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="item-name">Item Name</Label>
+                <Input id="item-name" {...form.register("name")} placeholder="Enter item name" />
+                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="item-price">Base Price</Label>
+                <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price" step="0.01"/>
+                {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="item-description">Description</Label>
+                <Textarea id="item-description" {...form.register("description")} placeholder="Item description (optional)"/>
+              </div>
+              <div className="pt-4">
+                <Label className="font-semibold">Variations / Sizes</Label>
+                <div className="mt-2 flex items-start gap-2">
+                  <Input placeholder="Variation name" value={newSubItemName} onChange={e => setNewSubItemName(e.target.value)} className="flex-grow"/>
+                  <Input placeholder="Price (optional)" type="number" value={newSubItemPrice} onChange={e => setNewSubItemPrice(e.target.value)} className="w-32"/>
+                  <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick}><Plus className="h-4 w-4"/></Button>
+                </div>
+                {form.formState.errors.subItems?.root && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
+              </div>
+              {fields.length > 0 && (
+                <div className="space-y-2">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="flex items-center gap-2">
+                      <Input {...form.register(`subItems.${index}.name`)} className="flex-grow"/>
+                      <Input {...form.register(`subItems.${index}.price`)} type="number" className="w-32"/>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><X className="h-4 w-4"/></Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+          <DialogFooter className="px-6 py-4 border-t mt-auto">
+            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+            <Button type="submit">Save</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+// --- End Form ---
+
 
 export default function OrderDetailsPage() {
     const params = useParams();
@@ -160,6 +294,11 @@ export default function OrderDetailsPage() {
     const [error, setError] = useState<string | null>(null);
     const [isDirty, setIsDirty] = useState(false);
     const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
+    
+    // State for the item form dialog
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<OrderItemDetail | null>(null);
+    const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
     
     const { toast } = useToast();
 
@@ -295,6 +434,9 @@ export default function OrderDetailsPage() {
     const categoriesForRender = useMemo(() => {
         if (!order?.items) return [];
         const categoryMap = new Map<string, {name: string, items: OrderItemDetail[]}>();
+        // Use a stable order of category IDs based on their first appearance in the items array
+        const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
+        
         order.items.forEach(item => {
             const catId = item.categoryId;
             if (!categoryMap.has(catId)) {
@@ -302,41 +444,17 @@ export default function OrderDetailsPage() {
             }
             categoryMap.get(catId)!.items.push(item);
         });
-        const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
         
         return orderedCategoryIds.map(id => {
             const data = categoryMap.get(id)!;
             return { id, ...data };
         });
     }, [order?.items]);
-    
-    const handleItemChange = (itemId: string, field: keyof OrderItemDetail, value: any) => {
-        if (!order) return;
-        const newItems = order.items?.map(item => item.id === itemId ? { ...item, [field]: value } : item);
-        handleOrderUpdate({ ...order, items: newItems });
-    };
-    
+
     const handleCategoryNameChange = (categoryId: string, newName: string) => {
         if (!order) return;
         const newItems = order.items?.map(item => item.categoryId === categoryId ? { ...item, categoryName: newName } : item);
         handleOrderUpdate({ ...order, items: newItems });
-    };
-
-    const handleAddItem = (categoryId: string) => {
-        if (!order) return;
-        const category = categoriesForRender.find(c => c.id === categoryId);
-        const newItem: OrderItemDetail = {
-            id: `custom-item-${Date.now()}`,
-            name: 'New Item',
-            price: 0,
-            quantity: 1,
-            categoryId,
-            categoryName: category?.name,
-            description: '',
-            subItems: []
-        };
-        const updatedItems = [...(order.items || []), newItem];
-        handleOrderUpdate({ ...order, items: updatedItems });
     };
 
     const handleRemoveItem = (itemId: string) => {
@@ -368,32 +486,26 @@ export default function OrderDetailsPage() {
         handleOrderUpdate({ ...order, items: updatedItems });
     };
     
-    const handleCategoryReorder = (reorderedCategories: typeof categoriesForRender) => {
-        if (!order) return;
-        const newMasterItemsList = reorderedCategories.flatMap(cat => cat.items);
-        handleOrderUpdate({ ...order, items: newMasterItemsList });
+    const handleCategoryReorder = (reorderedCategories: { id: string; name: string; items: OrderItemDetail[] }[]) => {
+      if (!order || !order.items) return;
+      const newMasterItemsList = reorderedCategories.flatMap(cat => cat.items);
+      handleOrderUpdate({ ...order, items: newMasterItemsList });
     };
     
     const handleItemReorder = (categoryId: string, reorderedItemsForCategory: OrderItemDetail[]) => {
         if (!order || !order.items) return;
-
+        const otherItems = order.items.filter(item => item.categoryId !== categoryId);
+        const categoryOrder = categoriesForRender.map(c => c.id);
         const newMasterItemsList: OrderItemDetail[] = [];
-        const processedCategoryIds = new Set<string>();
-
-        for (const item of order.items) {
-            if (processedCategoryIds.has(item.categoryId)) {
-                continue;
-            }
-
-            if (item.categoryId === categoryId) {
-                newMasterItemsList.push(...reorderedItemsForCategory);
-            } else {
-                const itemsInThisCategory = order.items.filter(i => i.categoryId === item.categoryId);
-                newMasterItemsList.push(...itemsInThisCategory);
-            }
-            processedCategoryIds.add(item.categoryId);
-        }
         
+        categoryOrder.forEach(catId => {
+          if (catId === categoryId) {
+            newMasterItemsList.push(...reorderedItemsForCategory);
+          } else {
+            newMasterItemsList.push(...order.items!.filter(item => item.categoryId === catId));
+          }
+        });
+
         handleOrderUpdate({ ...order, items: newMasterItemsList });
     };
 
@@ -401,45 +513,44 @@ export default function OrderDetailsPage() {
         setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
     };
 
-    const handleSubItemChange = (itemId: string, subItemIndex: number, field: 'name' | 'price', value: any) => {
-        if (!order) return;
-        const newItems = order.items?.map(item => {
-            if (item.id === itemId) {
-                const newSubItems = [...(item.subItems || [])];
-                if (newSubItems[subItemIndex]) {
-                    newSubItems[subItemIndex] = { ...newSubItems[subItemIndex], [field]: value };
-                }
-                return { ...item, subItems: newSubItems };
-            }
-            return item;
-        });
-        handleOrderUpdate({ ...order, items: newItems });
+    const handleOpenEditDialog = (item: OrderItemDetail) => {
+      setEditingItem(item);
+      setAddingToCategoryId(null);
+      setIsFormOpen(true);
     };
 
-    const handleAddSubItem = (itemId: string) => {
-        if (!order) return;
-        const newSubItem: SubItem = { id: `custom-sub-${Date.now()}`, name: 'New Variation', price: 0 };
-        const newItems = order.items?.map(item => {
-            if (item.id === itemId) {
-                return { ...item, subItems: [...(item.subItems || []), newSubItem] };
-            }
-            return item;
-        });
-        handleOrderUpdate({ ...order, items: newItems });
+    const handleOpenAddDialog = (categoryId: string) => {
+      setEditingItem(null);
+      setAddingToCategoryId(categoryId);
+      setIsFormOpen(true);
     };
 
-    const handleRemoveSubItem = (itemId: string, subItemIndex: number) => {
+    const handleFormSubmit = (data: MenuItemFormValues) => {
         if (!order) return;
-        const newItems = order.items?.map(item => {
-            if (item.id === itemId) {
-                const newSubItems = [...(item.subItems || [])];
-                newSubItems.splice(subItemIndex, 1);
-                return { ...item, subItems: newSubItems };
-            }
-            return item;
-        });
-        handleOrderUpdate({ ...order, items: newItems });
+
+        if (editingItem) {
+            const updatedItems = order.items?.map(item =>
+                item.id === editingItem.id ? { ...item, ...data } : item
+            );
+            handleOrderUpdate({ ...order, items: updatedItems });
+            toast({ title: "Item Updated" });
+        } else if (addingToCategoryId) {
+            const category = categoriesForRender.find(c => c.id === addingToCategoryId);
+            const newItem: OrderItemDetail = {
+                id: `custom-item-${Date.now()}`,
+                ...data,
+                quantity: 1,
+                categoryId: addingToCategoryId,
+                categoryName: category?.name || 'New Category',
+            };
+            handleOrderUpdate({ ...order, items: [...(order.items || []), newItem] });
+            toast({ title: "Item Added" });
+        }
+        setIsFormOpen(false);
+        setEditingItem(null);
+        setAddingToCategoryId(null);
     };
+
 
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
@@ -496,6 +607,7 @@ export default function OrderDetailsPage() {
     if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Order Not Found</h2><p className="text-muted-foreground max-w-md">The requested order could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Order History</Button></div>;
 
     return (
+        <>
         <div className="bg-muted min-h-screen flex flex-col">
             <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
                 <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -584,7 +696,7 @@ export default function OrderDetailsPage() {
                                     />
                                     <Badge variant="secondary">{category.items.length}</Badge>
                                     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => handleRemoveCategory(category.id)}><X className="h-4 w-4"/></Button>
-                                    <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => handleAddItem(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+                                    <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => handleOpenAddDialog(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
                                 </div>
                                 
                                 <Reorder.Group as="div" axis="y" values={category.items} onReorder={(newOrder) => handleItemReorder(category.id, newOrder)} className="space-y-3">
@@ -600,63 +712,39 @@ export default function OrderDetailsPage() {
                                                 exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
                                                 className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
                                             >
-                                                <div className="flex items-start gap-2">
+                                                <div className="flex items-start gap-3">
                                                     <GripVertical className="h-5 w-5 text-muted-foreground/50 cursor-grab mt-1 shrink-0" />
                                                     <div className="flex-grow">
                                                         <div className="flex justify-between items-start gap-4">
-                                                            <EditableField value={item.name} onSave={val => handleItemChange(item.id, 'name', val)} placeholder="Item Name" className="font-bold text-foreground" inputClassName="font-bold" />
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="text-muted-foreground">৳</span>
-                                                                <EditableField value={item.price} onSave={val => handleItemChange(item.id, 'price', Number(val))} placeholder="0" className="font-bold text-foreground text-right w-20" inputClassName="font-bold text-right" />
-                                                            </div>
+                                                            <p className="font-bold text-foreground">{decodeHtmlEntities(item.name)}</p>
+                                                            <p className="font-bold text-foreground text-right">৳{item.price.toLocaleString()}</p>
                                                         </div>
-                                                        <EditableField value={item.description} onSave={val => handleItemChange(item.id, 'description', val)} multiline placeholder="Item description..." className="text-sm text-muted-foreground mt-1" inputClassName="text-sm" />
+                                                        {item.description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(item.description)}</p>}
                                                         
-                                                        <div className="pl-2 pt-2">
-                                                            {item.subItems && item.subItems.length > 0 && (
-                                                                <Button variant="link" size="sm" onClick={() => handleToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary -ml-1">
+                                                        {item.subItems && item.subItems.length > 0 && (
+                                                            <>
+                                                                <Button variant="link" size="sm" onClick={() => handleToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary -ml-1 mt-2">
                                                                     {expandedSubItems[item.id] ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                                                                    {expandedSubItems[item.id] ? 'Hide' : 'Show'} Variations ({item.subItems.length})
+                                                                    Variations
                                                                 </Button>
-                                                            )}
-                                                            {expandedSubItems[item.id] && (
-                                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
-                                                                    {item.subItems?.map((subItem, index) => (
-                                                                        <div key={subItem.id || index} className="flex items-center gap-2 group/subitem">
-                                                                            <div className="flex-grow flex items-center gap-2">
-                                                                                <span className="text-muted-foreground">-</span>
-                                                                                <EditableField
-                                                                                    value={subItem.name}
-                                                                                    onSave={val => handleSubItemChange(item.id, index, 'name', val)}
-                                                                                    placeholder="Variation Name"
-                                                                                    className="text-sm"
-                                                                                    inputClassName="text-sm"
-                                                                                />
+                                                                {expandedSubItems[item.id] && (
+                                                                    <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
+                                                                        {item.subItems?.map((subItem, index) => (
+                                                                            <div key={subItem.id || index} className="flex justify-between items-center text-sm">
+                                                                                <p className="text-muted-foreground">- {decodeHtmlEntities(subItem.name)}</p>
+                                                                                <p className="text-muted-foreground">৳{subItem.price?.toLocaleString()}</p>
                                                                             </div>
-                                                                            <div className="flex items-center gap-1 w-28">
-                                                                                <span className="text-muted-foreground text-sm">৳</span>
-                                                                                <EditableField
-                                                                                    value={subItem.price}
-                                                                                    onSave={val => handleSubItemChange(item.id, index, 'price', Number(val))}
-                                                                                    placeholder="0"
-                                                                                    className="text-sm text-right"
-                                                                                    inputClassName="text-sm text-right"
-                                                                                />
-                                                                            </div>
-                                                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive opacity-0 group-hover/subitem:opacity-100" onClick={() => handleRemoveSubItem(item.id, index)}>
-                                                                                <X className="h-3 w-3"/>
-                                                                            </Button>
-                                                                        </div>
-                                                                    ))}
-                                                                    <Button variant="outline" size="sm" onClick={() => handleAddSubItem(item.id)} className="h-7 text-xs mt-2">
-                                                                        <Plus className="h-3 w-3 mr-1" /> Add Variation
-                                                                    </Button>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                     <div className="flex flex-col gap-1 shrink-0">
+                                                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleOpenEditDialog(item)}><Edit className="h-4 w-4"/></Button>
+                                                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4"/></Button>
                                                     </div>
                                                 </div>
-                                                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-6 w-6 text-destructive opacity-0 group-hover/item:opacity-100" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4"/></Button>
                                             </Reorder.Item>
                                         ))}
                                     </AnimatePresence>
@@ -673,5 +761,17 @@ export default function OrderDetailsPage() {
                 </main>
             </div>
         </div>
+        <MenuItemForm
+            isOpen={isFormOpen}
+            onOpenChange={setIsFormOpen}
+            onSubmit={handleFormSubmit}
+            initialData={editingItem}
+            categoryName={
+                editingItem
+                    ? categoriesForRender.find(c => c.id === editingItem.categoryId)?.name
+                    : categoriesForRender.find(c => c.id === addingToCategoryId)?.name
+            }
+        />
+        </>
     )
 }
