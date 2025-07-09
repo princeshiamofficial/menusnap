@@ -164,60 +164,7 @@ export function SpeedDialFAB(): ReactNode {
 
 
   return (
-    <div className="fixed bottom-6 right-4 flex flex-col items-end z-50">
-      <AnimatePresence>
-        {showHelpTextVisual && !isOpen && (
-          <motion.div
-            className="mb-2 px-3 py-1.5 bg-card text-card-foreground text-sm font-medium rounded-full shadow-lg border border-border flex overflow-hidden"
-            variants={textContainerVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            aria-hidden={true}
-          >
-            {helpTextCharacters.map((char, index) => (
-              <motion.span
-                key={`${char}-${index}`}
-                variants={characterVariants}
-                className="inline-block"
-              >
-                {char === " " ? "\u00A0" : char} 
-              </motion.span>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.div 
-        className={`flex flex-col items-end space-y-3 overflow-hidden mb-3`}
-        initial={{ opacity: 0, height: 0 }}
-        animate={{ opacity: isOpen ? 1 : 0, height: isOpen ? 'auto' : 0 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        aria-hidden={!isOpen}
-      >
-        {contactOptionsList.map((option, index) => (
-          <motion.div
-            key={option.name}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isOpen ? 1 : 0, y: isOpen ? 0 : 20 }}
-            transition={{ duration: 0.2, delay: isOpen ? index * 0.05 : (contactOptionsList.length - index - 1) * 0.03, ease: "easeOut" }}
-          >
-            <Button
-              onClick={option.action}
-              variant="default" 
-              className="flex items-center justify-between w-48 h-12 rounded-full shadow-lg bg-card text-card-foreground hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring pl-6 pr-2 py-2"
-              aria-label={option.ariaLabel}
-              tabIndex={isOpen ? 0 : -1}
-            >
-              <span className="text-sm font-medium mr-auto">{option.name}</span>
-              <div className={`p-2 rounded-full ${option.bgColor} ml-2 shrink-0`}>
-                <option.IconComponent className={`h-5 w-5 ${option.iconColor}`} />
-              </div>
-            </Button>
-          </motion.div>
-        ))}
-      </motion.div>
-
+    <div className="fixed top-6 right-4 flex flex-col items-end z-50">
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         className={`rounded-full h-16 w-16 shadow-xl flex items-center justify-center overflow-hidden
@@ -249,6 +196,59 @@ export function SpeedDialFAB(): ReactNode {
             )}
         </AnimatePresence>
       </motion.button>
+
+      <motion.div 
+        className={`flex flex-col items-end space-y-3 overflow-hidden mt-3`}
+        initial={{ opacity: 0, height: 0 }}
+        animate={{ opacity: isOpen ? 1 : 0, height: isOpen ? 'auto' : 0 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        aria-hidden={!isOpen}
+      >
+        {contactOptionsList.map((option, index) => (
+          <motion.div
+            key={option.name}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: isOpen ? 1 : 0, y: isOpen ? 0 : -20 }}
+            transition={{ duration: 0.2, delay: isOpen ? index * 0.05 : (contactOptionsList.length - index - 1) * 0.03, ease: "easeOut" }}
+          >
+            <Button
+              onClick={option.action}
+              variant="default" 
+              className="flex items-center justify-between w-48 h-12 rounded-full shadow-lg bg-card text-card-foreground hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring pl-6 pr-2 py-2"
+              aria-label={option.ariaLabel}
+              tabIndex={isOpen ? 0 : -1}
+            >
+              <span className="text-sm font-medium mr-auto">{option.name}</span>
+              <div className={`p-2 rounded-full ${option.bgColor} ml-2 shrink-0`}>
+                <option.IconComponent className={`h-5 w-5 ${option.iconColor}`} />
+              </div>
+            </Button>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <AnimatePresence>
+        {showHelpTextVisual && !isOpen && (
+          <motion.div
+            className="mt-2 px-3 py-1.5 bg-card text-card-foreground text-sm font-medium rounded-full shadow-lg border border-border flex overflow-hidden"
+            variants={textContainerVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            aria-hidden={true}
+          >
+            {helpTextCharacters.map((char, index) => (
+              <motion.span
+                key={`${char}-${index}`}
+                variants={characterVariants}
+                className="inline-block"
+              >
+                {char === " " ? "\u00A0" : char} 
+              </motion.span>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
