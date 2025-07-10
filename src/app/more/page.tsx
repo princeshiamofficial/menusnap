@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Layers, Search, Star, Maximize, AlertTriangle, X, MoreHorizontal } from "lucide-react"; 
+import { Layers, Search, Star, Maximize, AlertTriangle, X, MoreHorizontal, Hand } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
@@ -154,10 +154,6 @@ function TemplateSkeletonCard(): ReactNode {
         <Skeleton className="h-6 w-3/4 mb-2" />
         <Skeleton className="h-4 w-full mb-1" />
         <Skeleton className="h-4 w-5/6 mb-3" />
-        <div className="flex flex-wrap gap-2">
-          <Skeleton className="h-5 w-16 rounded-full" />
-          <Skeleton className="h-5 w-20 rounded-full" />
-        </div>
       </CardContent>
       <CardFooter className="p-4 border-t mt-auto">
         <Skeleton className="h-10 w-full" />
@@ -372,27 +368,34 @@ export default function MorePage(): ReactNode {
 
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <MoreHorizontal className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              All Templates
-            </h1>
-          </div>
-          <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">
-            Browse our full collection of professionally designed templates.
-          </p>
+      <header>
+        <div className="rounded-lg bg-gradient-to-r from-slate-900 via-amber-700 to-primary p-6 shadow-lg text-white">
+            <h2 className="text-3xl font-bold flex items-center">
+                Welcome to the Template Gallery <Hand className="ml-2 h-8 w-8 text-yellow-400" />
+            </h2>
+            <p className="mt-1 text-sm text-slate-200">
+                Browse our full collection of professionally designed templates.
+            </p>
         </div>
-        <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search templates..."
-            className="pl-10 w-full sm:w-64 md:w-72 text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-6">
+            <div>
+              <div className="flex items-center gap-3">
+                <MoreHorizontal className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  All Templates
+                </h1>
+              </div>
+            </div>
+            <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search templates..."
+                className="pl-10 w-full sm:w-64 md:w-72 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
         </div>
       </header>
 
