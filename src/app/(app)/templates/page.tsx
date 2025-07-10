@@ -132,13 +132,6 @@ function TemplateCard({
         <CardContent className="p-4 flex-grow">
           <h2 className="text-lg font-semibold mb-1.5 text-foreground">{decodeHtmlEntities(title)}</h2>
           <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{decodeHtmlEntities(description)}</p>
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="font-normal text-xs">
-                {tag}
-              </Badge>
-            ))}
-          </div>
         </CardContent>
         <CardFooter className="p-4 border-t mt-auto">
           {isSelectionAllowed && (
