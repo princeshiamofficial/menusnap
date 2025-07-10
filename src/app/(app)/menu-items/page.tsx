@@ -376,14 +376,15 @@ interface CategoryFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: CategoryFormValues) => void;
   isSubmitting: boolean;
+  initialData?: Partial<Category>;
 }
 
-function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting }: CategoryFormProps) {
+function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting, initialData }: CategoryFormProps) {
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categoryFormSchema),
     defaultValues: {
-      name: "",
-      icon: "📁",
+      name: decodeHtmlEntities(initialData?.name) || "",
+      icon: initialData?.icon || "📁",
     },
     mode: 'onChange',
   });
@@ -391,18 +392,22 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting }: Category
   useEffect(() => {
     if (isOpen) {
       form.reset({
-        name: "",
-        icon: "📁",
+        name: decodeHtmlEntities(initialData?.name) || "",
+        icon: initialData?.icon || "📁",
       });
     }
-  }, [isOpen, form]);
+  }, [isOpen, initialData, form]);
+
+  const dialogTitle = initialData ? "Edit Category" : "Add New Category";
+  const dialogDescription = initialData ? "Update the details for this category." : "Create a new category to organize your menu items.";
+  const submitButtonText = initialData ? (isSubmitting ? 'Saving...' : 'Save Changes') : (isSubmitting ? 'Adding...' : 'Add Category');
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md flex flex-col max-h-[calc(100vh-80px)]">
         <DialogHeader>
-          <DialogTitle>Add New Category</DialogTitle>
-          <DialogDescription>Create a new category to organize your menu items.</DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
           <ScrollArea className="flex-grow min-h-0 p-4">
@@ -421,7 +426,7 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting }: Category
           </ScrollArea>
           <DialogFooter className="pt-4 border-t mt-auto">
             <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Adding...' : 'Add Category'}</Button>
+            <Button type="submit" disabled={isSubmitting}>{submitButtonText}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -567,7 +572,8 @@ export default function MenuItemsPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
+  const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
 
   const [animations, setAnimations] = useState<{id: number, startX: number, startY: number, endX: number, endY: number}[]>([]);
@@ -794,36 +800,70 @@ export default function MenuItemsPage() {
     setEditingItem(null);
     setIsSubmitting(false);
   }, [allMenuItems, editingItem, selectedCategory, toast]);
+  
+  const handleOpenAddCategory = () => {
+    setEditingCategory(null);
+    setIsCategoryFormOpen(true);
+  };
 
-  const handleAddCategory = useCallback((data: CategoryFormValues) => {
+  const handleOpenEditCategory = useCallback((category: Category) => {
+    setEditingCategory(category);
+    setIsCategoryFormOpen(true);
+  }, []);
+
+
+  const handleCategoryFormSubmit = useCallback((data: CategoryFormValues) => {
     setIsCategorySubmitting(true);
     
-    const newCategory: Category = {
-      id: `custom-category-${customSlugify(data.name)}-${Date.now()}`,
-      name: data.name,
-      icon: data.icon,
-      visibleToUsers: true,
-      itemCount: 0,
-      createdAt: new Date().toISOString(),
-    };
+    let updatedCategories;
 
-    const updatedCategories = [...apiCategories, newCategory];
+    if (editingCategory) {
+        // Editing an existing category
+        const categoryToUpdate = { ...editingCategory, ...data };
+        updatedCategories = apiCategories.map(cat =>
+            cat.id === editingCategory.id ? categoryToUpdate : cat
+        );
+        toast({ title: "Category Updated", description: `"${decodeHtmlEntities(data.name)}" has been updated.` });
+    } else {
+        // Adding a new category
+        const newCategory: Category = {
+            id: `custom-category-${customSlugify(data.name)}-${Date.now()}`,
+            name: data.name,
+            icon: data.icon,
+            visibleToUsers: true,
+            itemCount: 0,
+            createdAt: new Date().toISOString(),
+        };
+        updatedCategories = [...apiCategories, newCategory];
+        toast({ title: "Category Added", description: `"${decodeHtmlEntities(data.name)}" has been added locally.` });
+    }
     
     setApiCategories(updatedCategories);
     setOrderedCategories(updatedCategories.sort((a,b) => a.name.localeCompare(b.name)));
     
     try {
-      const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
-      localCategories.push(newCategory);
-      localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
-      toast({ title: "Category Added", description: `"${decodeHtmlEntities(data.name)}" has been added locally.` });
+        const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
+        if (editingCategory) {
+            const index = localCategories.findIndex(c => c.id === editingCategory.id);
+            if (index > -1) {
+                localCategories[index] = { ...localCategories[index], ...data };
+            } else { // If not found in local, it might be a server category being edited
+              // We could add it to local upon edit, or handle server-side updates.
+              // For simplicity, we just add it if not found.
+              localCategories.push({ ...editingCategory, ...data });
+            }
+        } else {
+            localCategories.push(updatedCategories[updatedCategories.length - 1]);
+        }
+        localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
     } catch(e) {
-      toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
+        toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
     }
     
-    setIsAddCategoryDialogOpen(false);
+    setIsCategoryFormOpen(false);
+    setEditingCategory(null);
     setIsCategorySubmitting(false);
-  }, [apiCategories, toast]);
+  }, [apiCategories, editingCategory, toast]);
 
   const currentMenuItems = useMemo(() => {
     if (!selectedCategory) {
@@ -965,7 +1005,7 @@ export default function MenuItemsPage() {
         <aside className="hidden md:flex w-72 bg-card border-r border-border flex-col">
           <div className="p-4 border-b border-border flex justify-between items-center">
             <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
-            <Button variant="ghost" size="icon" onClick={() => setIsAddCategoryDialogOpen(true)} className="h-8 w-8" aria-label="Add New Category">
+            <Button variant="ghost" size="icon" onClick={handleOpenAddCategory} className="h-8 w-8" aria-label="Add New Category">
               <PlusCircle className="h-5 w-5" />
             </Button>
           </div>
@@ -978,21 +1018,33 @@ export default function MenuItemsPage() {
             {!loading && !error && orderedCategories.length > 0 && (
               <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
                 {orderedCategories.map(category => (
-                  <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
-                    <Button
-                      variant="ghost"
-                      className={cn(
-                        'w-full justify-start items-center text-sm h-9 border border-border rounded-md',
-                        selectedCategory?.id === category.id
-                        ? 'bg-muted font-semibold text-foreground border-primary'
-                        : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                  <Reorder.Item key={category.id} value={category} className="bg-card rounded-md group">
+                    <div className={cn(
+                        'w-full flex justify-start items-center text-sm h-9 border border-border rounded-md',
+                         selectedCategory?.id === category.id
+                         ? 'bg-muted font-semibold text-foreground border-primary'
+                         : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                    )}>
+                      {selectedCategory?.id === category.id && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 ml-1 text-primary hover:bg-primary/10"
+                          onClick={() => handleOpenEditCategory(category)}
+                        >
+                           <Edit className="h-4 w-4"/>
+                        </Button>
                       )}
-                      onClick={() => setSelectedCategory(category)}
-                    >
-                      <span className="mr-2 text-sm">{category.icon || <DefaultCategoryIcon className="h-4 w-4" />}</span>
-                      <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>
-                      <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full h-full justify-start items-center px-2 py-0"
+                        onClick={() => setSelectedCategory(category)}
+                      >
+                        <span className="mr-2 text-sm">{category.icon || <DefaultCategoryIcon className="h-4 w-4" />}</span>
+                        <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>
+                        <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab group-hover:text-muted-foreground" />
+                      </Button>
+                    </div>
                   </Reorder.Item>
                 ))}
               </Reorder.Group>
@@ -1057,7 +1109,7 @@ export default function MenuItemsPage() {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => setIsAddCategoryDialogOpen(true)}
+                onClick={handleOpenAddCategory}
                 className="h-10 w-10 shrink-0"
                 aria-label="Add New Category"
               >
@@ -1145,10 +1197,11 @@ export default function MenuItemsPage() {
       />
 
       <CategoryForm 
-        isOpen={isAddCategoryDialogOpen}
-        onOpenChange={setIsAddCategoryDialogOpen}
-        onSubmit={handleAddCategory}
+        isOpen={isCategoryFormOpen}
+        onOpenChange={setIsCategoryFormOpen}
+        onSubmit={handleCategoryFormSubmit}
         isSubmitting={isCategorySubmitting}
+        initialData={editingCategory || undefined}
       />
 
       <MenuPreviewDialog
