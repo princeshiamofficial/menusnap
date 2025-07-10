@@ -368,7 +368,7 @@ export default function MorePage(): ReactNode {
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm -mx-4 -mt-4 md:-mx-6 md:-mt-6 lg:-mx-8 lg:-mt-8 mb-6 shadow-sm">
+      <div className="sticky top-0 z-50 bg-background/90 backdrop-blur-md -mx-4 -mt-4 md:-mx-6 md:-mt-6 lg:-mx-8 lg:-mt-8 mb-6 shadow-sm">
         <header className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 py-3">
           <div className="flex items-center gap-1 sm:gap-2 justify-center flex-shrink-0 flex-wrap">
             <Button variant="ghost" asChild><Link href="/more"><BookOpen className="mr-2 h-4 w-4" />Menu Book</Link></Button>
