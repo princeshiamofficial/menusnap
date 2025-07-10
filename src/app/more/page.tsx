@@ -11,13 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Layers, Search, Star, Maximize, AlertTriangle, X, MoreHorizontal, Hand } from "lucide-react"; 
+import { Layers, Search, Star, Maximize, AlertTriangle, X, MoreHorizontal, Hand, BookOpen, FileText, FileImage } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
 import { useToast } from "@/hooks/use-toast";
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities } from '@/lib/utils';
+import Link from 'next/link';
 
 interface ApiTemplate {
   id: string;
@@ -377,6 +378,25 @@ export default function MorePage(): ReactNode {
                 Browse our full collection of professionally designed templates.
             </p>
         </div>
+        
+        <div className="flex items-center justify-center gap-2 mt-6 p-2 bg-card border rounded-lg shadow-sm">
+          <Button variant="ghost" asChild>
+            <Link href="/more">
+              <BookOpen className="mr-2 h-4 w-4" /> Menu Book
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/more">
+              <FileText className="mr-2 h-4 w-4" /> Menu Card
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/more">
+              <FileImage className="mr-2 h-4 w-4" /> Leaflet
+            </Link>
+          </Button>
+        </div>
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-6">
             <div>
               <div className="flex items-center gap-3">
