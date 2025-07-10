@@ -181,7 +181,7 @@ export function SpeedDialFAB(): ReactNode {
                 variants={characterVariants}
                 className="inline-block"
               >
-                {char === " " ? "\u00A0" : char} 
+                {char === " " ? " " : char} 
               </motion.span>
             ))}
           </motion.div>
@@ -204,13 +204,13 @@ export function SpeedDialFAB(): ReactNode {
             <Button
               onClick={option.action}
               variant="default" 
-              className="flex items-center justify-between w-40 h-10 rounded-full shadow-lg bg-card text-card-foreground hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring pl-6 pr-2 py-2"
+              className="flex items-center justify-between w-40 h-10 md:w-48 md:h-12 rounded-full shadow-lg bg-card text-card-foreground hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring pl-6 pr-2 py-2"
               aria-label={option.ariaLabel}
               tabIndex={isOpen ? 0 : -1}
             >
-              <span className="text-sm font-medium mr-auto">{option.name}</span>
-              <div className={`p-1.5 rounded-full ${option.bgColor} ml-2 shrink-0`}>
-                <option.IconComponent className={`h-4 w-4 ${option.iconColor}`} />
+              <span className="text-sm md:text-base font-medium mr-auto">{option.name}</span>
+              <div className={`p-1.5 md:p-2 rounded-full ${option.bgColor} ml-2 shrink-0`}>
+                <option.IconComponent className={`h-4 w-4 md:h-5 md:w-5 ${option.iconColor}`} />
               </div>
             </Button>
           </motion.div>
@@ -219,7 +219,7 @@ export function SpeedDialFAB(): ReactNode {
 
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className={`rounded-full h-12 w-12 shadow-xl flex items-center justify-center overflow-hidden
+        className={`rounded-full h-12 w-12 md:h-14 md:w-14 shadow-xl flex items-center justify-center overflow-hidden
                     focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
                     transition-colors duration-200
                     ${isOpen ? 'bg-gray-700 hover:bg-gray-800 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
@@ -230,7 +230,7 @@ export function SpeedDialFAB(): ReactNode {
         <AnimatePresence mode="wait">
             {isOpen ? (
                 <motion.div key="close-icon" initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 45 }}>
-                    <X className="h-6 w-6" />
+                    <X className="h-6 w-6 md:h-7 md:w-7" />
                 </motion.div>
             ) : showHelpImage ? (
                 <motion.div key="help-image" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="h-full w-full relative">
@@ -243,7 +243,7 @@ export function SpeedDialFAB(): ReactNode {
                 </motion.div>
             ) : (
                 <motion.div key="message-icon" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-                    <MessagesSquare className="h-6 w-6" />
+                    <MessagesSquare className="h-6 w-6 md:h-7 md:w-7" />
                 </motion.div>
             )}
         </AnimatePresence>
