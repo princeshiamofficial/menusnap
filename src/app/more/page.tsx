@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Layers, Search, Maximize, AlertTriangle, X, MoreHorizontal, Hand, BookOpen, FileText, FileImage, CreditCard, Contact, Presentation, Book } from "lucide-react"; 
+import { Layers, Search, Maximize, AlertTriangle, X, BookOpen, FileText, FileImage, CreditCard, Contact, Presentation, Book, Link as LinkIcon } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
@@ -87,13 +87,32 @@ function TemplateCard({
   onSelect,
   isSelectionAllowed,
 }: TemplateCardProps): ReactNode {
-  const { imageUrl, name: title, description, tags, isTopRated } = template;
+  const { imageUrl, name: title, description } = template;
+  const { toast } = useToast();
   const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
   const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
   
   const getImageHint = (name: string): string => {
     return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
   }
+
+  const handleCopyLink = (event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent card selection or other parent events
+    const linkToCopy = `${window.location.origin}/more#${template.id}`;
+    navigator.clipboard.writeText(linkToCopy).then(() => {
+      toast({
+        title: "Link Copied!",
+        description: `A link to "${decodeHtmlEntities(title)}" is on your clipboard.`,
+      });
+    }).catch(err => {
+      console.error("Failed to copy link:", err);
+      toast({
+        title: "Error",
+        description: "Could not copy link to clipboard.",
+        variant: "destructive",
+      });
+    });
+  };
 
   return (
     <motion.div
@@ -103,7 +122,7 @@ function TemplateCard({
     >
       <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
         <CardHeader className="p-0 relative">
-          <div className="aspect-[4/3] relative group">
+          <div className="aspect-[4/3] relative group" id={template.id}>
             <Image
               src={actualImageUrl}
               alt={decodeHtmlEntities(title)}
@@ -112,15 +131,26 @@ function TemplateCard({
               className="object-cover"
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute bottom-2 right-2 h-9 w-9 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
-              aria-label="Maximize template preview"
-              onClick={() => onPreview(actualImageUrl)}
-            >
-              <Maximize className="h-5 w-5" />
-            </Button>
+            <div className="absolute top-2 right-2 flex space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+               <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 bg-black/40 text-white hover:bg-black/60 rounded-md"
+                aria-label="Copy template link"
+                onClick={handleCopyLink}
+              >
+                <LinkIcon className="h-5 w-5" />
+              </Button>
+               <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 bg-black/40 text-white hover:bg-black/60 rounded-md"
+                aria-label="Maximize template preview"
+                onClick={(e) => { e.stopPropagation(); onPreview(actualImageUrl); }}
+              >
+                <Maximize className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow">
@@ -197,6 +227,7 @@ export default function MorePage(): ReactNode {
         }
         const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any, index: number) => ({
           ...t,
+          id: String(t.id),
           isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
           tags: Array.isArray(t.tags) ? t.tags : [],
           imageUrl: t.imageUrl || '', // Ensure imageUrl is at least an empty string
