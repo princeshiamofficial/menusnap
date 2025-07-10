@@ -202,6 +202,7 @@ export default function MorePage(): ReactNode {
   const [templateToConfirm, setTemplateToConfirm] = useState<ApiTemplate | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [linkedTemplateId, setLinkedTemplateId] = useState<string | null>(null);
   const { toast } = useToast();
   const { clientUser, clientLoading } = useClientAuth();
   const router = useRouter();
@@ -247,6 +248,24 @@ export default function MorePage(): ReactNode {
     if (orderId) {
       setPendingOrderId(orderId);
     }
+    
+    // Check for hash on initial load
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash) {
+        setLinkedTemplateId(hash);
+      } else {
+        setLinkedTemplateId(null);
+      }
+    };
+
+    handleHashChange(); // Check on mount
+    window.addEventListener('hashchange', handleHashChange); // Listen for changes
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+
   }, []);
 
   const handleSelectTemplate = (template: ApiTemplate) => {
@@ -348,6 +367,10 @@ export default function MorePage(): ReactNode {
   const filteredTemplates = useMemo(() => {
     let filtered = templates.filter(template => template.isPublished);
 
+    if (linkedTemplateId) {
+      return filtered.filter(template => template.id === linkedTemplateId);
+    }
+    
     // Filter by search term
     if (searchTerm) {
         filtered = filtered.filter(template =>
@@ -374,7 +397,7 @@ export default function MorePage(): ReactNode {
       }
       return 0; 
     });
-  }, [templates, searchTerm]);
+  }, [templates, searchTerm, linkedTemplateId]);
 
 
   const containerVariants = {
@@ -441,7 +464,7 @@ export default function MorePage(): ReactNode {
         ) : filteredTemplates.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-muted-foreground text-lg">
-                {searchTerm ? "No published templates match your search." : "No published templates available."}
+                {searchTerm || linkedTemplateId ? "No published templates match your search." : "No published templates available."}
               </p>
             </div>
         ) : (
