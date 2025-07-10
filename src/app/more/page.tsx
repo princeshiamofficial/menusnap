@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Layers, Search, Maximize, AlertTriangle, X, MoreHorizontal, Hand, BookOpen, FileText, FileImage } from "lucide-react"; 
+import { Layers, Search, Maximize, AlertTriangle, X, MoreHorizontal, Hand, BookOpen, FileText, FileImage, CreditCard, Contact, Presentation, Book } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
@@ -368,56 +368,27 @@ export default function MorePage(): ReactNode {
 
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
-      <header>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 p-2 bg-card border rounded-lg shadow-sm">
-          <div className="flex items-center gap-1 sm:gap-2 justify-start flex-shrink-0">
-            <Button variant="ghost" asChild>
-              <Link href="/more">
-                <BookOpen className="mr-2 h-4 w-4" /> Menu Book
-              </Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/more">
-                <FileText className="mr-2 h-4 w-4" /> Menu Card
-              </Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/more">
-                <FileImage className="mr-2 h-4 w-4" /> Leaflet
-              </Link>
-            </Button>
-          </div>
-          <div className="relative w-full sm:w-auto sm:max-w-md flex-grow flex justify-center">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search templates..."
-              className="pl-10 w-full text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-           {/* Empty div for spacing to keep search in middle */}
-          <div className="hidden sm:flex items-center gap-1 sm:gap-2 justify-end flex-shrink-0 invisible">
-             <Button variant="ghost" asChild>
-              <Link href="/more">
-                <BookOpen className="mr-2 h-4 w-4" /> Menu Book
-              </Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/more">
-                <FileText className="mr-2 h-4 w-4" /> Menu Card
-              </Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/more">
-                <FileImage className="mr-2 h-4 w-4" /> Leaflet
-              </Link>
-            </Button>
-          </div>
+      <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 p-2 bg-card border rounded-lg shadow-sm">
+        <div className="flex items-center gap-1 sm:gap-2 justify-start flex-shrink-0 flex-wrap">
+          <Button variant="ghost" asChild><Link href="/more"><BookOpen className="mr-2 h-4 w-4" />Menu Book</Link></Button>
+          <Button variant="ghost" asChild><Link href="/more"><FileText className="mr-2 h-4 w-4" />Menu Card</Link></Button>
+          <Button variant="ghost" asChild><Link href="/more"><FileImage className="mr-2 h-4 w-4" />Leaflet</Link></Button>
+          <Button variant="ghost" asChild><Link href="/more"><CreditCard className="mr-2 h-4 w-4" />Membership Card</Link></Button>
+          <Button variant="ghost" asChild><Link href="/more"><Contact className="mr-2 h-4 w-4" />Business Card</Link></Button>
+          <Button variant="ghost" asChild><Link href="/more"><Presentation className="mr-2 h-4 w-4" />X Banner</Link></Button>
+          <Button variant="ghost" asChild><Link href="/more"><Book className="mr-2 h-4 w-4" />Menu Book Cover</Link></Button>
+        </div>
+        <div className="relative w-full sm:w-auto sm:max-w-xs flex-grow sm:flex-grow-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search templates..."
+            className="pl-10 w-full text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </header>
-
       <main>
         {isLoading || clientLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
