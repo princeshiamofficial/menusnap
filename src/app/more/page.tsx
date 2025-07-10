@@ -112,12 +112,6 @@ function TemplateCard({
               className="object-cover"
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
             />
-            {isTopRated && (
-              <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2.5 shadow">
-                <Star className="h-4 w-4 mr-1.5 fill-current text-yellow-900" />
-                TOP RATED
-              </Badge>
-            )}
             <Button
               variant="ghost"
               size="icon"
