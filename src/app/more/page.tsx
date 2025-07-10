@@ -370,16 +370,7 @@ export default function MorePage(): ReactNode {
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
       <header>
-        <div className="rounded-lg bg-gradient-to-r from-slate-900 via-amber-700 to-primary p-6 shadow-lg text-white">
-            <h2 className="text-3xl font-bold flex items-center">
-                Welcome to the Template Gallery <Hand className="ml-2 h-8 w-8 text-yellow-400" />
-            </h2>
-            <p className="mt-1 text-sm text-slate-200">
-                Browse our full collection of professionally designed templates.
-            </p>
-        </div>
-        
-        <div className="flex items-center justify-center gap-2 mt-6 p-2 bg-card border rounded-lg shadow-sm">
+        <div className="flex items-center justify-center gap-2 mb-6 p-2 bg-card border rounded-lg shadow-sm">
           <Button variant="ghost" asChild>
             <Link href="/more">
               <BookOpen className="mr-2 h-4 w-4" /> Menu Book
@@ -397,7 +388,7 @@ export default function MorePage(): ReactNode {
           </Button>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <div className="flex items-center gap-3">
                 <MoreHorizontal className="h-8 w-8 text-primary" />
