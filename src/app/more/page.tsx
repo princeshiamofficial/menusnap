@@ -368,25 +368,25 @@ export default function MorePage(): ReactNode {
 
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
-      <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 p-2 bg-card border rounded-lg shadow-sm">
-        <div className="flex items-center gap-1 sm:gap-2 justify-start flex-shrink-0 flex-wrap">
+      <header className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 p-2 bg-card border rounded-lg shadow-sm">
+        <div className="flex items-center gap-1 sm:gap-2 justify-center flex-shrink-0 flex-wrap">
           <Button variant="ghost" asChild><Link href="/more"><BookOpen className="mr-2 h-4 w-4" />Menu Book</Link></Button>
           <Button variant="ghost" asChild><Link href="/more"><FileText className="mr-2 h-4 w-4" />Menu Card</Link></Button>
           <Button variant="ghost" asChild><Link href="/more"><FileImage className="mr-2 h-4 w-4" />Leaflet</Link></Button>
+          <div className="relative w-full sm:w-auto sm:max-w-xs flex-grow sm:flex-grow-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search templates..."
+              className="pl-10 w-full text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           <Button variant="ghost" asChild><Link href="/more"><CreditCard className="mr-2 h-4 w-4" />Membership Card</Link></Button>
           <Button variant="ghost" asChild><Link href="/more"><Contact className="mr-2 h-4 w-4" />Business Card</Link></Button>
           <Button variant="ghost" asChild><Link href="/more"><Presentation className="mr-2 h-4 w-4" />X Banner</Link></Button>
           <Button variant="ghost" asChild><Link href="/more"><Book className="mr-2 h-4 w-4" />Menu Book Cover</Link></Button>
-        </div>
-        <div className="relative w-full sm:w-auto sm:max-w-xs flex-grow sm:flex-grow-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search templates..."
-            className="pl-10 w-full text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
         </div>
       </header>
       <main>
