@@ -152,7 +152,7 @@ export function SpeedDialFAB(): ReactNode {
         // Start the timer to cycle icons
         iconCycleIntervalRef.current = setInterval(() => {
             setShowHelpImage(prev => !prev);
-        }, 15000); // Toggle every 15 seconds
+        }, 3000); // Toggle every 3 seconds
     }
 
     return () => {
