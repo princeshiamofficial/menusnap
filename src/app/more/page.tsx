@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -370,43 +369,34 @@ export default function MorePage(): ReactNode {
   return (
     <div className="space-y-8 p-4 md:p-6 lg:p-8">
       <header>
-        <div className="flex items-center justify-center gap-2 mb-6 p-2 bg-card border rounded-lg shadow-sm">
-          <Button variant="ghost" asChild>
-            <Link href="/more">
-              <BookOpen className="mr-2 h-4 w-4" /> Menu Book
-            </Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/more">
-              <FileText className="mr-2 h-4 w-4" /> Menu Card
-            </Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/more">
-              <FileImage className="mr-2 h-4 w-4" /> Leaflet
-            </Link>
-          </Button>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <MoreHorizontal className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                  All Templates
-                </h1>
-              </div>
-            </div>
-            <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search templates..."
-                className="pl-10 w-full sm:w-64 md:w-72 text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 p-2 bg-card border rounded-lg shadow-sm">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Button variant="ghost" asChild>
+              <Link href="/more">
+                <BookOpen className="mr-2 h-4 w-4" /> Menu Book
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/more">
+                <FileText className="mr-2 h-4 w-4" /> Menu Card
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/more">
+                <FileImage className="mr-2 h-4 w-4" /> Leaflet
+              </Link>
+            </Button>
+          </div>
+          <div className="relative w-full sm:w-auto sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search templates..."
+              className="pl-10 w-full text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
       </header>
 
