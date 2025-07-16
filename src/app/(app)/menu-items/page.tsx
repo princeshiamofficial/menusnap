@@ -575,9 +575,23 @@ export default function MenuItemsPage() {
   const [isMounted, setIsMounted] = useState(false);
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   const itemCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const categoryRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  const handleSelectCategory = useCallback((category: Category | null) => {
+    setSelectedCategory(category);
+    setTimeout(() => {
+      if (category) {
+        const element = categoryRefs.current.get(category.id);
+        element?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+        });
+      }
+    }, 0);
   }, []);
 
   useEffect(() => {
@@ -619,19 +633,19 @@ export default function MenuItemsPage() {
       
       if (uniqueCategories.length > 0) {
         if (!selectedCategory || !uniqueCategories.some(c => c.id === selectedCategory.id)) {
-            setSelectedCategory(uniqueCategories[0]);
+            handleSelectCategory(uniqueCategories[0]);
         }
       } else {
-        setSelectedCategory(null);
+        handleSelectCategory(null);
       }
     } catch (err: any) {
       setError(err.message || "Could not load categories.");
       setApiCategories([]);
-      setSelectedCategory(null);
+      handleSelectCategory(null);
     } finally {
       setLoadingCategories(false);
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, handleSelectCategory]);
 
   const loadItems = useCallback(async (menuType: string) => {
     if (!menuType) return;
@@ -1012,11 +1026,12 @@ export default function MenuItemsPage() {
         <CategoryList
             categories={apiCategories}
             selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
+            onSelectCategory={handleSelectCategory}
             onAddCategory={handleOpenAddCategory}
             onEditCategory={handleOpenEditCategory}
             loading={loadingCategories}
             error={error}
+            categoryRefs={categoryRefs}
         />
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
@@ -1040,7 +1055,7 @@ export default function MenuItemsPage() {
                   value={selectedCategory?.id || ''}
                   onValueChange={(value) => {
                     const category = apiCategories.find(c => c.id === value);
-                    setSelectedCategory(category || null);
+                    handleSelectCategory(category || null);
                   }}
                   disabled={loading}
                 >

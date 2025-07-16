@@ -32,6 +32,7 @@ interface CategoryListProps {
   onEditCategory: (category: Category) => void;
   loading: boolean;
   error: string | null;
+  categoryRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
 }
 
 function CategoryListComponent({
@@ -41,7 +42,8 @@ function CategoryListComponent({
   onAddCategory,
   onEditCategory,
   loading,
-  error
+  error,
+  categoryRefs,
 }: CategoryListProps): ReactNode {
 
   const sortedCategories = useMemo(() => {
@@ -65,7 +67,11 @@ function CategoryListComponent({
         {!loading && !error && sortedCategories.length > 0 && (
           <div className="p-2 space-y-2.5">
             {sortedCategories.map(category => (
-              <div key={category.id} className="bg-card rounded-md group">
+              <div 
+                key={category.id} 
+                ref={(el) => categoryRefs.current.set(category.id, el)}
+                className="bg-card rounded-md group"
+              >
                 <div className={cn(
                     'w-full flex justify-start items-center text-sm h-9 border border-border rounded-md',
                      selectedCategory?.id === category.id
