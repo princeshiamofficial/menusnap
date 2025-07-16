@@ -34,6 +34,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
   Layers, 
   Search, 
   Star, 
@@ -54,7 +61,7 @@ import {
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -226,7 +233,7 @@ const addTemplateFormSchema = z.object({
       (files) => ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
       "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
     ),
-  tags: z.array(z.object({ value: z.string().min(1, "Tag cannot be empty") })).min(1, "At least one tag is required").max(3, "You can add a maximum of 3 tags"),
+  tag: z.string({ required_error: "A tag must be selected."}).min(1, "A tag is required"),
   isTopRated: z.boolean().default(false),
   isPublished: z.boolean().default(false),
 });
@@ -249,16 +256,11 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
     defaultValues: {
       templateName: "",
       description: "",
-      tags: [{ value: "" }],
+      tag: undefined,
       isTopRated: false,
       isPublished: false,
     },
     mode: 'onChange',
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "tags",
   });
 
   const processAndSetImage = useCallback((file: File | null) => {
@@ -377,7 +379,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       description: data.description,
       isTopRated: data.isTopRated,
       isPublished: data.isPublished,
-      tags: data.tags.map(tag => tag.value),
+      tags: [data.tag],
       imageUrl: uploadedImageUrl,
       items: [], 
     };
@@ -455,35 +457,23 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
 
           <div>
-            <Label>Tags* (Max 3)</Label>
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex items-center gap-2 mt-1">
-                <Input
-                  {...form.register(`tags.${index}.value`)}
-                  placeholder={`Tag ${index + 1} (e.g., Restaurant, Cafe)`}
-                  className={form.formState.errors.tags?.[index]?.value ? "border-destructive" : ""}
-                />
-                {fields.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10">
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-             {form.formState.errors.tags?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
-             { form.formState.errors.tags && !form.formState.errors.tags.message &&
-                Array.isArray(form.formState.errors.tags) &&
-                form.formState.errors.tags.map((tagError, index) =>
-                  tagError?.value?.message ? (
-                    <p key={index} className="text-sm text-destructive mt-1">
-                      Tag {index + 1}: {tagError.value.message}
-                    </p>
-                  ) : null
-                )}
-
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2" disabled={fields.length >= 3}>
-              <Plus className="mr-2 h-4 w-4" /> Add Another Tag
-            </Button>
+            <Label>Tag*</Label>
+            <Controller
+              control={form.control}
+              name="tag"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="parlour">Parlour</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {form.formState.errors.tag && <p className="text-sm text-destructive mt-1">{form.formState.errors.tag.message}</p>}
           </div>
 
           <div className="flex items-center space-x-2 pt-2">
@@ -535,7 +525,7 @@ const editTemplateFormSchema = z.object({
       (files) => !files || files.length === 0 || ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
       "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
     ),
-  tags: z.array(z.object({ value: z.string().min(1, "Tag cannot be empty") })).min(1, "At least one tag is required").max(3, "You can add a maximum of 3 tags"),
+  tag: z.string({ required_error: "A tag must be selected."}).min(1, "A tag is required"),
   isTopRated: z.boolean().default(false),
   isPublished: z.boolean().default(false),
 });
@@ -559,17 +549,12 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
     defaultValues: {
       templateName: decodeHtmlEntities(templateData.name),
       description: decodeHtmlEntities(templateData.description),
-      tags: templateData.tags ? templateData.tags.map(tag => ({ value: decodeHtmlEntities(tag) })) : [{ value: "" }],
+      tag: templateData.tags?.[0] || undefined,
       isTopRated: templateData.isTopRated || false,
       isPublished: templateData.isPublished || false,
       imageFile: undefined, 
     },
     mode: 'onChange',
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "tags",
   });
 
   const processAndSetImage = useCallback((file: File | null) => {
@@ -682,7 +667,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       description: data.description,
       isTopRated: data.isTopRated,
       isPublished: data.isPublished,
-      tags: data.tags.map(tag => tag.value),
+      tags: [data.tag],
       imageUrl: finalImageUrl,
       items: templateData.tags, 
     };
@@ -767,34 +752,23 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
 
           <div>
-            <Label>Tags* (Max 3)</Label>
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex items-center gap-2 mt-1">
-                <Input
-                  {...form.register(`tags.${index}.value`)}
-                  placeholder={`Tag ${index + 1}`}
-                  className={form.formState.errors.tags?.[index]?.value ? "border-destructive" : ""}
-                />
-                {fields.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-destructive hover:bg-destructive/10">
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            {form.formState.errors.tags?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
-            {form.formState.errors.tags && !form.formState.errors.tags.message && Array.isArray(form.formState.errors.tags) &&
-                form.formState.errors.tags.map((tagError, index) =>
-                  tagError?.value?.message ? (
-                    <p key={index} className="text-sm text-destructive mt-1">
-                      Tag {index + 1}: {tagError.value.message}
-                    </p>
-                  ) : null
-                )}
-
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ value: "" })} className="mt-2" disabled={fields.length >= 3}>
-              <Plus className="mr-2 h-4 w-4" /> Add Another Tag
-            </Button>
+            <Label>Tag*</Label>
+             <Controller
+              control={form.control}
+              name="tag"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="parlour">Parlour</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {form.formState.errors.tag && <p className="text-sm text-destructive mt-1">{form.formState.errors.tag.message}</p>}
           </div>
 
           <div className="flex items-center space-x-2 pt-2">
