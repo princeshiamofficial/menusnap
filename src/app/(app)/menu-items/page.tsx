@@ -620,13 +620,8 @@ export default function MenuItemsPage() {
 
       setApiCategories(uniqueCategories);
       
-      if (uniqueCategories.length > 0) {
-        if (!activeCategoryId || !uniqueCategories.some(c => c.id === activeCategoryId)) {
-            setActiveCategoryId(uniqueCategories[0].id);
-        }
-      } else {
-        setActiveCategoryId(null);
-      }
+      // Don't set active category here to avoid re-renders. Let the CategoryList component handle it.
+      
     } catch (err: any) {
       setError(err.message || "Could not load categories.");
       setApiCategories([]);
@@ -634,7 +629,7 @@ export default function MenuItemsPage() {
     } finally {
       setLoadingCategories(false);
     }
-  }, [activeCategoryId]);
+  }, []);
 
   const loadItems = useCallback(async (menuType: string) => {
     if (!menuType) return;
