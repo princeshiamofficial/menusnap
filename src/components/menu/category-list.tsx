@@ -34,7 +34,7 @@ interface CategoryListProps {
   error: string | null;
 }
 
-export function CategoryList({
+function CategoryListComponent({
   categories,
   selectedCategory,
   onSelectCategory,
@@ -99,3 +99,5 @@ export function CategoryList({
     </aside>
   );
 }
+
+export const CategoryList = React.memo(CategoryListComponent);
