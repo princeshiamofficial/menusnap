@@ -4,7 +4,7 @@
 import type { ReactNode } from 'react';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Reorder, motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from 'react-dom';
 import {
   Search,
@@ -550,7 +550,6 @@ const Typewriter = React.memo(function Typewriter({ words, className }: { words:
 export default function MenuItemsPage() {
   const { clientUser, clientLoading } = useClientAuth();
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
-  const [orderedCategories, setOrderedCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -622,12 +621,10 @@ export default function MenuItemsPage() {
       const uniqueCategories = Array.from(new Map(combinedCategories.map(cat => [cat.id, cat])).values());
 
       setApiCategories(uniqueCategories);
-      const sortedCategories = uniqueCategories.sort((a,b) => a.name.localeCompare(b.name));
-      setOrderedCategories(sortedCategories);
       
-      if (sortedCategories.length > 0) {
-        if (!selectedCategory || !sortedCategories.some(c => c.id === selectedCategory.id)) {
-            setSelectedCategory(sortedCategories[0]);
+      if (uniqueCategories.length > 0) {
+        if (!selectedCategory || !uniqueCategories.some(c => c.id === selectedCategory.id)) {
+            setSelectedCategory(uniqueCategories[0]);
         }
       } else {
         setSelectedCategory(null);
@@ -635,7 +632,6 @@ export default function MenuItemsPage() {
     } catch (err: any) {
       setError(err.message || "Could not load categories.");
       setApiCategories([]);
-      setOrderedCategories([]);
       setSelectedCategory(null);
     } finally {
       setLoadingCategories(false);
@@ -853,7 +849,6 @@ export default function MenuItemsPage() {
     }
     
     setApiCategories(updatedCategories);
-    setOrderedCategories(updatedCategories.sort((a,b) => a.name.localeCompare(b.name)));
     
     try {
         const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
@@ -997,6 +992,10 @@ export default function MenuItemsPage() {
   }, [currentMenuItems.length]);
   
   const loading = loadingCategories || loadingItems;
+  
+  const sortedCategories = useMemo(() => {
+    return [...apiCategories].sort((a,b) => a.name.localeCompare(b.name));
+  }, [apiCategories]);
 
   return (
     <>
@@ -1028,11 +1027,11 @@ export default function MenuItemsPage() {
               <div className="p-2 space-y-2.5">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}</div>
             )}
             {error && <p className="p-4 text-sm text-destructive">Error: {error}</p>}
-            {!loadingCategories && !error && orderedCategories.length === 0 && <p className="p-4 text-sm text-muted-foreground">No categories found.</p>}
-            {!loadingCategories && !error && orderedCategories.length > 0 && (
-              <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
-                {orderedCategories.map(category => (
-                  <Reorder.Item key={category.id} value={category} className="bg-card rounded-md group">
+            {!loadingCategories && !error && sortedCategories.length === 0 && <p className="p-4 text-sm text-muted-foreground">No categories found.</p>}
+            {!loadingCategories && !error && sortedCategories.length > 0 && (
+              <div className="p-2 space-y-2.5">
+                {sortedCategories.map(category => (
+                  <div key={category.id} className="bg-card rounded-md group">
                     <div className={cn(
                         'w-full flex justify-start items-center text-sm h-9 border border-border rounded-md',
                          selectedCategory?.id === category.id
@@ -1056,12 +1055,11 @@ export default function MenuItemsPage() {
                       >
                         <span className="mr-2 text-sm">{category.icon || <DefaultCategoryIcon className="h-4 w-4" />}</span>
                         <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>
-                        <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab group-hover:text-muted-foreground" />
                       </Button>
                     </div>
-                  </Reorder.Item>
+                  </div>
                 ))}
-              </Reorder.Group>
+              </div>
             )}
           </ScrollArea>
         </aside>
@@ -1105,8 +1103,8 @@ export default function MenuItemsPage() {
                     )}
                   </SelectTrigger>
                   <SelectContent>
-                    {orderedCategories.length > 0 ? (
-                      orderedCategories.map(category => (
+                    {sortedCategories.length > 0 ? (
+                      sortedCategories.map(category => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">
                               <span className="text-base">{category.icon}</span>
