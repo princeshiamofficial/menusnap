@@ -658,8 +658,8 @@ export default function MenuItemsPage() {
       setAllMenuItems(uniqueItems);
       
       if (uniqueCategories.length > 0) {
-        const currentCatExists = uniqueCategories.some((c: Category) => c.id === selectedCategory?.id);
-        if (!currentCatExists) {
+        // If there's no selected category, or the current one isn't in the new list, select the first one.
+        if (!selectedCategory || !uniqueCategories.some(c => c.id === selectedCategory.id)) {
             setSelectedCategory(uniqueCategories[0]);
         }
       } else {
@@ -671,7 +671,7 @@ export default function MenuItemsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory?.id]);
+  }, [selectedCategory]);
 
   useEffect(() => {
     loadData(selectedMenuType);
