@@ -234,7 +234,7 @@ const addTemplateFormSchema = z.object({
       (files) => ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
       "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
     ),
-  tags: z.array(z.string().min(1, "Tag cannot be empty.")).min(1, "At least one tag is required."),
+  tag: z.string({ required_error: "Please select a tag." }).min(1, "A tag is required."),
   isTopRated: z.boolean().default(false),
   isPublished: z.boolean().default(false),
 });
@@ -251,21 +251,19 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [tagInput, setTagInput] = useState("");
 
   const form = useForm<AddTemplateFormValues>({
     resolver: zodResolver(addTemplateFormSchema),
     defaultValues: {
       templateName: "",
       description: "",
-      tags: [],
       isTopRated: false,
       isPublished: false,
     },
     mode: 'onChange',
   });
 
-  const { control, setValue, getValues, trigger } = form;
+  const { control } = form;
 
   const processAndSetImage = useCallback((file: File | null) => {
     if (file) {
@@ -345,24 +343,6 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
     }
   }, [processAndSetImage]);
 
-
-  const handleAddTag = () => {
-    const newTag = tagInput.trim();
-    if (newTag) {
-      const currentTags = getValues("tags") || [];
-      if (!currentTags.includes(newTag)) {
-        setValue("tags", [...currentTags, newTag], { shouldValidate: true });
-      }
-      setTagInput("");
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    const currentTags = getValues("tags") || [];
-    setValue("tags", currentTags.filter(tag => tag !== tagToRemove), { shouldValidate: true });
-  };
-
-
   async function onSubmit(data: AddTemplateFormValues) {
     form.clearErrors(); 
     let uploadedImageUrl = "";
@@ -400,7 +380,7 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       description: data.description,
       isTopRated: data.isTopRated,
       isPublished: data.isPublished,
-      tags: data.tags,
+      tags: [data.tag],
       imageUrl: uploadedImageUrl,
       items: [], 
     };
@@ -478,46 +458,24 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
           
           <div>
-            <Label htmlFor="tags-add">Tags*</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                id="tags-add"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddTag();
-                  }
-                }}
-                placeholder="Type a tag and press Enter"
-              />
-              <Button type="button" variant="outline" onClick={handleAddTag}>Add</Button>
-            </div>
+            <Label htmlFor="tags-add">Tag*</Label>
             <Controller
               control={control}
-              name="tags"
+              name="tag"
               render={({ field }) => (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {field.value.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="pl-2 pr-1">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 rounded-full p-0.5 hover:bg-destructive/20"
-                        aria-label={`Remove ${tag} tag`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Select a tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="parlour">Parlour</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             />
-            {form.formState.errors.tags && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
+            {form.formState.errors.tag && <p className="text-sm text-destructive mt-1">{form.formState.errors.tag.message}</p>}
           </div>
-
 
           <div className="flex items-center space-x-2 pt-2">
             <Controller
@@ -568,7 +526,7 @@ const editTemplateFormSchema = z.object({
       (files) => !files || files.length === 0 || ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
       "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
     ),
-  tags: z.array(z.string().min(1, "Tag cannot be empty.")).min(1, "At least one tag is required."),
+  tag: z.string({ required_error: "Please select a tag." }).min(1, "A tag is required."),
   isTopRated: z.boolean().default(false),
   isPublished: z.boolean().default(false),
 });
@@ -586,14 +544,13 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   const [imagePreview, setImagePreview] = useState<string | null>(templateData.imageUrl || null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [tagInput, setTagInput] = useState("");
 
   const form = useForm<EditTemplateFormValues>({
     resolver: zodResolver(editTemplateFormSchema),
     defaultValues: {
       templateName: decodeHtmlEntities(templateData.name),
       description: decodeHtmlEntities(templateData.description),
-      tags: templateData.tags || [],
+      tag: templateData.tags?.[0] || "",
       isTopRated: templateData.isTopRated || false,
       isPublished: templateData.isPublished || false,
       imageFile: undefined, 
@@ -601,7 +558,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
     mode: 'onChange',
   });
 
-  const { control, setValue, getValues } = form;
+  const { control } = form;
 
   const processAndSetImage = useCallback((file: File | null) => {
     if (file) {
@@ -680,23 +637,6 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
     }
   }, [processAndSetImage]);
 
-  const handleAddTag = () => {
-    const newTag = tagInput.trim();
-    if (newTag) {
-      const currentTags = getValues("tags") || [];
-      if (!currentTags.includes(newTag)) {
-        setValue("tags", [...currentTags, newTag], { shouldValidate: true });
-      }
-      setTagInput("");
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    const currentTags = getValues("tags") || [];
-    setValue("tags", currentTags.filter(tag => tag !== tagToRemove), { shouldValidate: true });
-  };
-
-
   async function onSubmit(data: EditTemplateFormValues) {
     form.clearErrors();
     let finalImageUrl = templateData.imageUrl;
@@ -729,7 +669,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       description: data.description,
       isTopRated: data.isTopRated,
       isPublished: data.isPublished,
-      tags: data.tags,
+      tags: [data.tag],
       imageUrl: finalImageUrl,
       items: templateData.tags, 
     };
@@ -814,44 +754,23 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
           
           <div>
-            <Label htmlFor="tags-edit">Tags*</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input
-                id="tags-edit"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddTag();
-                  }
-                }}
-                placeholder="Type a tag and press Enter"
-              />
-              <Button type="button" variant="outline" onClick={handleAddTag}>Add</Button>
-            </div>
-             <Controller
+            <Label htmlFor="tags-edit">Tag*</Label>
+            <Controller
               control={control}
-              name="tags"
+              name="tag"
               render={({ field }) => (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {field.value.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="pl-2 pr-1">
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 rounded-full p-0.5 hover:bg-destructive/20"
-                        aria-label={`Remove ${tag} tag`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Select a tag" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="parlour">Parlour</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             />
-            {form.formState.errors.tags && <p className="text-sm text-destructive mt-1">{form.formState.errors.tags.message}</p>}
+            {form.formState.errors.tag && <p className="text-sm text-destructive mt-1">{form.formState.errors.tag.message}</p>}
           </div>
 
           <div className="flex items-center space-x-2 pt-2">
