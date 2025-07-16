@@ -558,7 +558,8 @@ export default function MenuItemsPage() {
   const [selectedMenuType, setSelectedMenuType] = useState<string>('');
   const [itemsToSelectFromDraft, setItemsToSelectFromDraft] = useState<string[] | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingItems, setLoadingItems] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]); 
@@ -601,31 +602,55 @@ export default function MenuItemsPage() {
     };
   }, [searchTerm]);
 
-  const loadData = useCallback(async (menuType: string) => {
+  const loadCategories = useCallback(async (menuType: string) => {
     if (!menuType) return;
-    setLoading(true);
+    setLoadingCategories(true);
     setError(null);
-
     const categoriesApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php' : 'https://colorhutbd.xyz/vm/api/categories.php';
-    const menuItemsApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-items.php?visibleOnly=true' : 'https://colorhutbd.xyz/vm/api/menu-items.php?visibleOnly=true';
-
     try {
-      const [categoriesRes, itemsRes] = await Promise.all([
-        fetch(categoriesApiUrl),
-        fetch(menuItemsApiUrl)
-      ]);
-
-      if (!categoriesRes.ok || !itemsRes.ok) throw new Error("Failed to fetch initial data from API.");
-
+      const categoriesRes = await fetch(categoriesApiUrl);
+      if (!categoriesRes.ok) throw new Error("Failed to fetch categories from API.");
       const categoriesData = await categoriesRes.json();
-      const itemsData = await itemsRes.json();
-
       if (!categoriesData.success || !Array.isArray(categoriesData.data.categories)) throw new Error("Invalid category data format.");
-      
+
       const serverCategories: Category[] = categoriesData.data.categories
         .filter((cat: any) => cat.visibleToUsers)
         .map((cat: any) => ({ ...cat, id: String(cat.id) }));
 
+      const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
+      const combinedCategories = [...serverCategories, ...localCategories];
+      const uniqueCategories = Array.from(new Map(combinedCategories.map(cat => [cat.id, cat])).values());
+
+      setApiCategories(uniqueCategories);
+      const sortedCategories = uniqueCategories.sort((a,b) => a.name.localeCompare(b.name));
+      setOrderedCategories(sortedCategories);
+      
+      if (sortedCategories.length > 0) {
+        if (!selectedCategory || !sortedCategories.some(c => c.id === selectedCategory.id)) {
+            setSelectedCategory(sortedCategories[0]);
+        }
+      } else {
+        setSelectedCategory(null);
+      }
+    } catch (err: any) {
+      setError(err.message || "Could not load categories.");
+      setApiCategories([]);
+      setOrderedCategories([]);
+      setSelectedCategory(null);
+    } finally {
+      setLoadingCategories(false);
+    }
+  }, [selectedCategory]);
+
+  const loadItems = useCallback(async (menuType: string) => {
+    if (!menuType) return;
+    setLoadingItems(true);
+    const menuItemsApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-items.php?visibleOnly=true' : 'https://colorhutbd.xyz/vm/api/menu-items.php?visibleOnly=true';
+    try {
+      const itemsRes = await fetch(menuItemsApiUrl);
+      if (!itemsRes.ok) throw new Error("Failed to fetch menu items from API.");
+      const itemsData = await itemsRes.json();
+      
       let rawServerItems: any[] = [];
       if (Array.isArray(itemsData)) {
           rawServerItems = itemsData;
@@ -644,38 +669,24 @@ export default function MenuItemsPage() {
           category: String(item.category || item.categoryId) 
         }));
 
-      const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
       const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
-      
-      const combinedCategories = [...serverCategories, ...localCategories];
       const combinedItems = [...serverItems, ...localItems];
-      
-      const uniqueCategories = Array.from(new Map(combinedCategories.map(cat => [cat.id, cat])).values());
       const uniqueItems = Array.from(new Map(combinedItems.map(item => [item.id, item])).values());
-
-      setApiCategories(uniqueCategories);
-      setOrderedCategories(uniqueCategories.sort((a,b) => a.name.localeCompare(b.name)));
       setAllMenuItems(uniqueItems);
-      
-      if (uniqueCategories.length > 0) {
-        // If there's no selected category, or the current one isn't in the new list, select the first one.
-        if (!selectedCategory || !uniqueCategories.some(c => c.id === selectedCategory.id)) {
-            setSelectedCategory(uniqueCategories[0]);
-        }
-      } else {
-        setSelectedCategory(null);
-      }
 
     } catch (err: any) {
-      setError(err.message || "Could not load data.");
+      setError(err.message || "Could not load menu items.");
+      setAllMenuItems([]);
     } finally {
-      setLoading(false);
+      setLoadingItems(false);
     }
-  }, [selectedCategory]);
+  }, []);
 
   useEffect(() => {
-    loadData(selectedMenuType);
-  }, [selectedMenuType, loadData]);
+    loadCategories(selectedMenuType);
+    loadItems(selectedMenuType);
+  }, [selectedMenuType, loadCategories, loadItems]);
+
 
   // Effect to handle restoring a draft on page load
   useEffect(() => {
@@ -723,6 +734,7 @@ export default function MenuItemsPage() {
 
   // Effect to apply selections after data has finished loading
   useEffect(() => {
+    const loading = loadingCategories || loadingItems;
     if (!loading && itemsToSelectFromDraft) {
       const newSelectedItems: Record<string, boolean> = {};
       itemsToSelectFromDraft.forEach(itemId => {
@@ -735,7 +747,7 @@ export default function MenuItemsPage() {
       // Reset the pending selection state
       setItemsToSelectFromDraft(null);
     }
-  }, [loading, itemsToSelectFromDraft, allMenuItems]);
+  }, [loadingCategories, loadingItems, itemsToSelectFromDraft, allMenuItems]);
 
 
   const handleOpenAddItem = () => {
@@ -816,6 +828,7 @@ export default function MenuItemsPage() {
     setIsCategorySubmitting(true);
     
     let updatedCategories;
+    let newCategory = null;
 
     if (editingCategory) {
         // Editing an existing category
@@ -823,10 +836,11 @@ export default function MenuItemsPage() {
         updatedCategories = apiCategories.map(cat =>
             cat.id === editingCategory.id ? categoryToUpdate : cat
         );
+        newCategory = categoryToUpdate;
         toast({ title: "Category Updated", description: `"${decodeHtmlEntities(data.name)}" has been updated.` });
     } else {
         // Adding a new category
-        const newCategory: Category = {
+        newCategory = {
             id: `custom-category-${customSlugify(data.name)}-${Date.now()}`,
             name: data.name,
             icon: data.icon,
@@ -847,13 +861,11 @@ export default function MenuItemsPage() {
             const index = localCategories.findIndex(c => c.id === editingCategory.id);
             if (index > -1) {
                 localCategories[index] = { ...localCategories[index], ...data };
-            } else { // If not found in local, it might be a server category being edited
-              // We could add it to local upon edit, or handle server-side updates.
-              // For simplicity, we just add it if not found.
-              localCategories.push({ ...editingCategory, ...data });
+            } else { 
+              localCategories.push(newCategory);
             }
         } else {
-            localCategories.push(updatedCategories[updatedCategories.length - 1]);
+            localCategories.push(newCategory);
         }
         localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
     } catch(e) {
@@ -983,6 +995,8 @@ export default function MenuItemsPage() {
     }
     return "md:grid-cols-2 lg:grid-cols-3";
   }, [currentMenuItems.length]);
+  
+  const loading = loadingCategories || loadingItems;
 
   return (
     <>
@@ -1010,12 +1024,12 @@ export default function MenuItemsPage() {
             </Button>
           </div>
           <ScrollArea className="flex-1">
-            {loading && (
+            {loadingCategories && (
               <div className="p-2 space-y-2.5">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}</div>
             )}
             {error && <p className="p-4 text-sm text-destructive">Error: {error}</p>}
-            {!loading && !error && orderedCategories.length === 0 && <p className="p-4 text-sm text-muted-foreground">No categories found.</p>}
-            {!loading && !error && orderedCategories.length > 0 && (
+            {!loadingCategories && !error && orderedCategories.length === 0 && <p className="p-4 text-sm text-muted-foreground">No categories found.</p>}
+            {!loadingCategories && !error && orderedCategories.length > 0 && (
               <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-2.5">
                 {orderedCategories.map(category => (
                   <Reorder.Item key={category.id} value={category} className="bg-card rounded-md group">
