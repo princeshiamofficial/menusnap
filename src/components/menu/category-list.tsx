@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Edit,
   PlusCircle,
@@ -26,25 +26,40 @@ interface Category {
 
 interface CategoryListProps {
   categories: Category[];
-  selectedCategory: Category | null;
-  onSelectCategory: (category: Category | null) => void;
+  onCategoryChange: (categoryId: string | null) => void;
   onAddCategory: () => void;
   onEditCategory: (category: Category) => void;
   loading: boolean;
   error: string | null;
-  categoryRefs: React.MutableRefObject<Map<string, HTMLDivElement | null>>;
 }
 
 function CategoryListComponent({
   categories,
-  selectedCategory,
-  onSelectCategory,
+  onCategoryChange,
   onAddCategory,
   onEditCategory,
   loading,
   error,
-  categoryRefs,
 }: CategoryListProps): ReactNode {
+
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // If there's no selection or the current selection is no longer valid, select the first category
+    if (categories.length > 0 && (!selectedCategoryId || !categories.some(c => c.id === selectedCategoryId))) {
+      const firstCategoryId = categories.sort((a,b) => a.name.localeCompare(b.name))[0].id;
+      setSelectedCategoryId(firstCategoryId);
+      onCategoryChange(firstCategoryId);
+    } else if (categories.length === 0) {
+      setSelectedCategoryId(null);
+      onCategoryChange(null);
+    }
+  }, [categories, selectedCategoryId, onCategoryChange]);
+
+  const handleSelectCategory = (categoryId: string | null) => {
+    setSelectedCategoryId(categoryId);
+    onCategoryChange(categoryId);
+  };
 
   const sortedCategories = useMemo(() => {
     return [...categories].sort((a,b) => a.name.localeCompare(b.name));
@@ -69,16 +84,15 @@ function CategoryListComponent({
             {sortedCategories.map(category => (
               <div 
                 key={category.id} 
-                ref={(el) => categoryRefs.current.set(category.id, el)}
                 className="bg-card rounded-md group"
               >
                 <div className={cn(
                     'w-full flex justify-start items-center text-sm h-9 border border-border rounded-md',
-                     selectedCategory?.id === category.id
+                     selectedCategoryId === category.id
                      ? 'bg-muted font-semibold text-foreground border-primary'
                      : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
                 )}>
-                  {selectedCategory?.id === category.id && (
+                  {selectedCategoryId === category.id && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -91,7 +105,7 @@ function CategoryListComponent({
                   <Button
                     variant="ghost"
                     className="w-full h-full justify-start items-center px-2 py-0"
-                    onClick={() => onSelectCategory(category)}
+                    onClick={() => handleSelectCategory(category.id)}
                   >
                     <span className="mr-2 text-sm">{category.icon || "📁"}</span>
                     <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>

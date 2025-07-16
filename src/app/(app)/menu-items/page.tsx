@@ -8,13 +8,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from 'react-dom';
 import {
   Search,
-  Eye,
+  ChevronDown,
   ChevronRight,
   PlusCircle,
   Edit,
   X,
   Plus,
-  ChevronDown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -545,7 +544,7 @@ const Typewriter = React.memo(function Typewriter({ words, className }: { words:
 export default function MenuItemsPage() {
   const { clientUser, clientLoading } = useClientAuth();
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); 
@@ -575,23 +574,13 @@ export default function MenuItemsPage() {
   const [isMounted, setIsMounted] = useState(false);
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   const itemCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
-  const categoryRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  
+  const selectedCategory = useMemo(() => {
+    return apiCategories.find(c => c.id === activeCategoryId) || null;
+  }, [apiCategories, activeCategoryId]);
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-
-  const handleSelectCategory = useCallback((category: Category | null) => {
-    setSelectedCategory(category);
-    setTimeout(() => {
-      if (category) {
-        const element = categoryRefs.current.get(category.id);
-        element?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-        });
-      }
-    }, 0);
   }, []);
 
   useEffect(() => {
@@ -632,20 +621,20 @@ export default function MenuItemsPage() {
       setApiCategories(uniqueCategories);
       
       if (uniqueCategories.length > 0) {
-        if (!selectedCategory || !uniqueCategories.some(c => c.id === selectedCategory.id)) {
-            handleSelectCategory(uniqueCategories[0]);
+        if (!activeCategoryId || !uniqueCategories.some(c => c.id === activeCategoryId)) {
+            setActiveCategoryId(uniqueCategories[0].id);
         }
       } else {
-        handleSelectCategory(null);
+        setActiveCategoryId(null);
       }
     } catch (err: any) {
       setError(err.message || "Could not load categories.");
       setApiCategories([]);
-      handleSelectCategory(null);
+      setActiveCategoryId(null);
     } finally {
       setLoadingCategories(false);
     }
-  }, [selectedCategory, handleSelectCategory]);
+  }, [activeCategoryId]);
 
   const loadItems = useCallback(async (menuType: string) => {
     if (!menuType) return;
@@ -884,18 +873,18 @@ export default function MenuItemsPage() {
   }, [apiCategories, editingCategory, toast]);
 
   const currentMenuItems = useMemo(() => {
-    if (!selectedCategory) {
+    if (!activeCategoryId) {
         return [];
     }
 
-    let itemsToFilter = allMenuItems.filter(item => item.category === selectedCategory.id);
+    let itemsToFilter = allMenuItems.filter(item => item.category === activeCategoryId);
     
     if (!debouncedSearchTerm) {
         return itemsToFilter;
     }
     
     return itemsToFilter.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
-  }, [selectedCategory, allMenuItems, debouncedSearchTerm]);
+  }, [activeCategoryId, allMenuItems, debouncedSearchTerm]);
 
   const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => {
     setSelectedItems(prev => {
@@ -1025,13 +1014,11 @@ export default function MenuItemsPage() {
         
         <CategoryList
             categories={apiCategories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={handleSelectCategory}
+            onCategoryChange={setActiveCategoryId}
             onAddCategory={handleOpenAddCategory}
             onEditCategory={handleOpenEditCategory}
             loading={loadingCategories}
             error={error}
-            categoryRefs={categoryRefs}
         />
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
@@ -1052,11 +1039,8 @@ export default function MenuItemsPage() {
               <div className="flex-grow">
                 <Label htmlFor="mobile-category-select">Category</Label>
                 <Select
-                  value={selectedCategory?.id || ''}
-                  onValueChange={(value) => {
-                    const category = apiCategories.find(c => c.id === value);
-                    handleSelectCategory(category || null);
-                  }}
+                  value={activeCategoryId || ''}
+                  onValueChange={(value) => setActiveCategoryId(value)}
                   disabled={loading}
                 >
                   <SelectTrigger
