@@ -8,13 +8,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from 'react-dom';
 import {
   Search,
-  Save,
   Eye,
-  GripVertical,
   ChevronRight,
   PlusCircle,
-  Send,
-  FileText as DefaultCategoryIcon,
   Edit,
   X,
   Plus,
@@ -27,7 +23,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import {
@@ -46,8 +41,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTheme } from '@/context/ThemeContext';
 import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog';
+import { CategoryList } from '@/components/menu/category-list';
 import { useToast } from "@/hooks/use-toast";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -679,8 +674,10 @@ export default function MenuItemsPage() {
   }, []);
 
   useEffect(() => {
-    loadCategories(selectedMenuType);
-    loadItems(selectedMenuType);
+    if (selectedMenuType) {
+        loadCategories(selectedMenuType);
+        loadItems(selectedMenuType);
+    }
   }, [selectedMenuType, loadCategories, loadItems]);
 
 
@@ -993,10 +990,6 @@ export default function MenuItemsPage() {
   
   const loading = loadingCategories || loadingItems;
   
-  const sortedCategories = useMemo(() => {
-    return [...apiCategories].sort((a,b) => a.name.localeCompare(b.name));
-  }, [apiCategories]);
-
   return (
     <>
       {isMounted && createPortal(
@@ -1015,54 +1008,16 @@ export default function MenuItemsPage() {
       )}
 
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]">
-        <aside className="hidden md:flex w-72 bg-card border-r border-border flex-col">
-          <div className="p-4 border-b border-border flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
-            <Button variant="ghost" size="icon" onClick={handleOpenAddCategory} className="h-8 w-8" aria-label="Add New Category">
-              <PlusCircle className="h-5 w-5" />
-            </Button>
-          </div>
-          <ScrollArea className="flex-1">
-            {loadingCategories && (
-              <div className="p-2 space-y-2.5">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}</div>
-            )}
-            {error && <p className="p-4 text-sm text-destructive">Error: {error}</p>}
-            {!loadingCategories && !error && sortedCategories.length === 0 && <p className="p-4 text-sm text-muted-foreground">No categories found.</p>}
-            {!loadingCategories && !error && sortedCategories.length > 0 && (
-              <div className="p-2 space-y-2.5">
-                {sortedCategories.map(category => (
-                  <div key={category.id} className="bg-card rounded-md group">
-                    <div className={cn(
-                        'w-full flex justify-start items-center text-sm h-9 border border-border rounded-md',
-                         selectedCategory?.id === category.id
-                         ? 'bg-muted font-semibold text-foreground border-primary'
-                         : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
-                    )}>
-                      {selectedCategory?.id === category.id && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 ml-1 text-primary hover:bg-primary/10"
-                          onClick={() => handleOpenEditCategory(category)}
-                        >
-                           <Edit className="h-4 w-4"/>
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        className="w-full h-full justify-start items-center px-2 py-0"
-                        onClick={() => setSelectedCategory(category)}
-                      >
-                        <span className="mr-2 text-sm">{category.icon || <DefaultCategoryIcon className="h-4 w-4" />}</span>
-                        <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </aside>
+        
+        <CategoryList
+            categories={apiCategories}
+            selectedCategory={selectedCategory}
+            onSelectCategory={setSelectedCategory}
+            onAddCategory={handleOpenAddCategory}
+            onEditCategory={handleOpenEditCategory}
+            loading={loadingCategories}
+            error={error}
+        />
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
           <div className="py-4 px-6 border-b border-border bg-card space-y-3">
@@ -1103,8 +1058,8 @@ export default function MenuItemsPage() {
                     )}
                   </SelectTrigger>
                   <SelectContent>
-                    {sortedCategories.length > 0 ? (
-                      sortedCategories.map(category => (
+                    {apiCategories.length > 0 ? (
+                      apiCategories.map(category => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">
                               <span className="text-base">{category.icon}</span>
