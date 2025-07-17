@@ -24,6 +24,7 @@ import {
   BookCopy,
   Star,
   Video,
+  PlayCircle,
 } from "lucide-react"; 
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +52,45 @@ const mockReviews = [
 ];
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/800x600.png";
+
+type MediaType = {
+  type: 'image' | 'video';
+  url: string;
+  thumbnail: string;
+}
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  let videoId: string | null = null;
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname === 'youtu.be') {
+      videoId = urlObj.pathname.slice(1);
+    } else if (urlObj.hostname.includes('youtube.com')) {
+      videoId = urlObj.searchParams.get('v');
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  } catch (error) {
+    console.error("Invalid video URL:", url, error);
+    return null;
+  }
+}
+
+function getYouTubeThumbnail(url: string): string {
+    let videoId: string | null = null;
+    try {
+        const urlObj = new URL(url);
+        if (urlObj.hostname === 'youtu.be') {
+            videoId = urlObj.pathname.slice(1);
+        } else if (urlObj.hostname.includes('youtube.com')) {
+            videoId = urlObj.searchParams.get('v');
+        }
+    } catch {
+        // fall through
+    }
+    return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : DEFAULT_PRODUCT_IMAGE;
+}
+
 
 function RelatedProductCard({ product }: { product: Product }) {
   return (
@@ -91,22 +131,6 @@ const StarRating = ({ rating, className }: { rating: number; className?: string 
     </div>
 );
 
-function getYouTubeEmbedUrl(url: string): string | null {
-  if (!url) return null;
-  let videoId: string | null = null;
-  try {
-    const urlObj = new URL(url);
-    if (urlObj.hostname === 'youtu.be') {
-      videoId = urlObj.pathname.slice(1);
-    } else if (urlObj.hostname.includes('youtube.com')) {
-      videoId = urlObj.searchParams.get('v');
-    }
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-  } catch (error) {
-    console.error("Invalid video URL:", url, error);
-    return null;
-  }
-}
 
 export default function ProductDetailsPage() {
   const params = useParams();
@@ -118,7 +142,9 @@ export default function ProductDetailsPage() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  
+  const [mediaGallery, setMediaGallery] = useState<MediaType[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<MediaType | null>(null);
 
   useEffect(() => {
     async function fetchProductData() {
@@ -128,7 +154,19 @@ export default function ProductDetailsPage() {
         try {
             const fetchedProduct = await getProduct(productId);
             setProduct(fetchedProduct);
-            setSelectedImage(fetchedProduct.imageUrls?.[0] || null);
+            
+            const images: MediaType[] = (fetchedProduct.imageUrls || []).map(url => ({ type: 'image', url, thumbnail: url }));
+            const videos: MediaType[] = (fetchedProduct.videoUrls || [])
+                .map(url => ({
+                    type: 'video',
+                    url: getYouTubeEmbedUrl(url) || url,
+                    thumbnail: getYouTubeThumbnail(url)
+                }))
+                .filter(v => v.url);
+            
+            const gallery = [...images, ...videos];
+            setMediaGallery(gallery);
+            setSelectedMedia(gallery[0] || null);
 
             // Fetch related products
             const allProducts = await getProducts();
@@ -164,10 +202,6 @@ export default function ProductDetailsPage() {
     return parseFloat((total / mockReviews.length).toFixed(1));
   }, []);
 
-  const embeddableVideoUrls = useMemo(() => {
-      if (!product?.videoUrls) return [];
-      return product.videoUrls.map(getYouTubeEmbedUrl).filter(url => url !== null) as string[];
-  }, [product?.videoUrls]);
 
   if (isLoading) {
     return (
@@ -178,7 +212,8 @@ export default function ProductDetailsPage() {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
           <div>
             <Skeleton className="aspect-square w-full rounded-lg" />
-            <div className="mt-4 grid grid-cols-4 gap-4">
+            <div className="mt-4 grid grid-cols-5 gap-4">
+              <Skeleton className="aspect-square w-full rounded-md" />
               <Skeleton className="aspect-square w-full rounded-md" />
               <Skeleton className="aspect-square w-full rounded-md" />
               <Skeleton className="aspect-square w-full rounded-md" />
@@ -224,39 +259,59 @@ export default function ProductDetailsPage() {
         </Button>
       </div>
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
-        {/* Image Gallery */}
+        {/* Media Gallery */}
         <div className="sticky top-8">
           <AnimatePresence mode="wait">
             <motion.div 
-              key={selectedImage}
+              key={selectedMedia?.url}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
               className="aspect-square w-full relative overflow-hidden rounded-lg shadow-lg border bg-muted"
             >
-              <Image 
-                src={selectedImage || DEFAULT_PRODUCT_IMAGE} 
-                alt={product.name} 
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover"
-                data-ai-hint="product detail"
-              />
+              {selectedMedia?.type === 'image' ? (
+                 <Image 
+                    src={selectedMedia.url || DEFAULT_PRODUCT_IMAGE} 
+                    alt={product.name} 
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    data-ai-hint="product detail"
+                  />
+              ) : selectedMedia?.type === 'video' ? (
+                 <iframe
+                    className="w-full h-full"
+                    src={selectedMedia.url}
+                    title={`Product Video for ${product.name}`}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No media selected</p>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
-          {product.imageUrls && product.imageUrls.length > 1 && (
+          {mediaGallery.length > 1 && (
             <div className="mt-4 grid grid-cols-5 gap-2 md:gap-4">
-              {product.imageUrls.map((url, index) => (
+              {mediaGallery.map((media, index) => (
                 <button
                   key={index}
-                  onClick={() => setSelectedImage(url)}
+                  onClick={() => setSelectedMedia(media)}
                   className={cn(
                     "aspect-square w-full relative overflow-hidden rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                    selectedImage === url ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100"
+                    selectedMedia?.url === media.url ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100"
                   )}
                 >
-                  <Image src={url} alt={`Thumbnail ${index + 1}`} fill className="object-cover" data-ai-hint="product thumbnail"/>
+                  <Image src={media.thumbnail} alt={`Thumbnail ${index + 1}`} fill className="object-cover" data-ai-hint="product thumbnail"/>
+                   {media.type === 'video' && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <PlayCircle className="h-8 w-8 text-white/90" />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -279,31 +334,6 @@ export default function ProductDetailsPage() {
         </div>
       </div>
       
-       {/* Video Section */}
-       {embeddableVideoUrls.length > 0 && (
-        <div className="mt-20">
-          <Separator className="mb-10" />
-           <h2 className="text-2xl font-bold text-center mb-8 flex items-center justify-center gap-2">
-            <Video className="h-7 w-7 text-primary" />
-            Product Videos
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {embeddableVideoUrls.map((videoUrl, index) => (
-              <div key={index} className="aspect-video w-full overflow-hidden rounded-lg shadow-lg border bg-black">
-                 <iframe
-                    className="w-full h-full"
-                    src={videoUrl}
-                    title={`Product Video ${index + 1}`}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Reviews Section */}
       <div className="mt-20">
         <Separator className="mb-10" />
