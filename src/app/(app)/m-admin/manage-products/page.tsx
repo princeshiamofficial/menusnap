@@ -62,13 +62,26 @@ import {
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/100x100.png";
 
+const isImageUrl = (url: string) => {
+    try {
+        const parsedUrl = new URL(url);
+        // Basic check for common image extensions
+        return /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(parsedUrl.pathname);
+    } catch {
+        return false;
+    }
+};
+
 // Zod Schema for the form
 const productFormSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters."),
   description: z.string().optional(),
   category: z.string().min(1, "Category is required."),
   isPublished: z.boolean().default(true),
-  imageUrls: z.array(z.string().url("Each image URL must be a valid URL.")),
+  imageUrls: z.array(
+    z.string().url("Each image URL must be a valid URL.")
+     .refine(isImageUrl, { message: "URL must be a direct link to an image (e.g., .png, .jpg)." })
+  ).min(1, "At least one image URL is required."),
   videoUrls: z.array(z.string().url("Each video URL must be a valid URL.")),
 });
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -133,16 +146,28 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
   const [newVideoUrl, setNewVideoUrl] = useState("");
 
   const handleAddImageUrl = () => {
-    if (newImageUrl && z.string().url().safeParse(newImageUrl).success) {
-      appendImageUrl(newImageUrl);
-      setNewImageUrl("");
+    const urlCheck = z.string().url().safeParse(newImageUrl);
+    if (urlCheck.success) {
+      if(isImageUrl(newImageUrl)) {
+        appendImageUrl(newImageUrl);
+        setNewImageUrl("");
+        form.clearErrors("imageUrls");
+      } else {
+        form.setError("imageUrls", { type: "manual", message: "URL must be a direct link to an image." });
+      }
+    } else {
+       form.setError("imageUrls", { type: "manual", message: "Please enter a valid URL." });
     }
   };
 
   const handleAddVideoUrl = () => {
-    if (newVideoUrl && z.string().url().safeParse(newVideoUrl).success) {
+    const urlCheck = z.string().url().safeParse(newVideoUrl);
+    if (urlCheck.success) {
       appendVideoUrl(newVideoUrl);
       setNewVideoUrl("");
+      form.clearErrors("videoUrls");
+    } else {
+      form.setError("videoUrls", { type: "manual", message: "Please enter a valid URL." });
     }
   };
 
@@ -204,7 +229,8 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
                       ))}
                         {imageUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No image URLs added.</p>}
                   </ScrollArea>
-                    {form.formState.errors.imageUrls && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageUrls.message}</p>}
+                    {form.formState.errors.imageUrls?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageUrls.message}</p>}
+                    {form.formState.errors.imageUrls?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageUrls.root.message}</p>}
               </div>
               <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
                   <Label>Video URLs</Label>
