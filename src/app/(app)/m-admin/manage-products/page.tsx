@@ -159,11 +159,11 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
       <ScrollArea className="flex-grow p-6">
         <div className="space-y-6">
-          <Card className="border-border/60">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center"><Info className="mr-2 h-5 w-5 text-primary" />General Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 bg-muted/50 p-6 rounded-b-lg">
               <div>
                 <Label htmlFor="name">Product Name</Label>
                 <Input id="name" {...form.register("name")} />
@@ -176,11 +176,11 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
             </CardContent>
           </Card>
 
-          <Card className="border-border/60">
+          <Card>
             <CardHeader>
                <CardTitle className="flex items-center"><DollarSign className="mr-2 h-5 w-5 text-primary" />Pricing & Inventory</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 bg-muted/50 p-6 rounded-b-lg">
               <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="price">Price (৳)</Label>
@@ -215,18 +215,18 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
             </CardContent>
           </Card>
 
-          <Card className="border-border/60">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center"><ImageIcon className="mr-2 h-5 w-5 text-primary" />Media</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 bg-muted/50 p-6 rounded-b-lg">
                 <div className="space-y-2">
                     <Label>Image URLs</Label>
                     <div className="flex gap-2">
                         <Input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
                         <Button type="button" variant="outline" onClick={handleAddImageUrl}><Plus className="h-4 w-4" /></Button>
                     </div>
-                    <ScrollArea className="h-32 w-full rounded-md border p-2 space-y-2">
+                    <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
                         {imageUrlsFields.map((field, index) => (
                             <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted rounded-md">
                                 <Image src={field.value} alt="preview" width={32} height={32} className="w-8 h-8 object-cover rounded-sm border" data-ai-hint="product image" />
@@ -244,7 +244,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                         <Input value={newVideoUrl} onChange={e => setNewVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
                         <Button type="button" variant="outline" onClick={handleAddVideoUrl}><Plus className="h-4 w-4" /></Button>
                     </div>
-                    <ScrollArea className="h-32 w-full rounded-md border p-2 space-y-2">
+                    <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
                         {videoUrlsFields.map((field, index) => (
                             <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted rounded-md">
                                 <div className="w-8 h-8 flex items-center justify-center bg-card rounded-sm border"><Video className="h-5 w-5 text-muted-foreground" /></div>
@@ -259,11 +259,11 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
             </CardContent>
           </Card>
 
-          <Card className="border-border/60">
+          <Card>
             <CardHeader>
                 <CardTitle className="flex items-center"><CheckCircle className="mr-2 h-5 w-5 text-primary" />Publishing</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="bg-muted/50 p-6 rounded-b-lg">
                <div className="flex items-center space-x-2">
                   <Controller
                     control={form.control}
