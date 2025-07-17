@@ -43,7 +43,6 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
 export function SidebarNav() {
   const pathname = usePathname();
   const { clientUser, logout, clientLoading } = useClientAuth();
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -99,11 +98,7 @@ export function SidebarNav() {
             ))}
             {/* More Options Dropdown */}
             <SidebarMenuItem>
-              <div
-                onMouseEnter={() => setMoreMenuOpen(true)}
-                onMouseLeave={() => setMoreMenuOpen(false)}
-              >
-                <DropdownMenu open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
+                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <SidebarMenuButton
                       variant="default"
@@ -125,7 +120,6 @@ export function SidebarNav() {
                     <MoreMenuContent />
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
             </SidebarMenuItem>
           </SidebarMenu>
         ) : (
