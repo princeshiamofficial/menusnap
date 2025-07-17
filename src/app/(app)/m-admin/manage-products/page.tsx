@@ -45,6 +45,7 @@ import {
   Presentation,
   Book,
   BookCopy,
+  UploadCloud,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format } from 'date-fns';
@@ -65,12 +66,14 @@ const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/100x100.png";
 const isImageUrl = (url: string) => {
     try {
         const parsedUrl = new URL(url);
-        // Basic check for common image extensions
         return /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(parsedUrl.pathname);
     } catch {
         return false;
     }
 };
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 // Zod Schema for the form
 const productFormSchema = z.object({
@@ -78,12 +81,11 @@ const productFormSchema = z.object({
   description: z.string().optional(),
   category: z.string().min(1, "Category is required."),
   isPublished: z.boolean().default(true),
-  imageUrls: z.array(
-    z.string().url("Each image URL must be a valid URL.")
-     .refine(isImageUrl, { message: "URL must be a direct link to an image (e.g., .png, .jpg)." })
-  ).min(1, "At least one image URL is required."),
+  imageFiles: z.custom<FileList>().optional(),
+  existingImageUrls: z.array(z.string().url()).optional(),
   videoUrls: z.array(z.string().url("Each video URL must be a valid URL.")),
 });
+
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
 const productCategories = [
@@ -116,50 +118,76 @@ function StatCard({ title, value, icon: Icon, description, className }: { title:
 
 // Product Form Component
 function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmitting }: { initialData?: Product, onSubmit: (data: ProductFormValues) => void, onOpenChange: (open: boolean) => void, isEditMode: boolean, isSubmitting: boolean }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const { toast } = useToast();
+  
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: initialData ? {
         ...initialData,
-        imageUrls: initialData.imageUrls || [],
+        existingImageUrls: initialData.imageUrls || [],
         videoUrls: initialData.videoUrls || [],
+        imageFiles: undefined,
     } : {
       name: "",
       description: "",
       category: "",
       isPublished: true,
-      imageUrls: [],
+      existingImageUrls: [],
       videoUrls: [],
+      imageFiles: undefined,
     },
   });
 
-  const { fields: imageUrlsFields, append: appendImageUrl, remove: removeImageUrl } = useFieldArray({
-    control: form.control,
-    name: "imageUrls",
-  });
-  
   const { fields: videoUrlsFields, append: appendVideoUrl, remove: removeVideoUrl } = useFieldArray({
     control: form.control,
     name: "videoUrls",
   });
-
-  const [newImageUrl, setNewImageUrl] = useState("");
+  
   const [newVideoUrl, setNewVideoUrl] = useState("");
+  
+  const existingImageUrls = form.watch('existingImageUrls') || [];
 
-  const handleAddImageUrl = () => {
-    const urlCheck = z.string().url().safeParse(newImageUrl);
-    if (urlCheck.success) {
-      if(isImageUrl(newImageUrl)) {
-        appendImageUrl(newImageUrl);
-        setNewImageUrl("");
-        form.clearErrors("imageUrls");
-      } else {
-        form.setError("imageUrls", { type: "manual", message: "URL must be a direct link to an image." });
+  const handleFileChange = (files: FileList | null) => {
+    if (!files) return;
+    
+    const validFiles = Array.from(files).filter(file => {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        toast({ title: "Invalid File Type", description: `${file.name} is not a supported image type.`, variant: "destructive" });
+        return false;
       }
-    } else {
-       form.setError("imageUrls", { type: "manual", message: "Please enter a valid URL." });
+      if (file.size > MAX_FILE_SIZE) {
+        toast({ title: "File Too Large", description: `${file.name} exceeds the 5MB size limit.`, variant: "destructive" });
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      const dataTransfer = new DataTransfer();
+      validFiles.forEach(file => dataTransfer.items.add(file));
+      form.setValue("imageFiles", dataTransfer.files, { shouldValidate: true });
+
+      const previews = validFiles.map(file => URL.createObjectURL(file));
+      setImagePreviews(previews);
     }
   };
 
+  const removeExistingImage = (index: number) => {
+    const updatedUrls = [...existingImageUrls];
+    updatedUrls.splice(index, 1);
+    form.setValue('existingImageUrls', updatedUrls);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDraggingOver(false);
+    handleFileChange(event.dataTransfer.files);
+  };
+  
   const handleAddVideoUrl = () => {
     const urlCheck = z.string().url().safeParse(newVideoUrl);
     if (urlCheck.success) {
@@ -213,25 +241,42 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
             <Separator />
             
             <div className="space-y-4">
-              <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
-                  <Label>Image URLs</Label>
-                  <div className="flex gap-2">
-                      <Input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
-                      <Button type="button" variant="outline" size="icon" onClick={handleAddImageUrl}><Plus className="h-4 w-4" /></Button>
+               <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
+                <Label>Product Images</Label>
+                <div 
+                  className={cn("mt-1 flex justify-center rounded-lg border border-dashed border-border/80 px-6 py-10 transition-colors", isDraggingOver && "border-primary bg-primary/10")}
+                  onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                  onDragLeave={() => setIsDraggingOver(false)}
+                  onDrop={handleDrop}
+                >
+                  <div className="text-center">
+                    <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <div className="mt-4 flex text-sm leading-6 text-muted-foreground">
+                      <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:text-primary/80">
+                        <span>Upload files</span>
+                        <input id="file-upload" ref={fileInputRef} name="imageFiles" type="file" multiple className="sr-only" onChange={(e) => handleFileChange(e.target.files)} accept={ALLOWED_IMAGE_TYPES.join(",")} />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs leading-5 text-muted-foreground">PNG, JPG, GIF up to 5MB</p>
                   </div>
-                  <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
-                      {imageUrlsFields.map((field, index) => (
-                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-md shadow-sm">
-                              <Image src={field.value || DEFAULT_PRODUCT_IMAGE} alt="preview" width={32} height={32} className="w-8 h-8 object-cover rounded-sm border" data-ai-hint="product image" />
-                              <span className="text-xs truncate flex-1">{field.value}</span>
-                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </div>
-                      ))}
-                        {imageUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No image URLs added.</p>}
-                  </ScrollArea>
-                    {form.formState.errors.imageUrls?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageUrls.message}</p>}
-                    {form.formState.errors.imageUrls?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageUrls.root.message}</p>}
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                  {existingImageUrls.map((url, index) => (
+                    <div key={`existing-${index}`} className="relative group">
+                       <Image src={url} alt="Existing product image" width={100} height={100} className="w-full aspect-square object-cover rounded-md border" />
+                       <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100" onClick={() => removeExistingImage(index)}><Trash2 className="h-4 w-4"/></Button>
+                    </div>
+                  ))}
+                   {imagePreviews.map((preview, index) => (
+                    <div key={`preview-${index}`} className="relative group">
+                       <Image src={preview} alt="New image preview" width={100} height={100} className="w-full aspect-square object-cover rounded-md border-2 border-primary" />
+                    </div>
+                  ))}
+                </div>
               </div>
+
               <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
                   <Label>Video URLs</Label>
                   <div className="flex gap-2">
@@ -319,7 +364,7 @@ export default function ManageProductsPage(): ReactNode {
   const handleAddProduct = async (data: ProductFormValues) => {
     setIsSubmitting(true);
     try {
-      await createProduct({ ...data, id: '' });
+      await createProduct(data);
       toast({ title: "Success", description: "Product added successfully." });
       setIsFormOpen(false);
       fetchProducts();
