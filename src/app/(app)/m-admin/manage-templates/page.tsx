@@ -819,6 +819,7 @@ export default function ManageTemplatesPage(): ReactNode {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unpublished' | 'restaurant' | 'parlour'>('all');
   const [isAddTemplateDialogOpen, setIsAddTemplateDialogOpen] = useState(false);
   const [isEditTemplateDialogOpen, setIsEditTemplateDialogOpen] = useState(false);
   const [editingTemplateData, setEditingTemplateData] = useState<ApiAdminTemplate | null>(null);
@@ -1009,11 +1010,26 @@ export default function ManageTemplatesPage(): ReactNode {
 
   const filteredTemplates = useMemo(() => {
     return allTemplates
-      .filter(template =>
-        template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
-      )
+      .filter(template => {
+        const searchMatch =
+          template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+        
+        if (!searchMatch) return false;
+
+        switch (activeFilter) {
+          case 'unpublished':
+            return !template.isPublished;
+          case 'restaurant':
+            return template.tags.includes('restaurant');
+          case 'parlour':
+            return template.tags.includes('parlour');
+          case 'all':
+          default:
+            return true;
+        }
+      })
       .sort((a, b) => {
         if (a.isTopRated && !b.isTopRated) return -1;
         if (!a.isTopRated && b.isTopRated) return 1;
@@ -1030,7 +1046,7 @@ export default function ManageTemplatesPage(): ReactNode {
         }
         return 0; 
       });
-  }, [allTemplates, searchTerm]);
+  }, [allTemplates, searchTerm, activeFilter]);
 
   const stats = useMemo(() => {
     const publishedCount = allTemplates.filter(t => t.isPublished).length;
@@ -1101,6 +1117,13 @@ export default function ManageTemplatesPage(): ReactNode {
               Add Template
             </Button>
           </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-2 items-center">
+            <span className="text-sm font-medium text-muted-foreground mr-2">Filters:</span>
+            <Button variant={activeFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('all')}>All</Button>
+            <Button variant={activeFilter === 'unpublished' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('unpublished')}>Unpublished</Button>
+            <Button variant={activeFilter === 'restaurant' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('restaurant')}>Restaurant</Button>
+            <Button variant={activeFilter === 'parlour' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('parlour')}>Parlour</Button>
         </div>
       </section>
 
@@ -1183,9 +1206,9 @@ export default function ManageTemplatesPage(): ReactNode {
             <div className="text-center py-10 bg-card rounded-lg shadow border border-border">
               <Layers className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground text-lg font-medium">
-                {searchTerm ? "No templates match your search." : "No templates found."}
+                {searchTerm || activeFilter !== 'all' ? "No templates match your search or filter." : "No templates found."}
               </p>
-              { !searchTerm && (
+              { !searchTerm && activeFilter === 'all' && (
                 <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="mt-6 bg-primary hover:bg-primary/90 text-primary-foreground">
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Add Your First Template
