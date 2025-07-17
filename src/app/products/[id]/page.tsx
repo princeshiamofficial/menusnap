@@ -28,17 +28,8 @@ import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProduct, getProducts, type Product } from '@/lib/product-api';
 
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  imageUrls: string[];
-  videoUrls: string[];
-  isPublished: boolean;
-  createdAt: string;
-}
 
 const productCategories = [
   { value: 'Menu Book', label: 'Menu Book', icon: BookOpen },
@@ -50,22 +41,6 @@ const productCategories = [
   { value: 'X Banner', label: 'X Banner', icon: Presentation },
   { value: 'Menu Book Cover', label: 'Menu Book Cover', icon: Book },
 ];
-
-const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
-  id: `prod_${i + 1}`,
-  name: `Premium ${productCategories[i % productCategories.length].label}`,
-  description: `An amazing premium product for your business. Discover its unique capabilities and how it can enhance your brand. This description can be quite long to demonstrate how text wraps and fills the space available, providing more context to potential customers who are interested in the product.`,
-  category: productCategories[i % productCategories.length].value,
-  imageUrls: [
-    `https://placehold.co/800x600.png?text=P${i+1}-1`,
-    `https://placehold.co/800x600.png?text=P${i+1}-2`,
-    `https://placehold.co/800x600.png?text=P${i+1}-3`,
-    `https://placehold.co/800x600.png?text=P${i+1}-4`,
-  ],
-  videoUrls: [],
-  isPublished: Math.random() > 0.2,
-  createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-}));
 
 const mockReviews = [
     { id: 1, name: 'Sabbir Ahmed', rating: 5, comment: 'Absolutely top-notch quality and service! The menu books completely transformed our restaurant\'s image. Highly recommended.' },
@@ -123,38 +98,41 @@ export default function ProductDetailsPage() {
   const productId = params.id as string;
   
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (productId) {
-      setIsLoading(true);
-      setError(null);
-      // Mock fetching product data
-      setTimeout(() => {
-        const foundProduct = MOCK_PRODUCTS.find(p => p.id === productId);
-        if (foundProduct) {
-          setProduct(foundProduct);
-          setSelectedImage(foundProduct.imageUrls?.[0] || null);
-        } else {
-          setError("Product not found.");
+    async function fetchProductData() {
+        if (!productId) return;
+        setIsLoading(true);
+        setError(null);
+        try {
+            const fetchedProduct = await getProduct(productId);
+            setProduct(fetchedProduct);
+            setSelectedImage(fetchedProduct.imageUrls?.[0] || null);
+
+            // Fetch related products
+            const allProducts = await getProducts();
+            const related = allProducts
+              .filter(p => p.id !== fetchedProduct.id && p.category === fetchedProduct.category && p.isPublished)
+              .slice(0, 4);
+            setRelatedProducts(related);
+
+        } catch (err: any) {
+            setError(err.message || "Failed to fetch product details.");
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
-      }, 500);
     }
-  }, [productId]);
+    fetchProductData();
+  }, [productId, toast]);
 
   const CategoryIcon = useMemo(() => {
     return productCategories.find(c => c.value === product?.category)?.icon || Package;
   }, [product?.category]);
-
-  const relatedProducts = useMemo(() => {
-    if (!product) return [];
-    return MOCK_PRODUCTS
-      .filter(p => p.id !== product.id && p.category === product.category && p.isPublished)
-      .slice(0, 4);
-  }, [product]);
 
   const handleContact = () => {
     toast({
@@ -322,4 +300,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-

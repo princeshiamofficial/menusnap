@@ -23,8 +23,11 @@ const headers = {
 async function handleResponse(response: Response) {
   if (!response.ok) {
     if (response.status === 404) {
-      console.warn("API returned 404 Not Found. This may be expected if a collection is empty.");
-      // For GET requests on a collection, this means it's empty. Return a structure that can be handled gracefully.
+      // For a single document, this is a real "not found"
+      if (response.url.includes('/documents/')) {
+         throw new Error('Document not found.');
+      }
+      // For a collection, this means it's empty.
       return { documents: [] };
     }
     const errorData = await response.json().catch(() => ({ message: 'An unknown API error occurred.' }));
@@ -55,18 +58,24 @@ function mapDocToProduct(doc: any): Product {
 export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${API_URL}/collections/${COLLECTION_NAME}/documents`, { headers });
   const result = await handleResponse(response);
-
-  // The API might return an object with a `documents` key or just an array.
-  const documents = result?.documents || result;
+  const documents = result?.documents;
   
   if (!Array.isArray(documents)) {
-    console.error("Invalid data format received from API. Expected an array of documents.", result);
+    console.error("Invalid data format received from getProducts. Expected an array of documents.", result);
+    // If the API returns a non-array for a collection GET, it's likely empty or an error message.
+    // Returning an empty array is a safe fallback.
     return [];
   }
 
   return documents.map(mapDocToProduct);
 }
 
+// Fetch a single product by ID
+export async function getProduct(id: string): Promise<Product> {
+    const response = await fetch(`${API_URL}/collections/${COLLECTION_NAME}/documents/${id}`, { headers });
+    const result = await handleResponse(response);
+    return mapDocToProduct(result);
+}
 
 // Create a new product
 export async function createProduct(productData: Omit<Product, 'id' | 'createdAt'>): Promise<Product> {
@@ -102,7 +111,6 @@ export async function deleteProduct(id: string): Promise<void> {
     method: 'DELETE',
     headers,
   });
-  // DELETE might return 204 No Content, which is ok, but handleResponse handles other non-ok statuses.
   if (!response.ok && response.status !== 204) {
     await handleResponse(response);
   }
