@@ -23,6 +23,7 @@ import {
   Contact,
   Presentation,
   Book,
+  BookCopy,
 } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
@@ -186,6 +187,7 @@ export default function MorePage(): ReactNode {
     { href: '#', label: 'Menu Book', icon: BookOpen },
     { href: '#', label: 'Menu Card', icon: FileText },
     { href: '#', label: 'Leaflet', icon: FileImage },
+    { href: '#', label: 'Brochure', icon: BookCopy },
     { href: '#', label: 'Membership Card', icon: CreditCard },
     { href: '#', label: 'Business Card', icon: Contact },
     { href: '#', label: 'X Banner', icon: Presentation },
@@ -248,7 +250,7 @@ export default function MorePage(): ReactNode {
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {navItems.slice(0, 3).map(item => (
+              {navItems.slice(0, 4).map(item => (
                 <Link key={item.label} href={item.href} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                   <item.icon className="h-4 w-4" />
                   <span className="hidden md:inline">{item.label}</span>
@@ -259,14 +261,14 @@ export default function MorePage(): ReactNode {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search templates..."
+                placeholder="Search products..."
                 className="pl-10 w-full text-sm bg-muted border-border/70 focus:bg-background focus:border-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div className="flex items-center gap-4">
-               {navItems.slice(3).map(item => (
+               {navItems.slice(4).map(item => (
                 <Link key={item.label} href={item.href} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                   <item.icon className="h-4 w-4" />
                   <span className="hidden md:inline">{item.label}</span>
