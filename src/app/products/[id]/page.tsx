@@ -291,6 +291,7 @@ export default function ProductDetailsPage() {
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                     data-ai-hint="product detail"
+                    priority
                   />
               ) : selectedMedia?.type === 'video' ? (
                  <iframe
