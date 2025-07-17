@@ -13,7 +13,7 @@ import { Layers, Search, Maximize, AlertTriangle, X, Package } from "lucide-reac
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
-import { decodeHtmlEntities } from '@/lib/utils';
+import { decodeHtmlEntities, cn } from '@/lib/utils';
 import Link from 'next/link';
 
 // Use the same Product interface from the admin page
@@ -97,8 +97,11 @@ function ProductCard({ product, onPreview }: ProductCardProps): ReactNode {
   return (
     <motion.div
       className="h-full"
-      whileHover={{ y: -5, scale: 1.02 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+      layout
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
     >
       <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
         <CardHeader className="p-0 relative">
@@ -161,6 +164,7 @@ export default function MorePage(): ReactNode {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -183,15 +187,23 @@ export default function MorePage(): ReactNode {
   }, []);
 
 
+  const categories = useMemo(() => {
+    const uniqueCategories = [...new Set(products.map(p => p.category))];
+    return ['all', ...uniqueCategories];
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
     let filtered = products.filter(product => product.isPublished);
+
+    if (activeCategory !== 'all') {
+      filtered = filtered.filter(p => p.category === activeCategory);
+    }
     
     // Filter by search term
     if (searchTerm) {
         filtered = filtered.filter(product =>
             decodeHtmlEntities(product.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (product.description && decodeHtmlEntities(product.description).toLowerCase().includes(searchTerm.toLowerCase())) ||
-            product.category.toLowerCase().includes(searchTerm.toLowerCase())
+            (product.description && decodeHtmlEntities(product.description).toLowerCase().includes(searchTerm.toLowerCase()))
         );
     }
     
@@ -203,54 +215,53 @@ export default function MorePage(): ReactNode {
           return 0;
       }
     });
-  }, [products, searchTerm]);
-
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.07,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-    },
-  };
+  }, [products, searchTerm, activeCategory]);
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-6">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <Package className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Our Products
-            </h1>
+    <div className="p-0 md:p-6 lg:p-8 space-y-6">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/50">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <div className="flex items-center gap-3">
+                <Package className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  Our Products
+                </h1>
+              </div>
+              <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">
+                Browse our collection of high-quality products.
+              </p>
+            </div>
+            <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search products..."
+                className="pl-10 w-full sm:w-64 md:w-72 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
-          <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">
-            Browse our collection of high-quality products.
-          </p>
-        </div>
-        <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search products..."
-            className="pl-10 w-full sm:w-64 md:w-72 text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className="mt-4 pt-4 flex flex-wrap gap-2 items-center">
+            <span className="text-sm font-medium text-muted-foreground mr-2">Categories:</span>
+            {categories.map(category => (
+              <Button
+                key={category}
+                variant={activeCategory === category ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveCategory(category)}
+                className="capitalize"
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
         </div>
       </header>
       
-      <main>
+      <main className="container mx-auto px-4 md:px-6 lg:px-8">
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
@@ -270,23 +281,20 @@ export default function MorePage(): ReactNode {
             <div className="text-center py-10 bg-card rounded-lg shadow border border-border">
               <Layers className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground text-lg font-medium">
-                {searchTerm ? "No products match your search." : "No products available at the moment."}
+                {searchTerm ? "No products match your search." : "No products available in this category."}
               </p>
             </div>
         ) : (
           <motion.div 
+            layout
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
           >
             {filteredProducts.map((product) => (
-              <motion.div key={product.id} variants={itemVariants}>
-                <ProductCard
-                  product={product}
-                  onPreview={setPreviewImageUrl}
-                />
-              </motion.div>
+              <ProductCard
+                key={product.id}
+                product={product}
+                onPreview={setPreviewImageUrl}
+              />
             ))}
           </motion.div>
         )}
@@ -300,3 +308,4 @@ export default function MorePage(): ReactNode {
     </div>
   );
 }
+
