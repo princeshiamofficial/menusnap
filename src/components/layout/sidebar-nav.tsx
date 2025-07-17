@@ -4,7 +4,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
 import { 
   LayoutGrid, 
   ListOrdered, 
@@ -22,15 +21,9 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreMenuContent } from '@/components/layout/more-menu-content';
 
 const mainNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
@@ -38,6 +31,7 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
   { href: '/templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/draft', label: 'Draft', icon: FileEdit, hasChevron: true },
   { href: '/order-history', label: 'Order History', icon: History, hasChevron: true },
+  { href: '/more', label: 'More Products', icon: MoreHorizontal, hasChevron: true },
 ];
 
 export function SidebarNav() {
@@ -96,31 +90,6 @@ export function SidebarNav() {
                 </Link>
               </SidebarMenuItem>
             ))}
-            {/* More Options Dropdown */}
-            <SidebarMenuItem>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <SidebarMenuButton
-                      variant="default"
-                      className={cn(
-                        "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        "group-data-[collapsible=icon]:justify-center"
-                      )}
-                      tooltip={{
-                        children: "More options",
-                        className: "bg-popover text-popover-foreground border-border shadow-md",
-                        sideOffset: 10,
-                      }}
-                    >
-                      <MoreHorizontal className="h-5 w-5" />
-                      <span className="group-data-[collapsible=icon]:hidden flex-1">More</span>
-                    </SidebarMenuButton>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent side="right" align="start" sideOffset={10} className="w-56">
-                    <MoreMenuContent />
-                  </DropdownMenuContent>
-                </DropdownMenu>
-            </SidebarMenuItem>
           </SidebarMenu>
         ) : (
           <div className="p-4 text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
