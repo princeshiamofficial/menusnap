@@ -10,8 +10,8 @@ export interface Product {
   createdAt: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://colorhutbd.xyz/firestore/api/index.php';
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || '308e36cdaec0e79ef79f5a30db49d9df8e71fc8e05b859988f52a4b4c97b1858';
 const COLLECTION_NAME = 'products';
 
 if (!API_URL) {
