@@ -166,17 +166,16 @@ export default function ProductDetailsPage() {
             
             let gallery: MediaType[] = [];
             if (videos.length > 0) {
-              const firstVideo = videos.shift()!; // Remove the first video from the videos array
-              gallery = [...images]; // Start with all images
-              // Insert the first video at the second position if there's at least one image.
+              const firstVideo = videos.shift()!;
+              gallery = [...images];
               if (gallery.length > 0) {
                 gallery.splice(1, 0, firstVideo); 
               } else {
-                gallery.push(firstVideo); // If no images, just add the video
+                gallery.push(firstVideo);
               }
-              gallery.push(...videos); // Add any remaining videos at the end
+              gallery.push(...videos);
             } else {
-                gallery = images; // If no videos, just use images
+                gallery = images;
             }
             
             setMediaGallery(gallery);
@@ -272,9 +271,9 @@ export default function ProductDetailsPage() {
           Back to All Products
         </Button>
       </div>
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
+      <div className="flex flex-col md:grid md:grid-cols-2 md:items-start gap-8 lg:gap-12">
         {/* Media Gallery */}
-        <div className="sticky top-8">
+        <div className="md:sticky md:top-8">
           <AnimatePresence mode="wait">
             <motion.div 
               key={selectedMedia?.url}
