@@ -1022,9 +1022,9 @@ export default function ManageTemplatesPage(): ReactNode {
           case 'unpublished':
             return !template.isPublished;
           case 'restaurant':
-            return template.tags.includes('restaurant');
+            return template.tags.some(tag => tag.toLowerCase() === 'restaurant');
           case 'parlour':
-            return template.tags.includes('parlour');
+            return template.tags.some(tag => tag.toLowerCase() === 'parlour');
           case 'all':
           default:
             return true;
