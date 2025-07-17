@@ -1,5 +1,4 @@
 
-
 export interface Product {
   id: string;
   name: string;
@@ -58,7 +57,7 @@ export async function getProducts(): Promise<Product[]> {
   const documents = result?.documents;
   
   if (!Array.isArray(documents)) {
-     console.error("Invalid data format received from getProducts. Expected an array of documents.", result);
+     console.warn("API for getProducts did not return a documents array. Returning empty list.", result);
     return [];
   }
 
