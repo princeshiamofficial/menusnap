@@ -1,4 +1,5 @@
 
+
 export interface Product {
   id: string;
   name: string;
@@ -22,12 +23,8 @@ const headers = {
 // Helper to handle API responses
 async function handleResponse(response: Response) {
   if (!response.ok) {
-    if (response.status === 404) {
-      // For a single document, this is a real "not found"
-      if (response.url.includes('/documents/')) {
-         throw new Error('Document not found.');
-      }
-      // For a collection, this means it's empty.
+    // A 404 for a collection means it's empty, which is not an error for getProducts.
+    if (response.status === 404 && response.url.includes(`/collections/${COLLECTION_NAME}/documents`)) {
       return { documents: [] };
     }
     const errorData = await response.json().catch(() => ({ message: 'An unknown API error occurred.' }));
@@ -61,9 +58,7 @@ export async function getProducts(): Promise<Product[]> {
   const documents = result?.documents;
   
   if (!Array.isArray(documents)) {
-    console.error("Invalid data format received from getProducts. Expected an array of documents.", result);
-    // If the API returns a non-array for a collection GET, it's likely empty or an error message.
-    // Returning an empty array is a safe fallback.
+     console.error("Invalid data format received from getProducts. Expected an array of documents.", result);
     return [];
   }
 
