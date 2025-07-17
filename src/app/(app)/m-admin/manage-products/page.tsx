@@ -52,20 +52,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import {
+  Product,
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+} from '@/lib/product-api';
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/100x100.png";
-
-// Interfaces
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  imageUrls: string[];
-  videoUrls: string[];
-  isPublished: boolean;
-  createdAt: string;
-}
 
 // Zod Schema for the form
 const productFormSchema = z.object({
@@ -89,17 +84,6 @@ const productCategories = [
   { value: 'Menu Book Cover', label: 'Menu Book Cover', icon: Book },
 ];
 
-// Mock API data using the defined categories
-const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
-  id: `prod_${i + 1}`,
-  name: `Premium ${productCategories[i % productCategories.length].label}`,
-  description: `An amazing premium product for your business. Discover its unique capabilities and how it can enhance your brand.`,
-  category: productCategories[i % productCategories.length].value,
-  imageUrls: [`https://placehold.co/100x100.png?text=P${i+1}`],
-  videoUrls: [],
-  isPublished: Math.random() > 0.2,
-  createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-}));
 
 // Reusable Stat Card Component
 function StatCard({ title, value, icon: Icon, description, className }: { title: string; value: string | number; icon: React.ElementType; description: string; className?: string; }) {
@@ -118,7 +102,7 @@ function StatCard({ title, value, icon: Icon, description, className }: { title:
 }
 
 // Product Form Component
-function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { initialData?: Product, onSubmit: (data: ProductFormValues) => void, onOpenChange: (open: boolean) => void, isEditMode: boolean }) {
+function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmitting }: { initialData?: Product, onSubmit: (data: ProductFormValues) => void, onOpenChange: (open: boolean) => void, isEditMode: boolean, isSubmitting: boolean }) {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: initialData ? {
@@ -260,8 +244,8 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
       </ScrollArea>
       <DialogFooter className="px-6 py-4 border-t mt-auto">
         <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          <Save className="mr-2 h-4 w-4" />{isEditMode ? "Save Changes" : "Add Product"}
+        <Button type="submit" disabled={isSubmitting}>
+          <Save className="mr-2 h-4 w-4" />{isSubmitting ? (isEditMode ? 'Saving...' : 'Adding...') : (isEditMode ? "Save Changes" : "Add Product")}
         </Button>
       </DialogFooter>
     </form>
@@ -280,6 +264,7 @@ export default function ManageProductsPage(): ReactNode {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -288,11 +273,16 @@ export default function ManageProductsPage(): ReactNode {
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    // MOCK API Call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setProducts(MOCK_PRODUCTS);
-    setIsLoading(false);
-  }, []);
+    try {
+      const fetchedProducts = await getProducts();
+      setProducts(fetchedProducts);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch products.');
+      toast({ title: "Error", description: err.message || 'Failed to fetch products.', variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     if (isAdminLoggedIn) {
@@ -300,27 +290,34 @@ export default function ManageProductsPage(): ReactNode {
     }
   }, [isAdminLoggedIn, fetchProducts]);
 
-  const handleAddProduct = (data: ProductFormValues) => {
-    const newProduct: Product = {
-      ...data,
-      id: `prod_${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    setProducts(prev => [newProduct, ...prev]);
-    toast({ title: "Success", description: "Product added successfully." });
-    setIsFormOpen(false);
+  const handleAddProduct = async (data: ProductFormValues) => {
+    setIsSubmitting(true);
+    try {
+      await createProduct({ ...data, id: '' });
+      toast({ title: "Success", description: "Product added successfully." });
+      setIsFormOpen(false);
+      fetchProducts();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || 'Failed to add product.', variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
-  const handleEditProduct = (data: ProductFormValues) => {
+  const handleEditProduct = async (data: ProductFormValues) => {
     if (!editingProduct) return;
-    const updatedProduct: Product = {
-      ...editingProduct,
-      ...data,
-    };
-    setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
-    toast({ title: "Success", description: "Product updated successfully." });
-    setIsFormOpen(false);
-    setEditingProduct(null);
+    setIsSubmitting(true);
+    try {
+      await updateProduct(editingProduct.id, data);
+      toast({ title: "Success", description: "Product updated successfully." });
+      setIsFormOpen(false);
+      setEditingProduct(null);
+      fetchProducts();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || 'Failed to update product.', variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteProduct = (product: Product) => {
@@ -328,12 +325,18 @@ export default function ManageProductsPage(): ReactNode {
     setIsAlertOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!productToDelete) return;
-    setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
-    toast({ title: "Success", description: "Product deleted." });
-    setIsAlertOpen(false);
-    setProductToDelete(null);
+    try {
+      await deleteProduct(productToDelete.id);
+      toast({ title: "Success", description: "Product deleted." });
+      fetchProducts();
+    } catch (err: any) {
+       toast({ title: "Error", description: err.message || 'Failed to delete product.', variant: "destructive" });
+    } finally {
+      setIsAlertOpen(false);
+      setProductToDelete(null);
+    }
   };
 
   const filteredProducts = useMemo(() => {
@@ -452,7 +455,9 @@ export default function ManageProductsPage(): ReactNode {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">No products found.</TableCell>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                        {error ? <span className="text-destructive">{error}</span> : "No products found."}
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -471,6 +476,7 @@ export default function ManageProductsPage(): ReactNode {
             initialData={editingProduct || undefined}
             onOpenChange={setIsFormOpen}
             onSubmit={editingProduct ? handleEditProduct : handleAddProduct}
+            isSubmitting={isSubmitting}
           />
         </DialogContent>
       </Dialog>
