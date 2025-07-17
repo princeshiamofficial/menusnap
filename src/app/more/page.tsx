@@ -25,7 +25,7 @@ import {
   Presentation,
   Book,
   BookCopy,
-  Menu, // Added Menu icon
+  Menu,
 } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
@@ -282,7 +282,7 @@ export default function MorePage(): ReactNode {
                 />
               </div>
               <div className="flex items-center gap-4">
-                {navItems.slice(4).map(item => (
+                 {navItems.slice(4).map(item => (
                   <Link key={item.label} href={item.href} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
                     <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
@@ -329,7 +329,7 @@ export default function MorePage(): ReactNode {
       
       <main className="container mx-auto px-4 md:px-6 lg:px-8">
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <ProductSkeletonCard key={index} />
             ))}
@@ -353,7 +353,7 @@ export default function MorePage(): ReactNode {
         ) : (
           <motion.div 
             layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
           >
             {filteredProducts.map((product) => (
               <ProductCard
