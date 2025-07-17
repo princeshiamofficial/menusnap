@@ -5,54 +5,67 @@ import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Layers, Search, Maximize, AlertTriangle, X, BookOpen, FileText, FileImage, CreditCard, Contact, Presentation, Book, Link as LinkIcon } from "lucide-react"; 
+import { Layers, Search, Maximize, AlertTriangle, X, Package } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { BubbleConfetti } from '@/components/ui/bubble-confetti';
 import { useToast } from "@/hooks/use-toast";
-import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities } from '@/lib/utils';
 import Link from 'next/link';
 
-interface ApiTemplate {
+// Use the same Product interface from the admin page
+interface Product {
   id: string;
-  name: string; 
-  description: string;
-  isTopRated?: boolean;
+  name: string;
+  description?: string;
+  category: string;
+  imageUrls: string[];
+  videoUrls: string[];
   isPublished: boolean;
-  tags: string[];
-  imageUrl: string;
-  createdAt?: string; 
+  createdAt: string;
 }
 
-interface TemplatePreviewDialogProps {
+// Mock data, same as in the admin page for consistency
+const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
+  id: `prod_${i + 1}`,
+  name: `Premium Gadget ${i + 1}`,
+  description: `An amazing premium gadget with feature set ${String.fromCharCode(65 + i)}. Discover its unique capabilities and how it can enhance your daily life.`,
+  category: ['Electronics', 'Home Goods', 'Apparel', 'Books'][i % 4],
+  imageUrls: [`https://placehold.co/600x400.png?text=P${i+1}`],
+  videoUrls: [],
+  isPublished: Math.random() > 0.2,
+  createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+}));
+
+const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400.png";
+
+
+interface ProductPreviewDialogProps {
   imageUrl: string | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePreviewDialogProps) {
+function ProductPreviewDialog({ imageUrl, isOpen, onOpenChange }: ProductPreviewDialogProps) {
   if (!imageUrl) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-full h-[90vh] p-2 bg-transparent border-none shadow-none">
           <DialogHeader className="sr-only">
-            <DialogTitle>Template Preview</DialogTitle>
-            <DialogDescription>A larger view of the selected template.</DialogDescription>
+            <DialogTitle>Product Preview</DialogTitle>
+            <DialogDescription>A larger view of the selected product image.</DialogDescription>
           </DialogHeader>
           <div className="relative w-full h-full">
             <Image
               src={imageUrl}
-              alt="Template Preview"
+              alt="Product Preview"
               fill
               className="object-contain"
-              data-ai-hint="template full-view"
+              data-ai-hint="product full-view"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1000px"
             />
           </div>
@@ -72,47 +85,14 @@ function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePrevi
 }
 
 
-interface TemplateCardProps {
-  template: ApiTemplate;
+interface ProductCardProps {
+  product: Product;
   onPreview: (imageUrl: string) => void;
-  onSelect: (template: ApiTemplate) => void;
-  isSelectionAllowed: boolean;
 }
 
-const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
-
-function TemplateCard({
-  template,
-  onPreview,
-  onSelect,
-  isSelectionAllowed,
-}: TemplateCardProps): ReactNode {
-  const { imageUrl, name: title, description } = template;
-  const { toast } = useToast();
-  const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
-  const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
-  
-  const getImageHint = (name: string): string => {
-    return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
-  }
-
-  const handleCopyLink = (event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent card selection or other parent events
-    const linkToCopy = `${window.location.origin}/more#${template.id}`;
-    navigator.clipboard.writeText(linkToCopy).then(() => {
-      toast({
-        title: "Link Copied!",
-        description: `A link to "${decodeHtmlEntities(title)}" is on your clipboard.`,
-      });
-    }).catch(err => {
-      console.error("Failed to copy link:", err);
-      toast({
-        title: "Error",
-        description: "Could not copy link to clipboard.",
-        variant: "destructive",
-      });
-    });
-  };
+function ProductCard({ product, onPreview }: ProductCardProps): ReactNode {
+  const { imageUrls, name, description } = product;
+  const primaryImage = imageUrls?.[0] || DEFAULT_PRODUCT_IMAGE;
 
   return (
     <motion.div
@@ -122,59 +102,41 @@ function TemplateCard({
     >
       <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
         <CardHeader className="p-0 relative">
-          <div className="aspect-[4/3] relative group" id={template.id}>
+          <div className="aspect-[4/3] relative group">
             <Image
-              src={actualImageUrl}
-              alt={decodeHtmlEntities(title)}
+              src={primaryImage}
+              alt={decodeHtmlEntities(name)}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover"
-              data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
+              data-ai-hint="product image"
             />
-            <div className="absolute top-2 right-2 flex space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-               <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 bg-black/40 text-white hover:bg-black/60 rounded-md"
-                aria-label="Copy template link"
-                onClick={handleCopyLink}
-              >
-                <LinkIcon className="h-5 w-5" />
-              </Button>
-               <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 bg-black/40 text-white hover:bg-black/60 rounded-md"
-                aria-label="Maximize template preview"
-                onClick={(e) => { e.stopPropagation(); onPreview(actualImageUrl); }}
-              >
-                <Maximize className="h-5 w-5" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute bottom-2 right-2 h-9 w-9 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+              aria-label="Maximize product preview"
+              onClick={() => onPreview(primaryImage)}
+            >
+              <Maximize className="h-5 w-5" />
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="p-4 flex-grow">
-          <h2 className="text-lg font-semibold mb-1.5 text-foreground">{decodeHtmlEntities(title)}</h2>
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{decodeHtmlEntities(description)}</p>
+          <h2 className="text-lg font-semibold mb-1.5 text-foreground">{decodeHtmlEntities(name)}</h2>
+          <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px] line-clamp-2">{decodeHtmlEntities(description)}</p>
         </CardContent>
         <CardFooter className="p-4 border-t mt-auto">
-          {isSelectionAllowed && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => onSelect(template)}
-              title="Select this template"
-            >
-              Select Template
+            <Button variant="outline" className="w-full" asChild>
+                <Link href={`/products/${product.id}`}>View Details</Link>
             </Button>
-          )}
         </CardFooter>
       </Card>
     </motion.div>
   );
 }
 
-function TemplateSkeletonCard(): ReactNode {
+function ProductSkeletonCard(): ReactNode {
   return (
     <Card className="overflow-hidden shadow-md rounded-lg flex flex-col h-full">
       <CardHeader className="p-0 relative">
@@ -194,210 +156,54 @@ function TemplateSkeletonCard(): ReactNode {
 
 
 export default function MorePage(): ReactNode {
-  const [templates, setTemplates] = useState<ApiTemplate[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [templateToConfirm, setTemplateToConfirm] = useState<ApiTemplate | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
-  const [linkedTemplateId, setLinkedTemplateId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { clientUser, clientLoading } = useClientAuth();
   const router = useRouter();
 
   useEffect(() => {
-    async function fetchTemplates() {
+    async function fetchProducts() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          }
-        });
-        if (!response.ok) {
-          throw new Error(`API error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        if (!result.success || !result.data || !Array.isArray(result.data.templates)) {
-          console.error("Invalid API response structure:", result);
-          throw new Error("Invalid data format from API");
-        }
-        const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any, index: number) => ({
-          ...t,
-          id: String(t.id),
-          isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
-          tags: Array.isArray(t.tags) ? t.tags : [],
-          imageUrl: t.imageUrl || '', // Ensure imageUrl is at least an empty string
-          createdAt: t.createdAt || new Date(Date.now() - Math.random() * 10000000000 * (index + 1)).toISOString(),
-        }));
-        setTemplates(fetchedTemplates);
+        // MOCK API Call
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setProducts(MOCK_PRODUCTS);
       } catch (e: any) {
-        console.error("Failed to fetch templates:", e);
-        setError(e.message || "Failed to load templates. Please try again later.");
+        console.error("Failed to fetch products:", e);
+        setError(e.message || "Failed to load products. Please try again later.");
       } finally {
         setIsLoading(false);
       }
     }
-    fetchTemplates();
-
-    const orderId = localStorage.getItem('pendingOrderIdForTemplate');
-    if (orderId) {
-      setPendingOrderId(orderId);
-    }
-    
-    // Check for hash on initial load
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash) {
-        setLinkedTemplateId(hash);
-      } else {
-        setLinkedTemplateId(null);
-      }
-    };
-
-    handleHashChange(); // Check on mount
-    window.addEventListener('hashchange', handleHashChange); // Listen for changes
-
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-
+    fetchProducts();
   }, []);
 
-  const handleSelectTemplate = (template: ApiTemplate) => {
-    setTemplateToConfirm(template);
-  };
 
-  const handleConfirmSelection = async () => {
-    if (!templateToConfirm || !pendingOrderId) return;
-
-    try {
-      // Step 1: Fetch all orders to find the one we need to update
-      const ordersResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php");
-      if (!ordersResponse.ok) {
-        throw new Error("Could not fetch existing orders to update.");
-      }
-      const existingOrdersResult = await ordersResponse.json();
-      
-      let ordersArray = [];
-      if (Array.isArray(existingOrdersResult)) {
-          ordersArray = existingOrdersResult;
-      } else if (existingOrdersResult.success && Array.isArray(existingOrdersResult.data)) {
-          ordersArray = existingOrdersResult.data;
-      } else if (existingOrdersResult.success && existingOrdersResult.data && Array.isArray(existingOrdersResult.data.orders)) {
-          ordersArray = existingOrdersResult.data.orders;
-      }
-
-      const orderToUpdate = ordersArray.find((o: any) => String(o.id) === pendingOrderId);
-      
-      if (!orderToUpdate) {
-        throw new Error(`Order #${pendingOrderId} not found on the server.`);
-      }
-      
-      // Step 2: Create the updated payload by merging
-      const updatedOrderPayload = {
-        ...orderToUpdate, // This includes the existing 'items' array
-        template: { // This adds/overwrites the template info
-          id: templateToConfirm.id,
-          name: templateToConfirm.name,
-          imageUrl: templateToConfirm.imageUrl,
-          description: templateToConfirm.description,
-          tags: templateToConfirm.tags,
-        },
-      };
-
-      // Step 3: Send the complete, updated object
-      const updateResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(updatedOrderPayload),
-      });
-      
-      const updateResult = await updateResponse.json();
-      if (!updateResponse.ok || !updateResult.success) {
-        throw new Error(updateResult.message || "Failed to apply template to order.");
-      }
-      
-      // Step 4: Update local storage as well
-      try {
-          const localOrdersRaw = localStorage.getItem('colorHutOrders');
-          if (localOrdersRaw) {
-              const localOrders = JSON.parse(localOrdersRaw);
-              const orderIndex = localOrders.findIndex((o: any) => String(o.id) === pendingOrderId);
-              if (orderIndex > -1) {
-                  localOrders[orderIndex] = updatedOrderPayload;
-                  localStorage.setItem('colorHutOrders', JSON.stringify(localOrders));
-              }
-          }
-      } catch(e) {
-          console.error("Could not update order in local storage", e);
-          toast({
-              title: "Local History Warning",
-              description: "Your order was updated, but the local history might be out of sync.",
-              variant: "default",
-          });
-      }
-
-      setShowConfetti(true);
-      toast({
-        title: "Template Applied!",
-        description: `Template "${decodeHtmlEntities(templateToConfirm.name)}" applied. Redirecting...`,
-      });
-      
-      const orderIdToRedirect = pendingOrderId;
-      localStorage.removeItem('pendingOrderIdForTemplate');
-      setPendingOrderId(null);
-      router.push(`/order-history/${orderIdToRedirect}`);
-
-    } catch (error: any) {
-      toast({
-        title: "Update Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-
-    setTemplateToConfirm(null);
-  };
-
-  const filteredTemplates = useMemo(() => {
-    let filtered = templates.filter(template => template.isPublished);
-
-    if (linkedTemplateId) {
-      return filtered.filter(template => template.id === linkedTemplateId);
-    }
+  const filteredProducts = useMemo(() => {
+    let filtered = products.filter(product => product.isPublished);
     
     // Filter by search term
     if (searchTerm) {
-        filtered = filtered.filter(template =>
-            decodeHtmlEntities(template.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
-            decodeHtmlEntities(template.description).toLowerCase().includes(searchTerm.toLowerCase()) ||
-            template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        filtered = filtered.filter(product =>
+            decodeHtmlEntities(product.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (product.description && decodeHtmlEntities(product.description).toLowerCase().includes(searchTerm.toLowerCase())) ||
+            product.category.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }
     
-    // Then sort the results
+    // Then sort the results by creation date
     return filtered.sort((a, b) => {
-      if (a.isTopRated && !b.isTopRated) return -1;
-      if (!a.isTopRated && b.isTopRated) return 1;
-      if (a.createdAt && b.createdAt) {
-        try {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        } catch {
-            return 0;
-        }
-      } else if (a.createdAt) {
-        return -1; 
-      } else if (b.createdAt) {
-        return 1;  
+      try {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } catch {
+          return 0;
       }
-      return 0; 
     });
-  }, [templates, searchTerm, linkedTemplateId]);
+  }, [products, searchTerm]);
 
 
   const containerVariants = {
@@ -418,38 +224,37 @@ export default function MorePage(): ReactNode {
     },
   };
 
-  const isSelectionAllowed = !!pendingOrderId;
-
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl -mx-4 -mt-4 md:-mx-6 md:-mt-6 lg:-mx-8 lg:-mt-8 mb-6 shadow-sm">
-        <header className="container mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 py-3">
-          <div className="flex items-center gap-1 sm:gap-2 justify-center flex-shrink-0 flex-wrap">
-            <Button variant="ghost" asChild><Link href="/more"><BookOpen className="mr-2 h-4 w-4" />Menu Book</Link></Button>
-            <Button variant="ghost" asChild><Link href="/more"><FileText className="mr-2 h-4 w-4" />Menu Card</Link></Button>
-            <Button variant="ghost" asChild><Link href="/more"><FileImage className="mr-2 h-4 w-4" />Leaflet</Link></Button>
-            <div className="relative w-full sm:w-auto sm:max-w-xs flex-grow sm:flex-grow-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search templates..."
-                className="pl-10 w-full text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Button variant="ghost" asChild><Link href="/more"><CreditCard className="mr-2 h-4 w-4" />Membership Card</Link></Button>
-            <Button variant="ghost" asChild><Link href="/more"><Contact className="mr-2 h-4 w-4" />Business Card</Link></Button>
-            <Button variant="ghost" asChild><Link href="/more"><Presentation className="mr-2 h-4 w-4" />X Banner</Link></Button>
-            <Button variant="ghost" asChild><Link href="/more"><Book className="mr-2 h-4 w-4" />Menu Book Cover</Link></Button>
+    <div className="p-4 md:p-6 lg:p-8 space-y-6">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <Package className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+              Our Products
+            </h1>
           </div>
-        </header>
-      </div>
+          <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">
+            Browse our collection of high-quality products.
+          </p>
+        </div>
+        <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search products..."
+            className="pl-10 w-full sm:w-64 md:w-72 text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </header>
+      
       <main>
-        {isLoading || clientLoading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
-              <TemplateSkeletonCard key={index} />
+              <ProductSkeletonCard key={index} />
             ))}
           </div>
         ) : error ? (
@@ -461,10 +266,11 @@ export default function MorePage(): ReactNode {
               Try Again
             </Button>
           </div>
-        ) : filteredTemplates.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground text-lg">
-                {searchTerm || linkedTemplateId ? "No published templates match your search." : "No published templates available."}
+        ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-10 bg-card rounded-lg shadow border border-border">
+              <Layers className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg font-medium">
+                {searchTerm ? "No products match your search." : "No products available at the moment."}
               </p>
             </div>
         ) : (
@@ -474,13 +280,11 @@ export default function MorePage(): ReactNode {
             initial="hidden"
             animate="visible"
           >
-            {filteredTemplates.map((template) => (
-              <motion.div key={template.id} variants={itemVariants}>
-                <TemplateCard
-                  template={template}
+            {filteredProducts.map((product) => (
+              <motion.div key={product.id} variants={itemVariants}>
+                <ProductCard
+                  product={product}
                   onPreview={setPreviewImageUrl}
-                  onSelect={handleSelectTemplate}
-                  isSelectionAllowed={isSelectionAllowed}
                 />
               </motion.div>
             ))}
@@ -488,30 +292,7 @@ export default function MorePage(): ReactNode {
         )}
       </main>
 
-      <AlertDialog open={!!templateToConfirm} onOpenChange={(open) => !open && setTemplateToConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Template Selection</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apply the "{decodeHtmlEntities(templateToConfirm?.name)}" template to your recent order #{pendingOrderId}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setTemplateToConfirm(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSelection}>
-              Confirm &amp; Apply
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {showConfetti && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
-          <BubbleConfetti onComplete={() => setShowConfetti(false)} />
-        </div>
-      )}
-
-      <TemplatePreviewDialog
+      <ProductPreviewDialog
         imageUrl={previewImageUrl}
         isOpen={!!previewImageUrl}
         onOpenChange={() => setPreviewImageUrl(null)}
