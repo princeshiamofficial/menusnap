@@ -164,7 +164,21 @@ export default function ProductDetailsPage() {
                 }))
                 .filter(v => v.url);
             
-            const gallery = [...images, ...videos];
+            let gallery: MediaType[] = [];
+            if (videos.length > 0) {
+              const firstVideo = videos.shift()!; // Remove the first video from the videos array
+              gallery = [...images]; // Start with all images
+              // Insert the first video at the second position if there's at least one image.
+              if (gallery.length > 0) {
+                gallery.splice(1, 0, firstVideo); 
+              } else {
+                gallery.push(firstVideo); // If no images, just add the video
+              }
+              gallery.push(...videos); // Add any remaining videos at the end
+            } else {
+                gallery = images; // If no videos, just use images
+            }
+            
             setMediaGallery(gallery);
             setSelectedMedia(gallery[0] || null);
 
