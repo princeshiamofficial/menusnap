@@ -7,7 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -204,7 +204,7 @@ export default function ProductDetailsPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="aspect-[4/3] w-full relative overflow-hidden rounded-lg shadow-lg border bg-muted"
+              className="aspect-square w-full relative overflow-hidden rounded-lg shadow-lg border bg-muted"
             >
               <Image 
                 src={selectedImage || DEFAULT_PRODUCT_IMAGE} 
