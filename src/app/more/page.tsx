@@ -28,7 +28,7 @@ import {
   Menu,
 } from "lucide-react"; 
 import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -259,16 +259,16 @@ export default function MorePage(): ReactNode {
   return (
     <div className="p-0 space-y-6">
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border/50 shadow-sm">
-        <div className="h-2.5 bg-secondary" />
+        <div className="h-2.5 bg-gradient-to-r from-primary via-orange-400 to-amber-300" />
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-3">
             {/* Desktop Header */}
             <div className="hidden md:flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {navItems.slice(0, 4).map(item => (
-                  <Link key={item.label} href={item.href} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <button key={item.label} onClick={() => setActiveCategory(item.label)} className={cn("flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors", activeCategory === item.label && "text-primary")}>
                     <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
-                  </Link>
+                  </button>
                 ))}
               </div>
               <div className="relative flex-grow max-w-xs mx-4">
@@ -283,10 +283,10 @@ export default function MorePage(): ReactNode {
               </div>
               <div className="flex items-center gap-4">
                  {navItems.slice(4).map(item => (
-                  <Link key={item.label} href={item.href} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <button key={item.label} onClick={() => setActiveCategory(item.label)} className={cn("flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors", activeCategory === item.label && "text-primary")}>
                     <item.icon className="h-4 w-4" />
                     <span>{item.label}</span>
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>
@@ -303,11 +303,9 @@ export default function MorePage(): ReactNode {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
                         {navItems.map(item => (
-                            <DropdownMenuItem key={item.label} asChild>
-                                <Link href={item.href} className="flex items-center gap-2">
-                                    <item.icon className="h-4 w-4 text-muted-foreground" />
-                                    <span>{item.label}</span>
-                                </Link>
+                            <DropdownMenuItem key={item.label} onClick={() => setActiveCategory(item.label)} className={cn("flex items-center gap-2", activeCategory === item.label && "bg-accent")}>
+                                <item.icon className="h-4 w-4 text-muted-foreground" />
+                                <span>{item.label}</span>
                             </DropdownMenuItem>
                         ))}
                         </DropdownMenuContent>
@@ -355,13 +353,15 @@ export default function MorePage(): ReactNode {
             layout
             className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
           >
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onPreview={setPreviewImageUrl}
-              />
-            ))}
+            <AnimatePresence>
+                {filteredProducts.map((product) => (
+                <ProductCard
+                    key={product.id}
+                    product={product}
+                    onPreview={setPreviewImageUrl}
+                />
+                ))}
+            </AnimatePresence>
           </motion.div>
         )}
       </main>
