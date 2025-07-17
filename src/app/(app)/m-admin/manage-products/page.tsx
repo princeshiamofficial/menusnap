@@ -190,7 +190,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                   <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
                       {imageUrlsFields.map((field, index) => (
                           <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-md shadow-sm">
-                              <Image src={field.value} alt="preview" width={32} height={32} className="w-8 h-8 object-cover rounded-sm border" data-ai-hint="product image" />
+                              <Image src={field.value || DEFAULT_PRODUCT_IMAGE} alt="preview" width={32} height={32} className="w-8 h-8 object-cover rounded-sm border" data-ai-hint="product image" />
                               <span className="text-xs truncate flex-1">{field.value}</span>
                               <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                           </div>
