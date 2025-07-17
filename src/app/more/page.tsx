@@ -32,18 +32,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import Link from 'next/link';
-
-// Use the same Product interface from the admin page
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  imageUrls: string[];
-  videoUrls: string[];
-  isPublished: boolean;
-  createdAt: string;
-}
+import { getProducts, type Product } from '@/lib/product-api';
 
 const productCategories = [
   { value: 'Menu Book', label: 'Menu Book', icon: BookOpen },
@@ -55,18 +44,6 @@ const productCategories = [
   { value: 'X Banner', label: 'X Banner', icon: Presentation },
   { value: 'Menu Book Cover', label: 'Menu Book Cover', icon: Book },
 ];
-
-// Mock data, same as in the admin page for consistency
-const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
-  id: `prod_${i + 1}`,
-  name: `Premium ${productCategories[i % productCategories.length].label}`,
-  description: `An amazing premium product for your business. Discover its unique capabilities and how it can enhance your brand.`,
-  category: productCategories[i % productCategories.length].value,
-  imageUrls: [`https://placehold.co/600x400.png?text=P${i+1}`],
-  videoUrls: [],
-  isPublished: Math.random() > 0.2,
-  createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-}));
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400.png";
 
@@ -196,34 +173,29 @@ export default function MorePage(): ReactNode {
   const { toast } = useToast();
   const router = useRouter();
 
-  const navItems = [
-    { href: '#', label: 'Menu Book', icon: BookOpen },
-    { href: '#', label: 'Menu Card', icon: FileText },
-    { href: '#', label: 'Leaflet', icon: FileImage },
-    { href: '#', label: 'Brochure', icon: BookCopy },
-    { href: '#', label: 'Membership Card', icon: CreditCard },
-    { href: '#', label: 'Business Card', icon: Contact },
-    { href: '#', label: 'X Banner', icon: Presentation },
-    { href: '#', label: 'Menu Book Cover', icon: Book },
-  ];
+  const navItems = productCategories;
 
   useEffect(() => {
     async function fetchProducts() {
       setIsLoading(true);
       setError(null);
       try {
-        // MOCK API Call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setProducts(MOCK_PRODUCTS);
+        const fetchedProducts = await getProducts();
+        setProducts(fetchedProducts);
       } catch (e: any) {
         console.error("Failed to fetch products:", e);
         setError(e.message || "Failed to load products. Please try again later.");
+        toast({
+            title: "Error Loading Products",
+            description: e.message || "Could not retrieve products from the server.",
+            variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     }
     fetchProducts();
-  }, []);
+  }, [toast]);
 
 
   const categories = useMemo(() => {
@@ -327,7 +299,7 @@ export default function MorePage(): ReactNode {
       
       <main className="container mx-auto px-4 md:px-6 lg:px-8">
         {isLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <ProductSkeletonCard key={index} />
             ))}
@@ -351,7 +323,7 @@ export default function MorePage(): ReactNode {
         ) : (
           <motion.div 
             layout
-            className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
           >
             <AnimatePresence>
                 {filteredProducts.map((product) => (
