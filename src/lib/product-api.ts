@@ -22,6 +22,11 @@ const headers = {
 // Helper to handle API responses
 async function handleResponse(response: Response) {
   if (!response.ok) {
+    if (response.status === 404) {
+      console.warn("API returned 404 Not Found. This may be expected if a collection is empty.");
+      // For GET requests on a collection, this means it's empty. Return a structure that can be handled gracefully.
+      return { documents: [] };
+    }
     const errorData = await response.json().catch(() => ({ message: 'An unknown API error occurred.' }));
     throw new Error(errorData.message || `API error: ${response.status} ${response.statusText}`);
   }
@@ -49,20 +54,17 @@ function mapDocToProduct(doc: any): Product {
 // Fetch all products
 export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${API_URL}/collections/${COLLECTION_NAME}/documents`, { headers });
-  
-  if (response.status === 404) {
-    return [];
-  }
-  
   const result = await handleResponse(response);
 
-  // If the API returns a success message but no documents, it might not be an array.
-  // We check for this and return an empty array.
-  if (!result || !Array.isArray(result)) {
+  // The API might return an object with a `documents` key or just an array.
+  const documents = result?.documents || result;
+  
+  if (!Array.isArray(documents)) {
+    console.error("Invalid data format received from API. Expected an array of documents.", result);
     return [];
   }
 
-  return result.map(mapDocToProduct);
+  return documents.map(mapDocToProduct);
 }
 
 
