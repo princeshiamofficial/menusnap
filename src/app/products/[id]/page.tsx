@@ -22,10 +22,12 @@ import {
   Presentation,
   Book,
   BookCopy,
+  Star,
 } from "lucide-react"; 
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Product {
   id: string;
@@ -65,6 +67,13 @@ const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
   createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
 }));
 
+const mockReviews = [
+    { id: 1, name: 'Sabbir Ahmed', rating: 5, comment: 'Absolutely top-notch quality and service! The menu books completely transformed our restaurant\'s image. Highly recommended.' },
+    { id: 2, name: 'Jannatul Ferdous', rating: 4, comment: 'Great products and fast delivery. The business cards were exactly what we wanted. A little bit pricey but worth it.' },
+    { id: 3, name: 'Rezaul Karim', rating: 5, comment: 'The X Banners are fantastic and very durable. Color Hut team was very helpful throughout the process.' },
+    { id: 4, name: 'Fatima Akter', rating: 5, comment: 'We are very happy with the membership cards. The design is elegant and the quality is superb. Will order again.' },
+];
+
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/800x600.png";
 
 function RelatedProductCard({ product }: { product: Product }) {
@@ -91,6 +100,20 @@ function RelatedProductCard({ product }: { product: Product }) {
     </Link>
   );
 }
+
+const StarRating = ({ rating, className }: { rating: number; className?: string }) => (
+    <div className={cn("flex items-center gap-0.5", className)}>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Star
+          key={index}
+          className={cn(
+            "h-5 w-5",
+            rating > index ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/30"
+          )}
+        />
+      ))}
+    </div>
+);
 
 
 export default function ProductDetailsPage() {
@@ -139,6 +162,12 @@ export default function ProductDetailsPage() {
       description: "You can reach us via WhatsApp or Phone from the floating help button!",
     });
   };
+  
+  const averageRating = useMemo(() => {
+    if (mockReviews.length === 0) return 0;
+    const total = mockReviews.reduce((acc, review) => acc + review.rating, 0);
+    return parseFloat((total / mockReviews.length).toFixed(1));
+  }, []);
 
   if (isLoading) {
     return (
@@ -241,12 +270,41 @@ export default function ProductDetailsPage() {
             {product.category}
           </Badge>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">{decodeHtmlEntities(product.name)}</h1>
-          <div className="text-muted-foreground space-y-3">
+          <div className="text-muted-foreground space-y-3 leading-relaxed">
             <p>{decodeHtmlEntities(product.description)}</p>
           </div>
           <Button size="lg" className="w-full" onClick={handleContact}>
             Contact Us for Pricing & Details
           </Button>
+        </div>
+      </div>
+      
+      {/* Reviews Section */}
+      <div className="mt-20">
+        <Separator className="mb-10" />
+        <h2 className="text-2xl font-bold text-center mb-2">What Our Customers Say</h2>
+        <div className="flex justify-center items-center gap-2 mb-8">
+          <StarRating rating={averageRating} />
+          <span className="text-muted-foreground text-sm">({averageRating} average from {mockReviews.length} reviews)</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {mockReviews.map(review => (
+            <Card key={review.id} className="bg-card border-border/50">
+              <CardContent className="p-6">
+                <div className="flex items-center mb-3">
+                    <Avatar className="h-10 w-10 mr-4">
+                        <AvatarImage src={`https://i.pravatar.cc/40?u=${review.id}`} alt={review.name} data-ai-hint="person avatar"/>
+                        <AvatarFallback>{review.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <p className="font-semibold text-foreground">{review.name}</p>
+                        <StarRating rating={review.rating} />
+                    </div>
+                </div>
+                <p className="text-muted-foreground text-sm">{review.comment}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
       
@@ -264,3 +322,4 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
+
