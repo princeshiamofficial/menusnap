@@ -36,12 +36,14 @@ import {
   Warehouse, 
   CheckCircle,
   XCircle,
-  ImageIcon
+  ImageIcon,
+  Plus,
+  Video
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -55,7 +57,8 @@ interface Product {
   price: number;
   stock: number;
   category: string;
-  imageUrl?: string;
+  imageUrls: string[];
+  videoUrls: string[];
   isPublished: boolean;
   createdAt: string;
 }
@@ -68,7 +71,8 @@ const productFormSchema = z.object({
   stock: z.coerce.number().min(0, "Stock cannot be negative."),
   category: z.string().min(1, "Category is required."),
   isPublished: z.boolean().default(true),
-  imageUrl: z.string().url("Must be a valid URL.").optional().or(z.literal('')),
+  imageUrls: z.array(z.string().url("Each image URL must be a valid URL.")),
+  videoUrls: z.array(z.string().url("Each video URL must be a valid URL.")),
 });
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
@@ -80,7 +84,8 @@ const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
   price: parseFloat((Math.random() * 200 + 50).toFixed(2)),
   stock: Math.floor(Math.random() * 100),
   category: ['Electronics', 'Home Goods', 'Apparel', 'Books'][i % 4],
-  imageUrl: `https://placehold.co/100x100.png?text=P${i+1}`,
+  imageUrls: [`https://placehold.co/100x100.png?text=P${i+1}`],
+  videoUrls: [],
   isPublished: Math.random() > 0.2,
   createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
 }));
@@ -105,87 +110,148 @@ function StatCard({ title, value, icon: Icon, description, className }: { title:
 function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { initialData?: Product, onSubmit: (data: ProductFormValues) => void, onOpenChange: (open: boolean) => void, isEditMode: boolean }) {
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+        ...initialData,
+        imageUrls: initialData.imageUrls || [],
+        videoUrls: initialData.videoUrls || [],
+    } : {
       name: "",
       description: "",
       price: 0,
       stock: 0,
       category: "",
       isPublished: true,
-      imageUrl: "",
+      imageUrls: [],
+      videoUrls: [],
     },
   });
-  const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || DEFAULT_PRODUCT_IMAGE);
 
-  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    if (z.string().url().safeParse(url).success) {
-      setImagePreview(url);
-    } else if (url === '') {
-      setImagePreview(DEFAULT_PRODUCT_IMAGE);
+  const { fields: imageUrlsFields, append: appendImageUrl, remove: removeImageUrl } = useFieldArray({
+    control: form.control,
+    name: "imageUrls",
+  });
+  
+  const { fields: videoUrlsFields, append: appendVideoUrl, remove: removeVideoUrl } = useFieldArray({
+    control: form.control,
+    name: "videoUrls",
+  });
+
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [newVideoUrl, setNewVideoUrl] = useState("");
+
+  const handleAddImageUrl = () => {
+    if (newImageUrl && z.string().url().safeParse(newImageUrl).success) {
+      appendImageUrl(newImageUrl);
+      setNewImageUrl("");
     }
   };
+
+  const handleAddVideoUrl = () => {
+    if (newVideoUrl && z.string().url().safeParse(newVideoUrl).success) {
+      appendVideoUrl(newVideoUrl);
+      setNewVideoUrl("");
+    }
+  };
+
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
       <ScrollArea className="flex-grow p-6">
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-3 sm:col-span-1 space-y-2">
-            <Label>Product Image</Label>
-            <div className="aspect-square rounded-md border border-dashed flex items-center justify-center overflow-hidden">
-               <Image src={imagePreview} alt="Product Preview" width={150} height={150} className="object-cover" data-ai-hint="product image" />
-            </div>
-            <Input id="imageUrl" {...form.register("imageUrl")} placeholder="https://example.com/image.png" onChange={handleImageUrlChange} />
-             {form.formState.errors.imageUrl && <p className="text-sm text-destructive">{form.formState.errors.imageUrl.message}</p>}
-          </div>
-          <div className="col-span-3 sm:col-span-2 grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Label htmlFor="name">Product Name</Label>
-              <Input id="name" {...form.register("name")} />
-              {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
-            </div>
-            <div>
-              <Label htmlFor="price">Price (৳)</Label>
-              <Input id="price" type="number" {...form.register("price")} />
-               {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
-            </div>
-            <div>
-              <Label htmlFor="stock">Stock Quantity</Label>
-              <Input id="stock" type="number" {...form.register("stock")} />
-               {form.formState.errors.stock && <p className="text-sm text-destructive">{form.formState.errors.stock.message}</p>}
-            </div>
-            <div className="col-span-2">
-              <Label htmlFor="category">Category</Label>
-              <Controller
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Electronics">Electronics</SelectItem>
-                      <SelectItem value="Home Goods">Home Goods</SelectItem>
-                      <SelectItem value="Apparel">Apparel</SelectItem>
-                      <SelectItem value="Books">Books</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-               {form.formState.errors.category && <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>}
-            </div>
-            <div className="col-span-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" {...form.register("description")} rows={4}/>
-            </div>
-             <div className="col-span-2 flex items-center space-x-2 pt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Product Name</Label>
+                <Input id="name" {...form.register("name")} />
+                {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
+              </div>
+               <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price (৳)</Label>
+                  <Input id="price" type="number" {...form.register("price")} />
+                  {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="stock">Stock Quantity</Label>
+                  <Input id="stock" type="number" {...form.register("stock")} />
+                  {form.formState.errors.stock && <p className="text-sm text-destructive">{form.formState.errors.stock.message}</p>}
+                </div>
+               </div>
+              <div>
+                <Label htmlFor="category">Category</Label>
                 <Controller
                   control={form.control}
-                  name="isPublished"
-                  render={({ field }) => ( <Switch id="isPublished" checked={field.value} onCheckedChange={field.onChange} /> )}
+                  name="category"
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Electronics">Electronics</SelectItem>
+                        <SelectItem value="Home Goods">Home Goods</SelectItem>
+                        <SelectItem value="Apparel">Apparel</SelectItem>
+                        <SelectItem value="Books">Books</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
-                <Label htmlFor="isPublished">Publish Product</Label>
+                {form.formState.errors.category && <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>}
               </div>
-          </div>
+              <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea id="description" {...form.register("description")} rows={4}/>
+              </div>
+               <div className="flex items-center space-x-2 pt-2">
+                  <Controller
+                    control={form.control}
+                    name="isPublished"
+                    render={({ field }) => ( <Switch id="isPublished" checked={field.value} onCheckedChange={field.onChange} /> )}
+                  />
+                  <Label htmlFor="isPublished">Publish Product</Label>
+                </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+                 {/* Image URLs */}
+                 <div className="space-y-2">
+                    <Label>Image URLs</Label>
+                    <div className="flex gap-2">
+                        <Input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
+                        <Button type="button" variant="outline" onClick={handleAddImageUrl}><Plus className="h-4 w-4" /></Button>
+                    </div>
+                    <ScrollArea className="h-24 w-full rounded-md border p-2 space-y-2">
+                        {imageUrlsFields.map((field, index) => (
+                            <div key={field.id} className="flex items-center gap-2">
+                                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm truncate flex-1">{field.value}</span>
+                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                        ))}
+                         {imageUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No image URLs added.</p>}
+                    </ScrollArea>
+                     {form.formState.errors.imageUrls && <p className="text-sm text-destructive">{form.formState.errors.imageUrls.message}</p>}
+                </div>
+
+                {/* Video URLs */}
+                <div className="space-y-2">
+                    <Label>Video URLs</Label>
+                    <div className="flex gap-2">
+                        <Input value={newVideoUrl} onChange={e => setNewVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+                        <Button type="button" variant="outline" onClick={handleAddVideoUrl}><Plus className="h-4 w-4" /></Button>
+                    </div>
+                    <ScrollArea className="h-24 w-full rounded-md border p-2 space-y-2">
+                        {videoUrlsFields.map((field, index) => (
+                            <div key={field.id} className="flex items-center gap-2">
+                                <Video className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm truncate flex-1">{field.value}</span>
+                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeVideoUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                        ))}
+                         {videoUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No video URLs added.</p>}
+                    </ScrollArea>
+                    {form.formState.errors.videoUrls && <p className="text-sm text-destructive">{form.formState.errors.videoUrls.message}</p>}
+                </div>
+            </div>
         </div>
       </ScrollArea>
       <DialogFooter className="p-6 border-t mt-auto">
@@ -235,7 +301,6 @@ export default function ManageProductsPage(): ReactNode {
       ...data,
       id: `prod_${Date.now()}`,
       createdAt: new Date().toISOString(),
-      imageUrl: data.imageUrl || DEFAULT_PRODUCT_IMAGE,
     };
     setProducts(prev => [newProduct, ...prev]);
     toast({ title: "Success", description: "Product added successfully." });
@@ -247,7 +312,6 @@ export default function ManageProductsPage(): ReactNode {
     const updatedProduct: Product = {
       ...editingProduct,
       ...data,
-       imageUrl: data.imageUrl || DEFAULT_PRODUCT_IMAGE,
     };
     setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
     toast({ title: "Success", description: "Product updated successfully." });
@@ -358,7 +422,16 @@ export default function ManageProductsPage(): ReactNode {
                 ) : filteredProducts.length > 0 ? (
                   filteredProducts.map(product => (
                     <TableRow key={product.id}>
-                      <TableCell><Image src={product.imageUrl || DEFAULT_PRODUCT_IMAGE} alt={product.name} width={40} height={40} className="rounded-md object-cover border" data-ai-hint="product image" /></TableCell>
+                      <TableCell>
+                        <Image 
+                          src={product.imageUrls[0] || DEFAULT_PRODUCT_IMAGE} 
+                          alt={product.name} 
+                          width={40} 
+                          height={40} 
+                          className="rounded-md object-cover border" 
+                          data-ai-hint="product image" 
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{decodeHtmlEntities(product.name)}</TableCell>
                       <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
                       <TableCell className="text-right">৳{product.price.toFixed(2)}</TableCell>
@@ -393,7 +466,7 @@ export default function ManageProductsPage(): ReactNode {
       </Card>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-4xl p-0">
+        <DialogContent className="max-w-4xl p-0 h-[80vh]">
           <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
           </DialogHeader>
