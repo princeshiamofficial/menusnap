@@ -9,7 +9,21 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Layers, Search, Maximize, AlertTriangle, X, Package } from "lucide-react"; 
+import { 
+  Layers, 
+  Search, 
+  Maximize, 
+  AlertTriangle, 
+  X, 
+  Package,
+  BookOpen,
+  FileText,
+  FileImage,
+  CreditCard,
+  Contact,
+  Presentation,
+  Book,
+} from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { useToast } from "@/hooks/use-toast";
@@ -168,6 +182,16 @@ export default function MorePage(): ReactNode {
   const { toast } = useToast();
   const router = useRouter();
 
+  const navItems = [
+    { href: '#', label: 'Menu Book', icon: BookOpen },
+    { href: '#', label: 'Menu Card', icon: FileText },
+    { href: '#', label: 'Leaflet', icon: FileImage },
+    { href: '#', label: 'Membership Card', icon: CreditCard },
+    { href: '#', label: 'Business Card', icon: Contact },
+    { href: '#', label: 'X Banner', icon: Presentation },
+    { href: '#', label: 'Menu Book Cover', icon: Book },
+  ];
+
   useEffect(() => {
     async function fetchProducts() {
       setIsLoading(true);
@@ -218,41 +242,37 @@ export default function MorePage(): ReactNode {
   }, [products, searchTerm, activeCategory]);
 
   return (
-    <div className="p-0 md:p-6 lg:p-8 space-y-6">
-      <header className="sticky top-0 z-50 bg-gradient-to-br from-secondary via-background to-background/60 backdrop-blur-lg border-b border-border/50 shadow-md">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400 animate-shimmer bg-[length:200%_auto]">
-                Our Products
-              </h1>
-              <p className="text-muted-foreground mt-2 text-base">
-                Browse our curated collection of high-quality products.
-              </p>
+    <div className="p-0 space-y-6">
+      <header className="sticky top-0 z-50 bg-card border-b border-border/50 shadow-sm">
+        <div className="h-2.5 bg-secondary" />
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {navItems.slice(0, 3).map(item => (
+                <Link key={item.label} href={item.href} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <item.icon className="h-4 w-4" />
+                  <span className="hidden md:inline">{item.label}</span>
+                </Link>
+              ))}
             </div>
-            <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="relative flex-grow max-w-xs mx-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search products..."
-                className="pl-10 w-full sm:w-64 md:w-72 text-sm bg-background/50 border-border/70 focus:bg-background focus:border-primary"
+                placeholder="Search templates..."
+                className="pl-10 w-full text-sm bg-muted border-border/70 focus:bg-background focus:border-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-          </div>
-          <div className="mt-6 pt-4 border-t border-border/50 flex flex-wrap gap-2 items-center">
-            {categories.map(category => (
-              <Button
-                key={category}
-                variant={activeCategory === category ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setActiveCategory(category)}
-                className="capitalize transition-all duration-200"
-              >
-                {category}
-              </Button>
-            ))}
+            <div className="flex items-center gap-4">
+               {navItems.slice(3).map(item => (
+                <Link key={item.label} href={item.href} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                  <item.icon className="h-4 w-4" />
+                  <span className="hidden md:inline">{item.label}</span>
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </header>
