@@ -25,6 +25,10 @@ async function handleResponse(response: Response) {
     const errorData = await response.json().catch(() => ({ message: 'An unknown API error occurred.' }));
     throw new Error(errorData.message || `API error: ${response.status} ${response.statusText}`);
   }
+  // For 204 No Content (like some DELETE requests), we don't want to call .json()
+  if (response.status === 204) {
+    return null;
+  }
   return response.json();
 }
 
@@ -44,22 +48,20 @@ function mapDocToProduct(doc: any): Product {
 
 // Fetch all products
 export async function getProducts(): Promise<Product[]> {
-  try {
-    const response = await fetch(`${API_URL}/collections/${COLLECTION_NAME}/documents`, { headers });
-    const result = await handleResponse(response);
-    if (!Array.isArray(result)) {
-      throw new Error("Invalid data format received from API.");
-    }
-    return result.map(mapDocToProduct);
-  } catch (error: any) {
-    if (error.message.includes('Collection not found')) {
-      // If the collection doesn't exist, it's not an error, it just means there are no products.
-      return [];
-    }
-    // Re-throw other errors
-    throw error;
+  const response = await fetch(`${API_URL}/collections/${COLLECTION_NAME}/documents`, { headers });
+  
+  // If collection is not found, it's not an error; it just means there are no products yet.
+  if (response.status === 404) {
+    return [];
   }
+  
+  const result = await handleResponse(response);
+  if (!Array.isArray(result)) {
+    throw new Error("Invalid data format received from API. Expected an array.");
+  }
+  return result.map(mapDocToProduct);
 }
+
 
 // Create a new product
 export async function createProduct(productData: Omit<Product, 'id' | 'createdAt'>): Promise<Product> {
@@ -95,7 +97,7 @@ export async function deleteProduct(id: string): Promise<void> {
     method: 'DELETE',
     headers,
   });
-  // DELETE might return 204 No Content, which is ok.
+  // DELETE might return 204 No Content, which is ok, but handleResponse handles other non-ok statuses.
   if (!response.ok && response.status !== 204) {
     await handleResponse(response);
   }
