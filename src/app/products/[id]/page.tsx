@@ -23,6 +23,7 @@ import {
   Book,
   BookCopy,
   Star,
+  Video,
 } from "lucide-react"; 
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
@@ -90,6 +91,22 @@ const StarRating = ({ rating, className }: { rating: number; className?: string 
     </div>
 );
 
+function getYouTubeEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  let videoId: string | null = null;
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname === 'youtu.be') {
+      videoId = urlObj.pathname.slice(1);
+    } else if (urlObj.hostname.includes('youtube.com')) {
+      videoId = urlObj.searchParams.get('v');
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  } catch (error) {
+    console.error("Invalid video URL:", url, error);
+    return null;
+  }
+}
 
 export default function ProductDetailsPage() {
   const params = useParams();
@@ -146,6 +163,11 @@ export default function ProductDetailsPage() {
     const total = mockReviews.reduce((acc, review) => acc + review.rating, 0);
     return parseFloat((total / mockReviews.length).toFixed(1));
   }, []);
+
+  const embeddableVideoUrls = useMemo(() => {
+      if (!product?.videoUrls) return [];
+      return product.videoUrls.map(getYouTubeEmbedUrl).filter(url => url !== null) as string[];
+  }, [product?.videoUrls]);
 
   if (isLoading) {
     return (
@@ -257,6 +279,31 @@ export default function ProductDetailsPage() {
         </div>
       </div>
       
+       {/* Video Section */}
+       {embeddableVideoUrls.length > 0 && (
+        <div className="mt-20">
+          <Separator className="mb-10" />
+           <h2 className="text-2xl font-bold text-center mb-8 flex items-center justify-center gap-2">
+            <Video className="h-7 w-7 text-primary" />
+            Product Videos
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {embeddableVideoUrls.map((videoUrl, index) => (
+              <div key={index} className="aspect-video w-full overflow-hidden rounded-lg shadow-lg border bg-black">
+                 <iframe
+                    className="w-full h-full"
+                    src={videoUrl}
+                    title={`Product Video ${index + 1}`}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Reviews Section */}
       <div className="mt-20">
         <Separator className="mb-10" />
