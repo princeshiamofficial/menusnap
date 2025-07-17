@@ -10,20 +10,13 @@ export interface Product {
   createdAt: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://colorhutbd.xyz/firestore/api/index.php';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || '308e36cdaec0e79ef79f5a30db49d9df8e71fc8e05b859988f52a4b4c97b1858';
+const API_URL = 'https://colorhutbd.xyz/firestore/api/index.php';
+const API_KEY = '308e36cdaec0e79ef79f5a30db49d9df8e71fc8e05b85988f52a4b4c97b1858';
 const COLLECTION_NAME = 'products';
-
-if (!API_URL) {
-  throw new Error('Missing NEXT_PUBLIC_API_URL environment variable.');
-}
-if (!API_KEY) {
-  console.warn('Missing NEXT_PUBLIC_API_KEY environment variable. API calls may fail.');
-}
 
 const headers = {
   'Content-Type': 'application/json',
-  'X-API-KEY': API_KEY || '',
+  'X-API-KEY': API_KEY,
 };
 
 // Helper to handle API responses
@@ -51,12 +44,21 @@ function mapDocToProduct(doc: any): Product {
 
 // Fetch all products
 export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${API_URL}/collections/${COLLECTION_NAME}/documents`, { headers });
-  const result = await handleResponse(response);
-  if (!Array.isArray(result)) {
-    throw new Error("Invalid data format received from API.");
+  try {
+    const response = await fetch(`${API_URL}/collections/${COLLECTION_NAME}/documents`, { headers });
+    const result = await handleResponse(response);
+    if (!Array.isArray(result)) {
+      throw new Error("Invalid data format received from API.");
+    }
+    return result.map(mapDocToProduct);
+  } catch (error: any) {
+    if (error.message.includes('Collection not found')) {
+      // If the collection doesn't exist, it's not an error, it just means there are no products.
+      return [];
+    }
+    // Re-throw other errors
+    throw error;
   }
-  return result.map(mapDocToProduct);
 }
 
 // Create a new product
