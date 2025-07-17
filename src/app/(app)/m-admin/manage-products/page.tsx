@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Package, 
@@ -35,9 +36,7 @@ import {
   XCircle,
   ImageIcon,
   Plus,
-  Video,
-  Info,
-  Folder,
+  Video
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format } from 'date-fns';
@@ -148,110 +147,92 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <ScrollArea className="flex-grow p-6">
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center"><Info className="mr-2 h-5 w-5 text-primary" />General Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 bg-muted/50 p-6 rounded-b-lg">
-              <div>
-                <Label htmlFor="name">Product Name</Label>
-                <Input id="name" {...form.register("name")} />
-                {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
+            <div>
+              <Label htmlFor="name">Product Name</Label>
+              <Input id="name" {...form.register("name")} className="mt-1" />
+              {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" {...form.register("description")} rows={4} className="mt-1" />
+            </div>
+
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Controller
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select a category" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Electronics">Electronics</SelectItem>
+                      <SelectItem value="Home Goods">Home Goods</SelectItem>
+                      <SelectItem value="Apparel">Apparel</SelectItem>
+                      <SelectItem value="Books">Books</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {form.formState.errors.category && <p className="text-sm text-destructive mt-1">{form.formState.errors.category.message}</p>}
+            </div>
+
+            <Separator />
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                  <Label>Image URLs</Label>
+                  <div className="flex gap-2">
+                      <Input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
+                      <Button type="button" variant="outline" size="icon" onClick={handleAddImageUrl}><Plus className="h-4 w-4" /></Button>
+                  </div>
+                  <ScrollArea className="h-32 w-full rounded-md border bg-muted/30 p-2 space-y-2">
+                      {imageUrlsFields.map((field, index) => (
+                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-background rounded-md shadow-sm">
+                              <Image src={field.value} alt="preview" width={32} height={32} className="w-8 h-8 object-cover rounded-sm border" data-ai-hint="product image" />
+                              <span className="text-xs truncate flex-1">{field.value}</span>
+                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </div>
+                      ))}
+                        {imageUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No image URLs added.</p>}
+                  </ScrollArea>
+                    {form.formState.errors.imageUrls && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageUrls.message}</p>}
               </div>
-              <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" {...form.register("description")} rows={4}/>
+              <div className="space-y-2">
+                  <Label>Video URLs</Label>
+                  <div className="flex gap-2">
+                      <Input value={newVideoUrl} onChange={e => setNewVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+                      <Button type="button" variant="outline" size="icon" onClick={handleAddVideoUrl}><Plus className="h-4 w-4" /></Button>
+                  </div>
+                  <ScrollArea className="h-32 w-full rounded-md border bg-muted/30 p-2 space-y-2">
+                      {videoUrlsFields.map((field, index) => (
+                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-background rounded-md shadow-sm">
+                              <div className="w-8 h-8 flex items-center justify-center bg-card rounded-sm border"><Video className="h-5 w-5 text-muted-foreground" /></div>
+                              <span className="text-xs truncate flex-1">{field.value}</span>
+                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeVideoUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </div>
+                      ))}
+                        {videoUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No video URLs added.</p>}
+                  </ScrollArea>
+                  {form.formState.errors.videoUrls && <p className="text-sm text-destructive mt-1">{form.formState.errors.videoUrls.message}</p>}
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-               <CardTitle className="flex items-center"><Folder className="mr-2 h-5 w-5 text-primary" />Categorization</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 bg-muted/50 p-6 rounded-b-lg">
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Controller
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Electronics">Electronics</SelectItem>
-                          <SelectItem value="Home Goods">Home Goods</SelectItem>
-                          <SelectItem value="Apparel">Apparel</SelectItem>
-                          <SelectItem value="Books">Books</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {form.formState.errors.category && <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>}
-                </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center"><ImageIcon className="mr-2 h-5 w-5 text-primary" />Media</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 bg-muted/50 p-6 rounded-b-lg">
-                <div className="space-y-2">
-                    <Label>Image URLs</Label>
-                    <div className="flex gap-2">
-                        <Input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
-                        <Button type="button" variant="outline" onClick={handleAddImageUrl}><Plus className="h-4 w-4" /></Button>
-                    </div>
-                    <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
-                        {imageUrlsFields.map((field, index) => (
-                            <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted rounded-md">
-                                <Image src={field.value} alt="preview" width={32} height={32} className="w-8 h-8 object-cover rounded-sm border" data-ai-hint="product image" />
-                                <span className="text-xs truncate flex-1">{field.value}</span>
-                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                            </div>
-                        ))}
-                         {imageUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No image URLs added.</p>}
-                    </ScrollArea>
-                     {form.formState.errors.imageUrls && <p className="text-sm text-destructive">{form.formState.errors.imageUrls.message}</p>}
-                </div>
-                <div className="space-y-2">
-                    <Label>Video URLs</Label>
-                    <div className="flex gap-2">
-                        <Input value={newVideoUrl} onChange={e => setNewVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
-                        <Button type="button" variant="outline" onClick={handleAddVideoUrl}><Plus className="h-4 w-4" /></Button>
-                    </div>
-                    <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
-                        {videoUrlsFields.map((field, index) => (
-                            <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted rounded-md">
-                                <div className="w-8 h-8 flex items-center justify-center bg-card rounded-sm border"><Video className="h-5 w-5 text-muted-foreground" /></div>
-                                <span className="text-xs truncate flex-1">{field.value}</span>
-                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeVideoUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                            </div>
-                        ))}
-                         {videoUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No video URLs added.</p>}
-                    </ScrollArea>
-                    {form.formState.errors.videoUrls && <p className="text-sm text-destructive">{form.formState.errors.videoUrls.message}</p>}
-                </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center"><CheckCircle className="mr-2 h-5 w-5 text-primary" />Publishing</CardTitle>
-            </CardHeader>
-            <CardContent className="bg-muted/50 p-6 rounded-b-lg">
-               <div className="flex items-center space-x-2">
-                  <Controller
-                    control={form.control}
-                    name="isPublished"
-                    render={({ field }) => ( <Switch id="isPublished" checked={field.value} onCheckedChange={field.onChange} /> )}
-                  />
-                  <Label htmlFor="isPublished">Publish Product</Label>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">When published, the product will be visible to all customers.</p>
-            </CardContent>
-          </Card>
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <Label>Publishing</Label>
+              <div className="flex items-center space-x-2 mt-2 p-3 rounded-md bg-muted/30 border">
+                <Controller
+                  control={form.control}
+                  name="isPublished"
+                  render={({ field }) => ( <Switch id="isPublished" checked={field.value} onCheckedChange={field.onChange} /> )}
+                />
+                <Label htmlFor="isPublished">Publish Product</Label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">When published, the product will be visible to all customers.</p>
+            </div>
         </div>
       </ScrollArea>
       <DialogFooter className="px-6 py-4 border-t mt-auto">
@@ -344,6 +325,7 @@ export default function ManageProductsPage(): ReactNode {
   
   const stats = useMemo(() => ({
     totalProducts: products.length,
+    published: products.filter(p=>p.isPublished).length
   }), [products]);
 
   if (adminLoading) { return <div className="flex h-screen w-full items-center justify-center"><p>Loading Admin Area...</p></div>; }
@@ -360,8 +342,8 @@ export default function ManageProductsPage(): ReactNode {
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        <StatCard title="Total Products" value={isLoading ? <Skeleton className="h-6 w-16" /> : stats.totalProducts} description="Number of unique products" icon={Package} />
-        <StatCard title="Published" value={isLoading ? <Skeleton className="h-6 w-16" /> : products.filter(p=>p.isPublished).length} description="Products visible to customers" icon={CheckCircle} />
+        <StatCard title="Total Products" value={isLoading ? <Skeleton className="h-6 w-16" /> : stats.totalProducts} description="Number of unique products" icon={Package} className="shadow-lg" />
+        <StatCard title="Published" value={isLoading ? <Skeleton className="h-6 w-16" /> : stats.published} description="Products visible to customers" icon={CheckCircle} className="shadow-lg" />
       </section>
 
       <Card className="flex-grow flex flex-col shadow-lg">
@@ -457,7 +439,7 @@ export default function ManageProductsPage(): ReactNode {
       </Card>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-4xl p-0 h-[90vh]">
+        <DialogContent className="max-w-2xl p-0 h-[90vh]">
           <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
           </DialogHeader>
