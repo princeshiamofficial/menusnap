@@ -36,7 +36,15 @@ import {
   XCircle,
   ImageIcon,
   Plus,
-  Video
+  Video,
+  BookOpen,
+  FileText,
+  FileImage,
+  CreditCard,
+  Contact,
+  Presentation,
+  Book,
+  BookCopy,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format } from 'date-fns';
@@ -70,12 +78,23 @@ const productFormSchema = z.object({
 });
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
-// Mock API data
+const productCategories = [
+  { value: 'Menu Book', label: 'Menu Book', icon: BookOpen },
+  { value: 'Menu Card', label: 'Menu Card', icon: FileText },
+  { value: 'Leaflet', label: 'Leaflet', icon: FileImage },
+  { value: 'Brochure', label: 'Brochure', icon: BookCopy },
+  { value: 'Membership Card', label: 'Membership Card', icon: CreditCard },
+  { value: 'Business Card', label: 'Business Card', icon: Contact },
+  { value: 'X Banner', label: 'X Banner', icon: Presentation },
+  { value: 'Menu Book Cover', label: 'Menu Book Cover', icon: Book },
+];
+
+// Mock API data using the defined categories
 const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
   id: `prod_${i + 1}`,
-  name: `Premium Gadget ${i + 1}`,
-  description: `An amazing premium gadget with feature set ${String.fromCharCode(65 + i)}.`,
-  category: ['Electronics', 'Home Goods', 'Apparel', 'Books'][i % 4],
+  name: `Premium ${productCategories[i % productCategories.length].label}`,
+  description: `An amazing premium product for your business. Discover its unique capabilities and how it can enhance your brand.`,
+  category: productCategories[i % productCategories.length].value,
   imageUrls: [`https://placehold.co/100x100.png?text=P${i+1}`],
   videoUrls: [],
   isPublished: Math.random() > 0.2,
@@ -147,18 +166,18 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <ScrollArea className="flex-grow p-6">
         <div className="space-y-4">
-            <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
+            <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
               <Label htmlFor="name">Product Name</Label>
               <Input id="name" {...form.register("name")} className="mt-1" />
               {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
             </div>
 
-            <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
+            <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" {...form.register("description")} rows={4} className="mt-1" />
             </div>
 
-            <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
+            <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
               <Label htmlFor="category">Category</Label>
               <Controller
                 control={form.control}
@@ -167,10 +186,14 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <SelectTrigger className="mt-1"><SelectValue placeholder="Select a category" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Electronics">Electronics</SelectItem>
-                      <SelectItem value="Home Goods">Home Goods</SelectItem>
-                      <SelectItem value="Apparel">Apparel</SelectItem>
-                      <SelectItem value="Books">Books</SelectItem>
+                      {productCategories.map(cat => (
+                         <SelectItem key={cat.value} value={cat.value}>
+                            <div className="flex items-center gap-2">
+                                <cat.icon className="h-4 w-4 text-muted-foreground" />
+                                <span>{cat.label}</span>
+                            </div>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}
@@ -181,7 +204,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
             <Separator />
             
             <div className="space-y-4">
-              <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
+              <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
                   <Label>Image URLs</Label>
                   <div className="flex gap-2">
                       <Input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
@@ -189,7 +212,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                   </div>
                   <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
                       {imageUrlsFields.map((field, index) => (
-                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-md shadow-sm">
+                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-md shadow-sm">
                               <Image src={field.value || DEFAULT_PRODUCT_IMAGE} alt="preview" width={32} height={32} className="w-8 h-8 object-cover rounded-sm border" data-ai-hint="product image" />
                               <span className="text-xs truncate flex-1">{field.value}</span>
                               <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -199,7 +222,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                   </ScrollArea>
                     {form.formState.errors.imageUrls && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageUrls.message}</p>}
               </div>
-              <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
+              <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
                   <Label>Video URLs</Label>
                   <div className="flex gap-2">
                       <Input value={newVideoUrl} onChange={e => setNewVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
@@ -207,7 +230,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                   </div>
                   <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
                       {videoUrlsFields.map((field, index) => (
-                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-md shadow-sm">
+                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-md shadow-sm">
                               <div className="w-8 h-8 flex items-center justify-center bg-card rounded-sm border"><Video className="h-5 w-5 text-muted-foreground" /></div>
                               <span className="text-xs truncate flex-1">{field.value}</span>
                               <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeVideoUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -221,7 +244,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
             
             <Separator />
             
-            <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
+            <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
               <Label>Publishing</Label>
               <div className="flex items-center space-x-2 mt-2">
                 <Controller
