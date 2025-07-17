@@ -25,6 +25,7 @@ import {
 } from "lucide-react"; 
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from '@/components/ui/separator';
 
 interface Product {
   id: string;
@@ -66,6 +67,32 @@ const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/800x600.png";
 
+function RelatedProductCard({ product }: { product: Product }) {
+  return (
+    <Link href={`/products/${product.id}`} className="block group">
+      <Card className="overflow-hidden h-full transition-all duration-300 ease-in-out border-border/50 hover:border-primary/50 hover:shadow-lg">
+        <div className="aspect-square relative">
+          <Image
+            src={product.imageUrls[0] || DEFAULT_PRODUCT_IMAGE}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300 ease-in-out"
+            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+            data-ai-hint="related product"
+          />
+        </div>
+        <CardContent className="p-3">
+          <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+            {decodeHtmlEntities(product.name)}
+          </h3>
+          <p className="text-xs text-muted-foreground">{product.category}</p>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+
 export default function ProductDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -98,6 +125,13 @@ export default function ProductDetailsPage() {
   const CategoryIcon = useMemo(() => {
     return productCategories.find(c => c.value === product?.category)?.icon || Package;
   }, [product?.category]);
+
+  const relatedProducts = useMemo(() => {
+    if (!product) return [];
+    return MOCK_PRODUCTS
+      .filter(p => p.id !== product.id && p.category === product.category && p.isPublished)
+      .slice(0, 4);
+  }, [product]);
 
   const handleContact = () => {
     toast({
@@ -215,6 +249,18 @@ export default function ProductDetailsPage() {
           </Button>
         </div>
       </div>
+      
+      {relatedProducts.length > 0 && (
+        <div className="mt-20">
+          <Separator className="mb-10" />
+          <h2 className="text-2xl font-bold text-center mb-8">Related Products</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {relatedProducts.map(relatedProduct => (
+              <RelatedProductCard key={relatedProduct.id} product={relatedProduct} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
