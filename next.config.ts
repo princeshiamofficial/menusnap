@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
         hostname: 'erp.colorhutbd.xyz',
         port: '',
         pathname: '/file/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ibb.co',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
