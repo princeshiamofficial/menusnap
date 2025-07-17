@@ -9,6 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   Layers, 
   Search, 
@@ -24,6 +25,7 @@ import {
   Presentation,
   Book,
   BookCopy,
+  Menu, // Added Menu icon
 } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
@@ -291,24 +293,36 @@ export default function MorePage(): ReactNode {
 
             {/* Mobile Header */}
             <div className="md:hidden flex flex-col gap-4">
-              <div className="grid grid-cols-3 gap-x-2 gap-y-3">
-                  {navItems.map(item => (
-                    <Link key={item.label} href={item.href} className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </Link>
-                  ))}
-              </div>
-              <div className="relative">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search products..."
-                    className="pl-10 w-full text-sm bg-muted border-border/70 focus:bg-background focus:border-primary"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-              </div>
+                <div className="flex justify-between items-center">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="flex items-center gap-2">
+                                <Menu className="h-4 w-4" />
+                                <span>Categories</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                        {navItems.map(item => (
+                            <DropdownMenuItem key={item.label} asChild>
+                                <Link href={item.href} className="flex items-center gap-2">
+                                    <item.icon className="h-4 w-4 text-muted-foreground" />
+                                    <span>{item.label}</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <div className="relative flex-grow max-w-[60%]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search..."
+                            className="pl-10 w-full text-sm bg-muted border-border/70 focus:bg-background focus:border-primary"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
             </div>
         </div>
       </header>
