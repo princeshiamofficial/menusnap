@@ -146,19 +146,19 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <ScrollArea className="flex-grow p-6">
-        <div className="space-y-6">
-            <div>
+        <div className="space-y-4">
+            <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
               <Label htmlFor="name">Product Name</Label>
               <Input id="name" {...form.register("name")} className="mt-1" />
               {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
             </div>
 
-            <div>
+            <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" {...form.register("description")} rows={4} className="mt-1" />
             </div>
 
-            <div>
+            <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
               <Label htmlFor="category">Category</Label>
               <Controller
                 control={form.control}
@@ -181,15 +181,15 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
             <Separator />
             
             <div className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
                   <Label>Image URLs</Label>
                   <div className="flex gap-2">
                       <Input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
                       <Button type="button" variant="outline" size="icon" onClick={handleAddImageUrl}><Plus className="h-4 w-4" /></Button>
                   </div>
-                  <ScrollArea className="h-32 w-full rounded-md border bg-muted/30 p-2 space-y-2">
+                  <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
                       {imageUrlsFields.map((field, index) => (
-                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-background rounded-md shadow-sm">
+                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-md shadow-sm">
                               <Image src={field.value} alt="preview" width={32} height={32} className="w-8 h-8 object-cover rounded-sm border" data-ai-hint="product image" />
                               <span className="text-xs truncate flex-1">{field.value}</span>
                               <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeImageUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -199,15 +199,15 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                   </ScrollArea>
                     {form.formState.errors.imageUrls && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageUrls.message}</p>}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
                   <Label>Video URLs</Label>
                   <div className="flex gap-2">
                       <Input value={newVideoUrl} onChange={e => setNewVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
                       <Button type="button" variant="outline" size="icon" onClick={handleAddVideoUrl}><Plus className="h-4 w-4" /></Button>
                   </div>
-                  <ScrollArea className="h-32 w-full rounded-md border bg-muted/30 p-2 space-y-2">
+                  <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
                       {videoUrlsFields.map((field, index) => (
-                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-background rounded-md shadow-sm">
+                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-md shadow-sm">
                               <div className="w-8 h-8 flex items-center justify-center bg-card rounded-sm border"><Video className="h-5 w-5 text-muted-foreground" /></div>
                               <span className="text-xs truncate flex-1">{field.value}</span>
                               <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeVideoUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -221,9 +221,9 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
             
             <Separator />
             
-            <div>
+            <div className="space-y-2 p-3 rounded-md bg-muted/30 border">
               <Label>Publishing</Label>
-              <div className="flex items-center space-x-2 mt-2 p-3 rounded-md bg-muted/30 border">
+              <div className="flex items-center space-x-2 mt-2">
                 <Controller
                   control={form.control}
                   name="isPublished"
