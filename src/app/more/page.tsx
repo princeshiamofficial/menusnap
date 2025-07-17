@@ -43,12 +43,23 @@ interface Product {
   createdAt: string;
 }
 
+const productCategories = [
+  { value: 'Menu Book', label: 'Menu Book', icon: BookOpen },
+  { value: 'Menu Card', label: 'Menu Card', icon: FileText },
+  { value: 'Leaflet', label: 'Leaflet', icon: FileImage },
+  { value: 'Brochure', label: 'Brochure', icon: BookCopy },
+  { value: 'Membership Card', label: 'Membership Card', icon: CreditCard },
+  { value: 'Business Card', label: 'Business Card', icon: Contact },
+  { value: 'X Banner', label: 'X Banner', icon: Presentation },
+  { value: 'Menu Book Cover', label: 'Menu Book Cover', icon: Book },
+];
+
 // Mock data, same as in the admin page for consistency
 const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
   id: `prod_${i + 1}`,
-  name: `Premium Gadget ${i + 1}`,
-  description: `An amazing premium gadget with feature set ${String.fromCharCode(65 + i)}. Discover its unique capabilities and how it can enhance your daily life.`,
-  category: ['Electronics', 'Home Goods', 'Apparel', 'Books'][i % 4],
+  name: `Premium ${productCategories[i % productCategories.length].label}`,
+  description: `An amazing premium product for your business. Discover its unique capabilities and how it can enhance your brand.`,
+  category: productCategories[i % productCategories.length].value,
   imageUrls: [`https://placehold.co/600x400.png?text=P${i+1}`],
   videoUrls: [],
   isPublished: Math.random() > 0.2,
@@ -245,7 +256,7 @@ export default function MorePage(): ReactNode {
 
   return (
     <div className="p-0 space-y-6">
-      <header className="sticky top-0 z-50 bg-card border-b border-border/50 shadow-sm">
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border/50 shadow-sm">
         <div className="h-2.5 bg-secondary" />
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-3">
           <div className="flex items-center justify-between">
