@@ -93,7 +93,7 @@ const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
 // Reusable Stat Card Component
 function StatCard({ title, value, icon: Icon, description, className }: { title: string; value: string | number; icon: React.ElementType; description: string; className?: string; }) {
   return (
-    <Card className={cn("shadow-sm", className)}>
+    <Card className={cn("shadow-lg", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -157,15 +157,18 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
       <ScrollArea className="flex-grow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             {/* Left Column */}
-            <div className="space-y-4">
+            <div className="md:col-span-2 space-y-4">
               <div>
                 <Label htmlFor="name">Product Name</Label>
                 <Input id="name" {...form.register("name")} />
                 {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
               </div>
-               <div className="grid grid-cols-2 gap-4">
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="price">Price (৳)</Label>
                   <Input id="price" type="number" {...form.register("price")} />
@@ -176,7 +179,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                   <Input id="stock" type="number" {...form.register("stock")} />
                   {form.formState.errors.stock && <p className="text-sm text-destructive">{form.formState.errors.stock.message}</p>}
                 </div>
-               </div>
+              </div>
               <div>
                 <Label htmlFor="category">Category</Label>
                 <Controller
@@ -196,24 +199,18 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                 />
                 {form.formState.errors.category && <p className="text-sm text-destructive">{form.formState.errors.category.message}</p>}
               </div>
-              <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" {...form.register("description")} rows={4}/>
-              </div>
-               <div className="flex items-center space-x-2 pt-2">
-                  <Controller
-                    control={form.control}
-                    name="isPublished"
-                    render={({ field }) => ( <Switch id="isPublished" checked={field.value} onCheckedChange={field.onChange} /> )}
-                  />
-                  <Label htmlFor="isPublished">Publish Product</Label>
-                </div>
             </div>
 
             {/* Right Column */}
-            <div className="space-y-6">
-                 {/* Image URLs */}
-                 <div className="space-y-2">
+            <div className="space-y-4">
+              <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea id="description" {...form.register("description")} rows={7}/>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 space-y-6 pt-4">
+                <div className="space-y-2">
                     <Label>Image URLs</Label>
                     <div className="flex gap-2">
                         <Input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="https://example.com/image.png" />
@@ -231,8 +228,6 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                     </ScrollArea>
                      {form.formState.errors.imageUrls && <p className="text-sm text-destructive">{form.formState.errors.imageUrls.message}</p>}
                 </div>
-
-                {/* Video URLs */}
                 <div className="space-y-2">
                     <Label>Video URLs</Label>
                     <div className="flex gap-2">
@@ -252,6 +247,15 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
                     {form.formState.errors.videoUrls && <p className="text-sm text-destructive">{form.formState.errors.videoUrls.message}</p>}
                 </div>
             </div>
+
+             <div className="md:col-span-2 flex items-center space-x-2 pt-2">
+                <Controller
+                  control={form.control}
+                  name="isPublished"
+                  render={({ field }) => ( <Switch id="isPublished" checked={field.value} onCheckedChange={field.onChange} /> )}
+                />
+                <Label htmlFor="isPublished">Publish Product</Label>
+              </div>
         </div>
       </ScrollArea>
       <DialogFooter className="p-6 border-t mt-auto">
@@ -367,7 +371,7 @@ export default function ManageProductsPage(): ReactNode {
         <StatCard title="Published" value={isLoading ? <Skeleton className="h-6 w-16" /> : products.filter(p=>p.isPublished).length} description="Products visible to customers" icon={CheckCircle} />
       </section>
 
-      <Card className="flex-grow flex flex-col">
+      <Card className="flex-grow flex flex-col shadow-lg">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
