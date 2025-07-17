@@ -219,40 +219,36 @@ export default function MorePage(): ReactNode {
 
   return (
     <div className="p-0 md:p-6 lg:p-8 space-y-6">
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/50">
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
+      <header className="sticky top-0 z-50 bg-gradient-to-br from-secondary via-background to-background/60 backdrop-blur-lg border-b border-border/50 shadow-md">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <div className="flex items-center gap-3">
-                <Package className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                  Our Products
-                </h1>
-              </div>
-              <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">
-                Browse our collection of high-quality products.
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400 animate-shimmer bg-[length:200%_auto]">
+                Our Products
+              </h1>
+              <p className="text-muted-foreground mt-2 text-base">
+                Browse our curated collection of high-quality products.
               </p>
             </div>
             <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search products..."
-                className="pl-10 w-full sm:w-64 md:w-72 text-sm"
+                className="pl-10 w-full sm:w-64 md:w-72 text-sm bg-background/50 border-border/70 focus:bg-background focus:border-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
-          <div className="mt-4 pt-4 flex flex-wrap gap-2 items-center">
-            <span className="text-sm font-medium text-muted-foreground mr-2">Categories:</span>
+          <div className="mt-6 pt-4 border-t border-border/50 flex flex-wrap gap-2 items-center">
             {categories.map(category => (
               <Button
                 key={category}
                 variant={activeCategory === category ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveCategory(category)}
-                className="capitalize"
+                className="capitalize transition-all duration-200"
               >
                 {category}
               </Button>
@@ -308,4 +304,3 @@ export default function MorePage(): ReactNode {
     </div>
   );
 }
-
