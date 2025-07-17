@@ -50,15 +50,18 @@ function mapDocToProduct(doc: any): Product {
 export async function getProducts(): Promise<Product[]> {
   const response = await fetch(`${API_URL}/collections/${COLLECTION_NAME}/documents`, { headers });
   
-  // If collection is not found, it's not an error; it just means there are no products yet.
   if (response.status === 404) {
     return [];
   }
   
   const result = await handleResponse(response);
-  if (!Array.isArray(result)) {
-    throw new Error("Invalid data format received from API. Expected an array.");
+
+  // If the API returns a success message but no documents, it might not be an array.
+  // We check for this and return an empty array.
+  if (!result || !Array.isArray(result)) {
+    return [];
   }
+
   return result.map(mapDocToProduct);
 }
 
