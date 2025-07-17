@@ -348,6 +348,19 @@ export default function ProductDetailsPage() {
         </div>
       </div>
       
+      {/* Related Products Section */}
+      {relatedProducts.length > 0 && (
+        <div className="mt-20">
+          <Separator className="mb-10" />
+          <h2 className="text-2xl font-bold text-center mb-8">Related Products</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {relatedProducts.map(relatedProduct => (
+              <RelatedProductCard key={relatedProduct.id} product={relatedProduct} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Reviews Section */}
       <div className="mt-20">
         <Separator className="mb-10" />
@@ -376,18 +389,6 @@ export default function ProductDetailsPage() {
           ))}
         </div>
       </div>
-      
-      {relatedProducts.length > 0 && (
-        <div className="mt-20">
-          <Separator className="mb-10" />
-          <h2 className="text-2xl font-bold text-center mb-8">Related Products</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {relatedProducts.map(relatedProduct => (
-              <RelatedProductCard key={relatedProduct.id} product={relatedProduct} />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
