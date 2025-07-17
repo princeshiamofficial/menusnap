@@ -31,14 +31,13 @@ import {
   Trash2, 
   Save, 
   AlertTriangle, 
-  DollarSign, 
-  Warehouse, 
   CheckCircle,
   XCircle,
   ImageIcon,
   Plus,
   Video,
-  Info
+  Info,
+  Folder,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format } from 'date-fns';
@@ -54,8 +53,6 @@ interface Product {
   id: string;
   name: string;
   description?: string;
-  price: number;
-  stock: number;
   category: string;
   imageUrls: string[];
   videoUrls: string[];
@@ -67,8 +64,6 @@ interface Product {
 const productFormSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters."),
   description: z.string().optional(),
-  price: z.coerce.number().min(0, "Price cannot be negative."),
-  stock: z.coerce.number().min(0, "Stock cannot be negative."),
   category: z.string().min(1, "Category is required."),
   isPublished: z.boolean().default(true),
   imageUrls: z.array(z.string().url("Each image URL must be a valid URL.")),
@@ -81,8 +76,6 @@ const MOCK_PRODUCTS: Product[] = Array.from({ length: 25 }, (_, i) => ({
   id: `prod_${i + 1}`,
   name: `Premium Gadget ${i + 1}`,
   description: `An amazing premium gadget with feature set ${String.fromCharCode(65 + i)}.`,
-  price: parseFloat((Math.random() * 200 + 50).toFixed(2)),
-  stock: Math.floor(Math.random() * 100),
   category: ['Electronics', 'Home Goods', 'Apparel', 'Books'][i % 4],
   imageUrls: [`https://placehold.co/100x100.png?text=P${i+1}`],
   videoUrls: [],
@@ -117,8 +110,6 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
     } : {
       name: "",
       description: "",
-      price: 0,
-      stock: 0,
       category: "",
       isPublished: true,
       imageUrls: [],
@@ -176,21 +167,9 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
 
           <Card>
             <CardHeader>
-               <CardTitle className="flex items-center"><DollarSign className="mr-2 h-5 w-5 text-primary" />Pricing & Inventory</CardTitle>
+               <CardTitle className="flex items-center"><Folder className="mr-2 h-5 w-5 text-primary" />Categorization</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 bg-muted/50 p-6 rounded-b-lg">
-              <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="price">Price (৳)</Label>
-                    <Input id="price" type="number" {...form.register("price")} />
-                    {form.formState.errors.price && <p className="text-sm text-destructive">{form.formState.errors.price.message}</p>}
-                  </div>
-                  <div>
-                    <Label htmlFor="stock">Stock Quantity</Label>
-                    <Input id="stock" type="number" {...form.register("stock")} />
-                    {form.formState.errors.stock && <p className="text-sm text-destructive">{form.formState.errors.stock.message}</p>}
-                  </div>
-                </div>
                 <div>
                   <Label htmlFor="category">Category</Label>
                   <Controller
@@ -365,7 +344,6 @@ export default function ManageProductsPage(): ReactNode {
   
   const stats = useMemo(() => ({
     totalProducts: products.length,
-    totalStockValue: products.reduce((acc, p) => acc + p.price * p.stock, 0).toLocaleString('en-US', { style: 'currency', currency: 'BDT' }),
   }), [products]);
 
   if (adminLoading) { return <div className="flex h-screen w-full items-center justify-center"><p>Loading Admin Area...</p></div>; }
@@ -381,10 +359,8 @@ export default function ManageProductsPage(): ReactNode {
         <p className="text-muted-foreground mt-1">Add, edit, and manage all your products.</p>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <StatCard title="Total Products" value={isLoading ? <Skeleton className="h-6 w-16" /> : stats.totalProducts} description="Number of unique products" icon={Package} />
-        <StatCard title="Total Stock Value" value={isLoading ? <Skeleton className="h-6 w-24" /> : stats.totalStockValue} description="Estimated value of all items" icon={DollarSign} />
-        <StatCard title="Total Inventory" value={isLoading ? <Skeleton className="h-6 w-16" /> : products.reduce((sum, p) => sum + p.stock, 0)} description="Total units across all products" icon={Warehouse} />
         <StatCard title="Published" value={isLoading ? <Skeleton className="h-6 w-16" /> : products.filter(p=>p.isPublished).length} description="Products visible to customers" icon={CheckCircle} />
       </section>
 
@@ -421,8 +397,6 @@ export default function ManageProductsPage(): ReactNode {
                   <TableHead className="w-[80px]">Image</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                  <TableHead className="text-right">Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[50px] text-right">Actions</TableHead>
                 </TableRow>
@@ -434,8 +408,6 @@ export default function ManageProductsPage(): ReactNode {
                       <TableCell><Skeleton className="h-10 w-10 rounded-md" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-12 ml-auto" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
                     </TableRow>
@@ -455,8 +427,6 @@ export default function ManageProductsPage(): ReactNode {
                       </TableCell>
                       <TableCell className="font-medium">{decodeHtmlEntities(product.name)}</TableCell>
                       <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
-                      <TableCell className="text-right">৳{product.price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{product.stock}</TableCell>
                       <TableCell>
                         <Badge variant={product.isPublished ? "default" : "secondary"} className={cn(product.isPublished ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800")}>
                           {product.isPublished ? <CheckCircle className="mr-1 h-3 w-3" /> : <XCircle className="mr-1 h-3 w-3" />}
@@ -477,7 +447,7 @@ export default function ManageProductsPage(): ReactNode {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">No products found.</TableCell>
+                    <TableCell colSpan={5} className="h-24 text-center">No products found.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
