@@ -17,7 +17,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SlectItem, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -25,7 +25,6 @@ import {
   Search, 
   RefreshCw, 
   ListFilter, 
-  ArrowUpDown, 
   PlusCircle, 
   MoreHorizontal, 
   Edit3, 
@@ -154,9 +153,8 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
     }
   };
 
-
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <ScrollArea className="flex-grow p-6">
         <div className="space-y-6">
           <Card>
@@ -277,7 +275,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode }: { init
           </Card>
         </div>
       </ScrollArea>
-      <DialogFooter className="p-6 border-t mt-auto">
+      <DialogFooter className="px-6 py-4 border-t mt-auto">
         <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
         <Button type="submit" disabled={form.formState.isSubmitting}>
           <Save className="mr-2 h-4 w-4" />{isEditMode ? "Save Changes" : "Add Product"}
