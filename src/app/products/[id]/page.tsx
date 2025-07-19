@@ -93,6 +93,18 @@ function getYouTubeThumbnail(url: string): string {
 
 
 function RelatedProductCard({ product }: { product: Product }) {
+  // Create a deterministic "mock" rating based on product ID for related products
+  const mockRating = useMemo(() => {
+    let hash = 0;
+    for (let i = 0; i < product.id.length; i++) {
+        const char = product.id.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0; // Convert to 32bit integer
+    }
+    const rating = Math.abs(hash % 16) / 10 + 3.5; // Results in a range from 3.5 to 5.0
+    return parseFloat(rating.toFixed(1));
+  }, [product.id]);
+
   return (
     <Link href={`/products/${product.id}`} className="block group">
       <Card className="overflow-hidden h-full transition-all duration-300 ease-in-out border-border/50 hover:border-primary/50 hover:shadow-lg">
@@ -110,7 +122,8 @@ function RelatedProductCard({ product }: { product: Product }) {
           <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
             {decodeHtmlEntities(product.name)}
           </h3>
-          <p className="text-xs text-muted-foreground">{product.category}</p>
+          <StarRating rating={mockRating} className="mt-1" />
+          <p className="text-xs text-muted-foreground mt-1">{product.category}</p>
         </CardContent>
       </Card>
     </Link>
@@ -390,5 +403,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-
-    
