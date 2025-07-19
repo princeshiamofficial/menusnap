@@ -108,38 +108,35 @@ function ProductCard({ product, onPreview }: ProductCardProps): ReactNode {
       exit={{ opacity: 0, scale: 0.8 }}
       transition={{ type: 'spring', stiffness: 260, damping: 20 }}
     >
-      <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
-        <CardHeader className="p-0 relative">
-          <div className="aspect-[4/3] relative group">
-            <Image
-              src={primaryImage}
-              alt={decodeHtmlEntities(name)}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover"
-              data-ai-hint="product image"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute bottom-2 right-2 h-9 w-9 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
-              aria-label="Maximize product preview"
-              onClick={() => onPreview(primaryImage)}
-            >
-              <Maximize className="h-5 w-5" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4 flex-grow">
-          <h2 className="text-lg font-semibold mb-1.5 text-foreground">{decodeHtmlEntities(name)}</h2>
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px] line-clamp-2">{decodeHtmlEntities(description)}</p>
-        </CardContent>
-        <CardFooter className="p-4 border-t mt-auto">
-            <Button variant="outline" className="w-full" asChild>
-                <Link href={`/products/${product.id}`}>View Details</Link>
-            </Button>
-        </CardFooter>
-      </Card>
+      <Link href={`/products/${product.id}`} passHref>
+        <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full cursor-pointer">
+          <CardHeader className="p-0 relative">
+            <div className="aspect-[4/3] relative group">
+              <Image
+                src={primaryImage}
+                alt={decodeHtmlEntities(name)}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className="object-cover"
+                data-ai-hint="product image"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute bottom-2 right-2 h-9 w-9 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+                aria-label="Maximize product preview"
+                onClick={(e) => { e.preventDefault(); onPreview(primaryImage); }}
+              >
+                <Maximize className="h-5 w-5" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 flex-grow">
+            <h2 className="text-lg font-semibold mb-1.5 text-foreground">{decodeHtmlEntities(name)}</h2>
+            <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px] line-clamp-2">{decodeHtmlEntities(description)}</p>
+          </CardContent>
+        </Card>
+      </Link>
     </motion.div>
   );
 }
@@ -155,9 +152,6 @@ function ProductSkeletonCard(): ReactNode {
         <Skeleton className="h-4 w-full mb-1" />
         <Skeleton className="h-4 w-5/6 mb-3" />
       </CardContent>
-      <CardFooter className="p-4 border-t mt-auto">
-        <Skeleton className="h-10 w-full" />
-      </CardFooter>
     </Card>
   );
 }
