@@ -147,6 +147,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
       videoUrl: '',
       imageFiles: undefined,
     },
+    mode: 'onChange', // Important for `isValid` to update on change
   });
   
   const existingImageUrls = form.watch('existingImageUrls') || [];
@@ -295,7 +296,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
       </ScrollArea>
       <DialogFooter className="px-6 py-4 border-t mt-auto">
         <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={!form.formState.isValid || isSubmitting}>
           <Save className="mr-2 h-4 w-4" />{isSubmitting ? (isEditMode ? 'Saving...' : 'Adding...') : (isEditMode ? "Save Changes" : "Add Product")}
         </Button>
       </DialogFooter>
