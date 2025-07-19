@@ -26,6 +26,7 @@ import {
   Book,
   BookCopy,
   Menu,
+  Star,
 } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,6 +48,19 @@ const productCategories = [
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400.png";
 
+const StarRating = ({ rating, className }: { rating: number; className?: string }) => (
+    <div className={cn("flex items-center gap-0.5", className)}>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Star
+          key={index}
+          className={cn(
+            "h-4 w-4",
+            rating > index ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/30"
+          )}
+        />
+      ))}
+    </div>
+);
 
 interface ProductPreviewDialogProps {
   imageUrl: string | null;
@@ -98,6 +112,19 @@ interface ProductCardProps {
 function ProductCard({ product, onPreview }: ProductCardProps): ReactNode {
   const { imageUrls, name, description } = product;
   const primaryImage = imageUrls?.[0] || DEFAULT_PRODUCT_IMAGE;
+  
+  // Create a deterministic "mock" rating based on product ID
+  const mockRating = useMemo(() => {
+    // A simple hash function to get a number between 3.5 and 5
+    let hash = 0;
+    for (let i = 0; i < product.id.length; i++) {
+        const char = product.id.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0; // Convert to 32bit integer
+    }
+    const rating = Math.abs(hash % 16) / 10 + 3.5; // Results in a range from 3.5 to 5.0
+    return parseFloat(rating.toFixed(1));
+  }, [product.id]);
 
   return (
     <motion.div
@@ -133,7 +160,8 @@ function ProductCard({ product, onPreview }: ProductCardProps): ReactNode {
           </CardHeader>
           <CardContent className="p-4 flex-grow">
             <h2 className="text-lg font-semibold mb-1.5 text-foreground">{decodeHtmlEntities(name)}</h2>
-            <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px] line-clamp-2">{decodeHtmlEntities(description)}</p>
+            <StarRating rating={mockRating} />
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed min-h-[40px] line-clamp-2">{decodeHtmlEntities(description)}</p>
           </CardContent>
         </Card>
       </Link>
@@ -149,6 +177,7 @@ function ProductSkeletonCard(): ReactNode {
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <Skeleton className="h-6 w-3/4 mb-2" />
+        <Skeleton className="h-5 w-24 mb-2" />
         <Skeleton className="h-4 w-full mb-1" />
         <Skeleton className="h-4 w-5/6 mb-3" />
       </CardContent>
