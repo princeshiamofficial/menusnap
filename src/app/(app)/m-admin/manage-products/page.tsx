@@ -55,10 +55,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   Product,
-  getProducts,
   createProduct,
   updateProduct,
   deleteProduct,
+  getProducts,
 } from '@/lib/product-api';
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/100x100.png";
@@ -398,7 +398,8 @@ export default function ManageProductsPage(): ReactNode {
         if (statusFilter === 'draft' && p.isPublished) return false;
         return true;
       })
-      .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [products, statusFilter, searchTerm]);
   
   const stats = useMemo(() => ({
