@@ -335,6 +335,10 @@ export default function ProductDetailsPage() {
             {product.category}
           </Badge>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">{decodeHtmlEntities(product.name)}</h1>
+          <div className="flex items-center gap-2">
+            <StarRating rating={averageRating} />
+            <span className="text-muted-foreground text-sm">({averageRating} average from {mockReviews.length} reviews)</span>
+          </div>
           <div className="text-muted-foreground space-y-3 leading-relaxed">
             <p>{decodeHtmlEntities(product.description)}</p>
           </div>
@@ -362,11 +366,7 @@ export default function ProductDetailsPage() {
       {/* Reviews Section */}
       <div className="mt-20">
         <Separator className="mb-10" />
-        <h2 className="text-2xl font-bold text-center mb-2">What Our Customers Say</h2>
-        <div className="flex justify-center items-center gap-2 mb-8">
-          <StarRating rating={averageRating} />
-          <span className="text-muted-foreground text-sm">({averageRating} average from {mockReviews.length} reviews)</span>
-        </div>
+        <h2 className="text-2xl font-bold text-center mb-8">What Our Customers Say</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {mockReviews.map(review => (
             <Card key={review.id} className="bg-card border-border/50">
@@ -390,3 +390,5 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
+
+    
