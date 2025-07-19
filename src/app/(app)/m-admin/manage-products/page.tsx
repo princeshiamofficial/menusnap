@@ -83,8 +83,16 @@ const productFormSchema = z.object({
   isPublished: z.boolean().default(true),
   imageFiles: z.custom<FileList>().optional(),
   existingImageUrls: z.array(z.string().url()).optional(),
-  videoUrls: z.array(z.string().url("Each video URL must be a valid URL.")),
+  videoUrl: z.string().url("Video URL must be a valid URL.").optional().or(z.literal('')),
+}).refine(data => {
+  const hasExistingImages = data.existingImageUrls && data.existingImageUrls.length > 0;
+  const hasNewImageFiles = data.imageFiles && data.imageFiles.length > 0;
+  return hasExistingImages || hasNewImageFiles;
+}, {
+  message: "At least one image is required.",
+  path: ["imageFiles"], // Assign the error to the imageFiles field
 });
+
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
@@ -128,7 +136,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
     defaultValues: initialData ? {
         ...initialData,
         existingImageUrls: initialData.imageUrls || [],
-        videoUrls: initialData.videoUrls || [],
+        videoUrl: initialData.videoUrl || '',
         imageFiles: undefined,
     } : {
       name: "",
@@ -136,17 +144,10 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
       category: "",
       isPublished: true,
       existingImageUrls: [],
-      videoUrls: [],
+      videoUrl: '',
       imageFiles: undefined,
     },
   });
-
-  const { fields: videoUrlsFields, append: appendVideoUrl, remove: removeVideoUrl } = useFieldArray({
-    control: form.control,
-    name: "videoUrls",
-  });
-  
-  const [newVideoUrl, setNewVideoUrl] = useState("");
   
   const existingImageUrls = form.watch('existingImageUrls') || [];
 
@@ -178,7 +179,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
   const removeExistingImage = (index: number) => {
     const updatedUrls = [...existingImageUrls];
     updatedUrls.splice(index, 1);
-    form.setValue('existingImageUrls', updatedUrls);
+    form.setValue('existingImageUrls', updatedUrls, { shouldValidate: true });
   };
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -188,17 +189,6 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
     handleFileChange(event.dataTransfer.files);
   };
   
-  const handleAddVideoUrl = () => {
-    const urlCheck = z.string().url().safeParse(newVideoUrl);
-    if (urlCheck.success) {
-      appendVideoUrl(newVideoUrl);
-      setNewVideoUrl("");
-      form.clearErrors("videoUrls");
-    } else {
-      form.setError("videoUrls", { type: "manual", message: "Please enter a valid URL." });
-    }
-  };
-
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <ScrollArea className="flex-grow p-6">
@@ -242,7 +232,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
             
             <div className="space-y-4">
                <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
-                <Label>Product Images</Label>
+                <Label>Product Images*</Label>
                 <div 
                   className={cn("mt-1 flex justify-center rounded-lg border border-dashed border-border/80 px-6 py-10 transition-colors", isDraggingOver && "border-primary bg-primary/10")}
                   onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
@@ -261,6 +251,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
                     <p className="text-xs leading-5 text-muted-foreground">PNG, JPG, GIF up to 5MB</p>
                   </div>
                 </div>
+                {form.formState.errors.imageFiles && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFiles.message}</p>}
 
                 <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {existingImageUrls.map((url, index) => (
@@ -278,22 +269,11 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
               </div>
 
               <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
-                  <Label>Video URLs</Label>
+                  <Label>Video URL</Label>
                   <div className="flex gap-2">
-                      <Input value={newVideoUrl} onChange={e => setNewVideoUrl(e.target.value)} placeholder="https://youtube.com/watch?v=..." />
-                      <Button type="button" variant="outline" size="icon" onClick={handleAddVideoUrl}><Plus className="h-4 w-4" /></Button>
+                      <Input {...form.register("videoUrl")} placeholder="https://youtube.com/watch?v=..." />
                   </div>
-                  <ScrollArea className="h-32 w-full rounded-md border bg-background p-2 space-y-2">
-                      {videoUrlsFields.map((field, index) => (
-                          <div key={field.id} className="flex items-center gap-2 p-1.5 bg-muted/50 rounded-md shadow-sm">
-                              <div className="w-8 h-8 flex items-center justify-center bg-card rounded-sm border"><Video className="h-5 w-5 text-muted-foreground" /></div>
-                              <span className="text-xs truncate flex-1">{field.value}</span>
-                              <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeVideoUrl(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </div>
-                      ))}
-                        {videoUrlsFields.length === 0 && <p className="text-xs text-muted-foreground text-center pt-8">No video URLs added.</p>}
-                  </ScrollArea>
-                  {form.formState.errors.videoUrls && <p className="text-sm text-destructive mt-1">{form.formState.errors.videoUrls.message}</p>}
+                  {form.formState.errors.videoUrl && <p className="text-sm text-destructive mt-1">{form.formState.errors.videoUrl.message}</p>}
               </div>
             </div>
             
