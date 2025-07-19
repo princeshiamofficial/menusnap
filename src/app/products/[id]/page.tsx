@@ -145,6 +145,13 @@ export default function ProductDetailsPage() {
   
   const [mediaGallery, setMediaGallery] = useState<MediaType[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<MediaType | null>(null);
+  const [productLink, setProductLink] = useState('');
+
+  useEffect(() => {
+      // This effect runs only on the client side after the component mounts,
+      // so `window` is safely available.
+      setProductLink(window.location.href);
+  }, []);
 
   useEffect(() => {
     async function fetchProductData() {
@@ -156,26 +163,19 @@ export default function ProductDetailsPage() {
             setProduct(fetchedProduct);
             
             const images: MediaType[] = (fetchedProduct.imageUrls || []).map(url => ({ type: 'image', url, thumbnail: url }));
-            const videos: MediaType[] = (fetchedProduct.videoUrls || [])
-                .map(url => ({
+            let video: MediaType | null = null;
+            if (fetchedProduct.videoUrl) {
+                video = {
                     type: 'video',
-                    url: getYouTubeEmbedUrl(url) || url,
-                    thumbnail: getYouTubeThumbnail(url)
-                }))
-                .filter(v => v.url);
-            
-            let gallery: MediaType[] = [];
-            if (videos.length > 0) {
-              const firstVideo = videos.shift()!;
-              gallery = [...images];
-              if (gallery.length > 0) {
-                gallery.splice(1, 0, firstVideo); 
-              } else {
-                gallery.push(firstVideo);
-              }
-              gallery.push(...videos);
-            } else {
-                gallery = images;
+                    url: getYouTubeEmbedUrl(fetchedProduct.videoUrl) || fetchedProduct.videoUrl,
+                    thumbnail: getYouTubeThumbnail(fetchedProduct.videoUrl)
+                };
+            }
+
+            let gallery: MediaType[] = [...images];
+            if (video) {
+                // Insert video at the second position if there are images, otherwise first.
+                gallery.splice(gallery.length > 0 ? 1 : 0, 0, video);
             }
             
             setMediaGallery(gallery);
@@ -202,18 +202,14 @@ export default function ProductDetailsPage() {
     return productCategories.find(c => c.value === product?.category)?.icon || Package;
   }, [product?.category]);
 
-  const handleContact = () => {
-    toast({
-      title: "Contact Us",
-      description: "You can reach us via WhatsApp or Phone from the floating help button!",
-    });
-  };
-  
   const averageRating = useMemo(() => {
     if (mockReviews.length === 0) return 0;
     const total = mockReviews.reduce((acc, review) => acc + review.rating, 0);
     return parseFloat((total / mockReviews.length).toFixed(1));
   }, []);
+  
+  const whatsappText = `Hello, I’m interested in this product (${productLink}). Can you please provide more information?`;
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=8801919760626&text=${encodeURIComponent(whatsappText)}`;
 
 
   if (isLoading) {
@@ -342,8 +338,10 @@ export default function ProductDetailsPage() {
           <div className="text-muted-foreground space-y-3 leading-relaxed">
             <p>{decodeHtmlEntities(product.description)}</p>
           </div>
-          <Button size="lg" className="w-full" onClick={handleContact}>
-            Contact Us for Pricing & Details
+          <Button size="lg" className="w-full" asChild>
+            <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              Contact Us for Pricing & Details
+            </Link>
           </Button>
         </div>
       </div>
