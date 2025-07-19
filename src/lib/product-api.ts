@@ -5,7 +5,7 @@ export interface Product {
   description?: string;
   category: string;
   imageUrls: string[];
-  videoUrls: string[];
+  videoUrl: string;
   isPublished: boolean;
   createdAt: string;
 }
@@ -17,7 +17,7 @@ export interface ProductFormData {
   isPublished: boolean;
   imageFiles?: FileList;
   existingImageUrls?: string[];
-  videoUrls: string[];
+  videoUrl: string;
 }
 
 
@@ -54,7 +54,7 @@ function mapDocToProduct(doc: any): Product {
     description: doc.data.description || '',
     category: doc.data.category || 'Uncategorized',
     imageUrls: doc.data.imageUrls || [],
-    videoUrls: doc.data.videoUrls || [],
+    videoUrl: doc.data.videoUrl || '',
     isPublished: doc.data.isPublished === undefined ? true : doc.data.isPublished,
     createdAt: doc.data.createdAt || new Date().toISOString(),
   };
@@ -114,7 +114,7 @@ export async function createProduct(productData: ProductFormData): Promise<Produ
       description: productData.description,
       category: productData.category,
       isPublished: productData.isPublished,
-      videoUrls: productData.videoUrls,
+      videoUrl: productData.videoUrl,
       imageUrls: newImageUrls,
       createdAt: new Date().toISOString() 
     },
@@ -145,7 +145,7 @@ export async function updateProduct(id: string, productData: ProductFormData): P
       description: productData.description,
       category: productData.category,
       isPublished: productData.isPublished,
-      videoUrls: productData.videoUrls,
+      videoUrl: productData.videoUrl,
       imageUrls: finalImageUrls,
     },
   };
