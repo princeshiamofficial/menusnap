@@ -299,8 +299,8 @@ export default function MorePage(): ReactNode {
       
       <main className="container mx-auto px-4 md:px-6 lg:px-8">
         {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: 8 }).map((_, index) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+            {Array.from({ length: 12 }).map((_, index) => (
               <ProductSkeletonCard key={index} />
             ))}
           </div>
@@ -323,7 +323,7 @@ export default function MorePage(): ReactNode {
         ) : (
           <motion.div 
             layout
-            className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6"
           >
             <AnimatePresence>
                 {filteredProducts.map((product) => (
