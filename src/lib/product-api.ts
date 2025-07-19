@@ -139,6 +139,9 @@ export async function updateProduct(id: string, productData: ProductFormData): P
   
   const finalImageUrls = [...(productData.existingImageUrls || []), ...newImageUrls];
 
+  // First, get the existing product to preserve the createdAt field
+  const existingProduct = await getProduct(id);
+
   const payload = {
     data: {
       name: productData.name,
@@ -147,6 +150,7 @@ export async function updateProduct(id: string, productData: ProductFormData): P
       isPublished: productData.isPublished,
       videoUrl: productData.videoUrl,
       imageUrls: finalImageUrls,
+      createdAt: existingProduct.createdAt, // Preserve original creation date
     },
   };
 

@@ -345,10 +345,10 @@ export default function ManageProductsPage(): ReactNode {
   const handleAddProduct = async (data: ProductFormValues) => {
     setIsSubmitting(true);
     try {
-      await createProduct(data);
+      const newProduct = await createProduct(data);
+      setProducts(prev => [newProduct, ...prev]);
       toast({ title: "Success", description: "Product added successfully." });
       setIsFormOpen(false);
-      fetchProducts();
     } catch (err: any) {
       toast({ title: "Error", description: err.message || 'Failed to add product.', variant: "destructive" });
     } finally {
@@ -360,11 +360,11 @@ export default function ManageProductsPage(): ReactNode {
     if (!editingProduct) return;
     setIsSubmitting(true);
     try {
-      await updateProduct(editingProduct.id, data);
+      const updatedProduct = await updateProduct(editingProduct.id, data);
+      setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
       toast({ title: "Success", description: "Product updated successfully." });
       setIsFormOpen(false);
       setEditingProduct(null);
-      fetchProducts();
     } catch (err: any) {
       toast({ title: "Error", description: err.message || 'Failed to update product.', variant: "destructive" });
     } finally {
@@ -381,8 +381,8 @@ export default function ManageProductsPage(): ReactNode {
     if (!productToDelete) return;
     try {
       await deleteProduct(productToDelete.id);
+      setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
       toast({ title: "Success", description: "Product deleted." });
-      fetchProducts();
     } catch (err: any) {
        toast({ title: "Error", description: err.message || 'Failed to delete product.', variant: "destructive" });
     } finally {
