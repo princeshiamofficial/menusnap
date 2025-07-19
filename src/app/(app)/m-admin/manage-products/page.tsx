@@ -48,7 +48,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -406,6 +406,15 @@ export default function ManageProductsPage(): ReactNode {
     published: products.filter(p=>p.isPublished).length
   }), [products]);
 
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      return isValid(date) ? format(date, "MMM d, yyyy") : 'N/A';
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
   if (adminLoading) { return <div className="flex h-screen w-full items-center justify-center"><p>Loading Admin Area...</p></div>; }
   if (!isAdminLoggedIn) { return <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8"><AdminLoginForm /></div>; }
 
@@ -457,6 +466,7 @@ export default function ManageProductsPage(): ReactNode {
                   <TableHead className="w-[80px]">Image</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Created At</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-[50px] text-right">Actions</TableHead>
                 </TableRow>
@@ -467,6 +477,7 @@ export default function ManageProductsPage(): ReactNode {
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-10 w-10 rounded-md" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                       <TableCell><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
@@ -487,6 +498,7 @@ export default function ManageProductsPage(): ReactNode {
                       </TableCell>
                       <TableCell className="font-medium">{decodeHtmlEntities(product.name)}</TableCell>
                       <TableCell><Badge variant="outline">{product.category}</Badge></TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{formatDate(product.createdAt)}</TableCell>
                       <TableCell>
                         <Badge variant={product.isPublished ? "default" : "secondary"} className={cn(product.isPublished ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800")}>
                           {product.isPublished ? <CheckCircle className="mr-1 h-3 w-3" /> : <XCircle className="mr-1 h-3 w-3" />}
@@ -507,7 +519,7 @@ export default function ManageProductsPage(): ReactNode {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                         {error ? <span className="text-destructive">{error}</span> : "No products found."}
                     </TableCell>
                   </TableRow>
