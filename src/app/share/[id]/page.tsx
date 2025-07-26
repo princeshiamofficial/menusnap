@@ -243,7 +243,7 @@ export default function SharePage() {
         if (!order?.items) return {};
         return order.items.reduce((acc, item) => {
             const catId = item.categoryId;
-            const categoryName = decodeHtmlEntities(categoryMap.get(catId)) || decodeHtmlEntities(item.categoryName) || 'Uncategorized';
+            const categoryName = decodeHtmlEntities(item.categoryName) || decodeHtmlEntities(categoryMap.get(catId)) || 'Uncategorized';
             if (!acc[categoryName]) {
                 acc[categoryName] = [];
             }
