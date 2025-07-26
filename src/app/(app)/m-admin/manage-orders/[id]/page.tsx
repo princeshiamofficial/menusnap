@@ -753,9 +753,10 @@ export default function OrderDetailsPage() {
                             <div className="mb-8 group/category">
                                 <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
                                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab"/>
-                                    <EditableField 
-                                        value={category.name} 
+                                    <EditableField
+                                        value={category.name}
                                         onSave={(val) => handleCategoryNameChange(category.id, val)}
+                                        placeholder="Category Name"
                                         className="text-xl font-semibold text-primary"
                                         inputClassName="text-xl font-semibold"
                                     />
