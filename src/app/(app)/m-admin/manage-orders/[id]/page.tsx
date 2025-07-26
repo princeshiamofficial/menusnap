@@ -729,9 +729,13 @@ export default function OrderDetailsPage() {
                 <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-lg rounded-lg border border-border/50">
                     <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
                          <div>
-                             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground">
-                                {decodeHtmlEntities(order.customer?.restaurant) || "Order"}
-                            </h1>
+                             <EditableField
+                                value={order.customer?.restaurant}
+                                onSave={(val) => handleOrderUpdate({ ...order, customer: { ...order.customer, restaurant: val } })}
+                                placeholder="Business Name"
+                                className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground"
+                                inputClassName="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
+                            />
                              <p className="font-bold text-lg text-muted-foreground mt-2">Order ID: {order.orderId}</p>
                         </div>
                         <div className="text-right text-muted-foreground text-sm space-y-1">
