@@ -27,6 +27,7 @@ import {
   Edit,
   FileArchive,
   Eye,
+  Shuffle,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -333,7 +334,7 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="text-xl">Preview & Reorder Menu</DialogTitle>
+          <DialogTitle className="text-xl">Shuffle & Reorder Menu</DialogTitle>
           <DialogDescription>Drag and drop categories or items to change their order.</DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 p-6 bg-muted/30">
@@ -813,8 +814,8 @@ export default function OrderDetailsPage() {
                             <span className="hidden sm:inline">Download</span>
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)}>
-                            <Eye className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Preview</span>
+                            <Shuffle className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Shuffle</span>
                         </Button>
                         <Button variant="outline" size="sm" onClick={handleShare}>
                             <Share2 className="h-4 w-4 sm:mr-2" />
