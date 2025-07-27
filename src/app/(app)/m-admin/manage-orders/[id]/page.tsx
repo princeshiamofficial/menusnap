@@ -31,6 +31,7 @@ import {
   Shuffle,
   ShoppingCart,
   FileText,
+  Search,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -354,6 +355,7 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
     };
 
     const handleSaveAndClose = () => {
+        // Rebuild the final item list based on the ordered categories to ensure it's correct.
         const finalOrderedItems = orderedCategories.flatMap(cat => itemsGroupedByCategory[cat.id] || []);
         onSaveChanges(finalOrderedItems);
         onOpenChange(false);
@@ -501,6 +503,7 @@ export default function OrderDetailsPage() {
     const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     
     const { toast } = useToast();
 
@@ -689,10 +692,18 @@ export default function OrderDetailsPage() {
 
     const categoriesForRender = useMemo(() => {
         if (!order?.items) return [];
+        
+        let filteredItems = order.items;
+        if (searchTerm) {
+            filteredItems = order.items.filter(item => 
+                decodeHtmlEntities(item.name).toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
         const categoryMap = new Map<string, {name: string, items: OrderItemDetail[]}>();
         const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
         
-        order.items.forEach(item => {
+        filteredItems.forEach(item => {
             const catId = item.categoryId;
             if (!categoryMap.has(catId)) {
                 const fullCategory = allCategories.find(c => String(c.id) === catId);
@@ -701,12 +712,16 @@ export default function OrderDetailsPage() {
             categoryMap.get(catId)!.items.push(item);
         });
         
-        return orderedCategoryIds.map(id => {
-            const data = categoryMap.get(id)!;
-            const fullCategory = allCategories.find(c => String(c.id) === id);
-            return { id, name: data.name, items: data.items, icon: fullCategory?.icon || '📁' };
-        });
-    }, [order?.items, allCategories]);
+        return orderedCategoryIds
+            .map(id => {
+                const data = categoryMap.get(id);
+                if (!data || data.items.length === 0) return null;
+                const fullCategory = allCategories.find(c => String(c.id) === id);
+                return { id, name: data.name, items: data.items, icon: fullCategory?.icon || '📁' };
+            })
+            .filter(Boolean) as { id: string; name: string; items: OrderItemDetail[], icon: string }[];
+
+    }, [order?.items, allCategories, searchTerm]);
 
     const handleCategoryNameChange = (categoryId: string, newName: string) => {
         if (!order) return;
@@ -927,6 +942,17 @@ export default function OrderDetailsPage() {
                         >
                             Order Summary
                         </div>
+                        <div className="relative mb-6">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Search items in this order..."
+                                className="pl-10 w-full sm:w-72"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
 
                          <div>
                         {categoriesForRender.map((category) => (
@@ -996,6 +1022,12 @@ export default function OrderDetailsPage() {
                             </div>
                            </div>
                         ))}
+                         {categoriesForRender.length === 0 && (
+                            <div className="text-center text-muted-foreground py-10">
+                                <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                <p>No items match your search.</p>
+                            </div>
+                        )}
                         </div>
 
                         <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
@@ -1028,3 +1060,4 @@ export default function OrderDetailsPage() {
         </>
     )
 }
+
