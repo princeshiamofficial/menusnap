@@ -24,10 +24,13 @@ import {
   GripVertical,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   Edit,
   FileArchive,
   Eye,
   Shuffle,
+  ShoppingCart,
+  FileText,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -51,6 +54,7 @@ import * as z from "zod";
 import { generateMenuDocx } from '@/lib/docx-generator';
 import { saveAs } from 'file-saver';
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
+import Image from 'next/image';
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -294,93 +298,185 @@ interface OrderPreviewDialogProps {
   allCategories: any[];
   onSaveChanges: (newItems: OrderItemDetail[]) => void;
 }
+const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 
 function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories, onSaveChanges }: OrderPreviewDialogProps) {
-  const initialGroupedItems = useMemo(() => {
-    if (!initialOrder?.items) return new Map<string, OrderItemDetail[]>();
-    return initialOrder.items.reduce((acc, item) => {
-      const catId = item.categoryId;
-      if (!acc.has(catId)) acc.set(catId, []);
-      acc.get(catId)!.push(item);
-      return acc;
-    }, new Map<string, OrderItemDetail[]>());
-  }, [initialOrder]);
-  
-  const initialCategoryOrder = useMemo(() => {
-    if (!initialOrder?.items) return [];
-    const orderedCategoryIds = [...new Map(initialOrder.items.map(item => [item.categoryId, item])).keys()];
-    return orderedCategoryIds
-      .map(id => allCategories.find(c => String(c.id) === id) || { id, name: initialGroupedItems.get(id)?.[0]?.categoryName || 'Unknown', icon: '📁' })
-      .filter(Boolean);
-  }, [initialOrder, allCategories, initialGroupedItems]);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
-  const [orderedCategories, setOrderedCategories] = useState<any[]>(initialCategoryOrder);
-  const [groupedItems, setGroupedItems] = useState<Map<string, OrderItemDetail[]>>(initialGroupedItems);
+    const initialItems = useMemo(() => initialOrder.items || [], [initialOrder]);
 
-  useEffect(() => {
-    if (isOpen) {
-      setOrderedCategories(initialCategoryOrder);
-      setGroupedItems(initialGroupedItems);
-    }
-  }, [isOpen, initialCategoryOrder, initialGroupedItems]);
+    const initialCategories = useMemo(() => {
+        if (!initialItems) return [];
+        const orderedCategoryIds = [...new Map(initialItems.map(item => [item.categoryId, item])).keys()];
+        return orderedCategoryIds
+            .map(id => {
+                const item = initialItems.find(i => i.categoryId === id);
+                const categoryInfo = allCategories.find(c => String(c.id) === id);
+                return {
+                    id,
+                    name: item?.categoryName || categoryInfo?.name || 'Unknown',
+                    icon: categoryInfo?.icon || '📁'
+                };
+            })
+            .filter(Boolean) as Category[];
+    }, [initialItems, allCategories]);
 
-  const handleSaveAndClose = () => {
-    const newMasterItemsList = orderedCategories.flatMap(cat => groupedItems.get(cat.id) || []);
-    onSaveChanges(newMasterItemsList);
-    onOpenChange(false);
-  };
-  
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="text-xl">Shuffle & Reorder Menu</DialogTitle>
-          <DialogDescription>Drag and drop categories or items to change their order.</DialogDescription>
-        </DialogHeader>
-        <ScrollArea className="flex-1 p-6 bg-muted/30">
-          <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="space-y-6">
-            {orderedCategories.map(category => (
-              <Reorder.Item key={category.id} value={category} className="bg-card p-4 rounded-lg shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-                  <span className="text-xl mr-2 text-primary">{category.icon}</span>
-                  <h3 className="text-lg font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h3>
+    const [orderedCategories, setOrderedCategories] = useState<Category[]>(initialCategories);
+    const [currentItems, setCurrentItems] = useState<OrderItemDetail[]>(initialItems);
+
+    useEffect(() => {
+        if (isOpen) {
+            setCurrentItems(initialItems);
+            setOrderedCategories(initialCategories);
+            setActiveCategoryId(null);
+        }
+    }, [isOpen, initialItems, initialCategories]);
+    
+    const itemsGroupedByCategory = useMemo(() => {
+        return currentItems.reduce((acc, item) => {
+            const catId = item.categoryId;
+            if (!acc[catId]) acc[catId] = [];
+            acc[catId].push(item);
+            return acc;
+        }, {} as Record<string, OrderItemDetail[]>);
+    }, [currentItems]);
+
+    const categoriesToDisplayInMainPanel = useMemo(() => {
+        if (activeCategoryId) {
+            return orderedCategories.filter(cat => cat.id === activeCategoryId);
+        }
+        return orderedCategories;
+    }, [activeCategoryId, orderedCategories]);
+    
+    const handleRemoveItem = (itemIdToRemove: string) => {
+      setCurrentItems(prev => prev.filter(item => item.id !== itemIdToRemove));
+    };
+
+    const handleSaveAndClose = () => {
+        onSaveChanges(currentItems);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+                <DialogHeader className="px-6 py-4 border-b">
+                    <DialogTitle className="text-xl">Shuffle & Reorder Menu</DialogTitle>
+                    <DialogDescription>Drag and drop categories or items to change their order.</DialogDescription>
+                    <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                        <X className="h-5 w-5" /><span className="sr-only">Close</span>
+                    </DialogClose>
+                </DialogHeader>
+
+                <div className="flex flex-1 overflow-hidden">
+                    <div className={cn("border-r bg-muted/40 transition-all duration-300 ease-in-out", isSidebarCollapsed ? "w-12" : "w-64")}>
+                        <div className="flex items-center justify-between p-2 h-14 border-b">
+                            {!isSidebarCollapsed && <span className="font-medium text-sm px-2">Categories</span>}
+                            <Button variant="ghost" size="icon" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="h-8 w-8">
+                                <ChevronLeft className={cn("h-4 w-4 transition-transform", isSidebarCollapsed && "rotate-180")} />
+                            </Button>
+                        </div>
+                        <ScrollArea className={cn("h-[calc(100%-56px)]", isSidebarCollapsed ? "p-1" : "p-2")}>
+                            {orderedCategories.length > 0 && (
+                                <Button
+                                    variant="ghost"
+                                    className={cn("w-full justify-start text-sm mb-1 h-9", !activeCategoryId ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent", isSidebarCollapsed ? "justify-center px-0" : "px-2")}
+                                    onClick={() => setActiveCategoryId(null)}
+                                    title="All Items"
+                                >
+                                    <FileText className="h-4 w-4 shrink-0" />
+                                    {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
+                                </Button>
+                            )}
+                            <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="space-y-1">
+                                {orderedCategories.map(category => (
+                                    <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
+                                        <Button
+                                            variant="ghost"
+                                            className={cn("w-full justify-start text-sm mb-0 h-9 flex items-center", activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent", isSidebarCollapsed ? "justify-center px-0" : "px-2")}
+                                            onClick={() => setActiveCategoryId(category.id)}
+                                            title={decodeHtmlEntities(category.name)}
+                                        >
+                                            <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
+                                            {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{decodeHtmlEntities(category.name)}</span>}
+                                            {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0" />}
+                                        </Button>
+                                    </Reorder.Item>
+                                ))}
+                            </Reorder.Group>
+                        </ScrollArea>
+                    </div>
+
+                    <ScrollArea className="flex-1 p-6 bg-background">
+                        {categoriesToDisplayInMainPanel.map(category => {
+                            const items = itemsGroupedByCategory[category.id] || [];
+                            if (items.length === 0) return null;
+                            return (
+                                <div key={category.id} className="mb-8">
+                                    <div className="flex items-center mb-4">
+                                        <span className="text-xl mr-2 text-primary">{category.icon}</span>
+                                        <h3 className="text-lg font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h3>
+                                        <Badge variant="secondary" className="ml-2 text-xs">{items.length}</Badge>
+                                    </div>
+                                    <Reorder.Group
+                                      axis="y"
+                                      values={items}
+                                      onReorder={(newItems) => {
+                                        const otherItems = currentItems.filter(i => i.categoryId !== category.id);
+                                        setCurrentItems([...otherItems, ...newItems]);
+                                      }}
+                                      className="space-y-3"
+                                    >
+                                      {items.map(item => (
+                                          <Reorder.Item key={item.id} value={item}>
+                                            <div className="flex items-center p-3 border rounded-lg bg-card shadow-sm hover:border-primary/50">
+                                              <GripVertical className="h-5 w-5 text-muted-foreground/50 cursor-grab mr-3" />
+                                                <Image
+                                                    src={STATIC_ITEM_IMAGE_URL}
+                                                    alt={decodeHtmlEntities(item.name)}
+                                                    width={48} height={48}
+                                                    className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
+                                                    data-ai-hint="item illustration"
+                                                />
+                                                <div className="flex-1">
+                                                    <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
+                                                    {item.description && <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>}
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
+                                                    <Button
+                                                        variant="link" size="sm"
+                                                        className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
+                                                        onClick={() => handleRemoveItem(item.id)}
+                                                    >
+                                                        <X className="h-3 w-3 mr-1" /> Remove
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                          </Reorder.Item>
+                                      ))}
+                                    </Reorder.Group>
+                                </div>
+                            );
+                        })}
+                         {currentItems.length === 0 && (
+                            <div className="text-center text-muted-foreground py-10">
+                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                <p>No items in this selection.</p>
+                            </div>
+                        )}
+                    </ScrollArea>
                 </div>
-                <Reorder.Group
-                  axis="y"
-                  values={groupedItems.get(category.id) || []}
-                  onReorder={(newItems) => {
-                    const newMap = new Map(groupedItems);
-                    newMap.set(category.id, newItems);
-                    setGroupedItems(newMap);
-                  }}
-                  className="space-y-2"
-                >
-                  {(groupedItems.get(category.id) || []).map(item => (
-                    <Reorder.Item key={item.id} value={item} className="p-3 border rounded-md bg-background shadow-xs">
-                       <div className="flex items-center gap-3">
-                         <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab"/>
-                         <div className="flex-1">
-                           <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
-                         </div>
-                         <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
-                       </div>
-                    </Reorder.Item>
-                  ))}
-                </Reorder.Group>
-              </Reorder.Item>
-            ))}
-          </Reorder.Group>
-        </ScrollArea>
-        <DialogFooter className="px-6 py-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSaveAndClose}><Save className="h-4 w-4 mr-2"/>Save & Close</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
+                <DialogFooter className="px-6 py-4 border-t">
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSaveAndClose}><Save className="h-4 w-4 mr-2" />Save & Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function OrderDetailsPage() {
     const params = useParams();
