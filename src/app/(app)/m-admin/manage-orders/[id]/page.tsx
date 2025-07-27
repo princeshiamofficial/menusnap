@@ -8,7 +8,7 @@ import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
   ArrowLeft,
   CalendarDays,
@@ -26,18 +26,19 @@ import {
   ChevronRight,
   Edit,
   FileArchive,
+  Eye,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Reorder } from "framer-motion";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -285,6 +286,100 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
 }
 // --- End Form ---
 
+interface OrderPreviewDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialOrder: ApiOrder;
+  allCategories: any[];
+  onSaveChanges: (newItems: OrderItemDetail[]) => void;
+}
+
+function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories, onSaveChanges }: OrderPreviewDialogProps) {
+  const initialGroupedItems = useMemo(() => {
+    if (!initialOrder?.items) return new Map<string, OrderItemDetail[]>();
+    return initialOrder.items.reduce((acc, item) => {
+      const catId = item.categoryId;
+      if (!acc.has(catId)) acc.set(catId, []);
+      acc.get(catId)!.push(item);
+      return acc;
+    }, new Map<string, OrderItemDetail[]>());
+  }, [initialOrder]);
+  
+  const initialCategoryOrder = useMemo(() => {
+    if (!initialOrder?.items) return [];
+    const orderedCategoryIds = [...new Map(initialOrder.items.map(item => [item.categoryId, item])).keys()];
+    return orderedCategoryIds
+      .map(id => allCategories.find(c => String(c.id) === id) || { id, name: initialGroupedItems.get(id)?.[0]?.categoryName || 'Unknown', icon: '📁' })
+      .filter(Boolean);
+  }, [initialOrder, allCategories, initialGroupedItems]);
+
+  const [orderedCategories, setOrderedCategories] = useState<any[]>(initialCategoryOrder);
+  const [groupedItems, setGroupedItems] = useState<Map<string, OrderItemDetail[]>>(initialGroupedItems);
+
+  useEffect(() => {
+    if (isOpen) {
+      setOrderedCategories(initialCategoryOrder);
+      setGroupedItems(initialGroupedItems);
+    }
+  }, [isOpen, initialCategoryOrder, initialGroupedItems]);
+
+  const handleSaveAndClose = () => {
+    const newMasterItemsList = orderedCategories.flatMap(cat => groupedItems.get(cat.id) || []);
+    onSaveChanges(newMasterItemsList);
+    onOpenChange(false);
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="text-xl">Preview & Reorder Menu</DialogTitle>
+          <DialogDescription>Drag and drop categories or items to change their order.</DialogDescription>
+        </DialogHeader>
+        <ScrollArea className="flex-1 p-6 bg-muted/30">
+          <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="space-y-6">
+            {orderedCategories.map(category => (
+              <Reorder.Item key={category.id} value={category} className="bg-card p-4 rounded-lg shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                  <span className="text-xl mr-2 text-primary">{category.icon}</span>
+                  <h3 className="text-lg font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h3>
+                </div>
+                <Reorder.Group
+                  axis="y"
+                  values={groupedItems.get(category.id) || []}
+                  onReorder={(newItems) => {
+                    const newMap = new Map(groupedItems);
+                    newMap.set(category.id, newItems);
+                    setGroupedItems(newMap);
+                  }}
+                  className="space-y-2"
+                >
+                  {(groupedItems.get(category.id) || []).map(item => (
+                    <Reorder.Item key={item.id} value={item} className="p-3 border rounded-md bg-background shadow-xs">
+                       <div className="flex items-center gap-3">
+                         <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab"/>
+                         <div className="flex-1">
+                           <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
+                         </div>
+                         <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
+                       </div>
+                    </Reorder.Item>
+                  ))}
+                </Reorder.Group>
+              </Reorder.Item>
+            ))}
+          </Reorder.Group>
+        </ScrollArea>
+        <DialogFooter className="px-6 py-4 border-t">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSaveAndClose}><Save className="h-4 w-4 mr-2"/>Save & Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 export default function OrderDetailsPage() {
     const params = useParams();
@@ -300,10 +395,11 @@ export default function OrderDetailsPage() {
     const [isDirty, setIsDirty] = useState(false);
     const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
     
-    // State for the item form dialog
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<OrderItemDetail | null>(null);
     const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
+
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     
     const { toast } = useToast();
 
@@ -317,7 +413,6 @@ export default function OrderDetailsPage() {
                 fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
             ]);
             
-            // Process all categories first
             const combinedCategories: any[] = [];
             if (restaurantCategoriesResponse.ok) {
                 const resCatResult = await restaurantCategoriesResponse.json();
@@ -333,7 +428,6 @@ export default function OrderDetailsPage() {
             }
             setAllCategories(combinedCategories);
 
-            // Process orders
             if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
             const result = await ordersResponse.json();
 
@@ -373,7 +467,7 @@ export default function OrderDetailsPage() {
                     })),
                 };
                 setOrder(formattedOrder);
-                setOriginalOrder(JSON.parse(JSON.stringify(formattedOrder))); // Deep copy for resetting
+                setOriginalOrder(JSON.parse(JSON.stringify(formattedOrder))); 
                 setIsDirty(false);
             } else {
                 setError(`Order with ID ${orderIdFromUrl} not found.`);
@@ -411,7 +505,7 @@ export default function OrderDetailsPage() {
                 throw new Error(result.message || "Failed to save order changes.");
             }
             toast({ title: "Success", description: "Order updated successfully." });
-            setOriginalOrder(JSON.parse(JSON.stringify(order))); // Update original to new saved state
+            setOriginalOrder(JSON.parse(JSON.stringify(order))); 
             setIsDirty(false);
         } catch (e: any) {
             toast({ title: "Save Error", description: e.message, variant: "destructive" });
@@ -474,7 +568,7 @@ export default function OrderDetailsPage() {
                 subItems: item.subItems?.map(si => ({ ...si, id: si.id || si.name, price: si.price || 0 })),
             }));
             
-            const reorderedCategoriesForDocx: Category[] = categoriesForRender.map(c => {
+            const categoriesForDocx: Category[] = categoriesForRender.map(c => {
                 const fullCategory = allCategories.find(ac => String(ac.id) === c.id);
                 return {
                     id: c.id,
@@ -483,7 +577,7 @@ export default function OrderDetailsPage() {
                 };
             });
 
-            const blob = await generateMenuDocx(menuItemsForDocx, reorderedCategoriesForDocx, order.customer?.restaurant || "Menu Selection");
+            const blob = await generateMenuDocx(menuItemsForDocx, categoriesForDocx, order.customer?.restaurant || "Menu Selection");
             saveAs(blob, `${order.customer?.restaurant || 'menu'}_${order.orderId}.docx`);
 
         } catch (error) {
@@ -495,22 +589,23 @@ export default function OrderDetailsPage() {
     const categoriesForRender = useMemo(() => {
         if (!order?.items) return [];
         const categoryMap = new Map<string, {name: string, items: OrderItemDetail[]}>();
-        // Use a stable order of category IDs based on their first appearance in the items array
         const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
         
         order.items.forEach(item => {
             const catId = item.categoryId;
             if (!categoryMap.has(catId)) {
-                categoryMap.set(catId, { name: decodeHtmlEntities(item.categoryName) || 'Uncategorized', items: [] });
+                const fullCategory = allCategories.find(c => String(c.id) === catId);
+                categoryMap.set(catId, { name: decodeHtmlEntities(item.categoryName || fullCategory?.name) || 'Uncategorized', items: [] });
             }
             categoryMap.get(catId)!.items.push(item);
         });
         
         return orderedCategoryIds.map(id => {
             const data = categoryMap.get(id)!;
-            return { id, ...data };
+            const fullCategory = allCategories.find(c => String(c.id) === id);
+            return { id, name: data.name, items: data.items, icon: fullCategory?.icon || '📁' };
         });
-    }, [order?.items]);
+    }, [order?.items, allCategories]);
 
     const handleCategoryNameChange = (categoryId: string, newName: string) => {
         if (!order) return;
@@ -555,10 +650,10 @@ export default function OrderDetailsPage() {
     
     const handleItemReorder = (categoryId: string, reorderedItemsForCategory: OrderItemDetail[]) => {
         if (!order || !order.items) return;
-        const otherItems = order.items.filter(item => item.categoryId !== categoryId);
-        const categoryOrder = categoriesForRender.map(c => c.id);
-        const newMasterItemsList: OrderItemDetail[] = [];
         
+        const newMasterItemsList: OrderItemDetail[] = [];
+        const categoryOrder = categoriesForRender.map(c => c.id);
+
         categoryOrder.forEach(catId => {
           if (catId === categoryId) {
             newMasterItemsList.push(...reorderedItemsForCategory);
@@ -717,6 +812,10 @@ export default function OrderDetailsPage() {
                             <FileArchive className="h-4 w-4 sm:mr-2" />
                             <span className="hidden sm:inline">Download</span>
                         </Button>
+                        <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)}>
+                            <Eye className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Preview</span>
+                        </Button>
                         <Button variant="outline" size="sm" onClick={handleShare}>
                             <Share2 className="h-4 w-4 sm:mr-2" />
                             <span className="hidden sm:inline">Share</span>
@@ -757,6 +856,7 @@ export default function OrderDetailsPage() {
                             <div className="mb-8 group/category">
                                 <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
                                     <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab"/>
+                                    <span className="text-xl mr-2 text-primary">{category.icon}</span>
                                     <EditableField
                                         value={category.name}
                                         onSave={(val) => handleCategoryNameChange(category.id, val)}
@@ -842,6 +942,15 @@ export default function OrderDetailsPage() {
                     : categoriesForRender.find(c => c.id === addingToCategoryId)?.name
             }
         />
+        {order && (
+            <OrderPreviewDialog
+                isOpen={isPreviewOpen}
+                onOpenChange={setIsPreviewOpen}
+                initialOrder={order}
+                allCategories={allCategories}
+                onSaveChanges={(newItems) => handleOrderUpdate({ ...order, items: newItems })}
+            />
+        )}
         </>
     )
 }
