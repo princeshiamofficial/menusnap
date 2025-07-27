@@ -743,29 +743,6 @@ export default function OrderDetailsPage() {
         handleOrderUpdate({ ...order, items: updatedItems });
     };
     
-    const handleCategoryReorder = (reorderedCategories: { id: string; name: string; items: OrderItemDetail[] }[]) => {
-      if (!order || !order.items) return;
-      const newMasterItemsList = reorderedCategories.flatMap(cat => cat.items);
-      handleOrderUpdate({ ...order, items: newMasterItemsList });
-    };
-    
-    const handleItemReorder = (categoryId: string, reorderedItemsForCategory: OrderItemDetail[]) => {
-        if (!order || !order.items) return;
-        
-        const newMasterItemsList: OrderItemDetail[] = [];
-        const categoryOrder = categoriesForRender.map(c => c.id);
-
-        categoryOrder.forEach(catId => {
-          if (catId === categoryId) {
-            newMasterItemsList.push(...reorderedItemsForCategory);
-          } else {
-            newMasterItemsList.push(...order.items!.filter(item => item.categoryId === catId));
-          }
-        });
-
-        handleOrderUpdate({ ...order, items: newMasterItemsList });
-    };
-
     const handleToggleSubItems = (itemId: string) => {
         setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
     };
@@ -951,12 +928,11 @@ export default function OrderDetailsPage() {
                             Order Summary
                         </div>
 
-                         <Reorder.Group as="div" axis="y" values={categoriesForRender} onReorder={handleCategoryReorder}>
+                         <div>
                         {categoriesForRender.map((category) => (
-                          <Reorder.Item as="div" key={category.id} value={category}>
+                          <div key={category.id}>
                             <div className="mb-8 group/category">
                                 <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
-                                    <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab"/>
                                     <span className="text-xl mr-2 text-primary">{category.icon}</span>
                                     <EditableField
                                         value={category.name}
@@ -970,13 +946,11 @@ export default function OrderDetailsPage() {
                                     <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => handleOpenAddDialog(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
                                 </div>
                                 
-                                <Reorder.Group as="div" axis="y" values={category.items} onReorder={(newOrder) => handleItemReorder(category.id, newOrder)} className="space-y-3">
+                                <div className="space-y-3">
                                     <AnimatePresence>
                                         {category.items.map((item) => (
-                                            <Reorder.Item
-                                                as="div"
+                                            <motion.div
                                                 key={item.id}
-                                                value={item}
                                                 layout
                                                 initial={{ opacity: 0, y: -10 }}
                                                 animate={{ opacity: 1, y: 0 }}
@@ -984,7 +958,6 @@ export default function OrderDetailsPage() {
                                                 className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
                                             >
                                                 <div className="flex items-start gap-3">
-                                                    <GripVertical className="h-5 w-5 text-muted-foreground/50 cursor-grab mt-1 shrink-0" />
                                                     <div className="flex-grow">
                                                         <div className="flex justify-between items-start gap-4">
                                                             <p className="font-bold text-foreground">{decodeHtmlEntities(item.name)}</p>
@@ -1016,14 +989,14 @@ export default function OrderDetailsPage() {
                                                         <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4"/></Button>
                                                     </div>
                                                 </div>
-                                            </Reorder.Item>
+                                            </motion.div>
                                         ))}
                                     </AnimatePresence>
-                                </Reorder.Group>
+                                </div>
                             </div>
-                           </Reorder.Item>
+                           </div>
                         ))}
-                        </Reorder.Group>
+                        </div>
 
                         <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
                            <Plus className="mr-2 h-4 w-4"/>Add Category
