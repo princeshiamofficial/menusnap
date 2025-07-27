@@ -47,6 +47,13 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useForm, useFieldArray } from "react-hook-form";
@@ -504,6 +511,7 @@ export default function OrderDetailsPage() {
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
     
     const { toast } = useToast();
 
@@ -692,36 +700,60 @@ export default function OrderDetailsPage() {
 
     const categoriesForRender = useMemo(() => {
         if (!order?.items) return [];
-        
-        let filteredItems = order.items;
-        if (searchTerm) {
-            filteredItems = order.items.filter(item => 
-                decodeHtmlEntities(item.name).toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
 
         const categoryMap = new Map<string, {name: string, items: OrderItemDetail[]}>();
-        const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
         
-        filteredItems.forEach(item => {
+        // Use all items from the order to establish the base category map and order
+        order.items.forEach(item => {
             const catId = item.categoryId;
             if (!categoryMap.has(catId)) {
                 const fullCategory = allCategories.find(c => String(c.id) === catId);
-                categoryMap.set(catId, { name: decodeHtmlEntities(item.categoryName || fullCategory?.name) || 'Uncategorized', items: [] });
+                const name = decodeHtmlEntities(item.categoryName || fullCategory?.name) || 'Uncategorized';
+                categoryMap.set(catId, { name, items: [] });
             }
-            categoryMap.get(catId)!.items.push(item);
         });
+
+        // Filter items based on search term and type
+        let filteredItems = order.items;
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+        if (searchTerm) {
+            if (searchFilterType === 'items') {
+                filteredItems = order.items.filter(item => 
+                    decodeHtmlEntities(item.name).toLowerCase().includes(lowerCaseSearchTerm)
+                );
+            } else { // search by 'categories'
+                const matchingCategoryIds = new Set<string>();
+                for (const [id, data] of categoryMap.entries()) {
+                    if (data.name.toLowerCase().includes(lowerCaseSearchTerm)) {
+                        matchingCategoryIds.add(id);
+                    }
+                }
+                filteredItems = order.items.filter(item => matchingCategoryIds.has(item.categoryId));
+            }
+        }
+
+        // Populate the items in the category map with the filtered items
+        filteredItems.forEach(item => {
+            const catData = categoryMap.get(item.categoryId);
+            if (catData) {
+                catData.items.push(item);
+            }
+        });
+
+        // Use the original order's category sequence to build the final list
+        const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
         
         return orderedCategoryIds
             .map(id => {
                 const data = categoryMap.get(id);
-                if (!data || data.items.length === 0) return null;
+                if (!data || data.items.length === 0) return null; // Only show categories that have matching items
                 const fullCategory = allCategories.find(c => String(c.id) === id);
                 return { id, name: data.name, items: data.items, icon: fullCategory?.icon || '📁' };
             })
             .filter(Boolean) as { id: string; name: string; items: OrderItemDetail[], icon: string }[];
 
-    }, [order?.items, allCategories, searchTerm]);
+    }, [order?.items, allCategories, searchTerm, searchFilterType]);
 
     const handleCategoryNameChange = (categoryId: string, newName: string) => {
         if (!order) return;
@@ -942,17 +974,27 @@ export default function OrderDetailsPage() {
                         >
                             Order Summary
                         </div>
-                        <div className="relative mb-6">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="search"
-                                placeholder="Search items in this order..."
-                                className="pl-10 w-full sm:w-72"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                        <div className="flex items-center gap-2 mb-6">
+                            <div className="relative flex-grow">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    placeholder={`Search ${searchFilterType}...`}
+                                    className="pl-10 w-full"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Search by..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="items">Search Items</SelectItem>
+                                    <SelectItem value="categories">Search Categories</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
-
 
                          <div>
                         {categoriesForRender.map((category) => (
@@ -1025,7 +1067,7 @@ export default function OrderDetailsPage() {
                          {categoriesForRender.length === 0 && (
                             <div className="text-center text-muted-foreground py-10">
                                 <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                <p>No items match your search.</p>
+                                <p>No results found for your search.</p>
                             </div>
                         )}
                         </div>
@@ -1060,4 +1102,5 @@ export default function OrderDetailsPage() {
         </>
     )
 }
+
 
