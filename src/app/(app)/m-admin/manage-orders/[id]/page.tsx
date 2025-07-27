@@ -354,8 +354,15 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
     };
 
     const handleSaveAndClose = () => {
-        onSaveChanges(currentItems);
+        const finalOrderedItems = orderedCategories.flatMap(cat => itemsGroupedByCategory[cat.id] || []);
+        onSaveChanges(finalOrderedItems);
         onOpenChange(false);
+    };
+
+    const handleItemReorder = (categoryId: string, reorderedItemsForCategory: OrderItemDetail[]) => {
+        const newItemsGrouped = { ...itemsGroupedByCategory, [categoryId]: reorderedItemsForCategory };
+        const newMasterItemsList = orderedCategories.flatMap(cat => newItemsGrouped[cat.id] || []);
+        setCurrentItems(newMasterItemsList);
     };
 
     return (
@@ -422,10 +429,7 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                                     <Reorder.Group
                                       axis="y"
                                       values={items}
-                                      onReorder={(newItems) => {
-                                        const otherItems = currentItems.filter(i => i.categoryId !== category.id);
-                                        setCurrentItems([...otherItems, ...newItems]);
-                                      }}
+                                      onReorder={(newOrder) => handleItemReorder(category.id, newOrder)}
                                       className="space-y-3"
                                     >
                                       {items.map(item => (
