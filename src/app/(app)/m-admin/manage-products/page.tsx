@@ -62,6 +62,7 @@ import {
 } from '@/lib/product-api';
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/100x100.png";
+const ITEMS_PER_PAGE = 10;
 
 const isImageUrl = (url: string) => {
     try {
@@ -313,6 +314,7 @@ export default function ManageProductsPage(): ReactNode {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -341,6 +343,10 @@ export default function ManageProductsPage(): ReactNode {
       fetchProducts();
     }
   }, [isAdminLoggedIn, fetchProducts]);
+
+  useEffect(() => {
+    setCurrentPage(1); 
+  }, [searchTerm, statusFilter]);
 
   const handleAddProduct = async (data: ProductFormValues) => {
     setIsSubmitting(true);
@@ -402,6 +408,24 @@ export default function ManageProductsPage(): ReactNode {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [products, statusFilter, searchTerm]);
   
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  }, [filteredProducts.length]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage]);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  };
+  
   const stats = useMemo(() => ({
     totalProducts: products.length,
     published: products.filter(p=>p.isPublished).length
@@ -459,8 +483,8 @@ export default function ManageProductsPage(): ReactNode {
             <Button variant="outline" size="icon" onClick={fetchProducts} disabled={isLoading}><RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} /></Button>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <ScrollArea className="h-[500px]">
+        <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
+          <ScrollArea className="flex-grow">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -484,8 +508,8 @@ export default function ManageProductsPage(): ReactNode {
                       <TableCell><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
                     </TableRow>
                   ))
-                ) : filteredProducts.length > 0 ? (
-                  filteredProducts.map(product => (
+                ) : paginatedProducts.length > 0 ? (
+                  paginatedProducts.map(product => (
                     <TableRow key={product.id}>
                       <TableCell>
                         <Image 
@@ -528,6 +552,35 @@ export default function ManageProductsPage(): ReactNode {
               </TableBody>
             </Table>
           </ScrollArea>
+           <div className="flex justify-between items-center mt-auto p-4 border-t border-border text-sm text-muted-foreground">
+              <p>Showing {paginatedProducts.length} of {filteredProducts.length} products.</p>
+              <div className="flex items-center space-x-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handlePreviousPage} 
+                  disabled={currentPage === 1 || isLoading}
+                >
+                  Previous
+                </Button>
+                <Button 
+                  variant={totalPages === 0 ? "outline" : "default"} 
+                  size="sm" 
+                  className="w-8 h-8 p-0" 
+                  disabled={totalPages === 0 || isLoading}
+                >
+                  {totalPages > 0 ? currentPage : '-'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages || totalPages === 0 || isLoading}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
         </CardContent>
       </Card>
 
