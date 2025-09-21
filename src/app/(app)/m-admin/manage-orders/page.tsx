@@ -27,12 +27,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import {
@@ -87,15 +81,11 @@ import {
   X,
   FileArchive,
   Trash2,
+  Copy,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
-
-type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
-
-const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold", "Out for Delivery"];
-const QUICK_STATUS_UPDATE_OPTIONS: OrderStatus[] = ["Pending", "Processing", "Delivered", "Cancelled", "Out for Delivery"];
 
 interface OrderItemDetailAdmin {
     id: string;
@@ -110,7 +100,6 @@ interface ApiOrder {
   id: string;
   orderId: string;
   orderDate: string;
-  status: OrderStatus;
   templateName?: string;
   customerName?: string;
   customerEmail?: string;
@@ -124,6 +113,14 @@ interface ApiOrder {
   templateImageUrl?: string;
   templateDescription?: string;
   templateTags?: string[];
+  customer?: { // Ensure customer object exists for cloning
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    restaurant: string;
+    role: string;
+  }
 }
 
 interface Category {
@@ -134,26 +131,12 @@ interface Category {
 
 const ITEMS_PER_PAGE = 10;
 
-const statusColors: Record<OrderStatus, string> = {
-  "Pending": "bg-yellow-100 text-yellow-700 dark:bg-yellow-700/20 dark:text-yellow-400 border-yellow-300 dark:border-yellow-600",
-  "Processing": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "In Progress": "bg-purple-100 text-purple-700 dark:bg-purple-700/20 dark:text-purple-400 border-purple-300 dark:border-purple-600",
-  "Out for Delivery": "bg-blue-100 text-blue-700 dark:bg-blue-700/20 dark:text-blue-400 border-blue-300 dark:border-blue-600",
-  "Shipped": "bg-indigo-100 text-indigo-700 dark:bg-indigo-700/20 dark:text-indigo-400 border-indigo-300 dark:border-indigo-600",
-  "Delivered": "bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600",
-  "Cancelled": "bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600",
-  "Refunded": "bg-gray-100 text-gray-700 dark:bg-gray-700/20 dark:text-gray-400 border-gray-300 dark:border-gray-600",
-  "On Hold": "bg-orange-100 text-orange-700 dark:bg-orange-700/20 dark:text-orange-400 border-orange-300 dark:border-orange-600",
-};
-
 const templateBadgeStyle = "bg-teal-100 text-teal-700 dark:bg-teal-700/20 dark:text-teal-400 border-teal-300 dark:border-teal-600";
 
 
 type SortOptionOrders =
   | 'newest'
   | 'oldest'
-  | 'status-asc'
-  | 'status-desc'
   | 'company-asc'
   | 'company-desc'
   | 'customer-asc'
@@ -164,18 +147,16 @@ type SortOptionOrders =
 const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
   { value: 'newest', label: 'Date (Newest First)' },
   { value: 'oldest', label: 'Date (Oldest First)' },
-  { value: 'orderId-asc', label: 'Order ID (Asc)' },
-  { value: 'orderId-desc', label: 'Order ID (Desc)' },
+  { value: 'orderId-asc', label: 'Docs ID (Asc)' },
+  { value: 'orderId-desc', label: 'Docs ID (Desc)' },
   { value: 'company-asc', label: 'Company (A-Z)' },
   { value: 'company-desc', label: 'Company (Z-A)' },
   { value: 'customer-asc', label: 'Customer (A-Z)' },
   { value: 'customer-desc', label: 'Customer (Z-A)' },
-  { value: 'status-asc', label: 'Status (A-Z)' },
-  { value: 'status-desc', label: 'Status (Z-A)' },
 ];
 
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate, allCategories }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void; allCategories: Category[]; }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; allCategories: Category[]; }) {
   const router = useRouter();
   
   if (!order) return null;
@@ -194,9 +175,9 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate, allCa
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="text-xl">Order Details</DialogTitle>
+          <DialogTitle className="text-xl">Docs Details</DialogTitle>
           <DialogDescription>
-            Order ID: <span className="font-medium text-primary">{order.orderId}</span> placed on {formatDate(order.orderDate)}
+            Docs ID: <span className="font-medium text-primary">{order.orderId}</span> placed on {formatDate(order.orderDate)}
           </DialogDescription>
            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
             <X className="h-5 w-5" />
@@ -257,40 +238,8 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, onStatusUpdate, allCa
                 </div>
               </CardContent>
             </Card>
-            <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">Order Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Current Status:</span>
-                  <Badge variant="outline" className={cn("text-sm py-1 px-3 font-medium", statusColors[order.status] || statusColors.Pending)}>
-                    {order.status}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Update Status:</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {QUICK_STATUS_UPDATE_OPTIONS.map(statusOption => (
-                      <Button
-                        key={statusOption}
-                        variant={order.status === statusOption ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => onStatusUpdate(order.id, statusOption)}
-                        className={cn(order.status === statusOption ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
-                      >
-                        {statusOption}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                 <div className="flex items-center justify-between pt-2 border-t">
-                    <span className="text-sm text-muted-foreground">Order Date:</span>
-                    <span className="text-sm font-medium text-foreground">{formatDate(order.orderDate, true)}</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm">
+            
+            <Card className="shadow-sm lg:col-span-2">
               <CardHeader>
                 <CardTitle className="text-lg">Template Information</CardTitle>
               </CardHeader>
@@ -362,7 +311,6 @@ export default function ManageOrdersPage(): ReactNode {
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [sortOption, setSortOption] = useState<SortOptionOrders>('newest');
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -388,7 +336,6 @@ export default function ManageOrdersPage(): ReactNode {
         fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
       ]);
       
-      // Process categories first to build the map
       const combinedCategories: Category[] = [];
       if (restaurantCategoriesResponse.ok) {
           const resCatResult = await restaurantCategoriesResponse.json();
@@ -416,17 +363,16 @@ export default function ManageOrdersPage(): ReactNode {
           rawOrdersArray = result.data;
         } else {
           console.error('Invalid data format for orders: "orders" array not found in data.', result);
-          throw new Error('Invalid data format from API for orders.');
+          throw new Error('Invalid data format from API for docs.');
         }
       } else {
-        throw new Error(result.message || 'API request for orders was not successful.');
+        throw new Error(result.message || 'API request for docs was not successful.');
       }
 
       const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any, index: number): ApiOrder => ({
         id: String(order.id || `mock-${index}-${Date.now()}`), 
         orderId: String(order.orderId || order.id || `ORD-${Date.now() + index}`), 
         orderDate: String(order.orderDate || order.createdAt || order.date || new Date(Date.now() - index * 86400000).toISOString()),
-        status: ALL_ORDER_STATUSES.includes(order.status) ? order.status : ALL_ORDER_STATUSES[index % ALL_ORDER_STATUSES.length],
         templateName: order.template?.name ? String(order.template.name) : `Template ${index % 5 + 1}`,
         customerName: order.customer?.name ? String(order.customer.name) : `Customer ${index + 1}`,
         customerEmail: order.customer?.email || `customer${index+1}@example.com`,
@@ -448,11 +394,12 @@ export default function ManageOrdersPage(): ReactNode {
         templateImageUrl: order.template?.imageUrl || `https://placehold.co/600x400.png`, 
         templateDescription: order.template?.description || 'A fresh and floral design, ideal for spring menus or garden cafes.',
         templateTags: order.template?.tags || ['Restaurant', 'Cafe', 'Seasonal'],
+        customer: order.customer,
       }));
       setAllOrders(fetchedOrders);
     } catch (e: any) {
       console.error('Failed to fetch orders:', e);
-      setError(e.message || 'Failed to load orders.');
+      setError(e.message || 'Failed to load docs.');
       setAllOrders([]);
     } finally {
       setIsLoading(false);
@@ -467,76 +414,65 @@ export default function ManageOrdersPage(): ReactNode {
   
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, sortOption]);
+  }, [searchTerm, sortOption]);
 
 
   const handleRefresh = useCallback(() => {
     fetchOrders();
     setCurrentPage(1);
   }, [fetchOrders]);
-
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    const originalOrder = allOrders.find(o => o.id === orderId);
-    if (!originalOrder) return;
   
-    // Optimistically update UI
-    setAllOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
-    if (selectedOrderForDetails && selectedOrderForDetails.id === orderId) {
-        setSelectedOrderForDetails(prev => prev ? {...prev, status: newStatus} : null);
-    }
-  
-    try {
-      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ id: orderId, status: newStatus }),
-      });
-  
-      const result = await response.json();
-  
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to update status. Status: ${response.status}`);
-      }
-      
-      toast({
-        title: "Status Updated",
-        description: `Order #${originalOrder.orderId} status changed to ${newStatus}.`,
-      });
-  
-      // Optional: Refetch to ensure data consistency, though optimistic update handles the immediate UI change.
-      // fetchOrders();
-  
-    } catch (error: any) {
-      toast({
-        title: "Update Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-  
-      // Revert optimistic update on failure
-      setAllOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === orderId ? originalOrder : order
-        )
-      );
-      if (selectedOrderForDetails && selectedOrderForDetails.id === orderId) {
-        setSelectedOrderForDetails(originalOrder);
-      }
-    }
-  };
-
   const handleViewDetails = (order: ApiOrder) => {
     setSelectedOrderForDetails(order);
     setIsDetailsDialogOpen(true);
   };
-
+  
   const handleDeleteOrder = (order: ApiOrder) => {
     setOrderToDeleteInfo({ id: order.id, orderId: order.orderId });
     setIsDeleteDialogOpen(true);
+  };
+  
+  const handleCloneDocs = async (originalOrder: ApiOrder) => {
+    const random3Digit = Math.floor(100 + Math.random() * 900);
+    const date = new Date();
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    const newOrderId = `RO-${random3Digit}${day}${month}${year}`;
+
+    // Create a deep copy and update necessary fields
+    const clonedOrder = JSON.parse(JSON.stringify(originalOrder));
+    clonedOrder.id = newOrderId;
+    clonedOrder.orderId = newOrderId;
+    clonedOrder.orderDate = date.toISOString();
+
+    try {
+        const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(clonedOrder),
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Failed to clone docs.');
+        }
+
+        toast({
+            title: "Docs Cloned",
+            description: `Docs #${originalOrder.orderId} has been cloned as #${newOrderId}.`,
+        });
+        fetchOrders(); // Refresh the list
+    } catch (error: any) {
+        toast({
+            title: "Clone Failed",
+            description: error.message,
+            variant: "destructive",
+        });
+    }
   };
 
   const confirmDeleteOrder = async () => {
@@ -548,12 +484,12 @@ export default function ManageOrdersPage(): ReactNode {
       });
       const result = await response.json();
       if (!response.ok || (result && result.success === false)) {
-        throw new Error(result.message || 'Failed to delete order.');
+        throw new Error(result.message || 'Failed to delete docs.');
       }
-      toast({ title: "Success", description: `Order #${orderToDeleteInfo.orderId} deleted.` });
+      toast({ title: "Success", description: `Docs #${orderToDeleteInfo.orderId} deleted.` });
       fetchOrders();
     } catch (error: any) {
-      toast({ title: "Error Deleting Order", description: error.message, variant: "destructive" });
+      toast({ title: "Error Deleting Docs", description: error.message, variant: "destructive" });
     } finally {
       setIsDeleteDialogOpen(false);
       setOrderToDeleteInfo(null);
@@ -566,8 +502,7 @@ export default function ManageOrdersPage(): ReactNode {
         order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (order.customerName && decodeHtmlEntities(order.customerName).toLowerCase().includes(searchTerm.toLowerCase())) ||
         (order.businessName && decodeHtmlEntities(order.businessName).toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
 
     switch (sortOption) {
@@ -587,12 +522,6 @@ export default function ManageOrdersPage(): ReactNode {
       case 'orderId-desc':
         orders.sort((a, b) => b.orderId.localeCompare(a.orderId));
         break;
-      case 'status-asc':
-        orders.sort((a, b) => a.status.localeCompare(b.status));
-        break;
-      case 'status-desc':
-        orders.sort((a, b) => b.status.localeCompare(a.status));
-        break;
       case 'company-asc':
         orders.sort((a, b) => (decodeHtmlEntities(a.businessName) || "").localeCompare(decodeHtmlEntities(b.businessName) || ""));
         break;
@@ -607,7 +536,7 @@ export default function ManageOrdersPage(): ReactNode {
         break;
     }
     return orders;
-  }, [allOrders, searchTerm, statusFilter, sortOption]);
+  }, [allOrders, searchTerm, sortOption]);
 
   const totalPages = useMemo(() => {
     return Math.ceil(filteredAndSortedOrders.length / ITEMS_PER_PAGE);
@@ -650,7 +579,6 @@ export default function ManageOrdersPage(): ReactNode {
           <TableCell><Skeleton className="h-5 w-20 whitespace-nowrap" /></TableCell>
           <TableCell><Skeleton className="h-5 w-28" /></TableCell>
           <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
           <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
       </motion.tr>
   ));
@@ -677,9 +605,9 @@ export default function ManageOrdersPage(): ReactNode {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            Order Management
+            Docs Management
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">View and manage all customer orders.</p>
+          <p className="text-sm text-muted-foreground mt-1">View and manage all customer docs.</p>
         </div>
         <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
           <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
@@ -695,25 +623,13 @@ export default function ManageOrdersPage(): ReactNode {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search by Order ID, Company, or Customer..."
+                placeholder="Search by Docs ID, Company, or Customer..."
                 className="pl-10 w-full h-9 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <div className="flex w-full sm:w-auto items-center gap-2 mt-2 sm:mt-0">
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}>
-                <SelectTrigger className="w-full sm:w-auto min-w-[130px] h-9 text-sm">
-                  <ListFilter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {ALL_ORDER_STATUSES.map(status => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionOrders)}>
                 <SelectTrigger className="w-full sm:w-auto min-w-[180px] h-9 text-sm">
                     <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
@@ -740,10 +656,9 @@ export default function ManageOrdersPage(): ReactNode {
                       transition={{ duration: 0.5 }}
                     >
                         <TableHead className="w-[200px]">Date</TableHead>
-                        <TableHead className="w-[150px]">Order ID</TableHead>
+                        <TableHead className="w-[150px]">Docs ID</TableHead>
                         <TableHead>Company</TableHead>
                         <TableHead>Customer</TableHead>
-                        <TableHead className="w-[150px]">Status</TableHead>
                         <TableHead className="text-right w-[100px]">Action</TableHead>
                     </motion.tr>
                 </TableHeader>
@@ -757,7 +672,7 @@ export default function ManageOrdersPage(): ReactNode {
               transition={{ duration: 0.5 }}
             >
               <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
-              <p className="text-lg">Error loading orders: {error}</p>
+              <p className="text-lg">Error loading docs: {error}</p>
               <Button variant="outline" onClick={handleRefresh} className="mt-4">
                 <RefreshCw className="h-4 w-4 mr-2" /> Try Again
               </Button>
@@ -770,7 +685,7 @@ export default function ManageOrdersPage(): ReactNode {
               transition={{ duration: 0.5 }}
             >
               <ShoppingCart className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p className="text-lg">No orders found.</p>
+              <p className="text-lg">No docs found.</p>
               {searchTerm && <p>Try adjusting your search or filters.</p>}
             </motion.div>
           ) : (
@@ -783,10 +698,9 @@ export default function ManageOrdersPage(): ReactNode {
                     transition={{ duration: 0.5 }}
                   >
                     <TableHead className="w-[200px]">Date</TableHead>
-                    <TableHead className="w-[150px]">Order ID</TableHead>
+                    <TableHead className="w-[150px]">Docs ID</TableHead>
                     <TableHead>Company</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead className="w-[150px]">Status</TableHead>
                     <TableHead className="text-right w-[100px]">Action</TableHead>
                   </motion.tr>
                 </TableHeader>
@@ -810,11 +724,6 @@ export default function ManageOrdersPage(): ReactNode {
                         <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}>{order.orderId}</TableCell>
                         <TableCell>{order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
                         <TableCell>{order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={cn("text-xs py-1 px-2.5", statusColors[order.status] || statusColors.Pending)}>
-                            {order.status}
-                          </Badge>
-                        </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -826,9 +735,12 @@ export default function ManageOrdersPage(): ReactNode {
                               <DropdownMenuItem onClick={() => handleViewDetails(order)}>
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
+                               <DropdownMenuItem onClick={() => handleCloneDocs(order)}>
+                                <Copy className="mr-2 h-4 w-4" /> Clone Docs
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleDeleteOrder(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Order
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -842,7 +754,7 @@ export default function ManageOrdersPage(): ReactNode {
           )}
         </div>
         <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
-          <p>Showing {paginatedOrders.length} of {filteredAndSortedOrders.length} orders.</p>
+          <p>Showing {paginatedOrders.length} of {filteredAndSortedOrders.length} docs.</p>
           <div className="flex items-center space-x-1">
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
               <Button 
@@ -877,7 +789,7 @@ export default function ManageOrdersPage(): ReactNode {
             </motion.div>
           </div>
           <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-            <Button variant="outline" size="sm" disabled>Export Orders</Button>
+            <Button variant="outline" size="sm" disabled>Export Docs</Button>
           </motion.div>
         </div>
       </section>
@@ -885,7 +797,6 @@ export default function ManageOrdersPage(): ReactNode {
         order={selectedOrderForDetails} 
         isOpen={isDetailsDialogOpen} 
         onOpenChange={setIsDetailsDialogOpen} 
-        onStatusUpdate={handleStatusChange}
         allCategories={allCategories}
       />
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -893,7 +804,7 @@ export default function ManageOrdersPage(): ReactNode {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete order #{orderToDeleteInfo?.orderId}.
+              This action cannot be undone. This will permanently delete docs #{orderToDeleteInfo?.orderId}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -903,7 +814,7 @@ export default function ManageOrdersPage(): ReactNode {
               className={cn(buttonVariants({ variant: "destructive" }))}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Yes, delete order
+              Yes, delete docs
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
