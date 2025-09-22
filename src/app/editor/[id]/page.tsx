@@ -507,7 +507,8 @@ export default function EditorPage() {
     const [allCategories, setAllCategories] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isDirty, setIsDirty] = useState(false);
+    const [changeCount, setChangeCount] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
     const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
     
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -585,7 +586,7 @@ export default function EditorPage() {
                 };
                 setOrder(formattedOrder);
                 setOriginalOrder(JSON.parse(JSON.stringify(formattedOrder))); 
-                setIsDirty(false);
+                setChangeCount(0);
             } else {
                 setError(`This shared link is invalid or the selection has been removed.`);
             }
@@ -601,13 +602,14 @@ export default function EditorPage() {
         fetchOrderAndCategoryDetails();
     }, [orderIdFromUrl, fetchOrderAndCategoryDetails]);
 
-    const handleOrderUpdate = (updatedOrder: ApiOrder, markDirty = true) => {
+    const handleOrderUpdate = (updatedOrder: ApiOrder) => {
         setOrder(updatedOrder);
-        if (markDirty) setIsDirty(true);
+        setChangeCount(prev => prev + 1);
     };
 
-    const handleSaveChanges = async () => {
+    const handleSaveChanges = useCallback(async (isAutoSave = false) => {
         if (!order) return;
+        setIsSaving(true);
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
                 method: 'PUT',
@@ -618,17 +620,31 @@ export default function EditorPage() {
             if (!response.ok || !result.success) {
                 throw new Error(result.message || "Failed to save document changes.");
             }
-            toast({ title: "Success", description: "Document updated successfully." });
+            
+            if (isAutoSave) {
+                 toast({ title: "Auto-saved!", description: "Your changes have been saved automatically." });
+            } else {
+                 toast({ title: "Success", description: "Document updated successfully." });
+            }
+            
             setOriginalOrder(JSON.parse(JSON.stringify(order))); 
-            setIsDirty(false);
+            setChangeCount(0);
         } catch (e: any) {
             toast({ title: "Save Error", description: e.message, variant: "destructive" });
+        } finally {
+            setIsSaving(false);
         }
-    };
+    }, [order, toast]);
     
+    useEffect(() => {
+        if (changeCount > 3) {
+            handleSaveChanges(true);
+        }
+    }, [changeCount, handleSaveChanges]);
+
     const handleDiscardChanges = () => {
         setOrder(originalOrder);
-        setIsDirty(false);
+        setChangeCount(0);
         toast({ title: "Changes Discarded", description: "Your edits have been reverted." });
     };
 
@@ -906,26 +922,26 @@ export default function EditorPage() {
 
                     <div className="flex items-center gap-2">
                         <AnimatePresence>
-                            {isDirty && (
+                            {changeCount > 0 && (
                                 <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
                                     <Button size="sm" variant="ghost" onClick={handleDiscardChanges} className="text-muted-foreground">Discard</Button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                          <AnimatePresence>
-                            {isDirty && (
+                            {changeCount > 0 && !isSaving && (
                                 <motion.p 
                                     initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
                                     className="text-xs text-yellow-600 hidden lg:block"
                                 >
-                                    Unsaved changes
+                                    {changeCount} unsaved change{changeCount !== 1 && 's'}
                                 </motion.p>
                             )}
                         </AnimatePresence>
 
-                        <Button size="sm" onClick={handleSaveChanges} disabled={!isDirty}>
-                            <Save className="h-4 w-4 sm:mr-2"/>
-                            <span className="hidden sm:inline">Save</span>
+                        <Button size="sm" onClick={() => handleSaveChanges(false)} disabled={changeCount === 0 || isSaving}>
+                            <Save className={cn("h-4 w-4 sm:mr-2", isSaving && "animate-spin")} />
+                            <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save'}</span>
                         </Button>
                          <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
                             <FileArchive className="h-4 w-4 sm:mr-2" />
