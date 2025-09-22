@@ -10,6 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ArrowLeft,
   CalendarDays,
   FileText as FileTextIcon,
@@ -32,6 +38,8 @@ import {
   ShoppingCart,
   FileText,
   Search,
+  Users,
+  PenSquare
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -630,16 +638,17 @@ export default function OrderDetailsPage() {
         toast({ title: "Changes Discarded", description: "Your edits have been reverted." });
     };
 
-    const handleShare = () => {
+    const handleShare = (mode: 'viewer' | 'editor') => {
         if (!order) {
             toast({ title: "Error", description: "Cannot share. Order details not loaded yet.", variant: "destructive" });
             return;
         }
-        const shareUrl = `${window.location.origin}/share/${order.id}`;
+        const path = mode === 'viewer' ? 'share' : 'editor';
+        const shareUrl = `${window.location.origin}/${path}/${order.id}`;
         
         const copyToClipboard = (text: string) => {
             navigator.clipboard.writeText(text).then(() => {
-                toast({ title: "Link Copied!", description: "A shareable link is now on your clipboard." });
+                toast({ title: "Link Copied!", description: `A shareable link (${mode}) is now on your clipboard.` });
             }).catch(err => {
                 console.error('Failed to copy link: ', err);
                 toast({ title: "Copy Failed", description: "Could not copy the link to your clipboard.", variant: "destructive" });
@@ -941,10 +950,25 @@ export default function OrderDetailsPage() {
                             <Shuffle className="h-4 w-4 sm:mr-2" />
                             <span className="hidden sm:inline">Shuffle</span>
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleShare}>
-                            <Share2 className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Share</span>
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Share2 className="h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Share</span>
+                                    <ChevronDown className="h-4 w-4 ml-1 -mr-1 hidden sm:inline-flex"/>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleShare('viewer')}>
+                                    <Users className="mr-2 h-4 w-4" />
+                                    Share with viewer
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleShare('editor')}>
+                                    <PenSquare className="mr-2 h-4 w-4" />
+                                    Share with editor
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </header>
@@ -1102,5 +1126,3 @@ export default function OrderDetailsPage() {
         </>
     )
 }
-
-
