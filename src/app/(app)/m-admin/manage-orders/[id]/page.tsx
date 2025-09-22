@@ -510,7 +510,8 @@ export default function OrderDetailsPage() {
     const [allCategories, setAllCategories] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isDirty, setIsDirty] = useState(false);
+    const [changeCount, setChangeCount] = useState(0);
+    const [isSaving, setIsSaving] = useState(false);
     const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
     
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -588,12 +589,12 @@ export default function OrderDetailsPage() {
                 };
                 setOrder(formattedOrder);
                 setOriginalOrder(JSON.parse(JSON.stringify(formattedOrder))); 
-                setIsDirty(false);
+                setChangeCount(0);
             } else {
-                setError(`Order with ID ${orderIdFromUrl} not found.`);
+                setError(`Docs with ID ${orderIdFromUrl} not found.`);
             }
         } catch (e: any) {
-            setError(e.message || 'Failed to load order details.');
+            setError(e.message || 'Failed to load docs details.');
         } finally {
             setIsLoading(false);
         }
@@ -607,13 +608,14 @@ export default function OrderDetailsPage() {
         fetchOrderAndCategoryDetails();
     }, [orderIdFromUrl, isAdminLoggedIn, adminLoading, fetchOrderAndCategoryDetails]);
 
-    const handleOrderUpdate = (updatedOrder: ApiOrder, markDirty = true) => {
+    const handleOrderUpdate = (updatedOrder: ApiOrder) => {
         setOrder(updatedOrder);
-        if (markDirty) setIsDirty(true);
+        setChangeCount(prev => prev + 1);
     };
 
-    const handleSaveChanges = async () => {
+    const handleSaveChanges = useCallback(async (isAutoSave = false) => {
         if (!order) return;
+        setIsSaving(true);
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
                 method: 'PUT',
@@ -622,25 +624,39 @@ export default function OrderDetailsPage() {
             });
             const result = await response.json();
             if (!response.ok || !result.success) {
-                throw new Error(result.message || "Failed to save order changes.");
+                throw new Error(result.message || "Failed to save docs changes.");
             }
-            toast({ title: "Success", description: "Order updated successfully." });
+
+            if (isAutoSave) {
+                 toast({ title: "Auto-saved!", description: "Your changes have been saved automatically." });
+            } else {
+                 toast({ title: "Success", description: "Docs updated successfully." });
+            }
+            
             setOriginalOrder(JSON.parse(JSON.stringify(order))); 
-            setIsDirty(false);
+            setChangeCount(0);
         } catch (e: any) {
             toast({ title: "Save Error", description: e.message, variant: "destructive" });
+        } finally {
+            setIsSaving(false);
         }
-    };
+    }, [order, toast]);
     
+     useEffect(() => {
+        if (changeCount > 3) {
+            handleSaveChanges(true);
+        }
+    }, [changeCount, handleSaveChanges]);
+
     const handleDiscardChanges = () => {
         setOrder(originalOrder);
-        setIsDirty(false);
+        setChangeCount(0);
         toast({ title: "Changes Discarded", description: "Your edits have been reverted." });
     };
 
     const handleShare = (mode: 'viewer' | 'editor') => {
         if (!order) {
-            toast({ title: "Error", description: "Cannot share. Order details not loaded yet.", variant: "destructive" });
+            toast({ title: "Error", description: "Cannot share. Docs details not loaded yet.", variant: "destructive" });
             return;
         }
         const path = mode === 'viewer' ? 'share' : 'editor';
@@ -657,8 +673,8 @@ export default function OrderDetailsPage() {
 
         if (navigator.share) {
             navigator.share({
-                title: `Order for ${order.customer?.restaurant || 'a client'}`,
-                text: `View the details for order #${order.orderId}`,
+                title: `Docs for ${order.customer?.restaurant || 'a client'}`,
+                text: `View the details for docs #${order.orderId}`,
                 url: shareUrl,
             })
             .catch((error) => {
@@ -674,7 +690,7 @@ export default function OrderDetailsPage() {
     
     const handleDownloadDocx = async () => {
         if (!order || !order.items) {
-            toast({ title: "Error", description: "Order data is not available.", variant: "destructive" });
+            toast({ title: "Error", description: "Docs data is not available.", variant: "destructive" });
             return;
         }
         toast({ title: "Generating Document...", description: "Please wait, your DOCX file is being prepared." });
@@ -893,8 +909,8 @@ export default function OrderDetailsPage() {
     }
 
     if (!isAdminLoggedIn) return <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8"><AdminLoginForm /></div>;
-    if (error) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Order</h2><p className="text-muted-foreground max-w-md">{error}</p><Button variant="outline" onClick={() => router.back()} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go Back</Button></div>;
-    if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Order Not Found</h2><p className="text-muted-foreground max-w-md">The requested order could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Order History</Button></div>;
+    if (error) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Docs</h2><p className="text-muted-foreground max-w-md">{error}</p><Button variant="outline" onClick={() => router.back()} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go Back</Button></div>;
+    if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Docs Not Found</h2><p className="text-muted-foreground max-w-md">The requested document could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Docs History</Button></div>;
 
     return (
         <>
@@ -904,7 +920,7 @@ export default function OrderDetailsPage() {
                     <div className="flex items-center gap-2 sm:gap-4">
                         <Button variant="outline" size="sm" onClick={() => router.push('/m-admin/manage-orders')}>
                             <ArrowLeft className="h-4 w-4" />
-                            <span className="hidden sm:inline ml-2">Orders</span>
+                            <span className="hidden sm:inline ml-2">Docs</span>
                         </Button>
                         <div className="h-6 border-l border-border"></div>
                         <div className="flex flex-col">
@@ -915,36 +931,36 @@ export default function OrderDetailsPage() {
                                 className="text-lg font-semibold text-foreground"
                                 inputClassName="text-lg font-semibold"
                             />
-                            <p className="text-xs text-muted-foreground">Order ID: {order.orderId}</p>
+                            <p className="text-xs text-muted-foreground">Docs ID: {order.orderId}</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <AnimatePresence>
-                            {isDirty && (
+                            {changeCount > 0 && (
                                 <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
                                     <Button size="sm" variant="ghost" onClick={handleDiscardChanges} className="text-muted-foreground">Discard</Button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                          <AnimatePresence>
-                            {isDirty && (
+                            {changeCount > 0 && !isSaving && (
                                 <motion.p 
                                     initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
                                     className="text-xs text-yellow-600 hidden lg:block"
                                 >
-                                    Unsaved changes
+                                    {changeCount} unsaved change{changeCount !== 1 && 's'}
                                 </motion.p>
                             )}
                         </AnimatePresence>
 
-                        <Button size="sm" onClick={handleSaveChanges} disabled={!isDirty}>
-                            <Save className="h-4 w-4 sm:mr-2"/>
-                            <span className="hidden sm:inline">Save</span>
+                        <Button size="sm" onClick={() => handleSaveChanges(false)} disabled={changeCount === 0 || isSaving}>
+                            <Save className={cn("h-4 w-4 sm:mr-2", isSaving && "animate-spin")} />
+                            <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save'}</span>
                         </Button>
                          <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
                             <FileArchive className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Download</span>
+                            <span className="hidden sm:inline">Download Docs</span>
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)}>
                             <Shuffle className="h-4 w-4 sm:mr-2" />
@@ -984,7 +1000,7 @@ export default function OrderDetailsPage() {
                                 className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground"
                                 inputClassName="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
                             />
-                             <p className="font-bold text-lg text-muted-foreground mt-2">Order ID: {order.orderId}</p>
+                             <p className="font-bold text-lg text-muted-foreground mt-2">Docs ID: {order.orderId}</p>
                         </div>
                         <div className="text-right text-muted-foreground text-sm space-y-1">
                             <p className="flex items-center justify-end gap-2"><CalendarDays className="h-4 w-4" />{formatDate(order.orderDate)}</p>
@@ -996,7 +1012,7 @@ export default function OrderDetailsPage() {
                             className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
                             style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
                         >
-                            Order Summary
+                            Docs Summary
                         </div>
                         <div className="flex items-center gap-2 mb-6">
                             <div className="relative flex-grow">
