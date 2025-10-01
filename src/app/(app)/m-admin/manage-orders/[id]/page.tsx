@@ -616,13 +616,25 @@ export default function OrderDetailsPage() {
     const handleSaveChanges = useCallback(async (isAutoSave = false) => {
         if (!order) return;
         setIsSaving(true);
+        console.log("Saving data for Admin. Payload:", JSON.stringify(order, null, 2));
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(order),
             });
-            const result = await response.json();
+
+            let result;
+            try {
+                result = await response.json();
+                console.log("Admin save response from server:", result);
+            } catch (e) {
+                console.error("Could not parse server response as JSON.", e);
+                const textResponse = await response.text();
+                console.log("Raw server response (admin):", textResponse);
+                throw new Error("Server sent an invalid response.");
+            }
+            
             if (!response.ok || !result.success) {
                 throw new Error(result.message || "Failed to save docs changes.");
             }
@@ -636,6 +648,7 @@ export default function OrderDetailsPage() {
             setOriginalOrder(JSON.parse(JSON.stringify(order))); 
             setChangeCount(0);
         } catch (e: any) {
+            console.error("Error saving data for Admin:", e);
             toast({ title: "Save Error", description: e.message, variant: "destructive" });
         } finally {
             setIsSaving(false);
