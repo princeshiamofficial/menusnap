@@ -37,7 +37,9 @@ import {
   FileText,
   Search,
   Users,
-  PenSquare
+  PenSquare,
+  Loader2,
+  Check
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -497,18 +499,18 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
     );
 }
 
+type SaveStatus = "unsaved" | "saving" | "saved";
+
 export default function EditorPage() {
     const params = useParams();
     const router = useRouter();
     const orderIdFromUrl = params.id as string;
     
     const [order, setOrder] = useState<ApiOrder | null>(null);
-    const [originalOrder, setOriginalOrder] = useState<ApiOrder | null>(null);
     const [allCategories, setAllCategories] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isDirty, setIsDirty] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
     const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
     
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -521,7 +523,6 @@ export default function EditorPage() {
     
     const { toast } = useToast();
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -587,8 +588,7 @@ export default function EditorPage() {
                     })),
                 };
                 setOrder(formattedOrder);
-                setOriginalOrder(JSON.parse(JSON.stringify(formattedOrder))); 
-                setIsDirty(false);
+                setSaveStatus("saved");
             } else {
                 setError(`This shared link is invalid or the selection has been removed.`);
             }
@@ -604,27 +604,14 @@ export default function EditorPage() {
         fetchOrderAndCategoryDetails();
     }, [orderIdFromUrl, fetchOrderAndCategoryDetails]);
 
-    const triggerSave = useCallback(() => {
+    const handleSaveChanges = useCallback(async () => {
+        if (!order || saveStatus !== 'unsaved') return;
+        
+        setSaveStatus("saving");
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
-        saveTimeoutRef.current = setTimeout(() => {
-            handleSaveChanges(true);
-        }, 1000); // Debounce time of 1 second
-    }, []);
 
-    const handleOrderUpdate = (updatedOrder: ApiOrder) => {
-        setOrder(updatedOrder);
-        setIsDirty(true);
-        triggerSave();
-    };
-
-    const handleSaveChanges = useCallback(async (isAutoSave = false) => {
-        if (!order) return;
-         if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-        setIsSaving(true);
         console.log("Saving data for Editor. Payload:", JSON.stringify(order, null, 2));
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
@@ -648,26 +635,31 @@ export default function EditorPage() {
                 throw new Error(result.message || "Failed to save document changes.");
             }
             
-            if (isAutoSave) {
-                 toast({ title: "Auto-saved!", description: "Your changes have been saved automatically." });
-            } else {
-                 toast({ title: "Success", description: "Document updated successfully." });
-            }
-            
-            setOriginalOrder(JSON.parse(JSON.stringify(order))); 
-            setIsDirty(false);
+            setSaveStatus("saved");
+            toast({ title: "Saved!", description: "Your changes have been saved." });
+
         } catch (e: any) {
             console.error("Error saving data for Editor:", e);
             toast({ title: "Save Error", description: e.message, variant: "destructive" });
-        } finally {
-            setIsSaving(false);
+            setSaveStatus("unsaved");
         }
-    }, [order, toast]);
+    }, [order, saveStatus, toast]);
+
+    const handleOrderUpdate = useCallback((updatedOrder: ApiOrder) => {
+        setOrder(updatedOrder);
+        setSaveStatus("unsaved");
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        saveTimeoutRef.current = setTimeout(() => {
+            handleSaveChanges();
+        }, 1000);
+    }, [handleSaveChanges]);
+
     
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-            if (isDirty) {
-                handleSaveChanges(false);
+            if (saveStatus === 'unsaved') {
                 const message = "You have unsaved changes. Are you sure you want to leave?";
                 event.returnValue = message;
                 return message;
@@ -682,14 +674,7 @@ export default function EditorPage() {
                 clearTimeout(saveTimeoutRef.current);
             }
         };
-    }, [isDirty, handleSaveChanges]);
-
-
-    const handleDiscardChanges = () => {
-        setOrder(originalOrder);
-        setIsDirty(false);
-        toast({ title: "Changes Discarded", description: "Your edits have been reverted." });
-    };
+    }, [saveStatus]);
 
     const handleShare = (mode: 'viewer' | 'editor') => {
         if (!order) {
@@ -906,11 +891,8 @@ export default function EditorPage() {
                 <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
                     <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
                         <div className="flex items-center gap-4">
-                            <Skeleton className="h-9 w-24" />
-                            <div className="space-y-1">
-                                <Skeleton className="h-5 w-48" />
-                                <Skeleton className="h-3 w-32" />
-                            </div>
+                            <Skeleton className="h-5 w-48" />
+                            <Skeleton className="h-3 w-32" />
                         </div>
                         <div className="flex items-center gap-2">
                             <Skeleton className="h-9 w-24" />
@@ -944,6 +926,19 @@ export default function EditorPage() {
     if (error) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Document</h2><p className="text-muted-foreground max-w-md">{error}</p></div>;
     if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Document Not Found</h2><p className="text-muted-foreground max-w-md">The requested document could not be found.</p></div>;
 
+    const SaveStatusIndicator = () => {
+        switch (saveStatus) {
+            case 'saving':
+                return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Saving...</div>;
+            case 'saved':
+                return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Check className="h-4 w-4" />Saved</div>;
+            case 'unsaved':
+                return <div className="flex items-center gap-2 text-sm text-yellow-600">Unsaved changes</div>;
+            default:
+                return null;
+        }
+    };
+
     return (
         <>
         <div className="bg-muted min-h-screen flex flex-col">
@@ -963,19 +958,8 @@ export default function EditorPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <AnimatePresence>
-                            {isDirty && (
-                                <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
-                                    <Button size="sm" variant="ghost" onClick={handleDiscardChanges} className="text-muted-foreground">Discard</Button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                         
-                        <Button size="sm" onClick={() => handleSaveChanges(false)} disabled={!isDirty || isSaving}>
-                            <Save className={cn("h-4 w-4 sm:mr-2", isSaving && "animate-spin")} />
-                            <span className="hidden sm:inline">{isSaving ? 'Saving...' : (isDirty ? 'Save Changes' : 'Saved')}</span>
-                        </Button>
+                    <div className="flex items-center gap-4">
+                        <SaveStatusIndicator />
                          <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
                             <FileArchive className="h-4 w-4 sm:mr-2" />
                             <span className="hidden sm:inline">Download</span>
@@ -1160,5 +1144,7 @@ export default function EditorPage() {
         </>
     )
 }
+
+    
 
     
