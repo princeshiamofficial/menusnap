@@ -638,14 +638,12 @@ export default function EditorPage() {
             }
             
             setSaveStatus("saved");
-            toast({ title: "Saved!", description: "Your changes have been saved." });
 
         } catch (e: any) {
             console.error("Error saving data for Editor:", e);
-            toast({ title: "Save Error", description: e.message, variant: "destructive" });
             setSaveStatus("unsaved");
         }
-    }, [saveStatus, toast]);
+    }, [saveStatus]);
 
     const handleOrderUpdate = useCallback((updatedOrder: ApiOrder) => {
         setOrder(updatedOrder);
@@ -671,13 +669,15 @@ export default function EditorPage() {
                 return message;
             }
         };
+        
+        const currentPendingSave = pendingSave.current;
 
         window.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-             if (pendingSave.current) {
-                pendingSave.current();
+             if (currentPendingSave) {
+                currentPendingSave();
             }
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
@@ -866,7 +866,6 @@ export default function EditorPage() {
                 item.id === editingItem.id ? { ...item, ...data } : item
             );
             handleOrderUpdate({ ...order, items: updatedItems });
-            toast({ title: "Item Updated" });
         } else if (addingToCategoryId) {
             const category = categoriesForRender.find(c => c.id === addingToCategoryId);
             const newItem: OrderItemDetail = {
@@ -877,7 +876,6 @@ export default function EditorPage() {
                 categoryName: category?.name || 'New Category',
             };
             handleOrderUpdate({ ...order, items: [...(order.items || []), newItem] });
-            toast({ title: "Item Added" });
         }
         setIsFormOpen(false);
         setEditingItem(null);
@@ -1153,3 +1151,4 @@ export default function EditorPage() {
         </>
     )
 }
+
