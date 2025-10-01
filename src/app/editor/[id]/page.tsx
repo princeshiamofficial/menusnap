@@ -507,7 +507,7 @@ export default function EditorPage() {
     const [allCategories, setAllCategories] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [changeCount, setChangeCount] = useState(0);
+    const [isDirty, setIsDirty] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
     
@@ -520,6 +520,8 @@ export default function EditorPage() {
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
     
     const { toast } = useToast();
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -586,7 +588,7 @@ export default function EditorPage() {
                 };
                 setOrder(formattedOrder);
                 setOriginalOrder(JSON.parse(JSON.stringify(formattedOrder))); 
-                setChangeCount(0);
+                setIsDirty(false);
             } else {
                 setError(`This shared link is invalid or the selection has been removed.`);
             }
@@ -602,13 +604,26 @@ export default function EditorPage() {
         fetchOrderAndCategoryDetails();
     }, [orderIdFromUrl, fetchOrderAndCategoryDetails]);
 
+    const triggerSave = useCallback(() => {
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        saveTimeoutRef.current = setTimeout(() => {
+            handleSaveChanges(true);
+        }, 1000); // Debounce time of 1 second
+    }, []);
+
     const handleOrderUpdate = (updatedOrder: ApiOrder) => {
         setOrder(updatedOrder);
-        setChangeCount(prev => prev + 1);
+        setIsDirty(true);
+        triggerSave();
     };
 
     const handleSaveChanges = useCallback(async (isAutoSave = false) => {
         if (!order) return;
+         if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
         setIsSaving(true);
         console.log("Saving data for Editor. Payload:", JSON.stringify(order, null, 2));
         try {
@@ -640,7 +655,7 @@ export default function EditorPage() {
             }
             
             setOriginalOrder(JSON.parse(JSON.stringify(order))); 
-            setChangeCount(0);
+            setIsDirty(false);
         } catch (e: any) {
             console.error("Error saving data for Editor:", e);
             toast({ title: "Save Error", description: e.message, variant: "destructive" });
@@ -650,14 +665,29 @@ export default function EditorPage() {
     }, [order, toast]);
     
     useEffect(() => {
-        if (changeCount > 3) {
-            handleSaveChanges(true);
-        }
-    }, [changeCount, handleSaveChanges]);
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (isDirty) {
+                handleSaveChanges(false);
+                const message = "You have unsaved changes. Are you sure you want to leave?";
+                event.returnValue = message;
+                return message;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+             if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, [isDirty, handleSaveChanges]);
+
 
     const handleDiscardChanges = () => {
         setOrder(originalOrder);
-        setChangeCount(0);
+        setIsDirty(false);
         toast({ title: "Changes Discarded", description: "Your edits have been reverted." });
     };
 
@@ -775,7 +805,7 @@ export default function EditorPage() {
         return orderedCategoryIds
             .map(id => {
                 const data = categoryMap.get(id);
-                if (!data || data.items.length === 0) return null;
+                if (!data || data.items.length === 0) return null; // Only show categories that have matching items
                 const fullCategory = allCategories.find(c => String(c.id) === id);
                 return { id, name: data.name, items: data.items, icon: fullCategory?.icon || '📁' };
             })
@@ -935,26 +965,16 @@ export default function EditorPage() {
 
                     <div className="flex items-center gap-2">
                         <AnimatePresence>
-                            {changeCount > 0 && (
+                            {isDirty && (
                                 <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: 'auto' }} exit={{ opacity: 0, width: 0 }} className="overflow-hidden">
                                     <Button size="sm" variant="ghost" onClick={handleDiscardChanges} className="text-muted-foreground">Discard</Button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                         <AnimatePresence>
-                            {changeCount > 0 && !isSaving && (
-                                <motion.p 
-                                    initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                                    className="text-xs text-yellow-600 hidden lg:block"
-                                >
-                                    {changeCount} unsaved change{changeCount !== 1 && 's'}
-                                </motion.p>
-                            )}
-                        </AnimatePresence>
-
-                        <Button size="sm" onClick={() => handleSaveChanges(false)} disabled={changeCount === 0 || isSaving}>
+                         
+                        <Button size="sm" onClick={() => handleSaveChanges(false)} disabled={!isDirty || isSaving}>
                             <Save className={cn("h-4 w-4 sm:mr-2", isSaving && "animate-spin")} />
-                            <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save'}</span>
+                            <span className="hidden sm:inline">{isSaving ? 'Saving...' : (isDirty ? 'Save Changes' : 'Saved')}</span>
                         </Button>
                          <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
                             <FileArchive className="h-4 w-4 sm:mr-2" />
@@ -1140,3 +1160,5 @@ export default function EditorPage() {
         </>
     )
 }
+
+    
