@@ -43,7 +43,6 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
-import { useToast } from "@/hooks/use-toast";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -521,9 +520,7 @@ export default function EditorPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
     
-    const { toast } = useToast();
-    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const pendingSave = useRef<(() => void) | null>(null);
+    const pendingSaveData = useRef<ApiOrder | null>(null);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -606,10 +603,14 @@ export default function EditorPage() {
     }, [orderIdFromUrl, fetchOrderAndCategoryDetails]);
 
     const handleSaveChanges = useCallback(async (orderToSave: ApiOrder) => {
-        if (saveStatus === 'saving') return;
+        if (saveStatus === 'saving') {
+          pendingSaveData.current = orderToSave;
+          return;
+        }
         
         setSaveStatus("saving");
-        
+        pendingSaveData.current = null;
+
         console.log("Saving data for Editor. Payload:", JSON.stringify(orderToSave, null, 2));
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
@@ -638,67 +639,44 @@ export default function EditorPage() {
         } catch (e: any) {
             console.error("Error saving data for Editor:", e);
             setSaveStatus("unsaved");
+        } finally {
+            if (pendingSaveData.current) {
+                handleSaveChanges(pendingSaveData.current);
+            }
         }
     }, [saveStatus]);
 
     const handleOrderUpdate = useCallback((updatedOrder: ApiOrder) => {
         setOrder(updatedOrder);
         setSaveStatus("unsaved");
-
-        const saveAction = () => handleSaveChanges(updatedOrder);
-        
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-        saveTimeoutRef.current = setTimeout(() => {
-            saveAction();
-        }, 1000);
+        handleSaveChanges(updatedOrder);
     }, [handleSaveChanges]);
-
     
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-            if (saveStatus === 'unsaved' || pendingSave.current) {
-                const message = "You have unsaved changes. Are you sure you want to leave?";
+            if (saveStatus === 'unsaved' || saveStatus === 'saving') {
+                const message = "Changes you made may not be saved.";
                 event.returnValue = message;
                 return message;
             }
         };
-        
-        const saveOnUnload = () => {
-             if (pendingSave.current) {
-                pendingSave.current();
-            }
-        }
 
         window.addEventListener('beforeunload', handleBeforeUnload);
-        window.addEventListener('unload', saveOnUnload);
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            window.removeEventListener('unload', saveOnUnload);
-             if (saveTimeoutRef.current) {
-                clearTimeout(saveTimeoutRef.current);
-            }
         };
     }, [saveStatus]);
 
     const handleShare = (mode: 'viewer' | 'editor') => {
-        if (!order) {
-            toast({ title: "Error", description: "Cannot share. Document details not loaded yet.", variant: "destructive" });
-            return;
-        }
+        if (!order) return;
         const path = mode === 'viewer' ? 'share' : 'editor';
         const shareUrl = `${window.location.origin}/${path}/${order.id}`;
         
-        const copyToClipboard = (text: string) => {
-            navigator.clipboard.writeText(text).then(() => {
-                toast({ title: "Link Copied!", description: `A shareable link (${mode}) is now on your clipboard.` });
-            }).catch(err => {
-                console.error('Failed to copy link: ', err);
-                toast({ title: "Copy Failed", description: "Could not copy the link to your clipboard.", variant: "destructive" });
-            });
-        };
+        navigator.clipboard.writeText(shareUrl).then(() => {
+        }).catch(err => {
+            console.error('Failed to copy link: ', err);
+        });
 
         if (navigator.share) {
             navigator.share({
@@ -709,20 +687,15 @@ export default function EditorPage() {
             .catch((error) => {
                 if (error.name !== 'AbortError') {
                     console.error('Error sharing:', error);
-                    copyToClipboard(shareUrl);
                 }
             });
-        } else {
-            copyToClipboard(shareUrl);
         }
     };
     
     const handleDownloadDocx = async () => {
         if (!order || !order.items) {
-            toast({ title: "Error", description: "Document data is not available.", variant: "destructive" });
             return;
         }
-        toast({ title: "Generating Document...", description: "Please wait, your DOCX file is being prepared." });
 
         try {
             const menuItemsForDocx: MenuItem[] = order.items.map(item => ({
@@ -748,7 +721,6 @@ export default function EditorPage() {
 
         } catch (error) {
             console.error("Failed to generate DOCX file:", error);
-            toast({ title: "Generation Failed", description: "Could not create the document.", variant: "destructive" });
         }
     };
 
@@ -1149,5 +1121,7 @@ export default function EditorPage() {
         </>
     )
 }
+
+    
 
     

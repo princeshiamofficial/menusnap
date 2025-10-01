@@ -45,7 +45,6 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
-import { useToast } from "@/hooks/use-toast";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -524,10 +523,7 @@ export default function OrderDetailsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
     
-    const { toast } = useToast();
-    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const pendingSave = useRef<(() => void) | null>(null);
-
+    const pendingSaveData = useRef<ApiOrder | null>(null);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -613,127 +609,89 @@ export default function OrderDetailsPage() {
     }, [orderIdFromUrl, isAdminLoggedIn, adminLoading, fetchOrderAndCategoryDetails]);
 
     const handleSaveChanges = useCallback(async (orderToSave: ApiOrder) => {
-        if (saveStatus === 'saving') return;
+        if (saveStatus === 'saving') {
+          pendingSaveData.current = orderToSave;
+          return;
+        }
         
         setSaveStatus("saving");
-        
-        console.log("Saving data for Admin. Payload:", JSON.stringify(orderToSave, null, 2));
+        pendingSaveData.current = null;
+
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(orderToSave),
             });
-
-            let result;
-            try {
-                result = await response.json();
-                console.log("Admin save response from server:", result);
-            } catch (e) {
-                console.error("Could not parse server response as JSON.", e);
-                const textResponse = await response.text();
-                console.log("Raw server response (admin):", textResponse);
-                throw new Error("Server sent an invalid response.");
-            }
             
+            const result = await response.json();
             if (!response.ok || !result.success) {
-                throw new Error(result.message || "Failed to save docs changes.");
+                throw new Error(result.message || "Failed to save document changes.");
             }
-            
+
             setSaveStatus("saved");
-            
+
         } catch (e: any) {
-            console.error("Error saving data for Admin:", e);
             setSaveStatus("unsaved");
+        } finally {
+            if (pendingSaveData.current) {
+                handleSaveChanges(pendingSaveData.current);
+            }
         }
     }, [saveStatus]);
 
     const handleOrderUpdate = useCallback((updatedOrder: ApiOrder) => {
         setOrder(updatedOrder);
         setSaveStatus("unsaved");
-
-        const saveAction = () => handleSaveChanges(updatedOrder);
-        
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
-        saveTimeoutRef.current = setTimeout(() => {
-           saveAction();
-        }, 1000);
+        handleSaveChanges(updatedOrder);
     }, [handleSaveChanges]);
-
     
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-            if (saveStatus === 'unsaved' || pendingSave.current) {
-                const message = "You have unsaved changes. Are you sure you want to leave?";
-                event.returnValue = message; 
+            if (saveStatus === 'unsaved' || saveStatus === 'saving') {
+                const message = "Changes you made may not be saved.";
+                event.returnValue = message;
                 return message;
             }
         };
-    
-        window.addEventListener('beforeunload', handleBeforeUnload);
 
-        const saveOnUnload = () => {
-             if (pendingSave.current) {
-                pendingSave.current();
-            }
-        }
-        
-        window.addEventListener('unload', saveOnUnload);
+        window.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            window.removeEventListener('unload', saveOnUnload);
-            if (saveTimeoutRef.current) {
-                clearTimeout(saveTimeoutRef.current);
-            }
         };
     }, [saveStatus]);
 
 
     const handleShare = (mode: 'viewer' | 'editor') => {
-        if (!order) {
-            toast({ title: "Error", description: "Cannot share. Docs details not loaded yet.", variant: "destructive" });
-            return;
-        }
+        if (!order) return;
         const path = mode === 'viewer' ? 'share' : 'editor';
         const shareUrl = `${window.location.origin}/${path}/${order.id}`;
         
-        const copyToClipboard = (text: string) => {
-            navigator.clipboard.writeText(text).then(() => {
-                toast({ title: "Link Copied!", description: `A shareable link (${mode}) is now on your clipboard.` });
-            }).catch(err => {
-                console.error('Failed to copy link: ', err);
-                toast({ title: "Copy Failed", description: "Could not copy the link to your clipboard.", variant: "destructive" });
-            });
-        };
+        navigator.clipboard.writeText(shareUrl).then(() => {
+        }).catch(err => {
+            console.error('Failed to copy link: ', err);
+        });
 
         if (navigator.share) {
             navigator.share({
-                title: `Docs for ${order.customer?.restaurant || 'a client'}`,
-                text: `View the details for docs #${order.orderId}`,
+                title: `Document for ${order.customer?.restaurant || 'a client'}`,
+                text: `View the details for document #${order.orderId}`,
                 url: shareUrl,
             })
             .catch((error) => {
                 if (error.name !== 'AbortError') {
                     console.error('Error sharing:', error);
-                    copyToClipboard(shareUrl);
                 }
             });
-        } else {
-            copyToClipboard(shareUrl);
         }
     };
     
     const handleDownloadDocx = async () => {
         if (!order || !order.items) {
-            toast({ title: "Error", description: "Document data is not available.", variant: "destructive" });
             return;
         }
-        toast({ title: "Generating Document...", description: "Please wait, your DOCX file is being prepared." });
-
+        
         try {
             const menuItemsForDocx: MenuItem[] = order.items.map(item => ({
                 id: item.id,
@@ -758,7 +716,6 @@ export default function OrderDetailsPage() {
 
         } catch (error) {
             console.error("Failed to generate DOCX file:", error);
-            toast({ title: "Generation Failed", description: "Could not create the document.", variant: "destructive" });
         }
     };
 
@@ -767,7 +724,6 @@ export default function OrderDetailsPage() {
 
         const categoryMap = new Map<string, {name: string, items: OrderItemDetail[]}>();
         
-        // Use all items from the order to establish the base category map and order
         order.items.forEach(item => {
             const catId = item.categoryId;
             if (!categoryMap.has(catId)) {
@@ -777,7 +733,6 @@ export default function OrderDetailsPage() {
             }
         });
 
-        // Filter items based on search term and type
         let filteredItems = order.items;
         const lowerCaseSearchTerm = searchTerm.toLowerCase();
 
@@ -786,7 +741,7 @@ export default function OrderDetailsPage() {
                 filteredItems = order.items.filter(item => 
                     decodeHtmlEntities(item.name).toLowerCase().includes(lowerCaseSearchTerm)
                 );
-            } else { // search by 'categories'
+            } else { 
                 const matchingCategoryIds = new Set<string>();
                 for (const [id, data] of categoryMap.entries()) {
                     if (data.name.toLowerCase().includes(lowerCaseSearchTerm)) {
@@ -797,7 +752,6 @@ export default function OrderDetailsPage() {
             }
         }
 
-        // Populate the items in the category map with the filtered items
         filteredItems.forEach(item => {
             const catData = categoryMap.get(item.categoryId);
             if (catData) {
@@ -805,7 +759,6 @@ export default function OrderDetailsPage() {
             }
         });
 
-        // Use the original order's category sequence to build the final list
         const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
         
         return orderedCategoryIds
@@ -1171,5 +1124,7 @@ export default function OrderDetailsPage() {
         </>
     )
 }
+
+    
 
     
