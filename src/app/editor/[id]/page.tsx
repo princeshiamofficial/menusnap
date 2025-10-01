@@ -523,6 +523,7 @@ export default function EditorPage() {
     
     const { toast } = useToast();
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingSave = useRef<(() => void) | null>(null);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -604,20 +605,21 @@ export default function EditorPage() {
         fetchOrderAndCategoryDetails();
     }, [orderIdFromUrl, fetchOrderAndCategoryDetails]);
 
-    const handleSaveChanges = useCallback(async () => {
-        if (!order || saveStatus !== 'unsaved') return;
+    const handleSaveChanges = useCallback(async (orderToSave: ApiOrder) => {
+        if (saveStatus === 'saving') return;
         
         setSaveStatus("saving");
+        pendingSave.current = null;
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
 
-        console.log("Saving data for Editor. Payload:", JSON.stringify(order, null, 2));
+        console.log("Saving data for Editor. Payload:", JSON.stringify(orderToSave, null, 2));
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(order),
+                body: JSON.stringify(orderToSave),
             });
             
             let result;
@@ -643,23 +645,27 @@ export default function EditorPage() {
             toast({ title: "Save Error", description: e.message, variant: "destructive" });
             setSaveStatus("unsaved");
         }
-    }, [order, saveStatus, toast]);
+    }, [saveStatus, toast]);
 
     const handleOrderUpdate = useCallback((updatedOrder: ApiOrder) => {
         setOrder(updatedOrder);
         setSaveStatus("unsaved");
+
+        const saveAction = () => handleSaveChanges(updatedOrder);
+        pendingSave.current = saveAction;
+
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
         saveTimeoutRef.current = setTimeout(() => {
-            handleSaveChanges();
+            saveAction();
         }, 1000);
     }, [handleSaveChanges]);
 
     
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-            if (saveStatus === 'unsaved') {
+            if (saveStatus === 'unsaved' || pendingSave.current) {
                 const message = "You have unsaved changes. Are you sure you want to leave?";
                 event.returnValue = message;
                 return message;
@@ -670,11 +676,14 @@ export default function EditorPage() {
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-             if (saveTimeoutRef.current) {
+             if (pendingSave.current) {
+                pendingSave.current();
+            }
+            if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
             }
         };
-    }, [saveStatus]);
+    }, [saveStatus, handleSaveChanges]);
 
     const handleShare = (mode: 'viewer' | 'editor') => {
         if (!order) {
@@ -1144,7 +1153,3 @@ export default function EditorPage() {
         </>
     )
 }
-
-    
-
-    
