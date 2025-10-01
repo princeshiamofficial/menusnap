@@ -609,11 +609,7 @@ export default function EditorPage() {
         if (saveStatus === 'saving') return;
         
         setSaveStatus("saving");
-        pendingSave.current = null;
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
+        
         console.log("Saving data for Editor. Payload:", JSON.stringify(orderToSave, null, 2));
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
@@ -650,8 +646,7 @@ export default function EditorPage() {
         setSaveStatus("unsaved");
 
         const saveAction = () => handleSaveChanges(updatedOrder);
-        pendingSave.current = saveAction;
-
+        
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
@@ -670,20 +665,23 @@ export default function EditorPage() {
             }
         };
         
-        const currentPendingSave = pendingSave.current;
+        const saveOnUnload = () => {
+             if (pendingSave.current) {
+                pendingSave.current();
+            }
+        }
 
         window.addEventListener('beforeunload', handleBeforeUnload);
+        window.addEventListener('unload', saveOnUnload);
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-             if (currentPendingSave) {
-                currentPendingSave();
-            }
-            if (saveTimeoutRef.current) {
+            window.removeEventListener('unload', saveOnUnload);
+             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
             }
         };
-    }, [saveStatus, handleSaveChanges]);
+    }, [saveStatus]);
 
     const handleShare = (mode: 'viewer' | 'editor') => {
         if (!order) {
@@ -961,7 +959,7 @@ export default function EditorPage() {
                                 className="text-lg font-semibold text-foreground"
                                 inputClassName="text-lg font-semibold"
                             />
-                            <p className="text-xs text-muted-foreground">Docs ID: {order.orderId}</p>
+                            <p className="text-xs text-muted-foreground">Doc ID: {order.orderId}</p>
                         </div>
                     </div>
 
@@ -1009,7 +1007,7 @@ export default function EditorPage() {
                                 className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground"
                                 inputClassName="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
                             />
-                             <p className="font-bold text-lg text-muted-foreground mt-2">Docs ID: {order.orderId}</p>
+                             <p className="font-bold text-lg text-muted-foreground mt-2">Doc ID: {order.orderId}</p>
                         </div>
                         <div className="text-right text-muted-foreground text-sm space-y-1">
                             <p className="flex items-center justify-end gap-2"><CalendarDays className="h-4 w-4" />{formatDate(order.orderDate)}</p>
@@ -1152,3 +1150,4 @@ export default function EditorPage() {
     )
 }
 
+    

@@ -616,11 +616,7 @@ export default function OrderDetailsPage() {
         if (saveStatus === 'saving') return;
         
         setSaveStatus("saving");
-        pendingSave.current = null;
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
+        
         console.log("Saving data for Admin. Payload:", JSON.stringify(orderToSave, null, 2));
         try {
             const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
@@ -657,8 +653,7 @@ export default function OrderDetailsPage() {
         setSaveStatus("unsaved");
 
         const saveAction = () => handleSaveChanges(updatedOrder);
-        pendingSave.current = saveAction;
-
+        
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
@@ -677,21 +672,25 @@ export default function OrderDetailsPage() {
                 return message;
             }
         };
-        
-        const currentPendingSave = pendingSave.current;
     
         window.addEventListener('beforeunload', handleBeforeUnload);
 
+        const saveOnUnload = () => {
+             if (pendingSave.current) {
+                pendingSave.current();
+            }
+        }
+        
+        window.addEventListener('unload', saveOnUnload);
+
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            if (currentPendingSave) {
-                currentPendingSave();
-            }
+            window.removeEventListener('unload', saveOnUnload);
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
             }
         };
-    }, [saveStatus, handleSaveChanges]);
+    }, [saveStatus]);
 
 
     const handleShare = (mode: 'viewer' | 'editor') => {
@@ -730,7 +729,7 @@ export default function OrderDetailsPage() {
     
     const handleDownloadDocx = async () => {
         if (!order || !order.items) {
-            toast({ title: "Error", description: "Docs data is not available.", variant: "destructive" });
+            toast({ title: "Error", description: "Document data is not available.", variant: "destructive" });
             return;
         }
         toast({ title: "Generating Document...", description: "Please wait, your DOCX file is being prepared." });
@@ -947,8 +946,8 @@ export default function OrderDetailsPage() {
     }
 
     if (!isAdminLoggedIn) return <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8"><AdminLoginForm /></div>;
-    if (error) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Docs</h2><p className="text-muted-foreground max-w-md">{error}</p><Button variant="outline" onClick={() => router.back()} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go Back</Button></div>;
-    if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Docs Not Found</h2><p className="text-muted-foreground max-w-md">The requested document could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Docs History</Button></div>;
+    if (error) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Document</h2><p className="text-muted-foreground max-w-md">{error}</p><Button variant="outline" onClick={() => router.back()} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go Back</Button></div>;
+    if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Document Not Found</h2><p className="text-muted-foreground max-w-md">The requested document could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Documents History</Button></div>;
 
     const SaveStatusIndicator = () => {
         switch (saveStatus) {
@@ -971,7 +970,7 @@ export default function OrderDetailsPage() {
                     <div className="flex items-center gap-2 sm:gap-4">
                         <Button variant="outline" size="sm" onClick={() => router.push('/m-admin/manage-orders')}>
                             <ArrowLeft className="h-4 w-4" />
-                            <span className="hidden sm:inline ml-2">Docs</span>
+                            <span className="hidden sm:inline ml-2">Documents</span>
                         </Button>
                         <div className="h-6 border-l border-border"></div>
                         <div className="flex flex-col">
@@ -982,7 +981,7 @@ export default function OrderDetailsPage() {
                                 className="text-lg font-semibold text-foreground"
                                 inputClassName="text-lg font-semibold"
                             />
-                            <p className="text-xs text-muted-foreground">Docs ID: {order.orderId}</p>
+                            <p className="text-xs text-muted-foreground">Doc ID: {order.orderId}</p>
                         </div>
                     </div>
 
@@ -990,7 +989,7 @@ export default function OrderDetailsPage() {
                         <SaveStatusIndicator />
                          <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
                             <FileArchive className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Download Docs</span>
+                            <span className="hidden sm:inline">Download</span>
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)}>
                             <Shuffle className="h-4 w-4 sm:mr-2" />
@@ -1030,7 +1029,7 @@ export default function OrderDetailsPage() {
                                 className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground"
                                 inputClassName="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
                             />
-                             <p className="font-bold text-lg text-muted-foreground mt-2">Docs ID: {order.orderId}</p>
+                             <p className="font-bold text-lg text-muted-foreground mt-2">Doc ID: {order.orderId}</p>
                         </div>
                         <div className="text-right text-muted-foreground text-sm space-y-1">
                             <p className="flex items-center justify-end gap-2"><CalendarDays className="h-4 w-4" />{formatDate(order.orderDate)}</p>
@@ -1042,7 +1041,7 @@ export default function OrderDetailsPage() {
                             className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
                             style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
                         >
-                            Docs Summary
+                            Document Summary
                         </div>
                         <div className="flex items-center gap-2 mb-6">
                             <div className="relative flex-grow">
@@ -1173,3 +1172,4 @@ export default function OrderDetailsPage() {
     )
 }
 
+    
