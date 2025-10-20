@@ -14,6 +14,7 @@ import {
   Building, 
   History,
   MoreHorizontal,
+  UploadCloud,
 } from 'lucide-react'; 
 import {
   SidebarMenu,
@@ -31,6 +32,7 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
   { href: '/templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/draft', label: 'Draft', icon: FileEdit, hasChevron: true },
   { href: '/order-history', label: 'Order History', icon: History, hasChevron: true },
+  { href: '/upload-docs', label: 'Upload Docs', icon: UploadCloud, hasChevron: true },
   { href: '/more', label: 'More Products', icon: MoreHorizontal, hasChevron: true },
 ];
 
