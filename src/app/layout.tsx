@@ -1,10 +1,13 @@
 
-import type { Metadata } from 'next';
+'use client';
+
+import type { ReactNode } from 'react';
 import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
 import { ThemeProvider } from '@/context/ThemeContext';
-import { ClientAuthProvider } from '@/hooks/use-client-auth'; // Import ClientAuthProvider
+import { ClientAuthProvider } from '@/hooks/use-client-auth';
+import { ReactLenis } from '@studio-freight/react-lenis'
 
 const inter = Inter({
   variable: '--font-geist-sans',
@@ -16,13 +19,8 @@ const robotoMono = Roboto_Mono({
   subsets: ['latin'],
 });
 
-export const metadata: Metadata = {
-  title: 'Color Hut - Menu Builder',
-  description: 'Design and build beautiful menus with Color Hut.',
-  icons: {
-    icon: 'https://colorhutbd.xyz/favicon.ico',
-  },
-};
+// Metadata can't be exported from a client component, so we remove it.
+// Next.js will use a default title or you can add a <Head> component in pages.
 
 export default function RootLayout({
   children,
@@ -32,12 +30,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
-        <ClientAuthProvider>
-          <ThemeProvider>
-            {children}
-            <ClientSideOnlyToaster />
-          </ThemeProvider>
-        </ClientAuthProvider>
+        <ReactLenis root>
+          <ClientAuthProvider>
+            <ThemeProvider>
+              {children}
+              <ClientSideOnlyToaster />
+            </ThemeProvider>
+          </ClientAuthProvider>
+        </ReactLenis>
       </body>
     </html>
   );
