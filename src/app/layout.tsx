@@ -1,17 +1,17 @@
 
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { ClientAuthProvider } from '@/hooks/use-client-auth'; // Import ClientAuthProvider
 
-const geistSans = Geist({
+const inter = Inter({
   variable: '--font-geist-sans',
   subsets: ['latin'],
 });
 
-const geistMono = Geist_Mono({
+const robotoMono = Roboto_Mono({
   variable: '--font-geist-mono',
   subsets: ['latin'],
 });
@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
+      <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
         <ClientAuthProvider>
           <ThemeProvider>
             {children}
