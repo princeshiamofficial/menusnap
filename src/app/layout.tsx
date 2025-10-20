@@ -7,7 +7,6 @@ import './globals.css';
 import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { ClientAuthProvider } from '@/hooks/use-client-auth';
-import { ReactLenis } from '@studio-freight/react-lenis'
 
 const inter = Inter({
   variable: '--font-geist-sans',
@@ -30,14 +29,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
-        <ReactLenis root>
-          <ClientAuthProvider>
-            <ThemeProvider>
-              {children}
-              <ClientSideOnlyToaster />
-            </ThemeProvider>
-          </ClientAuthProvider>
-        </ReactLenis>
+        <ClientAuthProvider>
+          <ThemeProvider>
+            {children}
+            <ClientSideOnlyToaster />
+          </ThemeProvider>
+        </ClientAuthProvider>
       </body>
     </html>
   );
