@@ -300,15 +300,16 @@ export default function MorePage(): ReactNode {
         <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start bg-card p-4 rounded-lg shadow-lg border">
            <h3 className="text-lg font-semibold mb-4">Categories</h3>
            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {navItems.map(item => (
                   <Button
                     key={item.value}
                     variant="ghost"
                     onClick={() => setActiveCategory(item.value)}
                     className={cn(
-                      "w-full justify-start text-muted-foreground",
-                      activeCategory === item.value && "bg-muted text-primary font-semibold"
+                      "w-full justify-start text-muted-foreground rounded-md shadow-sm border border-transparent transition-all duration-200",
+                      "hover:shadow-md hover:border-border",
+                      activeCategory === item.value && "bg-muted text-primary font-semibold shadow-inner border-primary/20"
                     )}
                   >
                     <item.icon className="mr-3 h-4 w-4"/>
