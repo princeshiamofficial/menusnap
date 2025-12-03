@@ -265,9 +265,12 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
                               {productCategories.map((cat) => (
                                 <CommandItem
                                   key={cat.value}
-                                  value={cat.value}
+                                  value={cat.label}
                                   onSelect={(currentValue) => {
-                                    field.onChange(currentValue === field.value ? "" : currentValue)
+                                    const selectedCat = productCategories.find(c => c.label.toLowerCase() === currentValue.toLowerCase());
+                                    if (selectedCat) {
+                                      field.onChange(selectedCat.value);
+                                    }
                                     setComboboxOpen(false)
                                   }}
                                 >
