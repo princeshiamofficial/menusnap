@@ -329,7 +329,7 @@ export default function MorePage(): ReactNode {
         {/* Desktop Sidebar */}
         <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start bg-card p-4 rounded-lg shadow-lg border-border/50 border drop-shadow-sm">
            <h3 className="text-lg font-semibold mb-4 px-2">Categories</h3>
-           <ScrollArea className="h-[600px] pr-4">
+           <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-1">
                 {navItems.map(item => (
                   <Button
@@ -354,7 +354,7 @@ export default function MorePage(): ReactNode {
         <main className="w-full md:w-3/4 lg:w-4/5">
           
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 gap-6">
               {Array.from({ length: 10 }).map((_, index) => (
                 <ProductSkeletonCard key={index} />
               ))}
@@ -378,7 +378,7 @@ export default function MorePage(): ReactNode {
           ) : (
             <motion.div 
               layout
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5 gap-6"
             >
               <AnimatePresence>
                   {filteredProducts.map((product) => (
@@ -403,4 +403,3 @@ export default function MorePage(): ReactNode {
     </div>
   );
 }
-
