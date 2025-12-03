@@ -299,7 +299,7 @@ export default function MorePage(): ReactNode {
         {/* Desktop Sidebar - now on the left */}
         <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start">
            <h3 className="text-lg font-semibold mb-4">Categories</h3>
-           <ScrollArea className="h-[800px] pr-4">
+           <ScrollArea className="h-[600px] pr-4">
               <div className="space-y-1">
                 {navItems.map(item => (
                   <Button
