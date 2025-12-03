@@ -275,7 +275,7 @@ export default function MorePage(): ReactNode {
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground flex items-center mb-1">
-                      <Image src="https://colorhutbd.xyz/image/logo.png" alt="Color Hut Logo" width={100} height={40} className="mr-3" />
+                      <Image src="https://colorhutbd.xyz/image/logo.png" alt="Color Hut Logo" width={200} height={60} className="mr-3" />
                       
                     </h1>
                     <p className="text-muted-foreground">Explore our wide range of quality products and services.</p>
