@@ -268,12 +268,9 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
                               {productCategories.map((cat) => (
                                 <CommandItem
                                   key={cat.value}
-                                  value={cat.label}
+                                  value={cat.value}
                                   onSelect={(currentValue) => {
-                                    const selectedCategory = productCategories.find(c => c.label.toLowerCase() === currentValue.toLowerCase());
-                                    if (selectedCategory) {
-                                      form.setValue("category", selectedCategory.value, { shouldValidate: true });
-                                    }
+                                    form.setValue("category", currentValue, { shouldValidate: true });
                                     setComboboxOpen(false);
                                   }}
                                 >
