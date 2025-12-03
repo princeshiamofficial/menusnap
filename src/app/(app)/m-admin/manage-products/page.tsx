@@ -37,6 +37,7 @@ import {
   CheckCircle,
   XCircle,
   ImageIcon,
+  X,
   Plus,
   Video,
   BookOpen,
@@ -265,13 +266,10 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
                               {productCategories.map((cat) => (
                                 <CommandItem
                                   key={cat.value}
-                                  value={cat.label}
+                                  value={cat.value}
                                   onSelect={(currentValue) => {
-                                    const selectedCat = productCategories.find(c => c.label.toLowerCase() === currentValue.toLowerCase());
-                                    if (selectedCat) {
-                                      field.onChange(selectedCat.value);
-                                    }
-                                    setComboboxOpen(false)
+                                    field.onChange(currentValue);
+                                    setComboboxOpen(false);
                                   }}
                                 >
                                   <Check
