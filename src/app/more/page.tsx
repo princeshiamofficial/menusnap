@@ -5,11 +5,18 @@ import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Layers, 
   Search, 
@@ -274,7 +281,7 @@ export default function MorePage(): ReactNode {
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div className="text-center md:text-left">
-                    <h1 className="text-3xl font-bold text-foreground flex items-center justify-center md:justify-start mb-1">
+                    <h1 className="text-3xl font-bold text-foreground flex items-center justify-center md:justify-start">
                       <div className="relative h-[30px] w-[100px] md:h-[60px] md:w-[200px] mr-3">
                         <Image 
                             src="https://colorhutbd.xyz/image/logo.png" 
@@ -285,7 +292,6 @@ export default function MorePage(): ReactNode {
                          />
                       </div>
                     </h1>
-                    <p className="text-muted-foreground">Explore our wide range of quality products and services.</p>
                 </div>
                  <div className="relative w-full md:max-w-xs">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -298,16 +304,33 @@ export default function MorePage(): ReactNode {
                     />
                 </div>
             </div>
+            <div className="md:hidden mt-4">
+              <Select value={activeCategory} onValueChange={setActiveCategory}>
+                  <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {navItems.map(item => (
+                          <SelectItem key={item.value} value={item.value}>
+                              <div className="flex items-center gap-2">
+                                  <item.icon className="h-4 w-4 text-muted-foreground"/>
+                                  <span>{item.label}</span>
+                              </div>
+                          </SelectItem>
+                      ))}
+                  </SelectContent>
+              </Select>
+          </div>
         </div>
       </header>
       
       <div className="container mx-auto px-4 md:px-6 lg:px-8 flex flex-col md:flex-row gap-8">
         
-        {/* Desktop Sidebar - now on the left */}
-        <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start bg-card p-4 rounded-lg shadow-lg border">
-           <h3 className="text-lg font-semibold mb-4">Categories</h3>
-           <ScrollArea className="h-auto max-h-[calc(100vh-10rem)] pr-4">
-              <div className="space-y-2">
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start bg-card p-4 rounded-lg shadow-lg border-border/50 border drop-shadow-sm">
+           <h3 className="text-lg font-semibold mb-4 px-2">Categories</h3>
+           <ScrollArea className="h-[600px] pr-4">
+              <div className="space-y-1">
                 {navItems.map(item => (
                   <Button
                     key={item.value}
@@ -329,29 +352,10 @@ export default function MorePage(): ReactNode {
 
         {/* Main Content */}
         <main className="w-full md:w-3/4 lg:w-4/5">
-          {/* Mobile Category Dropdown */}
-          <div className="md:hidden mb-6">
-              <ScrollArea className="w-full whitespace-nowrap">
-                <div className="flex space-x-2 pb-2">
-                  {navItems.map(item => (
-                    <Button
-                      key={item.value}
-                      variant={activeCategory === item.value ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setActiveCategory(item.value)}
-                      className="shrink-0"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {item.label}
-                    </Button>
-                  ))}
-                </div>
-              </ScrollArea>
-          </div>
           
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-              {Array.from({ length: 9 }).map((_, index) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 10 }).map((_, index) => (
                 <ProductSkeletonCard key={index} />
               ))}
             </div>
@@ -374,7 +378,7 @@ export default function MorePage(): ReactNode {
           ) : (
             <motion.div 
               layout
-              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
               <AnimatePresence>
                   {filteredProducts.map((product) => (
@@ -399,3 +403,4 @@ export default function MorePage(): ReactNode {
     </div>
   );
 }
+
