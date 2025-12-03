@@ -297,7 +297,7 @@ export default function MorePage(): ReactNode {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 flex flex-col md:flex-row gap-8">
         
         {/* Desktop Sidebar - now on the left */}
-        <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start">
+        <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start bg-card p-4 rounded-lg shadow-lg border">
            <h3 className="text-lg font-semibold mb-4">Categories</h3>
            <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-1">
