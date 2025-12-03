@@ -27,6 +27,7 @@ import {
   BookCopy,
   Menu,
   Star,
+  MonitorSmartphone,
 } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,6 +45,7 @@ const productCategories = [
   { value: 'Business Card', label: 'Business Card', icon: Contact },
   { value: 'X Banner', label: 'X Banner', icon: Presentation },
   { value: 'Menu Book Cover', label: 'Menu Book Cover', icon: Book },
+  { value: 'Digital Menu', label: 'Digital Menu', icon: MonitorSmartphone },
 ];
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400.png";

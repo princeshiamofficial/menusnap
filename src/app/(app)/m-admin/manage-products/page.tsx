@@ -46,6 +46,7 @@ import {
   Book,
   BookCopy,
   UploadCloud,
+  MonitorSmartphone,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO, isValid } from 'date-fns';
@@ -106,6 +107,7 @@ const productCategories = [
   { value: 'Business Card', label: 'Business Card', icon: Contact },
   { value: 'X Banner', label: 'X Banner', icon: Presentation },
   { value: 'Menu Book Cover', label: 'Menu Book Cover', icon: Book },
+  { value: 'Digital Menu', label: 'Digital Menu', icon: MonitorSmartphone },
 ];
 
 
