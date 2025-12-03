@@ -275,8 +275,15 @@ export default function MorePage(): ReactNode {
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div className="text-center md:text-left">
                     <h1 className="text-3xl font-bold text-foreground flex items-center justify-center md:justify-start mb-1">
-                      <Image src="https://colorhutbd.xyz/image/logo.png" alt="Color Hut Logo" width={200} height={60} className="mr-3" />
-                      
+                      <div className="relative h-[30px] w-[100px] md:h-[60px] md:w-[200px] mr-3">
+                        <Image 
+                            src="https://colorhutbd.xyz/image/logo.png" 
+                            alt="Color Hut Logo"
+                            fill
+                            className="object-contain"
+                            priority
+                         />
+                      </div>
                     </h1>
                     <p className="text-muted-foreground">Explore our wide range of quality products and services.</p>
                 </div>
@@ -299,7 +306,7 @@ export default function MorePage(): ReactNode {
         {/* Desktop Sidebar - now on the left */}
         <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start bg-card p-4 rounded-lg shadow-lg border">
            <h3 className="text-lg font-semibold mb-4">Categories</h3>
-           <ScrollArea className="h-[400px] pr-4">
+           <ScrollArea className="h-auto max-h-[calc(100vh-10rem)] pr-4">
               <div className="space-y-2">
                 {navItems.map(item => (
                   <Button
