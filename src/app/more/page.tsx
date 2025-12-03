@@ -28,6 +28,15 @@ import {
   Menu,
   Star,
   MonitorSmartphone,
+  Gift,
+  Building,
+  Thermometer,
+  Trees,
+  Users,
+  Sun,
+  Palette,
+  LayoutTemplate,
+  KanbanSquare,
 } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,15 +46,29 @@ import Link from 'next/link';
 import { getProducts, type Product } from '@/lib/product-api';
 
 const productCategories = [
-  { value: 'Menu Book', label: 'Menu Book', icon: BookOpen },
-  { value: 'Menu Card', label: 'Menu Card', icon: FileText },
-  { value: 'Leaflet', label: 'Leaflet', icon: FileImage },
-  { value: 'Brochure', label: 'Brochure', icon: BookCopy },
-  { value: 'Membership Card', label: 'Membership Card', icon: CreditCard },
-  { value: 'Business Card', label: 'Business Card', icon: Contact },
-  { value: 'X Banner', label: 'X Banner', icon: Presentation },
-  { value: 'Menu Book Cover', label: 'Menu Book Cover', icon: Book },
-  { value: 'Digital Menu', label: 'Digital Menu', icon: MonitorSmartphone },
+    { value: 'Menu Cover', label: 'Menu Cover', icon: Book },
+    { value: 'Restaurant Menu', label: 'Restaurant Menu', icon: BookOpen },
+    { value: 'Parlour / Salon Menu', label: 'Parlour / Salon Menu', icon: FileText },
+    { value: 'Business Card', label: 'Business Card', icon: Contact },
+    { value: 'Restaurant Token / Coupon', label: 'Restaurant Token / Coupon', icon: Gift },
+    { value: 'Membership Card', label: 'Membership Card', icon: CreditCard },
+    { value: 'Leaflet / Brochure', label: 'Leaflet / Brochure', icon: BookCopy },
+    { value: 'Banner', label: 'Banner', icon: Presentation },
+    { value: 'Bill Folder', label: 'Bill Folder', icon: FileText },
+    { value: 'Reservation Card', label: 'Reservation Card', icon: FileImage },
+    { value: 'Packaging Box', label: 'Packaging Box', icon: Package },
+    { value: 'Branded Carry Bag', label: 'Branded Carry Bag', icon: Package },
+    { value: 'Air Conditioner (AC)', label: 'Air Conditioner (AC)', icon: Thermometer },
+    { value: 'Furniture', label: 'Furniture', icon: Building },
+    { value: 'Nursery / Indoor Plants', label: 'Nursery / Indoor Plants', icon: Trees },
+    { value: 'Social Media Management', label: 'Social Media Management', icon: Users },
+    { value: 'IPS / Solar Unit', label: 'IPS / Solar Unit', icon: Sun },
+    { value: 'Sign Board', label: 'Sign Board', icon: Package },
+    { value: '3D Wall Sticker / Wall Art', label: '3D Wall Sticker / Wall Art', icon: Palette },
+    { value: 'Interior Design', label: 'Interior Design', icon: LayoutTemplate },
+    { value: 'ERP System', label: 'ERP System', icon: KanbanSquare },
+    { value: 'Team Tracker & Routine', label: 'Team Tracker & Routine', icon: KanbanSquare },
+    { value: 'Digital Menu', label: 'Digital Menu', icon: MonitorSmartphone },
 ];
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400.png";
