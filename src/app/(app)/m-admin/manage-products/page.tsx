@@ -61,6 +61,7 @@ import {
   KanbanSquare,
   ChevronsUpDown,
   Check,
+  Tag,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO, isValid } from 'date-fns';
@@ -136,6 +137,7 @@ const productCategories = [
   { value: 'ERP System', label: 'ERP System', icon: KanbanSquare },
   { value: 'Team Tracker & Routine', label: 'Team Tracker & Routine', icon: KanbanSquare },
   { value: 'Digital Menu', label: 'Digital Menu', icon: MonitorSmartphone },
+  { value: 'Nameplate', label: 'Nameplate', icon: Tag },
 ];
 
 
@@ -266,9 +268,12 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
                               {productCategories.map((cat) => (
                                 <CommandItem
                                   key={cat.value}
-                                  value={cat.value}
+                                  value={cat.label}
                                   onSelect={(currentValue) => {
-                                    field.onChange(currentValue);
+                                    const selectedCategory = productCategories.find(c => c.label.toLowerCase() === currentValue.toLowerCase());
+                                    if (selectedCategory) {
+                                      form.setValue("category", selectedCategory.value, { shouldValidate: true });
+                                    }
                                     setComboboxOpen(false);
                                   }}
                                 >

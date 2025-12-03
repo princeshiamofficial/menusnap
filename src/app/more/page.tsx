@@ -43,6 +43,7 @@ import {
   Palette,
   LayoutTemplate,
   KanbanSquare,
+  Tag,
 } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -75,6 +76,7 @@ const productCategories = [
     { value: 'ERP System', label: 'ERP System', icon: KanbanSquare },
     { value: 'Team Tracker & Routine', label: 'Team Tracker & Routine', icon: KanbanSquare },
     { value: 'Digital Menu', label: 'Digital Menu', icon: MonitorSmartphone },
+    { value: 'Nameplate', label: 'Nameplate', icon: Tag },
 ];
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/600x400.png";
@@ -172,7 +174,7 @@ function ProductCard({ product, onPreview }: ProductCardProps): ReactNode {
                 src={primaryImage}
                 alt={decodeHtmlEntities(name)}
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
                 data-ai-hint="product image"
               />
@@ -222,6 +224,7 @@ export default function MorePage(): ReactNode {
   const [searchTerm, setSearchTerm] = useState('');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const { toast } = useToast();
 
   const navItems = useMemo(() => [
@@ -273,6 +276,16 @@ export default function MorePage(): ReactNode {
       }
     });
   }, [products, searchTerm, activeCategory]);
+  
+  const filteredNavItems = useMemo(() => {
+    if (!categorySearchTerm) {
+      return navItems;
+    }
+    return navItems.filter(item =>
+      item.label.toLowerCase().includes(categorySearchTerm.toLowerCase())
+    );
+  }, [navItems, categorySearchTerm]);
+
 
   return (
     <div className="p-0 space-y-6">
@@ -328,10 +341,19 @@ export default function MorePage(): ReactNode {
         
         {/* Desktop Sidebar */}
         <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start bg-card p-4 rounded-lg shadow-lg border-border/50 border drop-shadow-sm">
-           <h3 className="text-lg font-semibold mb-4 px-2">Categories</h3>
+           <h3 className="text-lg font-semibold mb-2 px-2">Categories</h3>
+           <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search categories..."
+                className="pl-10 h-9"
+                value={categorySearchTerm}
+                onChange={(e) => setCategorySearchTerm(e.target.value)}
+              />
+           </div>
            <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-1">
-                {navItems.map(item => (
+                {filteredNavItems.map(item => (
                   <Button
                     key={item.value}
                     variant="ghost"
@@ -346,6 +368,9 @@ export default function MorePage(): ReactNode {
                     {item.label}
                   </Button>
                 ))}
+                {filteredNavItems.length === 0 && (
+                  <p className="text-center text-xs text-muted-foreground p-4">No categories found.</p>
+                )}
               </div>
            </ScrollArea>
         </aside>
