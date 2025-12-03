@@ -276,6 +276,30 @@ export default function MorePage(): ReactNode {
       </header>
       
       <div className="container mx-auto px-4 md:px-6 lg:px-8 flex flex-col md:flex-row gap-8">
+        
+        {/* Desktop Sidebar - now on the left */}
+        <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-24 self-start">
+           <h3 className="text-lg font-semibold mb-4">Categories</h3>
+           <ScrollArea className="h-auto max-h-[calc(100vh-10rem)] pr-4">
+              <div className="space-y-1">
+                {navItems.map(item => (
+                  <Button
+                    key={item.value}
+                    variant="ghost"
+                    onClick={() => setActiveCategory(item.value)}
+                    className={cn(
+                      "w-full justify-start text-muted-foreground",
+                      activeCategory === item.value && "bg-muted text-primary font-semibold"
+                    )}
+                  >
+                    <item.icon className="mr-3 h-4 w-4"/>
+                    {item.label}
+                  </Button>
+                ))}
+              </div>
+           </ScrollArea>
+        </aside>
+
         {/* Main Content */}
         <main className="w-full md:w-3/4 lg:w-4/5">
           <div className="mb-6">
@@ -308,7 +332,7 @@ export default function MorePage(): ReactNode {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-64">
                       {navItems.map(item => (
-                          <DropdownMenuItem key={item.value} onClick={() => setActiveCategory(item.label)} className={cn("flex items-center gap-2", activeCategory === item.label && "bg-accent")}>
+                          <DropdownMenuItem key={item.value} onClick={() => setActiveCategory(item.value)} className={cn("flex items-center gap-2", activeCategory === item.value && "bg-accent")}>
                               <item.icon className="h-4 w-4 text-muted-foreground" />
                               <span>{item.label}</span>
                           </DropdownMenuItem>
@@ -358,29 +382,6 @@ export default function MorePage(): ReactNode {
           )}
         </main>
         
-        {/* Desktop Sidebar */}
-        <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-24 self-start">
-           <h3 className="text-lg font-semibold mb-4">Categories</h3>
-           <ScrollArea className="h-auto max-h-[calc(100vh-10rem)] pr-4">
-              <div className="space-y-1">
-                {navItems.map(item => (
-                  <Button
-                    key={item.value}
-                    variant="ghost"
-                    onClick={() => setActiveCategory(item.value)}
-                    className={cn(
-                      "w-full justify-start text-muted-foreground",
-                      activeCategory === item.value && "bg-muted text-primary font-semibold"
-                    )}
-                  >
-                    <item.icon className="mr-3 h-4 w-4"/>
-                    {item.label}
-                  </Button>
-                ))}
-              </div>
-           </ScrollArea>
-        </aside>
-
       </div>
 
       <ProductPreviewDialog
