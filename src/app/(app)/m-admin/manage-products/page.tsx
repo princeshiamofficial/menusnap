@@ -21,6 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { 
   Package, 
   Search, 
@@ -56,6 +58,8 @@ import {
   Palette,
   LayoutTemplate,
   KanbanSquare,
+  ChevronsUpDown,
+  Check,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO, isValid } from 'date-fns';
@@ -156,6 +160,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const { toast } = useToast();
+  const [comboboxOpen, setComboboxOpen] = useState(false)
   
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -232,27 +237,62 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
             </div>
 
             <div className="space-y-2 p-3 rounded-md bg-muted/30 border border-border/60">
-              <Label htmlFor="category">Category</Label>
-              <Controller
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Select a category" /></SelectTrigger>
-                    <SelectContent>
-                      {productCategories.map(cat => (
-                         <SelectItem key={cat.value} value={cat.value}>
-                            <div className="flex items-center gap-2">
-                                <cat.icon className="h-4 w-4 text-muted-foreground" />
-                                <span>{cat.label}</span>
-                            </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <Label>Category</Label>
+                <Controller
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={comboboxOpen}
+                          className="w-full justify-between mt-1"
+                        >
+                          {field.value
+                            ? productCategories.find((cat) => cat.value === field.value)?.label
+                            : "Select a category..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search category..." />
+                          <CommandEmpty>No category found.</CommandEmpty>
+                          <CommandList>
+                            <CommandGroup>
+                              {productCategories.map((cat) => (
+                                <CommandItem
+                                  key={cat.value}
+                                  value={cat.value}
+                                  onSelect={(currentValue) => {
+                                    field.onChange(currentValue === field.value ? "" : currentValue)
+                                    setComboboxOpen(false)
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      field.value === cat.value ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                   <div className="flex items-center gap-2">
+                                      <cat.icon className="h-4 w-4 text-muted-foreground" />
+                                      <span>{cat.label}</span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                />
+                {form.formState.errors.category && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.category.message}</p>
                 )}
-              />
-              {form.formState.errors.category && <p className="text-sm text-destructive mt-1">{form.formState.errors.category.message}</p>}
             </div>
 
             <Separator />
