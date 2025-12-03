@@ -9,7 +9,6 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Layers, 
@@ -26,7 +25,6 @@ import {
   Presentation,
   Book,
   BookCopy,
-  Menu,
   Star,
   MonitorSmartphone,
   Gift,
@@ -325,22 +323,22 @@ export default function MorePage(): ReactNode {
         <main className="w-full md:w-3/4 lg:w-4/5">
           {/* Mobile Category Dropdown */}
           <div className="md:hidden mb-6">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full flex items-center gap-2">
-                          <Menu className="h-4 w-4" />
-                          <span>{navItems.find(i => i.value === activeCategory)?.label || 'Categories'}</span>
-                      </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-[calc(100vw-2rem)] sm:w-64">
+              <ScrollArea className="w-full whitespace-nowrap">
+                <div className="flex space-x-2 pb-2">
                   {navItems.map(item => (
-                      <DropdownMenuItem key={item.value} onClick={() => setActiveCategory(item.value)} className={cn("flex items-center gap-2", activeCategory === item.value && "bg-accent")}>
-                          <item.icon className="h-4 w-4 text-muted-foreground" />
-                          <span>{item.label}</span>
-                      </DropdownMenuItem>
+                    <Button
+                      key={item.value}
+                      variant={activeCategory === item.value ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setActiveCategory(item.value)}
+                      className="shrink-0"
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.label}
+                    </Button>
                   ))}
-                  </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+              </ScrollArea>
           </div>
           
           {isLoading ? (
