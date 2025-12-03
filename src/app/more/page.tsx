@@ -282,32 +282,30 @@ export default function MorePage(): ReactNode {
         <div className="h-2.5 bg-gradient-to-r from-primary via-orange-400 to-amber-300" />
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-3">
             {/* Desktop Header */}
-            <div className="hidden md:flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {navItems.slice(0, 4).map(item => (
-                  <button key={item.label} onClick={() => setActiveCategory(item.label)} className={cn("flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors", activeCategory === item.label && "text-primary")}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </button>
-                ))}
+            <div className="hidden md:flex flex-col">
+              <div className="flex items-center justify-center relative w-full">
+                <div className="relative flex-grow max-w-xs mx-4 z-10">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Search products..."
+                      className="pl-10 w-full text-sm bg-muted border-border/70 focus:bg-background focus:border-primary"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
               </div>
-              <div className="relative flex-grow max-w-xs mx-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search products..."
-                  className="pl-10 w-full text-sm bg-muted border-border/70 focus:bg-background focus:border-primary"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center gap-4">
-                 {navItems.slice(4).map(item => (
-                  <button key={item.label} onClick={() => setActiveCategory(item.label)} className={cn("flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors", activeCategory === item.label && "text-primary")}>
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </button>
-                ))}
+              <div className="mt-3 overflow-hidden relative h-8 flex items-center">
+                  <div className="absolute inset-0 flex">
+                      <div className="marquee flex items-center gap-8">
+                          {[...navItems, ...navItems].map((item, index) => (
+                              <button key={`${item.label}-${index}`} onClick={() => setActiveCategory(item.label)} className={cn("flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors", activeCategory === item.label && "text-primary")}>
+                                  <item.icon className="h-4 w-4" />
+                                  <span>{item.label}</span>
+                              </button>
+                          ))}
+                      </div>
+                  </div>
               </div>
             </div>
 
