@@ -273,12 +273,33 @@ export default function MorePage(): ReactNode {
     <div className="p-0 space-y-6">
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border/50 shadow-sm">
         <div className="h-1.5 bg-gradient-to-r from-primary via-orange-400 to-amber-300" />
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-foreground flex items-center mb-1">
+                        <Layers className="h-8 w-8 mr-3 text-primary" />
+                        Our Products
+                    </h1>
+                    <p className="text-muted-foreground">Explore our wide range of quality products and services.</p>
+                </div>
+                 <div className="relative w-full md:max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="Search products..."
+                        className="pl-10 w-full text-sm bg-muted border-border/70 focus:bg-background focus:border-primary"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+        </div>
       </header>
       
       <div className="container mx-auto px-4 md:px-6 lg:px-8 flex flex-col md:flex-row gap-8">
         
         {/* Desktop Sidebar - now on the left */}
-        <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-24 self-start">
+        <aside className="hidden md:block w-1/4 lg:w-1/5 md:sticky md:top-28 self-start">
            <h3 className="text-lg font-semibold mb-4">Categories</h3>
            <ScrollArea className="h-auto max-h-[calc(100vh-10rem)] pr-4">
               <div className="space-y-1">
@@ -302,44 +323,24 @@ export default function MorePage(): ReactNode {
 
         {/* Main Content */}
         <main className="w-full md:w-3/4 lg:w-4/5">
-          <div className="mb-6">
-             <h1 className="text-3xl font-bold text-foreground flex items-center mb-1">
-              <Layers className="h-8 w-8 mr-3 text-primary" />
-              Our Products
-            </h1>
-            <p className="text-muted-foreground">Explore our wide range of quality products and services.</p>
-          </div>
-
-          {/* Search and Mobile Category Dropdown */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-             <div className="relative flex-grow">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search products..."
-                    className="pl-10 w-full text-sm bg-muted border-border/70 focus:bg-background focus:border-primary"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-              </div>
-              <div className="md:hidden">
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                          <Button variant="outline" className="w-full flex items-center gap-2">
-                              <Menu className="h-4 w-4" />
-                              <span>{navItems.find(i => i.value === activeCategory)?.label || 'Categories'}</span>
-                          </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-64">
-                      {navItems.map(item => (
-                          <DropdownMenuItem key={item.value} onClick={() => setActiveCategory(item.value)} className={cn("flex items-center gap-2", activeCategory === item.value && "bg-accent")}>
-                              <item.icon className="h-4 w-4 text-muted-foreground" />
-                              <span>{item.label}</span>
-                          </DropdownMenuItem>
-                      ))}
-                      </DropdownMenuContent>
-                  </DropdownMenu>
-              </div>
+          {/* Mobile Category Dropdown */}
+          <div className="md:hidden mb-6">
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full flex items-center gap-2">
+                          <Menu className="h-4 w-4" />
+                          <span>{navItems.find(i => i.value === activeCategory)?.label || 'Categories'}</span>
+                      </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[calc(100vw-2rem)] sm:w-64">
+                  {navItems.map(item => (
+                      <DropdownMenuItem key={item.value} onClick={() => setActiveCategory(item.value)} className={cn("flex items-center gap-2", activeCategory === item.value && "bg-accent")}>
+                          <item.icon className="h-4 w-4 text-muted-foreground" />
+                          <span>{item.label}</span>
+                      </DropdownMenuItem>
+                  ))}
+                  </DropdownMenuContent>
+              </DropdownMenu>
           </div>
           
           {isLoading ? (
