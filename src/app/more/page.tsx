@@ -273,8 +273,8 @@ export default function MorePage(): ReactNode {
         <div className="h-1.5 bg-gradient-to-r from-primary via-orange-400 to-amber-300" />
         <div className="container mx-auto px-4 md:px-6 lg:px-8 py-4">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold text-foreground flex items-center mb-1">
+                <div className="text-center md:text-left">
+                    <h1 className="text-3xl font-bold text-foreground flex items-center justify-center md:justify-start mb-1">
                       <Image src="https://colorhutbd.xyz/image/logo.png" alt="Color Hut Logo" width={200} height={60} className="mr-3" />
                       
                     </h1>
