@@ -262,15 +262,15 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                         <Command>
                           <CommandInput placeholder="Search category..." />
-                          <CommandEmpty>No category found.</CommandEmpty>
                           <CommandList>
+                            <CommandEmpty>No category found.</CommandEmpty>
                             <CommandGroup>
                               {productCategories.map((cat) => (
                                 <CommandItem
                                   key={cat.value}
-                                  value={cat.label}
-                                  onSelect={() => {
-                                    field.onChange(cat.value);
+                                  value={cat.value}
+                                  onSelect={(currentValue) => {
+                                    field.onChange(currentValue === field.value ? "" : currentValue);
                                     setComboboxOpen(false);
                                   }}
                                 >
