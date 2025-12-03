@@ -278,7 +278,7 @@ function ProductForm({ initialData, onSubmit, onOpenChange, isEditMode, isSubmit
                     <p className="text-xs leading-5 text-muted-foreground">PNG, JPG, GIF up to 5MB</p>
                   </div>
                 </div>
-                {form.formState.errors.imageFiles && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFiles.message}</p>}
+                {form.formState.errors.imageFiles && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFiles.message as string}</p>}
 
                 <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                   {existingImageUrls.map((url, index) => (
@@ -339,6 +339,7 @@ export default function ManageProductsPage(): ReactNode {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -371,7 +372,7 @@ export default function ManageProductsPage(): ReactNode {
 
   useEffect(() => {
     setCurrentPage(1); 
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, categoryFilter]);
 
   const handleAddProduct = async (data: ProductFormValues) => {
     setIsSubmitting(true);
@@ -425,13 +426,12 @@ export default function ManageProductsPage(): ReactNode {
   const filteredProducts = useMemo(() => {
     return products
       .filter(p => {
-        if (statusFilter === 'published' && !p.isPublished) return false;
-        if (statusFilter === 'draft' && p.isPublished) return false;
-        return true;
+        if (statusFilter !== 'all' && (statusFilter === 'published') !== p.isPublished) return false;
+        if (categoryFilter !== 'all' && p.category !== categoryFilter) return false;
+        return p.name.toLowerCase().includes(searchTerm.toLowerCase());
       })
-      .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [products, statusFilter, searchTerm]);
+  }, [products, statusFilter, categoryFilter, searchTerm]);
   
   const totalPages = useMemo(() => {
     return Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
@@ -492,13 +492,22 @@ export default function ManageProductsPage(): ReactNode {
             </div>
             <Button onClick={() => { setEditingProduct(null); setIsFormOpen(true); }}><PlusCircle className="mr-2 h-4 w-4" /> Add Product</Button>
           </div>
-          <div className="flex items-center gap-2 pt-4">
+          <div className="flex flex-wrap items-center gap-2 pt-4">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search by product name..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full sm:w-[220px]"><SelectValue placeholder="Filter by category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {productCategories.map(cat => (
+                  <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
-              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Filter by status" /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Filter by status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="published">Published</SelectItem>
