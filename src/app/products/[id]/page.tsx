@@ -354,6 +354,10 @@ export default function ProductDetailsPage() {
             <span className="text-muted-foreground text-sm">({averageRating} average from {mockReviews.length} reviews)</span>
           </div>
           
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            {decodeHtmlEntities(product.description)}
+          </p>
+
           <Button size="lg" className="w-full" asChild>
             <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               Contact Us for Pricing & Details
@@ -362,12 +366,12 @@ export default function ProductDetailsPage() {
 
           
            <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 bg-muted p-1 h-auto">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="faq">FAQ</TabsTrigger>
-              <TabsTrigger value="how-to-order" className="px-1">How to Order</TabsTrigger>
-              <TabsTrigger value="review">Review</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 bg-muted p-1 h-auto rounded-lg">
+              <TabsTrigger value="overview" className="rounded-md data-[state=active]:shadow-sm">Overview</TabsTrigger>
+              <TabsTrigger value="faq" className="rounded-md data-[state=active]:shadow-sm">FAQ</TabsTrigger>
+              <TabsTrigger value="how-to-order" className="px-1 rounded-md data-[state=active]:shadow-sm">How to Order</TabsTrigger>
+              <TabsTrigger value="review" className="rounded-md data-[state=active]:shadow-sm">Review</TabsTrigger>
+              <TabsTrigger value="details" className="rounded-md data-[state=active]:shadow-sm">Details</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="mt-4">
               <p className="text-muted-foreground">{decodeHtmlEntities(product.description)}</p>
@@ -428,4 +432,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-
