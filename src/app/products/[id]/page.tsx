@@ -362,32 +362,37 @@ export default function ProductDetailsPage() {
 
           
            <Tabs defaultValue="overview" className="w-full">
-             <TabsList className="flex flex-wrap justify-start h-auto p-1 bg-muted rounded-full">
-               <TabsTrigger value="overview" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Overview</TabsTrigger>
-               <TabsTrigger value="faq" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">FAQ</TabsTrigger>
-               <TabsTrigger value="how-to-order" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">How to Order</TabsTrigger>
-               <TabsTrigger value="review" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Review</TabsTrigger>
-               <TabsTrigger value="details" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Details</TabsTrigger>
+             <TabsList>
+               <TabsTrigger value="overview">Overview</TabsTrigger>
+               <TabsTrigger value="details">Details</TabsTrigger>
              </TabsList>
             <TabsContent value="overview" className="mt-4">
-              <p className="text-muted-foreground drop-shadow-lg">
-                {/* **Description:** */}
-                রেস্টুরেন্টের ওপেনিং এর আনন্দে আনন্দ সাজবে প্রতিটি টেবিল। রেস্টুরেন্টের ওপেনিং এর আনন্দে সাজবে প্রতিটি টেবিল। কালার হাটে থাকছে হাজারের বেশি ডিজাইন ।
-                
-                ওপেনিং ডেট নিশ্চিত করুন এবং জানিয়ে দিন কালার হাট সাপোর্ট টিমকে মেনু অর্ডার করতে কল করুন এখনই 01919760626
-                #মেনু_মানেই_কালারহাট
-              </p>
+              <div className="space-y-6">
+                  <section>
+                      <h3 className="text-lg font-semibold border-b pb-2 mb-3">Description</h3>
+                      <p className="text-muted-foreground drop-shadow-md">
+                        রেস্টুরেন্টের ওপেনিং এর আনন্দে আনন্দ সাজবে প্রতিটি টেবিল। রেস্টুরেন্টের ওপেনিং এর আনন্দে সাজবে প্রতিটি টেবিল। কালার হাটে থাকছে হাজারের বেশি ডিজাইন ।
+                        <br /><br />
+                        ওপেনিং ডেট নিশ্চিত করুন এবং জানিয়ে দিন কালার হাট সাপোর্ট টিমকে মেনু অর্ডার করতে কল করুন এখনই 01919760626
+                        <br />
+                        #মেনু_মানেই_কালারহাট
+                      </p>
+                  </section>
+                  <section>
+                      <h3 className="text-lg font-semibold border-b pb-2 mb-3">Review</h3>
+                      <p className="text-muted-foreground">Customer reviews will be shown here.</p>
+                  </section>
+                  <section>
+                      <h3 className="text-lg font-semibold border-b pb-2 mb-3">How to Order</h3>
+                      <p className="text-muted-foreground">Instructions on how to order this product will be listed here.</p>
+                  </section>
+                  <section>
+                      <h3 className="text-lg font-semibold border-b pb-2 mb-3">FAQ</h3>
+                      <p className="text-muted-foreground">Frequently asked questions will be listed here.</p>
+                  </section>
+              </div>
             </TabsContent>
-            <TabsContent value="faq" className="mt-4">
-              <p className="text-muted-foreground">Frequently asked questions will be listed here.</p>
-            </TabsContent>
-             <TabsContent value="how-to-order" className="mt-4">
-              <p className="text-muted-foreground">Instructions on how to order this product will be listed here.</p>
-            </TabsContent>
-             <TabsContent value="review" className="mt-4">
-              <p className="text-muted-foreground">Customer reviews will be shown here.</p>
-            </TabsContent>
-             <TabsContent value="details" className="mt-4">
+            <TabsContent value="details" className="mt-4">
               <p className="text-muted-foreground">Detailed specifications of the product will be listed here.</p>
             </TabsContent>
           </Tabs>
