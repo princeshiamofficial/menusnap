@@ -366,13 +366,13 @@ export default function ProductDetailsPage() {
 
           
            <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 gap-2 h-auto p-0 bg-transparent">
-                <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Overview</TabsTrigger>
-                <TabsTrigger value="faq" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">FAQ</TabsTrigger>
-                <TabsTrigger value="how-to-order" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">How to Order</TabsTrigger>
-                <TabsTrigger value="review" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Review</TabsTrigger>
-                <TabsTrigger value="details" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Details</TabsTrigger>
-            </TabsList>
+             <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 gap-2 h-auto p-0 bg-transparent">
+               <TabsTrigger value="overview" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Overview</TabsTrigger>
+               <TabsTrigger value="faq" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">FAQ</TabsTrigger>
+               <TabsTrigger value="how-to-order" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">How to Order</TabsTrigger>
+               <TabsTrigger value="review" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Review</TabsTrigger>
+               <TabsTrigger value="details" className="rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Details</TabsTrigger>
+             </TabsList>
             <TabsContent value="overview" className="mt-4">
               <p className="text-muted-foreground">{decodeHtmlEntities(product.description)}</p>
             </TabsContent>
