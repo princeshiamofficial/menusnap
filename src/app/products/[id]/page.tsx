@@ -366,12 +366,12 @@ export default function ProductDetailsPage() {
 
           
            <Tabs defaultValue="overview" className="w-full">
-             <TabsList className="grid w-full grid-cols-5 gap-2 h-auto p-1 bg-transparent">
-               <TabsTrigger value="overview" className="rounded-md py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Overview</TabsTrigger>
-               <TabsTrigger value="faq" className="rounded-md py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">FAQ</TabsTrigger>
-               <TabsTrigger value="how-to-order" className="rounded-md py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">How to Order</TabsTrigger>
-               <TabsTrigger value="review" className="rounded-md py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Review</TabsTrigger>
-               <TabsTrigger value="details" className="rounded-md py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted">Details</TabsTrigger>
+             <TabsList className="grid w-full grid-cols-5 gap-2 h-auto p-0 bg-transparent">
+               <TabsTrigger value="overview" className="h-auto py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Overview</TabsTrigger>
+               <TabsTrigger value="faq" className="h-auto py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">FAQ</TabsTrigger>
+               <TabsTrigger value="how-to-order" className="h-auto py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">How to Order</TabsTrigger>
+               <TabsTrigger value="review" className="h-auto py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Review</TabsTrigger>
+               <TabsTrigger value="details" className="h-auto py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Details</TabsTrigger>
              </TabsList>
             <TabsContent value="overview" className="mt-4">
               <p className="text-muted-foreground">{decodeHtmlEntities(product.description)}</p>
