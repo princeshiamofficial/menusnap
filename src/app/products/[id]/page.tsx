@@ -362,15 +362,15 @@ export default function ProductDetailsPage() {
 
           
            <Tabs defaultValue="overview" className="w-full">
-             <TabsList className="flex flex-wrap justify-start h-auto p-0 bg-transparent">
-               <TabsTrigger value="overview" className="h-auto flex-grow py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Overview</TabsTrigger>
-               <TabsTrigger value="faq" className="h-auto flex-grow py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">FAQ</TabsTrigger>
-               <TabsTrigger value="how-to-order" className="h-auto flex-grow py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">How to Order</TabsTrigger>
-               <TabsTrigger value="review" className="h-auto flex-grow py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Review</TabsTrigger>
-               <TabsTrigger value="details" className="h-auto flex-grow py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Details</TabsTrigger>
+             <TabsList className="flex flex-wrap justify-start h-auto p-1 bg-muted rounded-full">
+               <TabsTrigger value="overview" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Overview</TabsTrigger>
+               <TabsTrigger value="faq" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">FAQ</TabsTrigger>
+               <TabsTrigger value="how-to-order" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">How to Order</TabsTrigger>
+               <TabsTrigger value="review" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Review</TabsTrigger>
+               <TabsTrigger value="details" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Details</TabsTrigger>
              </TabsList>
             <TabsContent value="overview" className="mt-4">
-              <p className="text-muted-foreground">{decodeHtmlEntities(product.description)}</p>
+              <p className="text-muted-foreground drop-shadow-md">{decodeHtmlEntities(product.description)}</p>
             </TabsContent>
             <TabsContent value="faq" className="mt-4">
               <p className="text-muted-foreground">Frequently asked questions will be listed here.</p>
@@ -428,3 +428,5 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
+
+    
