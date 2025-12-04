@@ -354,23 +354,23 @@ export default function ProductDetailsPage() {
             <span className="text-muted-foreground text-sm">({averageRating} average from {mockReviews.length} reviews)</span>
           </div>
           
-          <p className="text-muted-foreground space-y-3 leading-relaxed">
-            {decodeHtmlEntities(product.description)}
-          </p>
-
           <Button size="lg" className="w-full" asChild>
             <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               Contact Us for Pricing & Details
             </Link>
           </Button>
 
+          <p className="text-muted-foreground space-y-3 leading-relaxed">
+            {decodeHtmlEntities(product.description)}
+          </p>
+
            <Tabs defaultValue="overview" className="w-full">
             <TabsList className="grid w-full grid-cols-5 rounded-full">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="faq">FAQ</TabsTrigger>
-              <TabsTrigger value="how-to-order">How to Order</TabsTrigger>
-              <TabsTrigger value="review">Review</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="overview" className="rounded-full">Overview</TabsTrigger>
+              <TabsTrigger value="faq" className="rounded-full">FAQ</TabsTrigger>
+              <TabsTrigger value="how-to-order" className="rounded-full">How to Order</TabsTrigger>
+              <TabsTrigger value="review" className="rounded-full">Review</TabsTrigger>
+              <TabsTrigger value="details" className="rounded-full">Details</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="mt-4 text-muted-foreground space-y-3 leading-relaxed">
                <p>Detailed overview of the product will appear here, explaining its key features, benefits, and ideal use cases.</p>
