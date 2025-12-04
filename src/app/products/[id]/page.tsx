@@ -359,13 +359,9 @@ export default function ProductDetailsPage() {
               Contact Us for Pricing & Details
             </Link>
           </Button>
-
-          <p className="text-muted-foreground space-y-3 leading-relaxed">
-            {decodeHtmlEntities(product.description)}
-          </p>
-
+          
            <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 rounded-full">
+            <TabsList className="grid w-full grid-cols-5 rounded-full bg-transparent">
               <TabsTrigger value="overview" className="rounded-full">Overview</TabsTrigger>
               <TabsTrigger value="faq" className="rounded-full">FAQ</TabsTrigger>
               <TabsTrigger value="how-to-order" className="rounded-full">How to Order</TabsTrigger>
@@ -373,7 +369,7 @@ export default function ProductDetailsPage() {
               <TabsTrigger value="details" className="rounded-full">Details</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="mt-4 text-muted-foreground space-y-3 leading-relaxed">
-               <p>Detailed overview of the product will appear here, explaining its key features, benefits, and ideal use cases.</p>
+               <p>{decodeHtmlEntities(product.description)}</p>
             </TabsContent>
             <TabsContent value="faq" className="mt-4">
               <p className="text-muted-foreground">Frequently asked questions will be listed here.</p>
