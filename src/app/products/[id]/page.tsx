@@ -366,12 +366,12 @@ export default function ProductDetailsPage() {
 
           
            <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 bg-muted p-1 h-auto rounded-lg">
-              <TabsTrigger value="overview" className="rounded-md data-[state=active]:shadow-sm">Overview</TabsTrigger>
-              <TabsTrigger value="faq" className="rounded-md data-[state=active]:shadow-sm">FAQ</TabsTrigger>
-              <TabsTrigger value="how-to-order" className="px-1 rounded-md data-[state=active]:shadow-sm">How to Order</TabsTrigger>
-              <TabsTrigger value="review" className="rounded-md data-[state=active]:shadow-sm">Review</TabsTrigger>
-              <TabsTrigger value="details" className="rounded-md data-[state=active]:shadow-sm">Details</TabsTrigger>
+             <TabsList className="inline-flex items-center justify-center gap-2 p-1 text-muted-foreground h-auto bg-transparent">
+              <TabsTrigger value="overview" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">Overview</TabsTrigger>
+              <TabsTrigger value="faq" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">FAQ</TabsTrigger>
+              <TabsTrigger value="how-to-order" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">How to Order</TabsTrigger>
+              <TabsTrigger value="review" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">Review</TabsTrigger>
+              <TabsTrigger value="details" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">Details</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="mt-4">
               <p className="text-muted-foreground">{decodeHtmlEntities(product.description)}</p>
