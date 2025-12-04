@@ -353,10 +353,6 @@ export default function ProductDetailsPage() {
             <StarRating rating={averageRating} />
             <span className="text-muted-foreground text-sm">({averageRating} average from {mockReviews.length} reviews)</span>
           </div>
-          
-          <p className="text-muted-foreground text-lg leading-relaxed">
-            {decodeHtmlEntities(product.description)}
-          </p>
 
           <Button size="lg" className="w-full" asChild>
             <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer">
@@ -432,5 +428,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-
-    
