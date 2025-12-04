@@ -12,6 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { 
   ArrowLeft, 
   AlertTriangle, 
   Package, 
@@ -50,6 +56,17 @@ const mockReviews = [
     { id: 2, name: 'Jannatul Ferdous', rating: 4, comment: 'Great products and fast delivery. The business cards were exactly what we wanted. A little bit pricey but worth it.' },
     { id: 3, name: 'Rezaul Karim', rating: 5, comment: 'The X Banners are fantastic and very durable. Color Hut team was very helpful throughout the process.' },
     { id: 4, name: 'Fatima Akter', rating: 5, comment: 'We are very happy with the membership cards. The design is elegant and the quality is superb. Will order again.' },
+];
+
+const FAQS = [
+    { q: "কাজ সম্পন্ন করতে কত সময় লাগবে?", a: "আপনার প্যাকেজের উপর নিরভর করে একটি লোগো করতে সর্বনিম্ন ২ দিন থেকে ৫ দিনের মধ্যে হয়ে যাবে। কিন্তু আপনার ফিডব্যাক নেওয়ার পর রিভিশন দিয়ে ফাইনাল লোগো পেতে আর ১/২ দিন বেশী সময় লাগবে। আর যদি আপনার খুবি আর্জেন্ট ডিজাইন প্রয়োজন হয় সে ক্ষেত্রে আলোচনা সাপেক্ষে কিছু টাকা বেশী দিয়ে দ্রুত লোগো করে নিতে পারবেন।" },
+    { q: "ঢাকার বাইরে অবস্থান করলে কোনো সমস্যা হবে কি?", a: "আমরা সবসময়ই আমাদের ক্লায়েন্টদের খুশি রাখতে চেষ্টা করি এবং তাদের মন মত ভালো মানের ডিজাইন করে দেই লোগোর ক্ষেত্রে আপনি প্যাকেজ ভেদে সর্বনিম্ন ২ থেকে ৪ টি আলাদা আলাদা কনসেপ্ট পাবেন। এছাড়াও প্যাকেজ ভেদে রয়েছে ৩ টি থেকে আনলিমিটেড রিভিশনের সুযোগ। যদি এর পর আপনার লোগো ভালো না লাগে তাহলে কিছু টাকা আলাদা ভাবে আপনি দিয়ে নতুন কনসেপ্ট করাতে পারেন।" },
+    { q: "ওপেনিংয়ের কতদিন আগে অর্ডার দিতে হবে?", a: "আমরা সবসময় উইনিক কাজ করার চেষ্টা করি। তাই আমাদের থেকে লোগো করানোর পর আপনি চাইলে গুগল ইমেজ সার্চ করে যাচাই করে নিতে পারেন আপনার লোগো কপি কিনা।" },
+    { q: "ডিজাইন অনলাইনে হবে, নাকি সরাসরি বসে করতে হবে?", a: "অনলাইন জগতে আপনার ব্যবসা শুরু করার জন্য যা যা প্রয়োজন আপনি সবি পাবেন আমাদের কাছে। ফেসবুক পেজ সেটআপ , গুগল অ্যাড ক্যাম্পেইন, ওয়েবসাইট ডেভেলপমেন্ট থেকে শুরু করে আপনার যা যা প্রয়োজন সবি পাবেন আমাদের কাছে।" },
+    { q: "ডেলিভারি আপনারা দেবেন, নাকি আমাদের নিতে হবে?", a: "আমরা প্রিন্টিং সার্ভিস দেইনা, তবে আপনি চাইলে আমরা আপনাকে আপনার ডিজাইন কোথা থেকে প্রিন্ট করতে পারেন সেই ঠিকানা দিয়ে দিতে পারবো।" },
+    { q: "আপনারা কী কী অতিরিক্ত সাপোর্ট দেন?", a: "আমাদের সার্ভিস অর্ডার করার সিস্টেম অটোমেটিক, আপনার যে প্যাকেজ প্রয়োজন আপনি সেই প্যাকেজ টি সিলেক্ট করে সর্বমোট খরছের ৫০% এডভান্স করে দিবেন। সাইটে দেওয়া বিকাশ, নগদ নাম্বারে ।" },
+    { q: "মেনুর ছবি কি আমাদের দিতে হবে?", a: "আমরা প্রিন্টিং সার্ভিস দেইনা, তবে আপনি চাইলে আমরা আপনাকে আপনার ডিজাইন কোথা থেকে প্রিন্ট করতে পারেন সেই ঠিকানা দিয়ে দিতে পারবো।" },
+    { q: "মেনু লিস্টের কোনো গাইডলাইন কি পাব?", a: "আমাদের সার্ভিস অর্ডার করার সিস্টেম অটোমেটিক, আপনার যে প্যাকেজ প্রয়োজন আপনি সেই প্যাকেজ টি সিলেক্ট করে সর্বমোট খরছের ৫০% এডভান্স করে দিবেন। সাইটে দেওয়া বিকাশ, নগদ নাম্বারে ।" }
 ];
 
 const DEFAULT_PRODUCT_IMAGE = "https://placehold.co/800x600.png";
@@ -368,9 +385,9 @@ export default function ProductDetailsPage() {
              </TabsList>
             <TabsContent value="overview" className="mt-4">
               <div className="space-y-4">
-                  <section className="p-4 bg-card rounded-lg shadow-md">
+                  <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">Description</h3>
-                      <p className="text-muted-foreground drop-shadow-md">
+                      <p className="text-muted-foreground">
                         রেস্টুরেন্টের ওপেনিং এর আনন্দে আনন্দ সাজবে প্রতিটি টেবিল। রেস্টুরেন্টের ওপেনিং এর আনন্দে সাজবে প্রতিটি টেবিল। কালার হাটে থাকছে হাজারের বেশি ডিজাইন ।
                         <br /><br />
                         ওপেনিং ডেট নিশ্চিত করুন এবং জানিয়ে দিন কালার হাট সাপোর্ট টিমকে মেনু অর্ডার করতে কল করুন এখনই 01919760626
@@ -378,17 +395,26 @@ export default function ProductDetailsPage() {
                         #মেনু_মানেই_কালারহাট
                       </p>
                   </section>
-                  <section className="p-4 bg-card rounded-lg shadow-md">
+                  <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">Review</h3>
                       <p className="text-muted-foreground">Customer reviews will be shown here.</p>
                   </section>
-                  <section className="p-4 bg-card rounded-lg shadow-md">
+                  <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">How to Order</h3>
                       <p className="text-muted-foreground">Instructions on how to order this product will be listed here.</p>
                   </section>
-                  <section className="p-4 bg-card rounded-lg shadow-md">
+                  <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">FAQ</h3>
-                      <p className="text-muted-foreground">Frequently asked questions will be listed here.</p>
+                      <Accordion type="single" collapsible className="w-full">
+                        {FAQS.map((faq, index) => (
+                          <AccordionItem value={`item-${index}`} key={index}>
+                            <AccordionTrigger>{faq.q}</AccordionTrigger>
+                            <AccordionContent>
+                              {faq.a}
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
                   </section>
               </div>
             </TabsContent>
@@ -439,4 +465,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-
