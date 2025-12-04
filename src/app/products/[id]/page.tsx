@@ -352,14 +352,14 @@ export default function ProductDetailsPage() {
             <StarRating rating={averageRating} />
             <span className="text-muted-foreground text-sm">({averageRating} average from {mockReviews.length} reviews)</span>
           </div>
-          <div className="text-muted-foreground space-y-3 leading-relaxed">
-            <p>{decodeHtmlEntities(product.description)}</p>
-          </div>
           <Button size="lg" className="w-full" asChild>
             <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               Contact Us for Pricing & Details
             </Link>
           </Button>
+          <div className="text-muted-foreground space-y-3 leading-relaxed">
+            <p>{decodeHtmlEntities(product.description)}</p>
+          </div>
         </div>
       </div>
       
