@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getProduct, getProducts, type Product } from '@/lib/product-api';
+import MDEditor from '@uiw/react-md-editor';
 
 
 const productCategories = [
@@ -385,15 +386,9 @@ export default function ProductDetailsPage() {
              </TabsList>
             <TabsContent value="overview" className="mt-4">
               <div className="space-y-4">
-                  <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
+                  <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md" data-color-mode="light">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">Description</h3>
-                      <p className="text-muted-foreground">
-                        রেস্টুরেন্টের ওপেনিং এর আনন্দে আনন্দ সাজবে প্রতিটি টেবিল। রেস্টুরেন্টের ওপেনিং এর আনন্দে সাজবে প্রতিটি টেবিল। কালার হাটে থাকছে হাজারের বেশি ডিজাইন ।
-                        <br /><br />
-                        ওপেনিং ডেট নিশ্চিত করুন এবং জানিয়ে দিন কালার হাট সাপোর্ট টিমকে মেনু অর্ডার করতে কল করুন এখনই 01919760626
-                        <br />
-                        #মেনু_মানেই_কালারহাট
-                      </p>
+                       <MDEditor.Markdown source={product.description} className="bg-white text-black p-2" />
                   </section>
                   <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">Review</h3>
@@ -403,7 +398,7 @@ export default function ProductDetailsPage() {
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">How to Order</h3>
                       <p className="text-muted-foreground">Instructions on how to order this product will be listed here.</p>
                   </section>
-                  <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
+                  <section className="p-4 bg-card rounded-lg shadow-inner drop-shadow-xl">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">FAQ</h3>
                       <Accordion type="single" collapsible className="w-full">
                         {FAQS.map((faq, index) => (
