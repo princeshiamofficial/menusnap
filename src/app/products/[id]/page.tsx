@@ -353,12 +353,14 @@ export default function ProductDetailsPage() {
             <StarRating rating={averageRating} />
             <span className="text-muted-foreground text-sm">({averageRating} average from {mockReviews.length} reviews)</span>
           </div>
+          
           <Button size="lg" className="w-full" asChild>
             <Link href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               Contact Us for Pricing & Details
             </Link>
           </Button>
-           <Tabs defaultValue="overview" className="w-full">
+
+           <Tabs defaultValue="overview" className="w-full rounded-lg">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="faq">FAQ</TabsTrigger>
@@ -425,4 +427,3 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
-
