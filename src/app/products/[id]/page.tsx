@@ -370,7 +370,13 @@ export default function ProductDetailsPage() {
                <TabsTrigger value="details" className="h-auto flex-1 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=inactive]:bg-muted rounded-full">Details</TabsTrigger>
              </TabsList>
             <TabsContent value="overview" className="mt-4">
-              <p className="text-muted-foreground drop-shadow-md">{decodeHtmlEntities(product.description)}</p>
+              <p className="text-muted-foreground drop-shadow-lg">
+                {/* **Description:** */}
+                রেস্টুরেন্টের ওপেনিং এর আনন্দে আনন্দ সাজবে প্রতিটি টেবিল। রেস্টুরেন্টের ওপেনিং এর আনন্দে সাজবে প্রতিটি টেবিল। কালার হাটে থাকছে হাজারের বেশি ডিজাইন ।
+                
+                ওপেনিং ডেট নিশ্চিত করুন এবং জানিয়ে দিন কালার হাট সাপোর্ট টিমকে মেনু অর্ডার করতে কল করুন এখনই 01919760626
+                #মেনু_মানেই_কালারহাট
+              </p>
             </TabsContent>
             <TabsContent value="faq" className="mt-4">
               <p className="text-muted-foreground">Frequently asked questions will be listed here.</p>
