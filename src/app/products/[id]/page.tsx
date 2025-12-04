@@ -367,8 +367,8 @@ export default function ProductDetailsPage() {
                <TabsTrigger value="details">Details</TabsTrigger>
              </TabsList>
             <TabsContent value="overview" className="mt-4">
-              <div className="space-y-6">
-                  <section>
+              <div className="space-y-4">
+                  <section className="p-4 bg-card rounded-lg shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">Description</h3>
                       <p className="text-muted-foreground drop-shadow-md">
                         রেস্টুরেন্টের ওপেনিং এর আনন্দে আনন্দ সাজবে প্রতিটি টেবিল। রেস্টুরেন্টের ওপেনিং এর আনন্দে সাজবে প্রতিটি টেবিল। কালার হাটে থাকছে হাজারের বেশি ডিজাইন ।
@@ -378,15 +378,15 @@ export default function ProductDetailsPage() {
                         #মেনু_মানেই_কালারহাট
                       </p>
                   </section>
-                  <section>
+                  <section className="p-4 bg-card rounded-lg shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">Review</h3>
                       <p className="text-muted-foreground">Customer reviews will be shown here.</p>
                   </section>
-                  <section>
+                  <section className="p-4 bg-card rounded-lg shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">How to Order</h3>
                       <p className="text-muted-foreground">Instructions on how to order this product will be listed here.</p>
                   </section>
-                  <section>
+                  <section className="p-4 bg-card rounded-lg shadow-md">
                       <h3 className="text-lg font-semibold border-b pb-2 mb-3">FAQ</h3>
                       <p className="text-muted-foreground">Frequently asked questions will be listed here.</p>
                   </section>
@@ -440,4 +440,3 @@ export default function ProductDetailsPage() {
   );
 }
 
-    
