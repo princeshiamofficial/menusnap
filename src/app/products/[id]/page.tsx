@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
   AlertTriangle, 
@@ -357,9 +358,30 @@ export default function ProductDetailsPage() {
               Contact Us for Pricing & Details
             </Link>
           </Button>
-          <div className="text-muted-foreground space-y-3 leading-relaxed">
-            <p>{decodeHtmlEntities(product.description)}</p>
-          </div>
+           <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="faq">FAQ</TabsTrigger>
+              <TabsTrigger value="how-to-order">How to Order</TabsTrigger>
+              <TabsTrigger value="review">Review</TabsTrigger>
+              <TabsTrigger value="details">Details</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="mt-4 text-muted-foreground space-y-3 leading-relaxed">
+               <p>{decodeHtmlEntities(product.description)}</p>
+            </TabsContent>
+            <TabsContent value="faq" className="mt-4">
+              <p className="text-muted-foreground">Frequently asked questions will be listed here.</p>
+            </TabsContent>
+             <TabsContent value="how-to-order" className="mt-4">
+              <p className="text-muted-foreground">Instructions on how to order this product will be listed here.</p>
+            </TabsContent>
+             <TabsContent value="review" className="mt-4">
+              <p className="text-muted-foreground">Customer reviews will be shown here.</p>
+            </TabsContent>
+             <TabsContent value="details" className="mt-4">
+              <p className="text-muted-foreground">Detailed specifications of the product will be listed here.</p>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
       
@@ -403,3 +425,4 @@ export default function ProductDetailsPage() {
     </div>
   );
 }
+
