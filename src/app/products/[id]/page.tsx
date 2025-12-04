@@ -32,6 +32,9 @@ import {
   Star,
   Video,
   PlayCircle,
+  HelpCircle,
+  MessageSquare,
+  ShoppingCart,
 } from "lucide-react"; 
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
@@ -387,19 +390,19 @@ export default function ProductDetailsPage() {
             <TabsContent value="overview" className="mt-4">
               <div className="space-y-4">
                   <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md" data-color-mode="light">
-                      <h3 className="text-lg font-semibold border-b pb-2 mb-3">Description</h3>
+                      <h3 className="text-lg font-semibold border-b pb-2 mb-3 flex items-center"><FileText className="mr-2 h-5 w-5" />Description</h3>
                        <MDEditor.Markdown source={product.description} className="bg-white text-black p-2" />
                   </section>
                   <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
-                      <h3 className="text-lg font-semibold border-b pb-2 mb-3">Review</h3>
+                      <h3 className="text-lg font-semibold border-b pb-2 mb-3 flex items-center"><MessageSquare className="mr-2 h-5 w-5" />Review</h3>
                       <p className="text-muted-foreground">Customer reviews will be shown here.</p>
                   </section>
                   <section className="p-4 bg-card rounded-lg shadow-md drop-shadow-md">
-                      <h3 className="text-lg font-semibold border-b pb-2 mb-3">How to Order</h3>
+                      <h3 className="text-lg font-semibold border-b pb-2 mb-3 flex items-center"><ShoppingCart className="mr-2 h-5 w-5" />How to Order</h3>
                       <p className="text-muted-foreground">Instructions on how to order this product will be listed here.</p>
                   </section>
                   <section className="p-4 bg-card rounded-lg shadow-inner drop-shadow-xl">
-                      <h3 className="text-lg font-semibold border-b pb-2 mb-3">FAQ</h3>
+                      <h3 className="text-lg font-semibold border-b pb-2 mb-3 flex items-center"><HelpCircle className="mr-2 h-5 w-5" />FAQ</h3>
                       <Accordion type="single" collapsible className="w-full">
                         {FAQS.map((faq, index) => (
                           <AccordionItem value={`item-${index}`} key={index}>
