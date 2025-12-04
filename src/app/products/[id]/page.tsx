@@ -360,15 +360,14 @@ export default function ProductDetailsPage() {
             </Link>
           </Button>
 
-          <p className="text-muted-foreground space-y-3 leading-relaxed">{decodeHtmlEntities(product.description)}</p>
           
            <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 bg-muted p-1 rounded-full">
-              <TabsTrigger value="overview" className="rounded-full">Overview</TabsTrigger>
-              <TabsTrigger value="faq" className="rounded-full">FAQ</TabsTrigger>
-              <TabsTrigger value="how-to-order" className="rounded-full px-1">How to Order</TabsTrigger>
-              <TabsTrigger value="review" className="rounded-full">Review</TabsTrigger>
-              <TabsTrigger value="details" className="rounded-full">Details</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 bg-muted p-1 h-auto">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="faq">FAQ</TabsTrigger>
+              <TabsTrigger value="how-to-order" className="px-1">How to Order</TabsTrigger>
+              <TabsTrigger value="review">Review</TabsTrigger>
+              <TabsTrigger value="details">Details</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="mt-4">
               <p className="text-muted-foreground">{decodeHtmlEntities(product.description)}</p>
