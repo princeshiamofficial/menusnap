@@ -366,12 +366,12 @@ export default function ProductDetailsPage() {
 
           
            <Tabs defaultValue="overview" className="w-full">
-             <TabsList className="inline-flex items-center justify-center gap-2 p-1 text-muted-foreground h-auto bg-transparent">
-              <TabsTrigger value="overview" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">Overview</TabsTrigger>
-              <TabsTrigger value="faq" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">FAQ</TabsTrigger>
-              <TabsTrigger value="how-to-order" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">How to Order</TabsTrigger>
-              <TabsTrigger value="review" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">Review</TabsTrigger>
-              <TabsTrigger value="details" className="px-4 py-2 text-sm font-semibold rounded-full data-[state=active]:bg-pink-100 data-[state=active]:text-pink-600 data-[state=active]:shadow-none">Details</TabsTrigger>
+             <TabsList className="inline-flex h-auto items-center justify-center gap-2 bg-muted p-1 text-muted-foreground">
+              <TabsTrigger value="overview" className="rounded-sm px-4 py-2 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-inner data-[state=active]:shadow-md">Overview</TabsTrigger>
+              <TabsTrigger value="faq" className="rounded-sm px-4 py-2 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-inner data-[state=active]:shadow-md">FAQ</TabsTrigger>
+              <TabsTrigger value="how-to-order" className="rounded-sm px-4 py-2 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-inner data-[state=active]:shadow-md">How to Order</TabsTrigger>
+              <TabsTrigger value="review" className="rounded-sm px-4 py-2 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-inner data-[state=active]:shadow-md">Review</TabsTrigger>
+              <TabsTrigger value="details" className="rounded-sm px-4 py-2 text-sm font-semibold data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-inner data-[state=active]:shadow-md">Details</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="mt-4">
               <p className="text-muted-foreground">{decodeHtmlEntities(product.description)}</p>
