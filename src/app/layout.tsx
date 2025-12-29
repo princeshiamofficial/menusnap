@@ -8,6 +8,7 @@ import './globals.css';
 import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { ClientAuthProvider } from '@/hooks/use-client-auth';
+import { MetaPixelScriptLoader } from '@/components/layout/meta-pixel-loader';
 
 const inter = Inter({
   variable: '--font-geist-sans',
@@ -25,17 +26,18 @@ const robotoMono = Roboto_Mono({
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.Node;
 }>) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <head>
-        {/* The hardcoded Meta Pixel script has been removed from here to prevent duplicate firing. */}
-        {/* Pixel initialization is now handled by the settings configuration. */}
+        {/* The hardcoded Meta Pixel script has been removed from here. */}
+        {/* The new MetaPixelScriptLoader component now handles script injection. */}
       </head>
       <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
         <ClientAuthProvider>
           <ThemeProvider>
+            <MetaPixelScriptLoader />
             {children}
             <ClientSideOnlyToaster />
           </ThemeProvider>
