@@ -8,11 +8,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle } from 'lucide-react';
+import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { useEffect } from 'react';
+import { getMetaPixelSettings, saveMetaPixelSettings, type MetaPixelSettings } from '@/app/actions/meta-events';
 
 // Zod schemas for validation
 const emailFormSchema = z.object({
@@ -29,9 +32,16 @@ const passwordFormSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const metaPixelFormSchema = z.object({
+  isEnabled: z.boolean(),
+  pixelId: z.string().optional(),
+  accessToken: z.string().optional(),
+  testEventCode: z.string().optional(),
+});
+
 type EmailFormValues = z.infer<typeof emailFormSchema>;
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
-
+type MetaPixelFormValues = z.infer<typeof metaPixelFormSchema>;
 
 function ChangeEmailForm(): ReactNode {
   const { adminUser, updateAdminEmail } = useAdminAuth();
@@ -150,6 +160,93 @@ function ChangePasswordForm(): ReactNode {
   );
 }
 
+function MetaPixelSettingsForm(): ReactNode {
+  const { toast } = useToast();
+  const form = useForm<MetaPixelFormValues>({
+    resolver: zodResolver(metaPixelFormSchema),
+    defaultValues: {
+      isEnabled: false,
+      pixelId: "",
+      accessToken: "",
+      testEventCode: "",
+    },
+  });
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const settings = await getMetaPixelSettings();
+        form.reset(settings);
+      } catch (error: any) {
+        toast({
+          title: "Error Loading Settings",
+          description: "Could not load Meta Pixel settings.",
+          variant: "destructive",
+        });
+      }
+    }
+    loadSettings();
+  }, [form, toast]);
+
+  const { isSubmitting } = form.formState;
+
+  async function onSubmit(data: MetaPixelFormValues) {
+    try {
+      await saveMetaPixelSettings(data);
+      toast({
+        title: "Success",
+        description: "Meta Pixel settings have been saved.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error Saving Settings",
+        description: error.message || "Could not save Meta Pixel settings.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <CardTitle className="flex items-center"><Facebook className="mr-2 h-5 w-5" /> Meta Pixel & Conversions API</CardTitle>
+        <CardDescription>Manage server-side event tracking for Meta (Facebook).</CardDescription>
+      </CardHeader>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <CardContent className="space-y-6">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="isEnabled"
+              checked={form.watch("isEnabled")}
+              onCheckedChange={(checked) => form.setValue("isEnabled", checked)}
+            />
+            <Label htmlFor="isEnabled" className="cursor-pointer">Enable Server-Side Tracking</Label>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="pixelId">Pixel ID</Label>
+            <Input id="pixelId" {...form.register("pixelId")} placeholder="Enter your Meta Pixel ID" />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="accessToken">Access Token</Label>
+            <Input id="accessToken" type="password" {...form.register("accessToken")} placeholder="Enter your Conversions API Access Token" />
+            <p className="text-xs text-muted-foreground">Your token is stored securely and will not be displayed again.</p>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="testEventCode">Test Event Code</Label>
+            <Input id="testEventCode" {...form.register("testEventCode")} placeholder="Optional: Enter code from Events Manager" />
+             <p className="text-xs text-muted-foreground">Use this to test your server events in Meta's Events Manager.</p>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button type="submit" disabled={isSubmitting}>
+            <Save className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Saving..." : "Save Settings"}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}
 
 export default function AdminSettingsPage(): ReactNode {
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
@@ -177,17 +274,18 @@ export default function AdminSettingsPage(): ReactNode {
             <SettingsIcon className="h-8 w-8 mr-3 text-primary" />
             Admin Settings
           </h1>
-          <p className="text-muted-foreground mt-1">Manage your account credentials.</p>
+          <p className="text-muted-foreground mt-1">Manage your account credentials and integration settings.</p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <MetaPixelSettingsForm />
             <ChangeEmailForm />
             <ChangePasswordForm />
         </div>
          <div className="mt-8 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-md flex items-start text-yellow-700 dark:text-yellow-400 dark:bg-yellow-700/10 dark:border-yellow-600/30">
           <AlertTriangle className="h-5 w-5 mr-3 mt-0.5 shrink-0 text-yellow-600 dark:text-yellow-500" />
           <p className="text-sm">
-            For security, these actions require you to enter your current password. Updating your email or password will not log you out of your current session.
+            For security, changing your email or password requires you to enter your current password. Updating your credentials will not log you out of your current session.
           </p>
         </div>
     </div>

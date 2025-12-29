@@ -1,6 +1,55 @@
+
 'use server';
 
 import { randomUUID } from 'crypto';
+import fs from 'fs/promises';
+import path from 'path';
+
+export interface MetaPixelSettings {
+  isEnabled: boolean;
+  pixelId?: string;
+  accessToken?: string;
+  testEventCode?: string;
+}
+
+// Use a file in a writable directory. In a real deployed environment,
+// you might use a more robust storage solution like a database or a proper config service.
+const SETTINGS_FILE_PATH = path.join(process.cwd(), '.meta-pixel-settings.json');
+
+/**
+ * Retrieves Meta Pixel settings from the JSON file.
+ */
+export async function getMetaPixelSettings(): Promise<MetaPixelSettings> {
+  try {
+    const fileContent = await fs.readFile(SETTINGS_FILE_PATH, 'utf-8');
+    return JSON.parse(fileContent);
+  } catch (error: any) {
+    // If the file doesn't exist, return default settings
+    if (error.code === 'ENOENT') {
+      return { isEnabled: false, pixelId: '', accessToken: '', testEventCode: '' };
+    }
+    console.error('Error reading Meta Pixel settings:', error);
+    throw new Error('Could not read settings file.');
+  }
+}
+
+/**
+ * Saves Meta Pixel settings to the JSON file.
+ * @param settings The settings to save.
+ */
+export async function saveMetaPixelSettings(settings: MetaPixelSettings): Promise<void> {
+  try {
+    // Basic validation
+    if (settings.isEnabled && (!settings.pixelId || !settings.accessToken)) {
+      throw new Error("Pixel ID and Access Token are required when tracking is enabled.");
+    }
+    const data = JSON.stringify(settings, null, 2);
+    await fs.writeFile(SETTINGS_FILE_PATH, data, 'utf-8');
+  } catch (error: any) {
+    console.error('Error saving Meta Pixel settings:', error);
+    throw new Error(error.message || 'Could not save settings file.');
+  }
+}
 
 /**
  * Sends a server-side event to the Meta Conversions API.
@@ -8,22 +57,20 @@ import { randomUUID } from 'crypto';
  *
  * @param eventName The name of the event (e.g., 'PageView', 'Purchase').
  * @param eventData Custom data associated with the event.
- * @param testEventCode Optional test code from Meta's Events Manager to validate events.
  */
 export async function sendServerEvent(
   eventName: string,
-  eventData: Record<string, any>,
-  testEventCode?: string
+  eventData: Record<string, any>
 ) {
-  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
-  const accessToken = process.env.META_PIXEL_ACCESS_TOKEN;
+  const settings = await getMetaPixelSettings();
 
-  if (!pixelId || !accessToken) {
-    console.error('Meta Pixel ID or Access Token is not configured in environment variables.');
+  if (!settings.isEnabled || !settings.pixelId || !settings.accessToken) {
+    // Silently fail if tracking is disabled or not configured
+    console.log('Meta Pixel server-side tracking is disabled or not configured.');
     return;
   }
 
-  const url = `https://graph.facebook.com/v19.0/${pixelId}/events`;
+  const url = `https://graph.facebook.com/v19.0/${settings.pixelId}/events`;
 
   const payload = {
     data: [
@@ -35,8 +82,8 @@ export async function sendServerEvent(
         ...eventData,
       },
     ],
-    access_token: accessToken,
-    ...(testEventCode && { test_event_code: testEventCode }), // Add test code if provided
+    access_token: settings.accessToken,
+    ...(settings.testEventCode && { test_event_code: settings.testEventCode }),
   };
 
   try {
