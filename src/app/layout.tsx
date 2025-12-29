@@ -30,29 +30,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <head>
-        {/* Meta Pixel Code */}
-        <Script id="meta-pixel-script" strategy="afterInteractive">
-          {`
-            !function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '1333584174730496');
-            fbq('track', 'PageView');
-          `}
-        </Script>
-        {/* End Meta Pixel Code */}
+        {/* The hardcoded Meta Pixel script has been removed from here to prevent duplicate firing. */}
+        {/* Pixel initialization is now handled by the settings configuration. */}
       </head>
       <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
-        <noscript>
-          <img height="1" width="1" style={{display: 'none'}}
-            src="https://www.facebook.com/tr?id=1333584174730496&ev=PageView&noscript=1"
-          />
-        </noscript>
         <ClientAuthProvider>
           <ThemeProvider>
             {children}
