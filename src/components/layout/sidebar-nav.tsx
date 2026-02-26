@@ -4,18 +4,18 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutGrid, 
-  ListOrdered, 
-  Layers, 
-  FileEdit, 
-  ChevronRight, 
-  LogOut, 
-  Building, 
+import {
+  LayoutGrid,
+  ListOrdered,
+  Layers,
+  FileEdit,
+  ChevronRight,
+  LogOut,
+  Building,
   History,
   MoreHorizontal,
   UploadCloud,
-} from 'lucide-react'; 
+} from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -32,8 +32,6 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
   { href: '/templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/draft', label: 'Draft', icon: FileEdit, hasChevron: true },
   { href: '/order-history', label: 'Order History', icon: History, hasChevron: true },
-  { href: '/upload-docs', label: 'Upload Docs', icon: UploadCloud, hasChevron: true },
-  { href: '/more', label: 'More Products', icon: MoreHorizontal, hasChevron: true },
 ];
 
 export function SidebarNav() {
@@ -56,7 +54,7 @@ export function SidebarNav() {
                 fill
                 sizes="(max-width: 640px) 176px, 192px"
                 className="object-contain"
-                priority 
+                priority
               />
             </div>
           </a>
@@ -73,16 +71,16 @@ export function SidebarNav() {
                     variant="default"
                     className={cn(
                       "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))) 
-                        ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold" 
+                      (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
+                        ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold"
                         : "text-sidebar-foreground/80",
                       "group-data-[collapsible=icon]:justify-center"
                     )}
                     isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
-                    tooltip={{ 
-                        children: item.label, 
-                        className: "bg-popover text-popover-foreground border-border shadow-md",
-                        sideOffset: 10 
+                    tooltip={{
+                      children: item.label,
+                      className: "bg-popover text-popover-foreground border-border shadow-md",
+                      sideOffset: 10
                     }}
                   >
                     <item.icon className="h-5 w-5" />
@@ -99,29 +97,29 @@ export function SidebarNav() {
           </div>
         )}
       </nav>
-      
+
       {/* User Info and Logout Section */}
       <div className="p-2 border-t border-sidebar-border mt-auto">
         <div className="group-data-[collapsible=icon]:hidden p-2">
-            {clientLoading ? (
-                <div className="flex items-center gap-2">
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <div className="flex-1 space-y-1">
-                        <Skeleton className="h-3 w-20" />
-                        <Skeleton className="h-2 w-12" />
-                    </div>
-                </div>
-            ) : clientUser ? (
-                <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-full bg-sidebar-accent">
-                        <Building className="h-4 w-4 text-sidebar-accent-foreground" />
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-semibold truncate">{clientUser.businessName}</p>
-                        <p className="text-xs text-sidebar-foreground/70 capitalize">{clientUser.type}</p>
-                    </div>
-                </div>
-            ) : null}
+          {clientLoading ? (
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <div className="flex-1 space-y-1">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-2 w-12" />
+              </div>
+            </div>
+          ) : clientUser ? (
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-full bg-sidebar-accent">
+                <Building className="h-4 w-4 text-sidebar-accent-foreground" />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-semibold truncate">{clientUser.businessName}</p>
+                <p className="text-xs text-sidebar-foreground/70 capitalize">{clientUser.type}</p>
+              </div>
+            </div>
+          ) : null}
         </div>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -133,9 +131,9 @@ export function SidebarNav() {
               )}
               onClick={logout}
               tooltip={{
-                  children: "Logout",
-                  className: "bg-popover text-popover-foreground border-border shadow-md",
-                  sideOffset: 10
+                children: "Logout",
+                className: "bg-popover text-popover-foreground border-border shadow-md",
+                sideOffset: 10
               }}
             >
               <LogOut className="h-5 w-5" />

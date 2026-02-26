@@ -19,7 +19,6 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/manage-categories', label: 'Manage Categories', icon: LayoutList, hasChevron: true },
   { href: '/m-admin/manage-menu-items', label: 'Manage Menu Items', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Manage Templates', icon: Layers, hasChevron: true },
-  { href: '/m-admin/manage-products', label: 'Manage Products', icon: Package, hasChevron: true },
   { href: '/m-admin/settings', label: 'Admin Settings', icon: Settings, hasChevron: true },
 ];
 
@@ -59,9 +58,9 @@ export function AdminSidebarNav() {
                     )}
                     isActive={pathname === item.href || (item.href !== '/m-admin' && pathname.startsWith(item.href))}
                     tooltip={{
-                        children: item.label,
-                        className: "bg-popover text-popover-foreground border-border shadow-md",
-                        sideOffset: 10
+                      children: item.label,
+                      className: "bg-popover text-popover-foreground border-border shadow-md",
+                      sideOffset: 10
                     }}
                   >
                     <item.icon className="h-5 w-5" />
@@ -89,9 +88,9 @@ export function AdminSidebarNav() {
               )}
               onClick={adminLogout}
               tooltip={{
-                  children: "Logout",
-                  className: "bg-popover text-popover-foreground border-border shadow-md",
-                  sideOffset: 10
+                children: "Logout",
+                className: "bg-popover text-popover-foreground border-border shadow-md",
+                sideOffset: 10
               }}
             >
               <LogOut className="h-5 w-5" />

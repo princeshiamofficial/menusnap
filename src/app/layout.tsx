@@ -2,6 +2,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { Suspense } from 'react';
 import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
@@ -36,7 +37,9 @@ export default function RootLayout({
       <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
         <ClientAuthProvider>
           <ThemeProvider>
-            <MetaPixelScriptLoader />
+            <Suspense fallback={null}>
+              <MetaPixelScriptLoader />
+            </Suspense>
             {children}
             <ClientSideOnlyToaster />
           </ThemeProvider>

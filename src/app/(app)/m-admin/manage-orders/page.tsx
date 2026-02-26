@@ -82,32 +82,36 @@ import {
   FileArchive,
   Trash2,
   Copy,
+  PenSquare,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { EditableField } from "@/components/ui/editable-field";
 
 interface OrderItemDetailAdmin {
-    id: string;
-    name: string;
-    quantity: number;
-    price: number;
-    categoryId: string;
-    description?: string | null;
-    subItems?: { id?: string; name: string; price?: number }[];
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  categoryId: string;
+  categoryName?: string;
+  description?: string | null;
+  subItems?: { id?: string; name: string; price?: number }[];
 }
 interface ApiOrder {
   id: string;
   orderId: string;
   orderDate: string;
+  status?: string;
   templateName?: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
-  customerAddress?: string; 
-  businessName?: string; 
-  businessRole?: string; 
-  bio?: string; 
+  customerAddress?: string;
+  businessName?: string;
+  businessRole?: string;
+  bio?: string;
   totalAmount?: number;
   items?: OrderItemDetailAdmin[];
   templateImageUrl?: string;
@@ -120,7 +124,8 @@ interface ApiOrder {
     address: string;
     restaurant: string;
     role: string;
-  }
+  };
+  template?: any;
 }
 
 interface Category {
@@ -156,9 +161,9 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
 ];
 
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; allCategories: Category[]; }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpdateOrder }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; allCategories: Category[]; onUpdateOrder: (updated: ApiOrder) => void; }) {
   const router = useRouter();
-  
+
   if (!order) return null;
 
   const formatDate = (dateString: string, includeTime: boolean = true): string => {
@@ -179,7 +184,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories }: { or
           <DialogDescription>
             Docs ID: <span className="font-medium text-primary">{order.orderId}</span> placed on {formatDate(order.orderDate)}
           </DialogDescription>
-           <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </DialogClose>
@@ -192,7 +197,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories }: { or
                 <div className="flex items-start">
                   <User className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="font-medium text-foreground">{decodeHtmlEntities(order.customerName) || "N/A"}</p>
+                    <EditableField
+                      value={order.customerName}
+                      onSave={(val) => onUpdateOrder({ ...order, customerName: val, customer: { ...order.customer, name: val } } as ApiOrder)}
+                      placeholder="Customer Name"
+                      className="font-medium text-foreground"
+                    />
                     <p className="text-xs text-muted-foreground">Full Name</p>
                   </div>
                 </div>
@@ -218,7 +228,12 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories }: { or
                 <div className="flex items-start">
                   <Building2 className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
                   <div>
-                    <p className="font-medium text-foreground">{decodeHtmlEntities(order.businessName) || "N/A"}</p>
+                    <EditableField
+                      value={order.businessName}
+                      onSave={(val) => onUpdateOrder({ ...order, businessName: val, customer: { ...order.customer, restaurant: val } } as ApiOrder)}
+                      placeholder="Business Name"
+                      className="font-medium text-foreground"
+                    />
                     <p className="text-xs text-muted-foreground">Business Name</p>
                   </div>
                 </div>
@@ -238,7 +253,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories }: { or
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="shadow-sm lg:col-span-2">
               <CardHeader>
                 <CardTitle className="text-lg">Template Information</CardTitle>
@@ -257,13 +272,13 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories }: { or
                   <p className="text-sm text-muted-foreground mb-2">Template Preview:</p>
                   <div className="aspect-[4/3] bg-muted rounded-md border overflow-hidden relative">
                     {order.templateImageUrl ? (
-                      <Image 
-                        src={order.templateImageUrl} 
-                        alt={decodeHtmlEntities(order.templateName) || 'Template preview'} 
+                      <Image
+                        src={order.templateImageUrl}
+                        alt={decodeHtmlEntities(order.templateName) || 'Template preview'}
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
                         className="object-cover"
-                        data-ai-hint={order.templateName ? order.templateName.toLowerCase().split(' ').slice(0,2).join(' ') : "menu design"}
+                        data-ai-hint={order.templateName ? order.templateName.toLowerCase().split(' ').slice(0, 2).join(' ') : "menu design"}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
@@ -312,12 +327,12 @@ export default function ManageOrdersPage(): ReactNode {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOptionOrders>('newest');
-  
+
   const [currentPage, setCurrentPage] = useState(1);
 
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<ApiOrder | null>(null);
-  
+
   const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -335,19 +350,19 @@ export default function ManageOrdersPage(): ReactNode {
         fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
         fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
       ]);
-      
+
       const combinedCategories: Category[] = [];
       if (restaurantCategoriesResponse.ok) {
-          const resCatResult = await restaurantCategoriesResponse.json();
-          if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
-              combinedCategories.push(...resCatResult.data.categories);
-          }
+        const resCatResult = await restaurantCategoriesResponse.json();
+        if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
+          combinedCategories.push(...resCatResult.data.categories);
+        }
       }
       if (parlourCategoriesResponse.ok) {
-          const parCatResult = await parlourCategoriesResponse.json();
-          if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
-              combinedCategories.push(...parCatResult.data.categories);
-          }
+        const parCatResult = await parlourCategoriesResponse.json();
+        if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
+          combinedCategories.push(...parCatResult.data.categories);
+        }
       }
       setAllCategories(combinedCategories);
 
@@ -359,7 +374,7 @@ export default function ManageOrdersPage(): ReactNode {
       if (result.success) {
         if (result.data && Array.isArray(result.data.orders)) {
           rawOrdersArray = result.data.orders;
-        } else if (Array.isArray(result.data)) { 
+        } else if (Array.isArray(result.data)) {
           rawOrdersArray = result.data;
         } else {
           console.error('Invalid data format for orders: "orders" array not found in data.', result);
@@ -370,31 +385,34 @@ export default function ManageOrdersPage(): ReactNode {
       }
 
       const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any, index: number): ApiOrder => ({
-        id: String(order.id || `mock-${index}-${Date.now()}`), 
-        orderId: String(order.orderId || order.id || `ORD-${Date.now() + index}`), 
+        id: String(order.id || `mock-${index}-${Date.now()}`),
+        orderId: String(order.orderId || order.id || `ORD-${Date.now() + index}`),
         orderDate: String(order.orderDate || order.createdAt || order.date || new Date(Date.now() - index * 86400000).toISOString()),
         templateName: order.template?.name ? String(order.template.name) : `Template ${index % 5 + 1}`,
         customerName: order.customer?.name ? String(order.customer.name) : `Customer ${index + 1}`,
-        customerEmail: order.customer?.email || `customer${index+1}@example.com`,
+        customerEmail: order.customer?.email || `customer${index + 1}@example.com`,
         customerPhone: order.customer?.phone || `019100000${index % 100 < 10 ? '0' : ''}${index % 100}`,
-        customerAddress: order.customer?.address || `${index+1} Dhaka, Bangladesh`,
+        customerAddress: order.customer?.address || `${index + 1} Dhaka, Bangladesh`,
         businessName: order.customer?.restaurant,
         businessRole: order.customer?.role,
-        bio: `This is a sample bio for customer ${index+1}. They ordered template: ${order.template?.name || `Template ${index % 5 + 1}`}.`,
+        bio: `This is a sample bio for customer ${index + 1}. They ordered template: ${order.template?.name || `Template ${index % 5 + 1}`}.`,
         totalAmount: parseFloat(order.totalAmount || order.total || (Math.random() * 1000 + 500).toFixed(2)),
         items: (order.items || []).map((item: any): OrderItemDetailAdmin => ({
-            id: String(item.id),
-            name: String(item.name),
-            quantity: Number(item.quantity || 1),
-            price: Number(item.price),
-            categoryId: String(item.categoryId || item.category),
-            description: item.description || null,
-            subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({id: String(si.id), name: String(si.name), price: si.price !== null && si.price !== undefined ? parseFloat(si.price) : undefined})) : [],
+          id: String(item.id),
+          name: String(item.name),
+          quantity: Number(item.quantity || 1),
+          price: Number(item.price),
+          categoryId: String(item.categoryId || item.category),
+          categoryName: item.categoryName,
+          description: item.description || null,
+          subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({ id: String(si.id), name: String(si.name), price: si.price !== null && si.price !== undefined ? parseFloat(si.price) : undefined })) : [],
         })),
-        templateImageUrl: order.template?.imageUrl || `https://placehold.co/600x400.png`, 
+        templateImageUrl: order.template?.imageUrl || `https://placehold.co/600x400.png`,
         templateDescription: order.template?.description || 'A fresh and floral design, ideal for spring menus or garden cafes.',
         templateTags: order.template?.tags || ['Restaurant', 'Cafe', 'Seasonal'],
         customer: order.customer,
+        template: order.template,
+        status: order.status || 'Pending',
       }));
       setAllOrders(fetchedOrders);
     } catch (e: any) {
@@ -411,7 +429,7 @@ export default function ManageOrdersPage(): ReactNode {
       fetchOrders();
     }
   }, [fetchOrders, isAdminLoggedIn]);
-  
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, sortOption]);
@@ -421,18 +439,43 @@ export default function ManageOrdersPage(): ReactNode {
     fetchOrders();
     setCurrentPage(1);
   }, [fetchOrders]);
-  
+
+  const handleUpdateOrder = async (updatedOrder: ApiOrder) => {
+    try {
+      // Update local state first for immediate feedback
+      setAllOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+      if (selectedOrderForDetails && selectedOrderForDetails.id === updatedOrder.id) {
+        setSelectedOrderForDetails(updatedOrder);
+      }
+
+      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(updatedOrder),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to save document changes.");
+      }
+      toast({ title: "Updated", description: "Changes saved successfully." });
+    } catch (e: any) {
+      toast({ title: "Update Failed", description: e.message, variant: "destructive" });
+      fetchOrders(); // Rollback
+    }
+  };
+
   const handleViewDetails = (order: ApiOrder) => {
     setSelectedOrderForDetails(order);
     setIsDetailsDialogOpen(true);
   };
-  
+
   const handleDeleteOrder = (order: ApiOrder) => {
     setOrderToDeleteInfo({ id: order.id, orderId: order.orderId });
     setIsDeleteDialogOpen(true);
   };
-  
-  const handleCloneDocs = async (originalOrder: ApiOrder) => {
+
+  const handleCopyDocs = async (originalOrder: ApiOrder) => {
     const random3Digit = Math.floor(100 + Math.random() * 900);
     const date = new Date();
     const day = String(date.getDate()).padStart(2, '0');
@@ -440,38 +483,79 @@ export default function ManageOrdersPage(): ReactNode {
     const year = String(date.getFullYear()).slice(-2);
     const newOrderId = `RO-${random3Digit}${day}${month}${year}`;
 
-    // Create a deep copy and update necessary fields
-    const clonedOrder = JSON.parse(JSON.stringify(originalOrder));
-    clonedOrder.id = newOrderId;
-    clonedOrder.orderId = newOrderId;
-    clonedOrder.orderDate = date.toISOString();
+    // Construct exactly as menu-preview-dialog.tsx does it
+    const itemsWithCategory = (originalOrder.items || []).map(item => {
+      const cat = allCategories.find(c => String(c.id) === String(item.categoryId));
+      return {
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity || 1,
+        price: item.price,
+        categoryId: item.categoryId,
+        categoryName: item.categoryName || (cat ? cat.name : 'Unknown'),
+        description: item.description || '',
+        subItems: item.subItems || []
+      };
+    });
+
+    const cleanedCustomer = originalOrder.customer ? {
+      name: originalOrder.customer.name,
+      email: originalOrder.customer.email,
+      phone: originalOrder.customer.phone,
+      address: originalOrder.customer.address,
+      restaurant: originalOrder.customer.restaurant ? `${originalOrder.customer.restaurant} (copy)` : '',
+      role: originalOrder.customer.role,
+      userId: (originalOrder.customer as any).userId || 'anonymous'
+    } : {
+      name: decodeHtmlEntities(originalOrder.customerName || ''),
+      email: originalOrder.customerEmail || '',
+      phone: originalOrder.customerPhone || '',
+      address: decodeHtmlEntities(originalOrder.customerAddress || ''),
+      restaurant: originalOrder.businessName ? `${decodeHtmlEntities(originalOrder.businessName)} (copy)` : '',
+      role: originalOrder.businessRole || '',
+      userId: 'anonymous'
+    };
+
+    const clonePayload = {
+      id: newOrderId,
+      orderId: newOrderId,
+      customer: cleanedCustomer,
+      items: itemsWithCategory,
+      total: originalOrder.totalAmount,
+      totalAmount: originalOrder.totalAmount,
+      status: 'Pending',
+      orderDate: date.toISOString(),
+      template: originalOrder.template || {
+        name: originalOrder.templateName || "Copied Selection",
+      }
+    };
 
     try {
-        const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify(clonedOrder),
-        });
+      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(clonePayload),
+      });
 
-        const result = await response.json();
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Failed to clone docs.');
-        }
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Failed to clone docs.');
+      }
 
-        toast({
-            title: "Docs Cloned",
-            description: `Docs #${originalOrder.orderId} has been cloned as #${newOrderId}.`,
-        });
-        fetchOrders(); // Refresh the list
+      toast({
+        title: "Docs Copied",
+        description: `Docs #${originalOrder.orderId} has been copied as #${newOrderId}.`,
+      });
+      fetchOrders(); // Refresh the list
     } catch (error: any) {
-        toast({
-            title: "Clone Failed",
-            description: error.message,
-            variant: "destructive",
-        });
+      toast({
+        title: "Copy Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -568,19 +652,19 @@ export default function ManageOrdersPage(): ReactNode {
   };
 
   const orderRowSkeletons = Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-      <motion.tr 
-        key={`skeleton-${i}`} 
-        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: i * 0.05 }}
-      >
-          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-5 w-20 whitespace-nowrap" /></TableCell>
-          <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-          <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-          <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
-      </motion.tr>
+    <motion.tr
+      key={`skeleton-${i}`}
+      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, delay: i * 0.05 }}
+    >
+      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-20 whitespace-nowrap" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+    </motion.tr>
   ));
 
   if (adminLoading) {
@@ -611,61 +695,61 @@ export default function ManageOrdersPage(): ReactNode {
         </div>
         <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
           <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh Data
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh Data
           </Button>
         </motion.div>
       </header>
-      
+
       <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border flex flex-col flex-grow min-h-0">
         <div className="flex flex-col sm:flex-row items-center gap-2 mb-4 pb-4 border-b border-border">
-            <div className="relative flex-grow w-full sm:w-auto sm:flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search by Docs ID, Company, or Customer..."
-                className="pl-10 w-full h-9 text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex w-full sm:w-auto items-center gap-2 mt-2 sm:mt-0">
-              <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionOrders)}>
-                <SelectTrigger className="w-full sm:w-auto min-w-[180px] h-9 text-sm">
-                    <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                    <SelectValue placeholder="Sort by..." />
-                </SelectTrigger>
-                <SelectContent>
-                    {sortOptionsListOrders.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="relative flex-grow w-full sm:w-auto sm:flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search by Docs ID, Company, or Customer..."
+              className="pl-10 w-full h-9 text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex w-full sm:w-auto items-center gap-2 mt-2 sm:mt-0">
+            <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionOrders)}>
+              <SelectTrigger className="w-full sm:w-auto min-w-[180px] h-9 text-sm">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue placeholder="Sort by..." />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptionsListOrders.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex-grow min-h-0">
           {isLoading ? (
             <Table>
-                <TableHeader>
-                    <motion.tr
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                        <TableHead className="w-[200px]">Date</TableHead>
-                        <TableHead className="w-[150px]">Docs ID</TableHead>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead className="text-right w-[100px]">Action</TableHead>
-                    </motion.tr>
-                </TableHeader>
-                <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
+              <TableHeader>
+                <motion.tr
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <TableHead className="w-[200px]">Date</TableHead>
+                  <TableHead className="w-[150px]">Docs ID</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="text-right w-[100px]">Action</TableHead>
+                </motion.tr>
+              </TableHeader>
+              <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
             </Table>
           ) : error ? (
-            <motion.div 
+            <motion.div
               className="text-center py-10 text-destructive"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -678,7 +762,7 @@ export default function ManageOrdersPage(): ReactNode {
               </Button>
             </motion.div>
           ) : paginatedOrders.length === 0 ? (
-            <motion.div 
+            <motion.div
               className="text-center py-10 text-muted-foreground"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -692,7 +776,7 @@ export default function ManageOrdersPage(): ReactNode {
             <ScrollArea className="w-full h-full">
               <Table>
                 <TableHeader>
-                  <motion.tr 
+                  <motion.tr
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
@@ -712,14 +796,14 @@ export default function ManageOrdersPage(): ReactNode {
                         className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, transition: {duration: 0.15}}}
+                        exit={{ opacity: 0, transition: { duration: 0.15 } }}
                         transition={{ duration: 0.3, delay: index * 0.03 }}
                       >
                         <TableCell className="text-xs text-muted-foreground">
-                            <div className="flex items-center">
-                                <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70"/>
-                                {formatDateForDisplay(order.orderDate)}
-                            </div>
+                          <div className="flex items-center">
+                            <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+                            {formatDateForDisplay(order.orderDate)}
+                          </div>
                         </TableCell>
                         <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}>{order.orderId}</TableCell>
                         <TableCell>{order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
@@ -735,8 +819,8 @@ export default function ManageOrdersPage(): ReactNode {
                               <DropdownMenuItem onClick={() => handleViewDetails(order)}>
                                 <Eye className="mr-2 h-4 w-4" /> View Details
                               </DropdownMenuItem>
-                               <DropdownMenuItem onClick={() => handleCloneDocs(order)}>
-                                <Copy className="mr-2 h-4 w-4" /> Clone Docs
+                              <DropdownMenuItem onClick={() => handleCopyDocs(order)}>
+                                <Copy className="h-4 w-4 mr-2" /> Copy Docs
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => handleDeleteOrder(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
@@ -757,20 +841,20 @@ export default function ManageOrdersPage(): ReactNode {
           <p>Showing {paginatedOrders.length} of {filteredAndSortedOrders.length} docs.</p>
           <div className="flex items-center space-x-1">
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handlePreviousPage} 
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
                 disabled={currentPage === 1 || isLoading}
               >
                 Previous
               </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button 
-                variant={totalPages === 0 ? "outline" : "default"} 
-                size="sm" 
-                className="w-8 h-8 p-0" 
+              <Button
+                variant={totalPages === 0 ? "outline" : "default"}
+                size="sm"
+                className="w-8 h-8 p-0"
                 disabled={totalPages === 0 || isLoading}
                 onClick={() => setCurrentPage(1)}
               >
@@ -778,9 +862,9 @@ export default function ManageOrdersPage(): ReactNode {
               </Button>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages || totalPages === 0 || isLoading}
               >
@@ -793,10 +877,10 @@ export default function ManageOrdersPage(): ReactNode {
           </motion.div>
         </div>
       </section>
-      <OrderDetailsDialog 
-        order={selectedOrderForDetails} 
-        isOpen={isDetailsDialogOpen} 
-        onOpenChange={setIsDetailsDialogOpen} 
+      <OrderDetailsDialog
+        order={selectedOrderForDetails}
+        isOpen={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
         allCategories={allCategories}
       />
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
