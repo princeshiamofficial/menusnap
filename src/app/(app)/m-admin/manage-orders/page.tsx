@@ -659,11 +659,12 @@ export default function ManageOrdersPage(): ReactNode {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, delay: i * 0.05 }}
     >
+      <TableCell><Skeleton className="h-5 w-8" /></TableCell>
       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
       <TableCell><Skeleton className="h-5 w-20 whitespace-nowrap" /></TableCell>
       <TableCell><Skeleton className="h-5 w-28" /></TableCell>
       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+      <TableCell><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
     </motion.tr>
   ));
 
@@ -732,22 +733,25 @@ export default function ManageOrdersPage(): ReactNode {
 
         <div className="flex-grow min-h-0">
           {isLoading ? (
-            <Table>
-              <TableHeader>
-                <motion.tr
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <TableHead className="w-[200px]">Date</TableHead>
-                  <TableHead className="w-[150px]">Docs ID</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="text-right w-[100px]">Action</TableHead>
-                </motion.tr>
-              </TableHeader>
-              <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
-            </Table>
+            <div className="rounded-xl border shadow-lg bg-background overflow-hidden relative w-full h-full flex flex-col">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <motion.tr
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <TableHead className="w-[50px] text-center">SL</TableHead>
+                    <TableHead className="w-[200px]">Date</TableHead>
+                    <TableHead className="w-[150px]">Docs ID</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="text-right w-[100px]">Action</TableHead>
+                  </motion.tr>
+                </TableHeader>
+                <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
+              </Table>
+            </div>
           ) : error ? (
             <motion.div
               className="text-center py-10 text-destructive"
@@ -773,68 +777,74 @@ export default function ManageOrdersPage(): ReactNode {
               {searchTerm && <p>Try adjusting your search or filters.</p>}
             </motion.div>
           ) : (
-            <ScrollArea className="w-full h-full">
-              <Table>
-                <TableHeader>
-                  <motion.tr
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <TableHead className="w-[200px]">Date</TableHead>
-                    <TableHead className="w-[150px]">Docs ID</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="text-right w-[100px]">Action</TableHead>
-                  </motion.tr>
-                </TableHeader>
-                <TableBody>
-                  <AnimatePresence>
-                    {paginatedOrders.map((order, index) => (
-                      <motion.tr
-                        key={order.id}
-                        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                        transition={{ duration: 0.3, delay: index * 0.03 }}
-                      >
-                        <TableCell className="text-xs text-muted-foreground">
-                          <div className="flex items-center">
-                            <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" />
-                            {formatDateForDisplay(order.orderDate)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}>{order.orderId}</TableCell>
-                        <TableCell>{order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
-                        <TableCell>{order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewDetails(order)}>
-                                <Eye className="mr-2 h-4 w-4" /> View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleCopyDocs(order)}>
-                                <Copy className="h-4 w-4 mr-2" /> Copy Docs
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleDeleteOrder(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                </TableBody>
-              </Table>
-            </ScrollArea>
+            <div className="rounded-xl border shadow-lg bg-background overflow-hidden relative w-full h-full">
+              <ScrollArea className="w-full h-full">
+                <Table>
+                  <TableHeader className="bg-muted/30">
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <TableHead className="w-[50px] text-center">SL</TableHead>
+                      <TableHead className="w-[200px]">Date</TableHead>
+                      <TableHead className="w-[150px]">Docs ID</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead className="text-right w-[100px]">Action</TableHead>
+                    </motion.tr>
+                  </TableHeader>
+                  <TableBody>
+                    <AnimatePresence>
+                      {paginatedOrders.map((order, index) => (
+                        <motion.tr
+                          key={order.id}
+                          className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                          transition={{ duration: 0.3, delay: index * 0.03 }}
+                        >
+                          <TableCell className="text-center text-muted-foreground font-medium text-xs">
+                            {filteredAndSortedOrders.length - ((currentPage - 1) * ITEMS_PER_PAGE + index)}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            <div className="flex items-center">
+                              <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+                              {formatDateForDisplay(order.orderDate)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}>{order.orderId}</TableCell>
+                          <TableCell>{order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
+                          <TableCell>{order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewDetails(order)}>
+                                  <Eye className="mr-2 h-4 w-4" /> View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleCopyDocs(order)}>
+                                  <Copy className="h-4 w-4 mr-2" /> Copy Docs
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleDeleteOrder(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </motion.tr>
+                      ))}
+                    </AnimatePresence>
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
           )}
         </div>
         <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
