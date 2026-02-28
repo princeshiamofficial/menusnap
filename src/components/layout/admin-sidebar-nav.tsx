@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, ChevronRight, ClipboardList, LayoutList, ShoppingCart, LogOut, Layers, Package } from 'lucide-react';
+import { LayoutDashboard, Settings, ChevronRight, ClipboardList, LayoutList, ShoppingCart, LogOut, Layers, Package, FolderOpen } from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -19,6 +19,7 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/manage-categories', label: 'Manage Categories', icon: LayoutList, hasChevron: true },
   { href: '/m-admin/manage-menu-items', label: 'Manage Menu Items', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Manage Templates', icon: Layers, hasChevron: true },
+  { href: '/m-admin/ch-docs', label: 'CH Docs', icon: FolderOpen, hasChevron: true },
   { href: '/m-admin/settings', label: 'Admin Settings', icon: Settings, hasChevron: true },
 ];
 

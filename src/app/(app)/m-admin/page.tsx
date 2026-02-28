@@ -9,16 +9,15 @@ import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
+import {
   Hand,
-  MapPin,
   CalendarDays,
   BarChart3,
   ShoppingCart,
   Layers,
   UtensilsCrossed,
   Sparkles,
-  LayoutList, 
+  LayoutList,
   FolderHeart,
   AlertTriangle
 } from "lucide-react";
@@ -29,18 +28,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  getMonth, 
-  parseISO, 
-  subDays, 
-  isAfter, 
-  startOfDay, 
-  endOfDay, 
-  startOfMonth, 
-  endOfMonth, 
-  subMonths, 
-  startOfYear, 
-  endOfYear, 
+import {
+  getMonth,
+  parseISO,
+  subDays,
+  isAfter,
+  startOfDay,
+  endOfDay,
+  startOfMonth,
+  endOfMonth,
+  subMonths,
+  startOfYear,
+  endOfYear,
   subYears,
   isWithinInterval
 } from 'date-fns';
@@ -55,27 +54,28 @@ interface StatCardAdminProps {
 
 function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }: StatCardAdminProps): ReactNode {
   return (
-    <Card className="shadow-md rounded-lg bg-card hover:shadow-lg transition-shadow">
-      <CardContent className="p-4 flex items-center space-x-4">
-        <div className={`p-3 rounded-full ${iconBgClass} flex-shrink-0`}>
-          <Icon className={`h-7 w-7 ${iconTextClass}`} />
+    <Card className={`rounded-md border-0 text-white ${iconBgClass}`}>
+      <CardContent className="p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between min-h-[120px]">
+        <div className="flex justify-between items-start w-full relative z-10">
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider opacity-90">{title}</h3>
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6 opacity-80" />
         </div>
-        <div className="overflow-hidden">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p> 
+        <div className="mt-4 relative z-10 flex flex-col">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-1">{value}</h2>
+          <p className="text-xs sm:text-sm opacity-90">{title === 'Total Templates' ? 'Available layouts' : 'Overall count'}</p>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-const adminStatConfigs: Omit<StatCardAdminProps, 'value'> & { id: string }[] = [
-  { id: "totalOrders", title: "Total Orders", icon: ShoppingCart, iconBgClass: "bg-sky-100 dark:bg-sky-900/50", iconTextClass: "text-sky-600 dark:text-sky-400" },
-  { id: "totalTemplates", title: "Total Templates", icon: Layers, iconBgClass: "bg-blue-100 dark:bg-blue-900/50", iconTextClass: "text-blue-600 dark:text-blue-400" },
-  { id: "totalRestaurantItems", title: "Total Restaurant Items", icon: UtensilsCrossed, iconBgClass: "bg-green-100 dark:bg-green-900/50", iconTextClass: "text-green-600 dark:text-green-400" },
-  { id: "totalParlourItems", title: "Total Parlour Items", icon: Sparkles, iconBgClass: "bg-fuchsia-100 dark:bg-fuchsia-900/50", iconTextClass: "text-fuchsia-600 dark:text-fuchsia-400" },
-  { id: "totalRestaurantCategories", title: "Total Restaurant Categories", icon: LayoutList, iconBgClass: "bg-teal-100 dark:bg-teal-900/50", iconTextClass: "text-teal-600 dark:text-teal-400" },
-  { id: "totalParlourCategories", title: "Total Parlour Categories", icon: FolderHeart, iconBgClass: "bg-pink-100 dark:bg-pink-900/50", iconTextClass: "text-pink-600 dark:text-pink-400" },
+const adminStatConfigs: (Omit<StatCardAdminProps, 'value'> & { id: string })[] = [
+  { id: "totalOrders", title: "Total Orders", icon: ShoppingCart, iconBgClass: "bg-orange-500", iconTextClass: "text-white" },
+  { id: "totalTemplates", title: "Total Templates", icon: Layers, iconBgClass: "bg-teal-600", iconTextClass: "text-white" },
+  { id: "totalRestaurantItems", title: "Total Restaurant Items", icon: UtensilsCrossed, iconBgClass: "bg-amber-600", iconTextClass: "text-white" },
+  { id: "totalParlourItems", title: "Total Parlour Items", icon: Sparkles, iconBgClass: "bg-indigo-500", iconTextClass: "text-white" },
+  { id: "totalRestaurantCategories", title: "Total Restaurant Categories", icon: LayoutList, iconBgClass: "bg-emerald-500", iconTextClass: "text-white" },
+  { id: "totalParlourCategories", title: "Total Parlour Categories", icon: FolderHeart, iconBgClass: "bg-rose-500", iconTextClass: "text-white" },
 ];
 
 interface ChartDataItem {
@@ -85,9 +85,9 @@ interface ChartDataItem {
 
 interface ApiOrder {
   id: string;
-  createdAt?: string; 
-  orderDate?: string; 
-  date?: string; 
+  createdAt?: string;
+  orderDate?: string;
+  date?: string;
 }
 
 const dateRangeFilterOptions = [
@@ -114,12 +114,11 @@ export default function MAdminDashboardPage() {
   const [statsData, setStatsData] = useState<Record<string, number | string>>({});
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
-  
+
   const [allApiOrders, setAllApiOrders] = useState<ApiOrder[]>([]);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-  
-  const [selectedLocation, setSelectedLocation] = useState<string>('all');
-  const [selectedDateRange, setSelectedDateRange] = useState<string>('30days');
+
+  const [selectedDateRange] = useState<string>('30days');
 
   useEffect(() => {
     async function fetchAllAdminStats() {
@@ -134,25 +133,25 @@ export default function MAdminDashboardPage() {
         setStatsData(initialStats);
         return;
       }
-      
+
       setIsLoadingStats(true);
       setStatsError(null);
-      
+
       const combinedStatsData: Record<string, number | string> = {};
       adminStatConfigs.forEach(config => {
-        combinedStatsData[config.id] = 0; 
+        combinedStatsData[config.id] = 0;
       });
 
       let errorMessages: string[] = [];
 
       try {
         const [
-            restaurantCategoriesResponseSettled, 
-            menuItemsResponseSettled,
-            parlourCategoriesResponseSettled,
-            parlourItemsResponseSettled,
-            templatesResponseSettled,
-            ordersResponseSettled,
+          restaurantCategoriesResponseSettled,
+          menuItemsResponseSettled,
+          parlourCategoriesResponseSettled,
+          parlourItemsResponseSettled,
+          templatesResponseSettled,
+          ordersResponseSettled,
         ] = await Promise.allSettled([
           fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } }),
           fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } }),
@@ -180,7 +179,7 @@ export default function MAdminDashboardPage() {
             errorMessages.push(`Restaurant Items API error (${response.status}).`);
           } else {
             const result = await response.json();
-            if (result.success && Array.isArray(result.data)) { 
+            if (result.success && Array.isArray(result.data)) {
               combinedStatsData.totalRestaurantItems = result.data.length;
             } else { errorMessages.push("Invalid data (Res Items)."); }
           }
@@ -223,37 +222,37 @@ export default function MAdminDashboardPage() {
         } else { errorMessages.push("Network error (Templates)."); }
 
         if (ordersResponseSettled.status === 'fulfilled') {
-            const response = ordersResponseSettled.value;
-            if (!response.ok) {
-              errorMessages.push(`Orders API error (${response.status}).`);
-              setAllApiOrders([]); 
-            } else {
-              const result = await response.json();
-              let fetchedApiOrders: ApiOrder[] = [];
-              if (result.success) {
-                if (result.data && Array.isArray(result.data.orders)) {
-                  fetchedApiOrders = result.data.orders;
-                } else if (Array.isArray(result.data)) { 
-                  fetchedApiOrders = result.data;
-                } else { errorMessages.push("Invalid data format for orders."); }
-                combinedStatsData.totalOrders = fetchedApiOrders.length;
-                setAllApiOrders(fetchedApiOrders);
-              } else { 
-                errorMessages.push(result.message || "Failed to load orders.");
-                setAllApiOrders([]);
-              }
-            }
-          } else { 
-            errorMessages.push("Network error (Orders).");
+          const response = ordersResponseSettled.value;
+          if (!response.ok) {
+            errorMessages.push(`Orders API error (${response.status}).`);
             setAllApiOrders([]);
+          } else {
+            const result = await response.json();
+            let fetchedApiOrders: ApiOrder[] = [];
+            if (result.success) {
+              if (result.data && Array.isArray(result.data.orders)) {
+                fetchedApiOrders = result.data.orders;
+              } else if (Array.isArray(result.data)) {
+                fetchedApiOrders = result.data;
+              } else { errorMessages.push("Invalid data format for orders."); }
+              combinedStatsData.totalOrders = fetchedApiOrders.length;
+              setAllApiOrders(fetchedApiOrders);
+            } else {
+              errorMessages.push(result.message || "Failed to load orders.");
+              setAllApiOrders([]);
+            }
           }
-        
+        } else {
+          errorMessages.push("Network error (Orders).");
+          setAllApiOrders([]);
+        }
+
         if (errorMessages.length > 0) {
           setStatsError(errorMessages.join(' '));
         }
         setStatsData(combinedStatsData);
 
-      } catch (e: any) { 
+      } catch (e: any) {
         setStatsError(e.message || "An unexpected error occurred.");
         const defaultErrorStats: Record<string, number | string> = {};
         adminStatConfigs.forEach(config => defaultErrorStats[config.id] = 0);
@@ -264,14 +263,14 @@ export default function MAdminDashboardPage() {
       }
     }
     fetchAllAdminStats();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdminLoggedIn, adminLoading]);
 
 
   useEffect(() => {
     if (!allApiOrders.length && !isLoadingStats) {
-        setChartData([]);
-        return;
+      setChartData([]);
+      return;
     }
     if (isLoadingStats) return;
 
@@ -279,53 +278,53 @@ export default function MAdminDashboardPage() {
     const now = new Date();
 
     switch (selectedDateRange) {
-        case 'today':
-            dateFilterRange = { start: startOfDay(now), end: endOfDay(now) };
-            break;
-        case 'yesterday':
-            const yesterday = subDays(now, 1);
-            dateFilterRange = { start: startOfDay(yesterday), end: endOfDay(yesterday) };
-            break;
-        case '7days':
-            dateFilterRange = { start: startOfDay(subDays(now, 6)), end: endOfDay(now) };
-            break;
-        case '30days':
-            dateFilterRange = { start: startOfDay(subDays(now, 29)), end: endOfDay(now) };
-            break;
-        case 'this_month':
-            dateFilterRange = { start: startOfMonth(now), end: endOfMonth(now) };
-            break;
-        case 'last_month':
-            const prevMonthStart = startOfMonth(subMonths(now, 1));
-            dateFilterRange = { start: prevMonthStart, end: endOfMonth(prevMonthStart) };
-            break;
-        case 'this_year':
-            dateFilterRange = { start: startOfYear(now), end: endOfYear(now) };
-            break;
-        case 'last_year':
-            const prevYearStart = startOfYear(subYears(now, 1));
-            dateFilterRange = { start: prevYearStart, end: endOfYear(prevYearStart) };
-            break;
-        case 'all_time':
-        case 'custom': 
-        default:
-            dateFilterRange = null; 
-            break;
+      case 'today':
+        dateFilterRange = { start: startOfDay(now), end: endOfDay(now) };
+        break;
+      case 'yesterday':
+        const yesterday = subDays(now, 1);
+        dateFilterRange = { start: startOfDay(yesterday), end: endOfDay(yesterday) };
+        break;
+      case '7days':
+        dateFilterRange = { start: startOfDay(subDays(now, 6)), end: endOfDay(now) };
+        break;
+      case '30days':
+        dateFilterRange = { start: startOfDay(subDays(now, 29)), end: endOfDay(now) };
+        break;
+      case 'this_month':
+        dateFilterRange = { start: startOfMonth(now), end: endOfMonth(now) };
+        break;
+      case 'last_month':
+        const prevMonthStart = startOfMonth(subMonths(now, 1));
+        dateFilterRange = { start: prevMonthStart, end: endOfMonth(prevMonthStart) };
+        break;
+      case 'this_year':
+        dateFilterRange = { start: startOfYear(now), end: endOfYear(now) };
+        break;
+      case 'last_year':
+        const prevYearStart = startOfYear(subYears(now, 1));
+        dateFilterRange = { start: prevYearStart, end: endOfYear(prevYearStart) };
+        break;
+      case 'all_time':
+      case 'custom':
+      default:
+        dateFilterRange = null;
+        break;
     }
 
     const ordersToProcess = dateFilterRange
-        ? allApiOrders.filter(order => {
-            const orderDateField = order.createdAt || order.orderDate || order.date;
-            if (!orderDateField) return false;
-            try {
-                const orderDate = parseISO(orderDateField);
-                if (isNaN(orderDate.getTime())) return false; // Check for invalid date
-                return isWithinInterval(orderDate, dateFilterRange!);
-            } catch {
-                return false; 
-            }
-          })
-        : allApiOrders;
+      ? allApiOrders.filter(order => {
+        const orderDateField = order.createdAt || order.orderDate || order.date;
+        if (!orderDateField) return false;
+        try {
+          const orderDate = parseISO(orderDateField);
+          if (isNaN(orderDate.getTime())) return false; // Check for invalid date
+          return isWithinInterval(orderDate, dateFilterRange!);
+        } catch {
+          return false;
+        }
+      })
+      : allApiOrders;
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthlyOrders: ChartDataItem[] = monthNames.map(name => ({ name, orders: 0 }));
@@ -337,7 +336,7 @@ export default function MAdminDashboardPage() {
           const orderDate = parseISO(orderDateField);
           const monthIndex = getMonth(orderDate);
           if (monthIndex >= 0 && monthIndex < 12) {
-             monthlyOrders[monthIndex].orders += 1;
+            monthlyOrders[monthIndex].orders += 1;
           }
         }
       } catch (e) {
@@ -382,51 +381,19 @@ export default function MAdminDashboardPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 py-4 px-2 bg-card rounded-lg shadow">
-        <Button variant="outline" className="text-muted-foreground">
-          <MapPin className="mr-2 h-4 w-4" />
-          Select Location
-        </Button>
-        <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-          <SelectTrigger className="w-auto min-w-[150px] text-muted-foreground">
-            <SelectValue placeholder="All Locations" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Locations</SelectItem>
-            <SelectItem value="loc1">Location 1</SelectItem>
-            <SelectItem value="loc2">Location 2</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-2 ml-auto">
-          <Button variant="outline" className="text-muted-foreground">
-            <CalendarDays className="mr-2 h-4 w-4" />
-            Filter by Date
-          </Button>
-          <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
-            <SelectTrigger className="w-auto min-w-[150px] text-muted-foreground">
-              <SelectValue placeholder="Select date range" />
-            </SelectTrigger>
-            <SelectContent>
-              {dateRangeFilterOptions.map(option => (
-                <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      
+
+
       {isLoadingStats && !statsData.totalOrders ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {adminStatConfigs.map((statConfig) => (
-            <Card key={statConfig.id} className="shadow-md rounded-lg bg-card">
-              <CardContent className="p-4 flex items-center space-x-4">
-                <Skeleton className={`h-12 w-12 rounded-full ${statConfig.iconBgClass}`} />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-6 w-1/2" />
+            <Card key={statConfig.id} className={`rounded-md border-0 ${statConfig.iconBgClass}`}>
+              <CardContent className="p-4 sm:p-5 h-[120px] flex flex-col justify-between">
+                <div className="flex justify-between items-start w-full">
+                  <Skeleton className="h-4 w-1/2 bg-white/30" />
+                  <Skeleton className="h-6 w-6 rounded-full bg-white/30" />
                 </div>
+                <Skeleton className="h-8 w-1/4 mt-4 bg-white/40" />
+                <Skeleton className="h-3 w-1/3 mt-2 bg-white/20" />
               </CardContent>
             </Card>
           ))}
@@ -440,7 +407,7 @@ export default function MAdminDashboardPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {adminStatConfigs.map((statConfig) => (
-            <StatCardAdmin 
+            <StatCardAdmin
               key={statConfig.id}
               title={statConfig.title}
               value={String(statsData[statConfig.id] ?? '0')}
@@ -469,7 +436,7 @@ export default function MAdminDashboardPage() {
               <Skeleton className="h-3/4 w-full" />
             </div>
           ) : !isLoadingStats && chartData.reduce((acc, curr) => acc + curr.orders, 0) === 0 ? (
-             <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full">
               <p className="text-muted-foreground">No order data available for the selected period.</p>
             </div>
           ) : (
@@ -479,7 +446,7 @@ export default function MAdminDashboardPage() {
                 margin={{
                   top: 5,
                   right: 20,
-                  left: -20, 
+                  left: -20,
                   bottom: 5,
                 }}
               >
@@ -487,8 +454,8 @@ export default function MAdminDashboardPage() {
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--background))',
                     borderColor: 'hsl(var(--border))',
                     borderRadius: 'var(--radius)',
                     boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
@@ -496,7 +463,7 @@ export default function MAdminDashboardPage() {
                   labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
                   itemStyle={{ color: 'hsl(var(--foreground))' }}
                 />
-                <Legend wrapperStyle={{fontSize: "12px", paddingTop: "10px"}} />
+                <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
                 <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} name="Orders" />
               </LineChart>
             </ResponsiveContainer>
@@ -507,23 +474,22 @@ export default function MAdminDashboardPage() {
     </div>
   );
 }
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 
 
 
 
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
