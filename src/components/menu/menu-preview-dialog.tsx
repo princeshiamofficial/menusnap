@@ -35,10 +35,10 @@ export interface Category {
 }
 
 export interface SubMenuItem {
-  id: string;
+  id?: string;
   originalId?: string;
   name: string;
-  price: number;
+  price?: number;
 }
 
 export interface MenuItem {
@@ -48,7 +48,7 @@ export interface MenuItem {
   price: number;
   category: string; // Category ID
   originalCategoryId?: string;
-  description?: string;
+  description?: string | null;
   image?: string; // URL for image
   status?: string;
   featured?: boolean;
@@ -84,7 +84,7 @@ export function MenuPreviewDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  
+
   const derivedDisplayedCategories = useMemo(() => {
     const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
     return allCategories
@@ -126,7 +126,7 @@ export function MenuPreviewDialog({
     setIsSubmitting(true);
 
     const totalAmount = selectedItems.reduce((sum, item) => sum + item.price, 0);
-    
+
     let newOrderId;
     if (selectedMenuType === 'restaurant') {
       const random3Digit = Math.floor(100 + Math.random() * 900);
@@ -150,7 +150,7 @@ export function MenuPreviewDialog({
       return itemsInCategory.map(item => ({
         id: item.id,
         name: item.name,
-        quantity: 1, 
+        quantity: 1,
         price: item.price,
         categoryId: category.id,
         categoryName: category.name,
@@ -166,7 +166,7 @@ export function MenuPreviewDialog({
         email: data.email,
         phone: data.phoneNumber,
         address: data.deliveryAddress,
-        restaurant: data.businessName, 
+        restaurant: data.businessName,
         role: data.role,
         userId: 'anonymous'
       },
@@ -174,11 +174,11 @@ export function MenuPreviewDialog({
       total: totalAmount,
       status: 'Pending',
       orderDate: new Date().toISOString(),
-      template: { 
-          name: "Custom Menu Selection",
+      template: {
+        name: "Custom Menu Selection",
       }
     };
-    
+
     try {
       const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
         method: 'POST',
@@ -204,9 +204,9 @@ export function MenuPreviewDialog({
       } catch (e) {
         console.error("Failed to save order to local storage", e);
         toast({
-            title: "Could Not Save Locally",
-            description: "Your order was submitted but could not be saved to your device's history.",
-            variant: "destructive"
+          title: "Could Not Save Locally",
+          description: "Your order was submitted but could not be saved to your device's history.",
+          variant: "destructive"
         });
       }
 
@@ -239,7 +239,7 @@ export function MenuPreviewDialog({
       setActiveCategoryId(null);
     }
     if (isOpen && orderedDialogCategories.length === 0 && activeCategoryId !== null) {
-        setActiveCategoryId(null);
+      setActiveCategoryId(null);
     }
   }, [isOpen, activeCategoryId, derivedDisplayedCategories, orderedDialogCategories]);
 
@@ -251,7 +251,7 @@ export function MenuPreviewDialog({
           <DialogHeader className="px-6 py-4 border-b">
             <DialogTitle className="text-xl">Menu Preview</DialogTitle>
             <DialogDescription>
-              Review your selected menu items before finalizing.
+              Review your selected MagicTab items before finalizing.
             </DialogDescription>
             <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
               <X className="h-5 w-5" />
@@ -272,21 +272,21 @@ export function MenuPreviewDialog({
                 </Button>
               </div>
               <ScrollArea className={cn("h-[calc(100%-56px)]", isSidebarCollapsed ? "p-1" : "p-2")}>
-              {orderedDialogCategories.length > 0 && (
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start text-sm mb-1 h-9",
-                    !activeCategoryId ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
-                    isSidebarCollapsed ? "justify-center px-0" : "px-2"
-                  )}
-                  onClick={() => setActiveCategoryId(null)}
-                  title="All Items"
-                >
-                  <FileText className="h-4 w-4 shrink-0" />
-                  {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
-                </Button>
-              )}
+                {orderedDialogCategories.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start text-sm mb-1 h-9",
+                      !activeCategoryId ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
+                      isSidebarCollapsed ? "justify-center px-0" : "px-2"
+                    )}
+                    onClick={() => setActiveCategoryId(null)}
+                    title="All Items"
+                  >
+                    <FileText className="h-4 w-4 shrink-0" />
+                    {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
+                  </Button>
+                )}
                 <Reorder.Group axis="y" values={orderedDialogCategories} onReorder={setOrderedDialogCategories} className="space-y-1">
                   {orderedDialogCategories.map(category => (
                     <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
@@ -307,8 +307,8 @@ export function MenuPreviewDialog({
                     </Reorder.Item>
                   ))}
                 </Reorder.Group>
-                 {orderedDialogCategories.length === 0 && !isSidebarCollapsed && (
-                    <p className="text-xs text-muted-foreground p-2 text-center">No categories with selected items.</p>
+                {orderedDialogCategories.length === 0 && !isSidebarCollapsed && (
+                  <p className="text-xs text-muted-foreground p-2 text-center">No categories with selected items.</p>
                 )}
               </ScrollArea>
             </div>
@@ -364,7 +364,7 @@ export function MenuPreviewDialog({
                 <div className="text-center text-muted-foreground py-10">
                   <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No items selected for preview.</p>
-                  <p className="text-xs mt-1">Go back to select some items from the menu.</p>
+                  <p className="text-xs mt-1">Go back to select some items from the MagicTab.</p>
                 </div>
               )}
             </ScrollArea>

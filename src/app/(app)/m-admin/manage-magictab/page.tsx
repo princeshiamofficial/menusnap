@@ -105,9 +105,9 @@ interface CategoryAdmin {
 }
 
 interface SubMenuItemAdmin {
-  id?: string; 
+  id?: string;
   name: string;
-  price?: number; 
+  price?: number;
 }
 
 interface MenuItemAdmin {
@@ -115,15 +115,15 @@ interface MenuItemAdmin {
   name: string;
   price: number;
   description?: string | null;
-  status: 'Active' | 'Inactive'; 
-  addedDate: string; 
+  status: 'Active' | 'Inactive';
+  addedDate: string;
   categoryId: string;
-  visibleToUsers?: boolean; 
-  image?: string | null; 
+  visibleToUsers?: boolean;
+  image?: string | null;
   subItems?: SubMenuItemAdmin[];
 }
 
-const SKELETON_ITEM_COUNT = 6; 
+const SKELETON_ITEM_COUNT = 6;
 const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 
 const menuItemFormSchema = z.object({
@@ -148,7 +148,7 @@ interface MenuItemFormProps {
   onSubmit: (data: MenuItemFormValues) => Promise<void>;
   onOpenChange: (open: boolean) => void;
   isEditMode: boolean;
-  categoryName?: string; 
+  categoryName?: string;
 }
 
 function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categoryName }: MenuItemFormProps) {
@@ -159,9 +159,9 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
       price: initialData?.price || 0,
       description: decodeHtmlEntities(initialData?.description),
       visibleToUsers: initialData ? initialData.status === 'Active' : true,
-      subItems: initialData?.subItems?.map(si => ({ 
-        id: si.id, 
-        name: decodeHtmlEntities(si.name), 
+      subItems: initialData?.subItems?.map(si => ({
+        id: si.id,
+        name: decodeHtmlEntities(si.name),
         price: si.price
       })) || [],
     },
@@ -177,20 +177,20 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
   const [newSubItemPrice, setNewSubItemPrice] = useState('');
 
   const handleAddSubItemClick = () => {
-    form.clearErrors("subItems.root"); 
+    form.clearErrors("subItems");
     const nameVal = newSubItemName.trim();
     const priceStr = newSubItemPrice.trim();
 
     if (!nameVal) {
-      form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+      form.setError("subItems", { type: "manual", message: "Variation name cannot be empty." });
       return;
     }
-    
+
     let priceVal: number | undefined = undefined;
     if (priceStr !== '') {
       const parsedPrice = parseFloat(priceStr);
       if (isNaN(parsedPrice) || parsedPrice < 0) {
-        form.setError("subItems.root", { type: "manual", message: "Variation price must be a valid non-negative number if provided." });
+        form.setError("subItems", { type: "manual", message: "Variation price must be a valid non-negative number if provided." });
         return;
       }
       priceVal = parsedPrice;
@@ -205,12 +205,12 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
   const handleSubmit = async (data: MenuItemFormValues) => {
     await onSubmit(data);
   };
-  
+
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col flex-grow overflow-hidden">
       <DialogHeader className="px-6 py-4 border-b">
-         <DialogTitle className="text-xl">
-            {isEditMode ? `Edit ${decodeHtmlEntities(initialData?.name) || 'Menu Item'}` : `Add New ${categoryName ? decodeHtmlEntities(categoryName) + ' Item' : 'Menu Item'}`}
+        <DialogTitle className="text-xl">
+          {isEditMode ? `Edit ${decodeHtmlEntities(initialData?.name) || 'MagicTab Item'}` : `Add New ${categoryName ? decodeHtmlEntities(categoryName) + ' Item' : 'MagicTab Item'}`}
         </DialogTitle>
       </DialogHeader>
       <ScrollArea className="flex-grow min-h-0">
@@ -222,16 +222,16 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
           </div>
           <div>
             <Label htmlFor="item-price">Base Price</Label>
-            <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price (0 if only variations)" step="0.01"/>
+            <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price (0 if only variations)" step="0.01" />
             {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
           </div>
           <div>
             <Label htmlFor="item-description">Description (optional)</Label>
-            <Textarea 
-              id="item-description" 
-              {...form.register("description")} 
-              placeholder="Enter item description" 
-              rows={3} 
+            <Textarea
+              id="item-description"
+              {...form.register("description")}
+              placeholder="Enter item description"
+              rows={3}
             />
             {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
           </div>
@@ -244,7 +244,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
             <div className="mt-3 flex items-start gap-2">
               <div className="flex-grow space-y-1">
                 <Label htmlFor="new-subitem-name" className="sr-only">Variation Name</Label>
-                <Input 
+                <Input
                   id="new-subitem-name"
                   placeholder="Variation name (e.g., Small)"
                   value={newSubItemName}
@@ -253,7 +253,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
               </div>
               <div className="w-40 space-y-1">
                 <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
-                <Input 
+                <Input
                   id="new-subitem-price"
                   type="number"
                   placeholder="Price (optional)"
@@ -267,7 +267,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
               </Button>
             </div>
             {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
-             {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
+            {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
               <div key={index}>
                 {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
                 {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
@@ -279,12 +279,12 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
             <div className="mt-4 space-y-3">
               <div className="flex justify-between items-center">
                 <Label className="text-sm font-medium text-foreground">Added Variations: {fields.length}</Label>
-                <Button 
-                  type="button" 
-                  variant="link" 
-                  size="sm" 
-                  className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs" 
-                  onClick={() => remove()} 
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
+                  onClick={() => remove()}
                 >
                   Clear All
                 </Button>
@@ -295,24 +295,24 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
                   return (
                     <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
                       <div className="flex items-center gap-2 flex-grow">
-                         <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
-                         {typeof currentPrice === 'number' && (
-                           <>
-                             <span className="text-xs text-muted-foreground">-</span>
-                             <span className="text-sm font-medium text-foreground whitespace-nowrap">
-                                ৳{currentPrice.toLocaleString()}
-                             </span>
-                           </>
-                         )}
-                         {currentPrice === undefined && (
-                           <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
-                         )}
+                        <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
+                        {typeof currentPrice === 'number' && (
+                          <>
+                            <span className="text-xs text-muted-foreground">-</span>
+                            <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                              ৳{currentPrice.toLocaleString()}
+                            </span>
+                          </>
+                        )}
+                        {currentPrice === undefined && (
+                          <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
+                        )}
                       </div>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => remove(index)} 
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
                         className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
                         aria-label={`Remove ${form.watch(`subItems.${index}.name`)} variation`}
                       >
@@ -336,7 +336,7 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
           disabled={form.formState.isSubmitting}
           className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Adding...") : <><Save className="h-4 w-4 mr-2"/>{isEditMode ? "Save Changes" : "Add Item"}</>}
+          {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Adding...") : <><Save className="h-4 w-4 mr-2" />{isEditMode ? "Save Changes" : "Add Item"}</>}
         </Button>
       </DialogFooter>
     </form>
@@ -344,22 +344,22 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
 }
 
 
-export default function ManageMenuItemsPage(): ReactNode {
+export default function ManageMagicTabPage(): ReactNode {
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [menuType, setMenuType] = useState<MenuType>("restaurant");
   const [allCategories, setAllCategories] = useState<CategoryAdmin[]>([]);
   const [orderedCategories, setOrderedCategories] = useState<CategoryAdmin[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<CategoryAdmin | null>(null);
-  
+
   const [allMenuItems, setAllMenuItems] = useState<MenuItemAdmin[]>([]);
   const [filteredMenuItems, setFilteredMenuItems] = useState<MenuItemAdmin[]>([]);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  
+
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [errorCategories, setErrorCategories] = useState<string | null>(null);
-  const [loadingItems, setLoadingItems] = useState(false); 
+  const [loadingItems, setLoadingItems] = useState(false);
   const [errorItems, setErrorItems] = useState<string | null>(null);
 
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
@@ -367,7 +367,7 @@ export default function ManageMenuItemsPage(): ReactNode {
   const [editingItemData, setEditingItemData] = useState<MenuItemAdmin | null>(null);
   const [isDeleteItemDialogOpen, setIsDeleteItemDialogOpen] = useState(false);
   const [itemToDeleteInfo, setItemToDeleteInfo] = useState<{ id: string, name: string } | null>(null);
-  
+
   const { toast } = useToast();
 
   const getCategoriesApiUrl = (type: MenuType) => type === 'parlour'
@@ -405,14 +405,14 @@ export default function ManageMenuItemsPage(): ReactNode {
         id: String(cat.id),
         name: String(cat.name || 'Unnamed Category'),
         icon: String(cat.icon || '📁'),
-        visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers), 
+        visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers),
       }));
-      
+
       let visibleAdminCategories = fetchedCategoriesRaw.filter(cat => cat.visibleToUsers);
       // Sort visible categories alphabetically by name
       visibleAdminCategories = [...visibleAdminCategories].sort((a, b) => a.name.localeCompare(b.name));
 
-      setAllCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 }))); 
+      setAllCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 })));
       setOrderedCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 })));
 
 
@@ -420,25 +420,25 @@ export default function ManageMenuItemsPage(): ReactNode {
       const menuItemsResult = await menuItemsResponse.json();
 
       let rawItemsArray: any[] = [];
-        if (currentMenuType === 'restaurant' && Array.isArray(menuItemsResult)) { 
-            rawItemsArray = menuItemsResult;
-        } else if (menuItemsResult.success) { 
-            if (Array.isArray(menuItemsResult.data)) { 
-                rawItemsArray = menuItemsResult.data;
-            } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) { 
-                rawItemsArray = menuItemsResult.data.items;
-            } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.menuItems)) { 
-                 rawItemsArray = menuItemsResult.data.menuItems;
-            } else {
-                throw new Error('Invalid data format for menu items (expected array under "data", "data.items", or "data.menuItems" for parlour, or direct array for restaurant).');
-            }
-        } else if (Array.isArray(menuItemsResult)){ 
-             rawItemsArray = menuItemsResult;
+      if (currentMenuType === 'restaurant' && Array.isArray(menuItemsResult)) {
+        rawItemsArray = menuItemsResult;
+      } else if (menuItemsResult.success) {
+        if (Array.isArray(menuItemsResult.data)) {
+          rawItemsArray = menuItemsResult.data;
+        } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) {
+          rawItemsArray = menuItemsResult.data.items;
+        } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.menuItems)) {
+          rawItemsArray = menuItemsResult.data.menuItems;
+        } else {
+          throw new Error('Invalid data format for menu items (expected array under "data", "data.items", or "data.menuItems" for parlour, or direct array for restaurant).');
         }
-         else {
-            throw new Error(menuItemsResult.message || 'API request for menu items was not successful and data format is unrecognized.');
-        }
-      
+      } else if (Array.isArray(menuItemsResult)) {
+        rawItemsArray = menuItemsResult;
+      }
+      else {
+        throw new Error(menuItemsResult.message || 'API request for menu items was not successful and data format is unrecognized.');
+      }
+
       const fetchedMenuItems: MenuItemAdmin[] = rawItemsArray.map((item: any): MenuItemAdmin => ({
         id: String(item.id),
         name: String(item.name || 'Unnamed Item'),
@@ -448,8 +448,8 @@ export default function ManageMenuItemsPage(): ReactNode {
         addedDate: item.createdAt || item.addedDate || new Date().toISOString(),
         categoryId: String(item.category || item.categoryId),
         visibleToUsers: item.visibleToUsers === undefined ? true : Boolean(item.visibleToUsers),
-        image: item.image || null, 
-        subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({id: String(si.id), name: String(si.name), price: si.price !== null && si.price !== undefined ? parseFloat(si.price) : undefined})) : [],
+        image: item.image || null,
+        subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({ id: String(si.id), name: String(si.name), price: si.price !== null && si.price !== undefined ? parseFloat(si.price) : undefined })) : [],
       }));
       setAllMenuItems(fetchedMenuItems);
 
@@ -462,21 +462,21 @@ export default function ManageMenuItemsPage(): ReactNode {
         ...cat,
         itemCount: categoryCounts[cat.id] || 0
       }));
-      
-      const sortedUpdatedCategories = [...updatedCategoriesWithCounts].sort((a,b) => a.name.localeCompare(b.name));
 
-      setAllCategories(sortedUpdatedCategories); 
-      setOrderedCategories(sortedUpdatedCategories); 
-      
+      const sortedUpdatedCategories = [...updatedCategoriesWithCounts].sort((a, b) => a.name.localeCompare(b.name));
+
+      setAllCategories(sortedUpdatedCategories);
+      setOrderedCategories(sortedUpdatedCategories);
+
       if (sortedUpdatedCategories.length > 0) {
-        let categoryToSelect = sortedUpdatedCategories[0]; 
+        let categoryToSelect = sortedUpdatedCategories[0];
         if (prevSelectedCategoryId) {
-            const foundCat = sortedUpdatedCategories.find(c => c.id === prevSelectedCategoryId);
-            if (foundCat) categoryToSelect = foundCat; 
+          const foundCat = sortedUpdatedCategories.find(c => c.id === prevSelectedCategoryId);
+          if (foundCat) categoryToSelect = foundCat;
         }
         setSelectedCategory(categoryToSelect);
       } else {
-        setSelectedCategory(null); 
+        setSelectedCategory(null);
       }
 
 
@@ -492,20 +492,20 @@ export default function ManageMenuItemsPage(): ReactNode {
       setLoadingCategories(false);
       setLoadingItems(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory?.id]); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory?.id]);
 
   useEffect(() => {
     if (isAdminLoggedIn) {
       fetchCategoriesAndItems(menuType);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [menuType, isAdminLoggedIn]); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menuType, isAdminLoggedIn]);
 
   useEffect(() => {
     if (!selectedCategory) {
-        setFilteredMenuItems([]); 
-        return;
+      setFilteredMenuItems([]);
+      return;
     }
 
     let items = allMenuItems.filter(item => item.categoryId === selectedCategory.id);
@@ -534,30 +534,30 @@ export default function ManageMenuItemsPage(): ReactNode {
   };
 
   const handleRefresh = () => {
-    fetchCategoriesAndItems(menuType, true); 
+    fetchCategoriesAndItems(menuType, true);
   };
 
 
   const handleAddMenuItem = async (formData: MenuItemFormValues) => {
     if (!selectedCategory) {
-        toast({ title: "Error", description: "No category selected to add the item to.", variant: "destructive" });
-        return;
+      toast({ title: "Error", description: "No category selected to add the item to.", variant: "destructive" });
+      return;
     }
-    
-    const payload = { 
-        name: formData.name,
-        price: formData.price,
-        description: formData.description,
-        category: selectedCategory.id, 
-        status: formData.visibleToUsers ? 'Active' : 'Inactive', 
-        visibleToUsers: formData.visibleToUsers, 
-        subItems: formData.subItems ? formData.subItems.map(si => {
-            const subItemPayload: any = { name: si.name };
-            if (si.price !== undefined) subItemPayload.price = si.price;
-            return subItemPayload;
-        }) : [],
+
+    const payload = {
+      name: formData.name,
+      price: formData.price,
+      description: formData.description,
+      category: selectedCategory.id,
+      status: formData.visibleToUsers ? 'Active' : 'Inactive',
+      visibleToUsers: formData.visibleToUsers,
+      subItems: formData.subItems ? formData.subItems.map(si => {
+        const subItemPayload: any = { name: si.name };
+        if (si.price !== undefined) subItemPayload.price = si.price;
+        return subItemPayload;
+      }) : [],
     };
-        
+
     try {
       const response = await fetch(getMenuItemsApiUrl(menuType), {
         method: 'POST',
@@ -565,18 +565,18 @@ export default function ManageMenuItemsPage(): ReactNode {
         body: JSON.stringify(payload),
       });
       const result = await response.json();
-      
+
       if (!response.ok || !result.success || !result.data || !result.data.item) {
         let errorMsg = result.message || `Request failed with status: ${response.status}`;
         if (response.ok && result.success && (!result.data || !result.data.item)) {
-            errorMsg = "API reported success but item data was missing in the response.";
+          errorMsg = "API reported success but item data was missing in the response.";
         }
         throw new Error(errorMsg);
       }
 
       toast({ title: "Success", description: result.message || `Item "${decodeHtmlEntities(formData.name)}" added to ${decodeHtmlEntities(selectedCategory?.name) || 'category'}.` });
       setIsAddItemDialogOpen(false);
-      fetchCategoriesAndItems(menuType, true); 
+      fetchCategoriesAndItems(menuType, true);
     } catch (error: any) {
       toast({ title: "Error Adding Item", description: error.message, variant: "destructive" });
     }
@@ -592,33 +592,33 @@ export default function ManageMenuItemsPage(): ReactNode {
       toast({ title: "Error", description: "No item selected for editing.", variant: "destructive" });
       return;
     }
-    const payload = { 
-        id: editingItemData.id, 
-        name: formData.name,
-        price: formData.price,
-        description: formData.description,
-        category: editingItemData.categoryId, 
-        status: formData.visibleToUsers ? 'Active' : 'Inactive', 
-        visibleToUsers: formData.visibleToUsers, 
-        subItems: formData.subItems ? formData.subItems.map(si => {
-            const subItemPayload: any = { name: si.name };
-            if (si.id) subItemPayload.id = si.id; 
-            if (si.price !== undefined) subItemPayload.price = si.price;
-            return subItemPayload;
-        }) : [],
+    const payload = {
+      id: editingItemData.id,
+      name: formData.name,
+      price: formData.price,
+      description: formData.description,
+      category: editingItemData.categoryId,
+      status: formData.visibleToUsers ? 'Active' : 'Inactive',
+      visibleToUsers: formData.visibleToUsers,
+      subItems: formData.subItems ? formData.subItems.map(si => {
+        const subItemPayload: any = { name: si.name };
+        if (si.id) subItemPayload.id = si.id;
+        if (si.price !== undefined) subItemPayload.price = si.price;
+        return subItemPayload;
+      }) : [],
     };
     try {
       const response = await fetch(getMenuItemsApiUrl(menuType), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payload), 
+        body: JSON.stringify(payload),
       });
       const result = await response.json();
 
-      if (!response.ok || !result.success || !result.data || !result.data.item ) {
+      if (!response.ok || !result.success || !result.data || !result.data.item) {
         let errorMsg = result.message || `Request failed with status: ${response.status}`;
         if (response.ok && result.success && (!result.data || !result.data.item)) {
-             errorMsg = "API reported success but item data was missing in the response.";
+          errorMsg = "API reported success but item data was missing in the response.";
         }
         throw new Error(errorMsg);
       }
@@ -645,12 +645,12 @@ export default function ManageMenuItemsPage(): ReactNode {
         headers: { 'Accept': 'application/json' },
       });
       const result = await response.json();
-      if (!response.ok || (result && result.success === false && response.status !== 404) ) { 
-         if (response.status === 404 && result.message && result.message.toLowerCase().includes('not found')) {
-            toast({ title: "Item Not Found", description: result.message || `Item "${decodeHtmlEntities(itemToDeleteInfo.name)}" was already removed or did not exist.` });
-         } else {
-            throw new Error(result.message || `Failed to delete item. Status: ${response.status}`);
-         }
+      if (!response.ok || (result && result.success === false && response.status !== 404)) {
+        if (response.status === 404 && result.message && result.message.toLowerCase().includes('not found')) {
+          toast({ title: "Item Not Found", description: result.message || `Item "${decodeHtmlEntities(itemToDeleteInfo.name)}" was already removed or did not exist.` });
+        } else {
+          throw new Error(result.message || `Failed to delete item. Status: ${response.status}`);
+        }
       } else {
         toast({ title: "Success", description: result.message || `Item "${decodeHtmlEntities(itemToDeleteInfo.name)}" deleted.` });
       }
@@ -690,7 +690,7 @@ export default function ManageMenuItemsPage(): ReactNode {
               "w-full justify-start items-center text-md h-10 mb-2 font-semibold",
               !selectedCategory ? 'bg-muted text-foreground' : 'text-foreground'
             )}
-            onClick={() => setSelectedCategory(null)} 
+            onClick={() => setSelectedCategory(null)}
           >
             All Items
             <Badge variant="secondary" className="ml-auto bg-muted text-muted-foreground">{totalAllItemsCount}</Badge>
@@ -700,7 +700,7 @@ export default function ManageMenuItemsPage(): ReactNode {
         <ScrollArea className="flex-1">
           {loadingCategories && (
             <div className="p-2 space-y-2.5">
-              {Array.from({length: 8}).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}
+              {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}
             </div>
           )}
           {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
@@ -708,7 +708,7 @@ export default function ManageMenuItemsPage(): ReactNode {
             <p className="p-4 text-sm text-muted-foreground">No visible categories found for {menuType}.</p>
           )}
           {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
-             <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-1">
+            <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-1">
               {orderedCategories.map(category => (
                 <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
                   <Button
@@ -716,8 +716,8 @@ export default function ManageMenuItemsPage(): ReactNode {
                     className={cn(
                       "w-full justify-start items-center text-sm h-9 rounded-md",
                       selectedCategory?.id === category.id
-                      ? 'bg-muted font-medium text-foreground'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                        ? 'bg-muted font-medium text-foreground'
+                        : 'text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
                     )}
                     onClick={() => setSelectedCategory(category)}
                   >
@@ -771,25 +771,25 @@ export default function ManageMenuItemsPage(): ReactNode {
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            <Button 
-                size="sm" 
-                className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
-                onClick={() => {
-                    if (selectedCategory && orderedCategories.length > 0) {
-                        setEditingItemData(null); 
-                        setIsAddItemDialogOpen(true);
-                    } else {
-                        toast({title: "Cannot Add Item", description: "Please select a category first.", variant: "default"});
-                    }
-                }}
-                disabled={!selectedCategory || orderedCategories.length === 0}
+            <Button
+              size="sm"
+              className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+              onClick={() => {
+                if (selectedCategory && orderedCategories.length > 0) {
+                  setEditingItemData(null);
+                  setIsAddItemDialogOpen(true);
+                } else {
+                  toast({ title: "Cannot Add Item", description: "Please select a category first.", variant: "default" });
+                }
+              }}
+              disabled={!selectedCategory || orderedCategories.length === 0}
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Item
             </Button>
           </div>
         </div>
-        
+
         <ScrollArea className="flex-1 bg-background">
           <div className="p-6">
             {loadingItems && (
@@ -814,12 +814,12 @@ export default function ManageMenuItemsPage(): ReactNode {
               </div>
             )}
             {!loadingItems && !errorItems && !selectedCategory && (
-                 <div className="flex-1 flex items-center justify-center text-center py-10 text-muted-foreground bg-card border border-border rounded-lg">
-                    <div>
-                        <PackageSearch className="mx-auto h-12 w-12 mb-4 opacity-70" />
-                        <p className="text-md">Select a category to view its menu items.</p>
-                    </div>
+              <div className="flex-1 flex items-center justify-center text-center py-10 text-muted-foreground bg-card border border-border rounded-lg">
+                <div>
+                  <PackageSearch className="mx-auto h-12 w-12 mb-4 opacity-70" />
+                  <p className="text-md">Select a category to view its menu items.</p>
                 </div>
+              </div>
             )}
             {!loadingItems && !errorItems && selectedCategory && (
               <>
@@ -841,25 +841,25 @@ export default function ManageMenuItemsPage(): ReactNode {
                     {filteredMenuItems.map(item => (
                       <div key={item.id} className="flex items-center p-3 gap-4 bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow">
                         <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                          <Image 
-                            src={STATIC_ITEM_IMAGE_URL} 
-                            alt={decodeHtmlEntities(item.name)} 
-                            width={40} 
-                            height={40} 
-                            className="h-full w-full object-contain" 
+                          <Image
+                            src={STATIC_ITEM_IMAGE_URL}
+                            alt={decodeHtmlEntities(item.name)}
+                            width={40}
+                            height={40}
+                            className="h-full w-full object-contain"
                             data-ai-hint="item illustration"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium text-foreground truncate">{decodeHtmlEntities(item.name)}</p>
-                            <Badge 
+                            <Badge
                               variant={item.status === 'Active' ? 'default' : 'outline'}
                               className={cn(
                                 "text-xs px-1.5 py-0.5",
-                                item.status === 'Active' 
-                                ? 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600' 
-                                : 'bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600'
+                                item.status === 'Active'
+                                  ? 'bg-green-100 text-green-700 dark:bg-green-700/20 dark:text-green-400 border-green-300 dark:border-green-600'
+                                  : 'bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400 border-red-300 dark:border-red-600'
                               )}
                             >
                               {item.status}
@@ -884,7 +884,7 @@ export default function ManageMenuItemsPage(): ReactNode {
                               <DropdownMenuItem onClick={() => openDeleteItemDialog(item)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Item
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator/>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem disabled>Duplicate Item</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -906,8 +906,8 @@ export default function ManageMenuItemsPage(): ReactNode {
 
       <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
         <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
-          <MenuItemForm 
-            onSubmit={handleAddMenuItem} 
+          <MenuItemForm
+            onSubmit={handleAddMenuItem}
             onOpenChange={setIsAddItemDialogOpen}
             isEditMode={false}
             categoryName={selectedCategory?.name}
@@ -916,14 +916,14 @@ export default function ManageMenuItemsPage(): ReactNode {
       </Dialog>
 
       {editingItemData && (
-         <Dialog open={isEditItemDialogOpen} onOpenChange={(open) => {
-            setIsEditItemDialogOpen(open);
-            if (!open) setEditingItemData(null);
-          }}>
+        <Dialog open={isEditItemDialogOpen} onOpenChange={(open) => {
+          setIsEditItemDialogOpen(open);
+          if (!open) setEditingItemData(null);
+        }}>
           <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-40px)] p-0 gap-0">
-            <MenuItemForm 
+            <MenuItemForm
               initialData={editingItemData}
-              onSubmit={handleEditMenuItem} 
+              onSubmit={handleEditMenuItem}
               onOpenChange={(open) => {
                 setIsEditItemDialogOpen(open);
                 if (!open) setEditingItemData(null);
@@ -945,8 +945,8 @@ export default function ManageMenuItemsPage(): ReactNode {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setItemToDeleteInfo(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteItem} 
+            <AlertDialogAction
+              onClick={confirmDeleteItem}
               className={cn(buttonVariants({ variant: "destructive" }))}
             >
               <Trash2 className="mr-2 h-4 w-4" /> Delete Item
@@ -958,4 +958,4 @@ export default function ManageMenuItemsPage(): ReactNode {
     </div>
   );
 }
-    
+

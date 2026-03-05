@@ -122,7 +122,7 @@ interface ApiCategory {
   itemCount: number;
   visibleToUsers: boolean;
   createdAt: string;
-  status?: string; 
+  status?: string;
 }
 
 interface StatCardAdminPageProps {
@@ -185,7 +185,7 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
   const handleSubmit = async (data: CategoryFormValues) => {
     await onSubmit(data);
     // form.reset(); // Resetting form here might clear too early if submission fails and dialog stays open.
-                 // Consider resetting form only on successful dialog close or successful submission.
+    // Consider resetting form only on successful dialog close or successful submission.
   };
 
   return (
@@ -314,7 +314,7 @@ export default function ManageCategoriesPage(): ReactNode {
     } catch (e: any) {
       console.error(`Failed to fetch ${type} categories:`, e);
       setError(e.message || `Failed to load ${type} categories.`);
-      setAllCategories([]); 
+      setAllCategories([]);
     } finally {
       setIsLoading(false);
     }
@@ -329,7 +329,7 @@ export default function ManageCategoriesPage(): ReactNode {
   }, [categoryType, fetchCategories, isAdminLoggedIn]);
 
   useEffect(() => {
-    setCurrentPage(1); 
+    setCurrentPage(1);
   }, [searchTerm, statusFilter, sortOption]);
 
   const handleRefresh = useCallback(() => {
@@ -342,11 +342,11 @@ export default function ManageCategoriesPage(): ReactNode {
     const newCategoryPayload = {
       id: newCategoryId,
       ...data,
-      itemCount: 0, 
+      itemCount: 0,
       createdAt: new Date().toISOString(),
       status: data.visibleToUsers ? 'active' : 'inactive',
     };
-    
+
     try {
       const response = await fetch(getApiUrl(categoryType), {
         method: 'POST',
@@ -362,10 +362,10 @@ export default function ManageCategoriesPage(): ReactNode {
       if (!response.ok || !result.success) {
         throw new Error(result.message || `Failed to add category. Status: ${response.status}`);
       }
-      
+
       toast({ title: "Success", description: result.message || `Category "${decodeHtmlEntities(data.name)}" added.` });
       setIsAddDialogOpen(false);
-      fetchCategories(categoryType); 
+      fetchCategories(categoryType);
     } catch (error: any) {
       toast({ title: "Error Adding Category", description: error.message, variant: "destructive" });
     }
@@ -375,11 +375,11 @@ export default function ManageCategoriesPage(): ReactNode {
     if (!editingCategoryData) return;
 
     const updatedCategoryPayload = {
-      ...editingCategoryData, 
-      ...data, 
+      ...editingCategoryData,
+      ...data,
       status: data.visibleToUsers ? 'active' : 'inactive',
     };
-    
+
     try {
       const response = await fetch(getApiUrl(categoryType), {
         method: 'PUT',
@@ -395,7 +395,7 @@ export default function ManageCategoriesPage(): ReactNode {
       if (!response.ok || !result.success) {
         throw new Error(result.message || `Failed to update category. Status: ${response.status}`);
       }
-      
+
       toast({ title: "Success", description: result.message || `Category "${decodeHtmlEntities(data.name)}" updated.` });
       setIsEditDialogOpen(false);
       setEditingCategoryData(null);
@@ -404,7 +404,7 @@ export default function ManageCategoriesPage(): ReactNode {
       toast({ title: "Error Updating Category", description: error.message, variant: "destructive" });
     }
   };
-  
+
   const openEditDialog = (category: ApiCategory) => {
     setEditingCategoryData(category);
     setIsEditDialogOpen(true);
@@ -452,7 +452,7 @@ export default function ManageCategoriesPage(): ReactNode {
       visibleToUsers: !categoryToUpdate.visibleToUsers,
       status: !categoryToUpdate.visibleToUsers ? 'active' : 'inactive',
     };
-    
+
     try {
       const response = await fetch(getApiUrl(categoryType), {
         method: 'PUT',
@@ -468,7 +468,7 @@ export default function ManageCategoriesPage(): ReactNode {
       if (!response.ok || !result.success) {
         throw new Error(result.message || `Failed to update visibility. Status: ${response.status}`);
       }
-      
+
       toast({ title: "Status Updated", description: `Visibility for "${decodeHtmlEntities(categoryToUpdate.name)}" ${updatedCategoryPayload.visibleToUsers ? 'set to visible' : 'set to hidden'}.` });
       fetchCategories(categoryType);
     } catch (error: any) {
@@ -490,36 +490,36 @@ export default function ManageCategoriesPage(): ReactNode {
         return matchesSearch && matchesStatus;
       });
 
-      switch (sortOption) {
-        case 'name-asc':
-          categories = categories.sort((a, b) => decodeHtmlEntities(a.name).localeCompare(decodeHtmlEntities(b.name)));
-          break;
-        case 'name-desc':
-          categories = categories.sort((a, b) => decodeHtmlEntities(b.name).localeCompare(decodeHtmlEntities(a.name)));
-          break;
-        case 'items-desc':
-          categories = categories.sort((a, b) => b.itemCount - a.itemCount);
-          break;
-        case 'items-asc':
-          categories = categories.sort((a, b) => a.itemCount - b.itemCount);
-          break;
-        case 'newest':
-          categories = categories.sort((a, b) => {
-              try {
-                  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-              } catch { return 0; }
-          });
-          break;
-        case 'oldest':
-          categories = categories.sort((a, b) => {
-              try {
-                  return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-              } catch { return 0; }
-          });
-          break;
-        default:
-          categories = categories.sort((a, b) => decodeHtmlEntities(a.name).localeCompare(decodeHtmlEntities(b.name)));
-      }
+    switch (sortOption) {
+      case 'name-asc':
+        categories = categories.sort((a, b) => decodeHtmlEntities(a.name).localeCompare(decodeHtmlEntities(b.name)));
+        break;
+      case 'name-desc':
+        categories = categories.sort((a, b) => decodeHtmlEntities(b.name).localeCompare(decodeHtmlEntities(a.name)));
+        break;
+      case 'items-desc':
+        categories = categories.sort((a, b) => b.itemCount - a.itemCount);
+        break;
+      case 'items-asc':
+        categories = categories.sort((a, b) => a.itemCount - b.itemCount);
+        break;
+      case 'newest':
+        categories = categories.sort((a, b) => {
+          try {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          } catch { return 0; }
+        });
+        break;
+      case 'oldest':
+        categories = categories.sort((a, b) => {
+          try {
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          } catch { return 0; }
+        });
+        break;
+      default:
+        categories = categories.sort((a, b) => decodeHtmlEntities(a.name).localeCompare(decodeHtmlEntities(b.name)));
+    }
     return categories;
   }, [allCategories, searchTerm, statusFilter, sortOption]);
 
@@ -587,7 +587,7 @@ export default function ManageCategoriesPage(): ReactNode {
             <FolderKanban className="h-8 w-8 mr-3 text-primary" />
             Category Management
           </h1>
-          <p className="text-muted-foreground mt-1">Manage {categoryTypeName.toLowerCase()} menu categories</p>
+          <p className="text-muted-foreground mt-1">Manage {categoryTypeName.toLowerCase()} MagicTab categories</p>
         </div>
         <div className="w-full sm:w-auto">
           <Label htmlFor="category-type-select" className="text-sm font-medium text-muted-foreground">Category Type:</Label>
@@ -607,7 +607,7 @@ export default function ManageCategoriesPage(): ReactNode {
         <StatCardAdminPage
           title={`${categoryTypeName} Categories`}
           value={isLoading ? <Skeleton className="h-10 w-16 bg-white/30" /> : stats.total}
-          description="Manage your menu sections"
+          description="Manage your MagicTab sections"
           icon={LayoutList}
           className="bg-primary"
         />
@@ -632,7 +632,7 @@ export default function ManageCategoriesPage(): ReactNode {
           <div>
             <h2 className="text-xl font-semibold text-foreground">{categoryTypeName} Categories</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Organize your {categoryTypeName.toLowerCase()} menu with custom categories.
+              Organize your {categoryTypeName.toLowerCase()} MagicTab with custom categories.
               {lastUpdated && <span className="text-green-600 dark:text-green-400"> • Last updated: {lastUpdated}</span>}
             </p>
           </div>
@@ -669,20 +669,20 @@ export default function ManageCategoriesPage(): ReactNode {
           </Select>
           <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
             <SelectTrigger className="w-full sm:w-[180px]">
-                <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Sort by..." />
+              <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Sort by..." />
             </SelectTrigger>
             <SelectContent>
-                {sortOptionsList.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                    </SelectItem>
-                ))}
+              {sortOptionsList.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
-        
-        <div className="flex-grow min-h-0"> 
+
+        <div className="flex-grow min-h-0">
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
@@ -778,26 +778,26 @@ export default function ManageCategoriesPage(): ReactNode {
         <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
           <p>Showing {paginatedCategories.length} of {filteredAndSortedCategories.length} {categoryTypeName.toLowerCase()} categories.</p>
           <div className="flex items-center space-x-1">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handlePreviousPage} 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousPage}
               disabled={currentPage === 1 || isLoading}
             >
               Previous
             </Button>
-            <Button 
-              variant={totalPages === 0 ? "outline" : "default"} 
-              size="sm" 
-              className="w-8 h-8 p-0" 
+            <Button
+              variant={totalPages === 0 ? "outline" : "default"}
+              size="sm"
+              className="w-8 h-8 p-0"
               disabled={totalPages === 0 || isLoading}
               onClick={() => setCurrentPage(1)}
             >
               {totalPages > 0 ? currentPage : '-'}
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleNextPage}
               disabled={currentPage === totalPages || totalPages === 0 || isLoading}
             >
@@ -813,8 +813,8 @@ export default function ManageCategoriesPage(): ReactNode {
           <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle className="text-2xl">Add New {categoryTypeName} Category</DialogTitle>
           </DialogHeader>
-          <CategoryForm 
-            onSubmit={handleAddCategory} 
+          <CategoryForm
+            onSubmit={handleAddCategory}
             onOpenChange={setIsAddDialogOpen}
             isEditMode={false}
           />
@@ -822,17 +822,17 @@ export default function ManageCategoriesPage(): ReactNode {
       </Dialog>
 
       {editingCategoryData && (
-         <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
-            setIsEditDialogOpen(open);
-            if (!open) setEditingCategoryData(null);
-          }}>
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditingCategoryData(null);
+        }}>
           <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col max-h-[calc(100vh-80px)] p-0 gap-0">
             <DialogHeader className="p-6 pb-4 border-b">
               <DialogTitle className="text-2xl">Edit {categoryTypeName} Category</DialogTitle>
             </DialogHeader>
-            <CategoryForm 
+            <CategoryForm
               initialData={editingCategoryData}
-              onSubmit={handleEditCategory} 
+              onSubmit={handleEditCategory}
               onOpenChange={(open) => {
                 setIsEditDialogOpen(open);
                 if (!open) setEditingCategoryData(null);
@@ -853,8 +853,8 @@ export default function ManageCategoriesPage(): ReactNode {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setCategoryToDeleteInfo(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteCategory} 
+            <AlertDialogAction
+              onClick={confirmDeleteCategory}
               className={cn(buttonVariants({ variant: "destructive" }))}
             >
               <Trash2 className="mr-2 h-4 w-4" /> Delete Category
@@ -866,9 +866,9 @@ export default function ManageCategoriesPage(): ReactNode {
     </div>
   );
 }
-    
 
-    
+
+
 
 
 

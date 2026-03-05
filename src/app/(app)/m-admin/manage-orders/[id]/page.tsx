@@ -238,10 +238,10 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
     }, [isOpen, initialData, form]);
 
     const handleAddSubItemClick = () => {
-        form.clearErrors("subItems.root");
+        form.clearErrors("subItems");
         const nameVal = newSubItemName.trim();
         if (!nameVal) {
-            form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+            form.setError("subItems", { type: "manual", message: "Variation name cannot be empty." });
             return;
         }
         const priceVal = newSubItemPrice ? parseFloat(newSubItemPrice) : undefined;

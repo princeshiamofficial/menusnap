@@ -15,64 +15,64 @@ import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
 
 interface ApiOrder {
-  id: string;
-  orderId: string;
-  orderDate: string;
-  templateName?: string;
-  customerName?: string;
-  businessName?: string;
-  totalAmount?: number;
-  itemCount: number;
+    id: string;
+    orderId: string;
+    orderDate: string;
+    templateName?: string;
+    customerName?: string;
+    businessName?: string;
+    totalAmount?: number;
+    itemCount: number;
 }
 
 const OrderCard = ({ order }: { order: ApiOrder }) => {
-  const formattedDate = useMemo(() => {
-    try {
-      const date = parseISO(order.orderDate);
-      return isValidDate(date) ? format(date, "MMM d, yyyy") : "Invalid Date";
-    } catch {
-      return "Invalid Date";
-    }
-  }, [order.orderDate]);
+    const formattedDate = useMemo(() => {
+        try {
+            const date = parseISO(order.orderDate);
+            return isValidDate(date) ? format(date, "MMM d, yyyy") : "Invalid Date";
+        } catch {
+            return "Invalid Date";
+        }
+    }, [order.orderDate]);
 
-  return (
-    <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full bg-card">
-      <CardHeader className="pb-4">
-        <div className="flex justify-between items-start">
-            <div>
-                <CardTitle className="text-lg font-bold text-primary">Order #{order.orderId}</CardTitle>
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    {formattedDate}
-                </p>
-            </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-grow space-y-3 text-sm">
-        <div className="flex items-center gap-2 text-muted-foreground">
-            <FileTextIcon className="h-4 w-4 shrink-0" />
-            <span className="font-medium text-foreground truncate">{decodeHtmlEntities(order.templateName) || "Custom Selection"}</span>
-        </div>
-         <div className="flex items-center gap-2 text-muted-foreground">
-            <ShoppingCart className="h-4 w-4 shrink-0" />
-            <span>{order.itemCount} items</span>
-        </div>
-      </CardContent>
-      <CardFooter className="p-4 border-t mt-auto">
-        <Link href={`/order-history/${order.id}`} passHref legacyBehavior>
-            <Button as="a" variant="default" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                View Details <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-        </Link>
-      </CardFooter>
-    </Card>
-  );
+    return (
+        <Card className="shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full bg-card">
+            <CardHeader className="pb-4">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle className="text-lg font-bold text-primary">Order #{order.orderId}</CardTitle>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            {formattedDate}
+                        </p>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-3 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <FileTextIcon className="h-4 w-4 shrink-0" />
+                    <span className="font-medium text-foreground truncate">{decodeHtmlEntities(order.templateName) || "Custom Selection"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <ShoppingCart className="h-4 w-4 shrink-0" />
+                    <span>{order.itemCount} items</span>
+                </div>
+            </CardContent>
+            <CardFooter className="p-4 border-t mt-auto">
+                <Button asChild variant="default" className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                    <Link href={`/order-history/${order.id}`}>
+                        View Details <ChevronRight className="h-4 w-4 ml-2" />
+                    </Link>
+                </Button>
+            </CardFooter>
+        </Card>
+    );
 };
 
 const OrderCardSkeleton = () => (
     <Card className="shadow-md rounded-lg flex flex-col h-full bg-card">
         <CardHeader className="pb-4">
-             <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start">
                 <div className="space-y-2">
                     <Skeleton className="h-6 w-32" />
                     <Skeleton className="h-4 w-24" />
@@ -84,13 +84,13 @@ const OrderCardSkeleton = () => (
                 <Skeleton className="h-4 w-4 rounded-full" />
                 <Skeleton className="h-4 w-40" />
             </div>
-             <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
                 <Skeleton className="h-4 w-4 rounded-full" />
                 <Skeleton className="h-4 w-20" />
             </div>
         </CardContent>
         <CardFooter className="p-4 border-t mt-auto">
-             <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
         </CardFooter>
     </Card>
 );
@@ -109,7 +109,7 @@ export default function OrderHistoryPage() {
         try {
             const storedOrdersRaw = localStorage.getItem('colorHutOrders');
             const rawOrdersArray = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : [];
-            
+
             const fetchedOrders: ApiOrder[] = rawOrdersArray
                 .filter((order: any) => order.customer?.restaurant === clientUser.businessName)
                 .map((order: any, index: number): ApiOrder => ({
@@ -149,18 +149,18 @@ export default function OrderHistoryPage() {
     if (clientLoading) {
         return (
             <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-                 <Skeleton className="h-8 w-64 mb-2" />
-                 <Skeleton className="h-5 w-96" />
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
+                <Skeleton className="h-8 w-64 mb-2" />
+                <Skeleton className="h-5 w-96" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-8">
                     {Array.from({ length: 4 }).map((_, i) => <OrderCardSkeleton key={i} />)}
-                 </div>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-             <header>
+            <header>
                 <div className="flex items-center gap-3">
                     <History className="h-8 w-8 text-primary" />
                     <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
@@ -173,7 +173,7 @@ export default function OrderHistoryPage() {
             </header>
 
             <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-card rounded-lg shadow border">
-                 <div className="relative w-full sm:flex-grow">
+                <div className="relative w-full sm:flex-grow">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
@@ -187,9 +187,9 @@ export default function OrderHistoryPage() {
 
             <main>
                 {isLoading ? (
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {Array.from({ length: 8 }).map((_, index) => (
-                           <OrderCardSkeleton key={index} />
+                            <OrderCardSkeleton key={index} />
                         ))}
                     </div>
                 ) : error ? (
@@ -206,7 +206,7 @@ export default function OrderHistoryPage() {
                         </p>
                     </div>
                 ) : (
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredOrders.map(order => (
                             <OrderCard key={order.id} order={order} />
                         ))}

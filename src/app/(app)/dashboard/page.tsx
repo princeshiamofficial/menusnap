@@ -157,7 +157,7 @@ export default function DashboardPage() {
   const { clientUser, clientLoading } = useClientAuth();
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), 100); 
+    const timer = setTimeout(() => setIsMounted(true), 100);
     return () => clearTimeout(timer);
   }, []);
 
@@ -182,7 +182,7 @@ export default function DashboardPage() {
           console.error("Invalid API response structure for templates:", result);
           throw new Error("Invalid data format from API");
         }
-        
+
         const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any) => ({
           ...t,
           isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
@@ -209,7 +209,7 @@ export default function DashboardPage() {
     if (!clientLoading && clientUser?.type) {
       fetchTopRatedTemplates();
     } else if (!clientLoading && !clientUser) {
-        setIsLoadingTemplates(false);
+      setIsLoadingTemplates(false);
     }
   }, [clientUser, clientLoading]);
 
@@ -221,15 +221,14 @@ export default function DashboardPage() {
     { title: "Our Coverage Thana", value: "639", icon: Building2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
     { title: "Our Coverage County", value: "13", icon: Globe2, bgColorClass: "bg-secondary", textColorClass: "text-secondary-foreground", iconColorClass: "text-white" },
   ];
-  
+
   const showTemplateSkeletons = isLoadingTemplates || clientLoading;
 
   return (
     <div className="space-y-8">
       <div
-        className={`grid grid-cols-2 md:grid-cols-3 gap-6 transform transition-all duration-700 ease-out ${
-          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-        }`}
+        className={`grid grid-cols-2 md:grid-cols-3 gap-6 transform transition-all duration-700 ease-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+          }`}
       >
         {stats.map(stat => (
           <StatCard key={stat.title} {...stat} />
@@ -237,9 +236,8 @@ export default function DashboardPage() {
       </div>
 
       <div
-        className={`transform transition-all duration-700 ease-out ${
-          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-        }`}
+        className={`transform transition-all duration-700 ease-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+          }`}
         style={{ transitionDelay: isMounted ? '150ms' : '0ms' }}
       >
         <div className="flex items-center mb-4">
@@ -249,7 +247,7 @@ export default function DashboardPage() {
         <p className="text-muted-foreground mb-6">
           Our most popular professionally designed templates for your {clientUser?.type || 'business'}.
         </p>
-        
+
         {showTemplateSkeletons ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 4 }).map((_, index) => (
@@ -282,14 +280,13 @@ export default function DashboardPage() {
       </div>
 
       <div
-        className={`text-center mt-12 transform transition-all duration-700 ease-out ${
-          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-        }`}
+        className={`text-center mt-12 transform transition-all duration-700 ease-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+          }`}
         style={{ transitionDelay: isMounted ? '300ms' : '0ms' }}
       >
-        <Link href="/templates" passHref>
-          <Button as="a" size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">View All Templates</Button>
-        </Link>
+        <Button asChild size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+          <Link href="/templates">View All Templates</Link>
+        </Button>
       </div>
     </div>
   );

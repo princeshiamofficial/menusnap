@@ -8,58 +8,58 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ArrowLeft,
-  CalendarDays,
-  FileText as FileTextIcon,
-  AlertTriangle,
-  Share2,
-  Edit3,
-  Save,
-  Plus,
-  X,
-  PlusCircle,
-  Undo2,
-  GripVertical,
-  ChevronDown,
-  ChevronRight,
-  ChevronLeft,
-  Edit,
-  FileArchive,
-  Eye,
-  Shuffle,
-  ShoppingCart,
-  FileText,
-  Search,
-  Users,
-  PenSquare,
-  Loader2,
-  Check
+    ArrowLeft,
+    CalendarDays,
+    FileText as FileTextIcon,
+    AlertTriangle,
+    Share2,
+    Edit3,
+    Save,
+    Plus,
+    X,
+    PlusCircle,
+    Undo2,
+    GripVertical,
+    ChevronDown,
+    ChevronRight,
+    ChevronLeft,
+    Edit,
+    FileArchive,
+    Eye,
+    Shuffle,
+    ShoppingCart,
+    FileText,
+    Search,
+    Users,
+    PenSquare,
+    Loader2,
+    Check
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+    DialogClose,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -77,9 +77,9 @@ type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Deliv
 const ALL_ORDER_STATUSES: OrderStatus[] = ["Pending", "Processing", "In Progress", "Shipped", "Delivered", "Cancelled", "Refunded", "On Hold", "Out for Delivery"];
 
 interface SubItem {
-  id?: string;
-  name: string;
-  price?: number;
+    id?: string;
+    name: string;
+    price?: number;
 }
 interface OrderItemDetail {
     id: string;
@@ -172,10 +172,10 @@ const EditableField = ({ value, onSave, placeholder = "Click to edit", multiline
             <Input {...commonProps} type={typeof value === 'number' ? 'number' : 'text'} />
         );
     }
-    
+
     return (
-        <div 
-            onClick={() => setIsEditing(true)} 
+        <div
+            onClick={() => setIsEditing(true)}
             className={cn("hover:bg-primary/10 p-1 -m-1 rounded-md cursor-pointer group relative min-h-[24px]", className)}
             role="button"
             tabIndex={0}
@@ -189,129 +189,129 @@ const EditableField = ({ value, onSave, placeholder = "Click to edit", multiline
 
 // --- Add/Edit Item Form ---
 const menuItemFormSchema = z.object({
-  name: z.string().min(1, "Item name is required"),
-  price: z.coerce.number().min(0, "Price must be non-negative"),
-  description: z.string().optional().nullable(),
-  subItems: z.array(
-    z.object({
-      id: z.string().optional(),
-      name: z.string().min(1, "Variation name is required."),
-      price: z.coerce.number().min(0).optional(),
-    })
-  ).optional(),
+    name: z.string().min(1, "Item name is required"),
+    price: z.coerce.number().min(0, "Price must be non-negative"),
+    description: z.string().optional().nullable(),
+    subItems: z.array(
+        z.object({
+            id: z.string().optional(),
+            name: z.string().min(1, "Variation name is required."),
+            price: z.coerce.number().min(0).optional(),
+        })
+    ).optional(),
 });
 type MenuItemFormValues = z.infer<typeof menuItemFormSchema>;
 
 interface MenuItemFormProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (data: MenuItemFormValues) => void;
-  initialData?: Partial<OrderItemDetail> | null;
-  categoryName?: string;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (data: MenuItemFormValues) => void;
+    initialData?: Partial<OrderItemDetail> | null;
+    categoryName?: string;
 }
 
 function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryName }: MenuItemFormProps) {
-  const form = useForm<MenuItemFormValues>({
-    resolver: zodResolver(menuItemFormSchema),
-    mode: 'onChange',
-  });
+    const form = useForm<MenuItemFormValues>({
+        resolver: zodResolver(menuItemFormSchema),
+        mode: 'onChange',
+    });
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "subItems",
-  });
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "subItems",
+    });
 
-  const [newSubItemName, setNewSubItemName] = useState('');
-  const [newSubItemPrice, setNewSubItemPrice] = useState('');
-  
-  useEffect(() => {
-    if (isOpen) {
-      form.reset({
-        name: decodeHtmlEntities(initialData?.name) || "",
-        price: initialData?.price || 0,
-        description: decodeHtmlEntities(initialData?.description) || "",
-        subItems: initialData?.subItems?.map(si => ({...si, name: decodeHtmlEntities(si.name) || "" })) || [],
-      });
-    }
-  }, [isOpen, initialData, form]);
+    const [newSubItemName, setNewSubItemName] = useState('');
+    const [newSubItemPrice, setNewSubItemPrice] = useState('');
 
-  const handleAddSubItemClick = () => {
-    form.clearErrors("subItems.root");
-    const nameVal = newSubItemName.trim();
-    if (!nameVal) {
-      form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
-      return;
-    }
-    const priceVal = newSubItemPrice ? parseFloat(newSubItemPrice) : undefined;
-    append({ name: nameVal, price: priceVal });
-    setNewSubItemName('');
-    setNewSubItemPrice('');
-  };
+    useEffect(() => {
+        if (isOpen) {
+            form.reset({
+                name: decodeHtmlEntities(initialData?.name) || "",
+                price: initialData?.price || 0,
+                description: decodeHtmlEntities(initialData?.description) || "",
+                subItems: initialData?.subItems?.map(si => ({ ...si, name: decodeHtmlEntities(si.name) || "" })) || [],
+            });
+        }
+    }, [isOpen, initialData, form]);
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col h-[80vh] max-h-[750px] p-0 gap-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="text-xl">
-            {initialData ? `Edit "${decodeHtmlEntities(initialData.name)}"` : `Add New Item to "${categoryName}"`}
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <ScrollArea className="flex-grow p-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="item-name">Item Name</Label>
-                <Input id="item-name" {...form.register("name")} placeholder="Enter item name" />
-                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="item-price">Base Price</Label>
-                <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price" step="0.01"/>
-                {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="item-description">Description</Label>
-                <Textarea id="item-description" {...form.register("description")} placeholder="Item description (optional)"/>
-              </div>
-              <div className="pt-4">
-                <Label className="font-semibold">Variations / Sizes</Label>
-                <div className="mt-2 flex items-start gap-2">
-                  <Input placeholder="Variation name" value={newSubItemName} onChange={e => setNewSubItemName(e.target.value)} className="flex-grow"/>
-                  <Input placeholder="Price (optional)" type="number" value={newSubItemPrice} onChange={e => setNewSubItemPrice(e.target.value)} className="w-32"/>
-                  <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick}><Plus className="h-4 w-4"/></Button>
-                </div>
-                {form.formState.errors.subItems?.root && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
-              </div>
-              {fields.length > 0 && (
-                <div className="space-y-2">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="flex items-center gap-2">
-                      <Input {...form.register(`subItems.${index}.name`)} className="flex-grow"/>
-                      <Input {...form.register(`subItems.${index}.price`)} type="number" className="w-32"/>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><X className="h-4 w-4"/></Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-          <DialogFooter className="px-6 py-4 border-t mt-auto">
-            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-            <Button type="submit">Save</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+    const handleAddSubItemClick = () => {
+        form.clearErrors("subItems");
+        const nameVal = newSubItemName.trim();
+        if (!nameVal) {
+            form.setError("subItems", { type: "manual", message: "Variation name cannot be empty." });
+            return;
+        }
+        const priceVal = newSubItemPrice ? parseFloat(newSubItemPrice) : undefined;
+        append({ name: nameVal, price: priceVal });
+        setNewSubItemName('');
+        setNewSubItemPrice('');
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col h-[80vh] max-h-[750px] p-0 gap-0">
+                <DialogHeader className="px-6 py-4 border-b">
+                    <DialogTitle className="text-xl">
+                        {initialData ? `Edit "${decodeHtmlEntities(initialData.name)}"` : `Add New Item to "${categoryName}"`}
+                    </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
+                    <ScrollArea className="flex-grow p-6">
+                        <div className="space-y-4">
+                            <div>
+                                <Label htmlFor="item-name">Item Name</Label>
+                                <Input id="item-name" {...form.register("name")} placeholder="Enter item name" />
+                                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+                            </div>
+                            <div>
+                                <Label htmlFor="item-price">Base Price</Label>
+                                <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price" step="0.01" />
+                                {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
+                            </div>
+                            <div>
+                                <Label htmlFor="item-description">Description</Label>
+                                <Textarea id="item-description" {...form.register("description")} placeholder="Item description (optional)" />
+                            </div>
+                            <div className="pt-4">
+                                <Label className="font-semibold">Variations / Sizes</Label>
+                                <div className="mt-2 flex items-start gap-2">
+                                    <Input placeholder="Variation name" value={newSubItemName} onChange={e => setNewSubItemName(e.target.value)} className="flex-grow" />
+                                    <Input placeholder="Price (optional)" type="number" value={newSubItemPrice} onChange={e => setNewSubItemPrice(e.target.value)} className="w-32" />
+                                    <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick}><Plus className="h-4 w-4" /></Button>
+                                </div>
+                                {form.formState.errors.subItems?.root && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
+                            </div>
+                            {fields.length > 0 && (
+                                <div className="space-y-2">
+                                    {fields.map((field, index) => (
+                                        <div key={field.id} className="flex items-center gap-2">
+                                            <Input {...form.register(`subItems.${index}.name`)} className="flex-grow" />
+                                            <Input {...form.register(`subItems.${index}.price`)} type="number" className="w-32" />
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><X className="h-4 w-4" /></Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </ScrollArea>
+                    <DialogFooter className="px-6 py-4 border-t mt-auto">
+                        <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
+                        <Button type="submit">Save</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
 }
 // --- End Form ---
 
 interface OrderPreviewDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  initialOrder: ApiOrder;
-  allCategories: any[];
-  onSaveChanges: (newItems: OrderItemDetail[]) => void;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    initialOrder: ApiOrder;
+    allCategories: any[];
+    onSaveChanges: (newItems: OrderItemDetail[]) => void;
 }
 const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 
@@ -347,7 +347,7 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
             setActiveCategoryId(null);
         }
     }, [isOpen, initialItems, initialCategories]);
-    
+
     const itemsGroupedByCategory = useMemo(() => {
         return currentItems.reduce((acc, item) => {
             const catId = item.categoryId;
@@ -363,9 +363,9 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
         }
         return orderedCategories;
     }, [activeCategoryId, orderedCategories]);
-    
+
     const handleRemoveItem = (itemIdToRemove: string) => {
-      setCurrentItems(prev => prev.filter(item => item.id !== itemIdToRemove));
+        setCurrentItems(prev => prev.filter(item => item.id !== itemIdToRemove));
     };
 
     const handleSaveAndClose = () => {
@@ -443,44 +443,44 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                                         <Badge variant="secondary" className="ml-2 text-xs">{items.length}</Badge>
                                     </div>
                                     <Reorder.Group
-                                      axis="y"
-                                      values={items}
-                                      onReorder={(newOrder) => handleItemReorder(category.id, newOrder)}
-                                      className="space-y-3"
+                                        axis="y"
+                                        values={items}
+                                        onReorder={(newOrder) => handleItemReorder(category.id, newOrder)}
+                                        className="space-y-3"
                                     >
-                                      {items.map(item => (
-                                          <Reorder.Item key={item.id} value={item}>
-                                            <div className="flex items-center p-3 border rounded-lg bg-card shadow-sm hover:border-primary/50">
-                                              <GripVertical className="h-5 w-5 text-muted-foreground/50 cursor-grab mr-3" />
-                                                <Image
-                                                    src={STATIC_ITEM_IMAGE_URL}
-                                                    alt={decodeHtmlEntities(item.name)}
-                                                    width={48} height={48}
-                                                    className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
-                                                    data-ai-hint="item illustration"
-                                                />
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
-                                                    {item.description && <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>}
+                                        {items.map(item => (
+                                            <Reorder.Item key={item.id} value={item}>
+                                                <div className="flex items-center p-3 border rounded-lg bg-card shadow-sm hover:border-primary/50">
+                                                    <GripVertical className="h-5 w-5 text-muted-foreground/50 cursor-grab mr-3" />
+                                                    <Image
+                                                        src={STATIC_ITEM_IMAGE_URL}
+                                                        alt={decodeHtmlEntities(item.name)}
+                                                        width={48} height={48}
+                                                        className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
+                                                        data-ai-hint="item illustration"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
+                                                        {item.description && <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>}
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
+                                                        <Button
+                                                            variant="link" size="sm"
+                                                            className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
+                                                            onClick={() => handleRemoveItem(item.id)}
+                                                        >
+                                                            <X className="h-3 w-3 mr-1" /> Remove
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
-                                                    <Button
-                                                        variant="link" size="sm"
-                                                        className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
-                                                        onClick={() => handleRemoveItem(item.id)}
-                                                    >
-                                                        <X className="h-3 w-3 mr-1" /> Remove
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                          </Reorder.Item>
-                                      ))}
+                                            </Reorder.Item>
+                                        ))}
                                     </Reorder.Group>
                                 </div>
                             );
                         })}
-                         {currentItems.length === 0 && (
+                        {currentItems.length === 0 && (
                             <div className="text-center text-muted-foreground py-10">
                                 <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
                                 <p>No items in this selection.</p>
@@ -504,14 +504,14 @@ export default function EditorPage() {
     const params = useParams();
     const router = useRouter();
     const orderIdFromUrl = params.id as string;
-    
+
     const [order, setOrder] = useState<ApiOrder | null>(null);
     const [allCategories, setAllCategories] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
     const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
-    
+
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<OrderItemDetail | null>(null);
     const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
@@ -519,7 +519,7 @@ export default function EditorPage() {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
-    
+
     const pendingSaveData = useRef<ApiOrder | null>(null);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
@@ -531,7 +531,7 @@ export default function EditorPage() {
                 fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
                 fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
             ]);
-            
+
             const combinedCategories: any[] = [];
             if (restaurantCategoriesResponse.ok) {
                 const resCatResult = await restaurantCategoriesResponse.json();
@@ -562,7 +562,7 @@ export default function EditorPage() {
             } else {
                 throw new Error(result.message || 'API request for orders was not successful.');
             }
-            
+
             const orderData = rawOrdersArray.find(o => String(o.id) === orderIdFromUrl);
 
             if (orderData) {
@@ -604,10 +604,10 @@ export default function EditorPage() {
 
     const handleSaveChanges = useCallback(async (orderToSave: ApiOrder) => {
         if (saveStatus === 'saving') {
-          pendingSaveData.current = orderToSave;
-          return;
+            pendingSaveData.current = orderToSave;
+            return;
         }
-        
+
         setSaveStatus("saving");
         pendingSaveData.current = null;
 
@@ -618,7 +618,7 @@ export default function EditorPage() {
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify(orderToSave),
             });
-            
+
             let result;
             try {
                 result = await response.json();
@@ -633,7 +633,7 @@ export default function EditorPage() {
             if (!response.ok || !result.success) {
                 throw new Error(result.message || "Failed to save document changes.");
             }
-            
+
             setSaveStatus("saved");
 
         } catch (e: any) {
@@ -651,7 +651,7 @@ export default function EditorPage() {
         setSaveStatus("unsaved");
         handleSaveChanges(updatedOrder);
     }, [handleSaveChanges]);
-    
+
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
             if (saveStatus === 'unsaved' || saveStatus === 'saving') {
@@ -672,7 +672,7 @@ export default function EditorPage() {
         if (!order) return;
         const path = mode === 'viewer' ? 'share' : 'editor';
         const shareUrl = `${window.location.origin}/${path}/${order.id}`;
-        
+
         navigator.clipboard.writeText(shareUrl).then(() => {
         }).catch(err => {
             console.error('Failed to copy link: ', err);
@@ -684,14 +684,14 @@ export default function EditorPage() {
                 text: `View the details for document #${order.orderId}`,
                 url: shareUrl,
             })
-            .catch((error) => {
-                if (error.name !== 'AbortError') {
-                    console.error('Error sharing:', error);
-                }
-            });
+                .catch((error) => {
+                    if (error.name !== 'AbortError') {
+                        console.error('Error sharing:', error);
+                    }
+                });
         }
     };
-    
+
     const handleDownloadDocx = async () => {
         if (!order || !order.items) {
             return;
@@ -706,7 +706,7 @@ export default function EditorPage() {
                 description: item.description || undefined,
                 subItems: item.subItems?.map(si => ({ ...si, id: si.id || si.name, price: si.price || 0 })),
             }));
-            
+
             const categoriesForDocx: Category[] = categoriesForRender.map(c => {
                 const fullCategory = allCategories.find(ac => String(ac.id) === c.id);
                 return {
@@ -727,8 +727,8 @@ export default function EditorPage() {
     const categoriesForRender = useMemo(() => {
         if (!order?.items) return [];
 
-        const categoryMap = new Map<string, {name: string, items: OrderItemDetail[]}>();
-        
+        const categoryMap = new Map<string, { name: string, items: OrderItemDetail[] }>();
+
         order.items.forEach(item => {
             const catId = item.categoryId;
             if (!categoryMap.has(catId)) {
@@ -743,10 +743,10 @@ export default function EditorPage() {
 
         if (searchTerm) {
             if (searchFilterType === 'items') {
-                filteredItems = order.items.filter(item => 
+                filteredItems = order.items.filter(item =>
                     decodeHtmlEntities(item.name).toLowerCase().includes(lowerCaseSearchTerm)
                 );
-            } else { 
+            } else {
                 const matchingCategoryIds = new Set<string>();
                 for (const [id, data] of categoryMap.entries()) {
                     if (data.name.toLowerCase().includes(lowerCaseSearchTerm)) {
@@ -765,7 +765,7 @@ export default function EditorPage() {
         });
 
         const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
-        
+
         return orderedCategoryIds
             .map(id => {
                 const data = categoryMap.get(id);
@@ -811,21 +811,21 @@ export default function EditorPage() {
         const updatedItems = order.items?.filter(item => item.categoryId !== categoryId);
         handleOrderUpdate({ ...order, items: updatedItems });
     };
-    
+
     const handleToggleSubItems = (itemId: string) => {
         setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
     };
 
     const handleOpenEditDialog = (item: OrderItemDetail) => {
-      setEditingItem(item);
-      setAddingToCategoryId(null);
-      setIsFormOpen(true);
+        setEditingItem(item);
+        setAddingToCategoryId(null);
+        setIsFormOpen(true);
     };
 
     const handleOpenAddDialog = (categoryId: string) => {
-      setEditingItem(null);
-      setAddingToCategoryId(categoryId);
-      setIsFormOpen(true);
+        setEditingItem(null);
+        setAddingToCategoryId(categoryId);
+        setIsFormOpen(true);
     };
 
     const handleFormSubmit = (data: MenuItemFormValues) => {
@@ -856,11 +856,11 @@ export default function EditorPage() {
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
         try {
-          const date = parseISO(dateString);
-          return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
+            const date = parseISO(dateString);
+            return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
         } catch { return "Invalid Date"; }
     };
-    
+
 
     if (isLoading) {
         return (
@@ -918,210 +918,209 @@ export default function EditorPage() {
 
     return (
         <>
-        <div className="bg-muted min-h-screen flex flex-col">
-            <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
-                <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <div className="h-6 border-l border-border"></div>
-                        <div className="flex flex-col">
-                             <EditableField
-                                value={order.customer?.restaurant}
-                                onSave={(val) => handleOrderUpdate({ ...order, customer: { ...order.customer, restaurant: val } })}
-                                placeholder="Business Name"
-                                className="text-lg font-semibold text-foreground"
-                                inputClassName="text-lg font-semibold"
-                            />
-                            <p className="text-xs text-muted-foreground">Doc ID: {order.orderId}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        <SaveStatusIndicator />
-                         <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
-                            <FileArchive className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Download</span>
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)}>
-                            <Shuffle className="h-4 w-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Shuffle</span>
-                        </Button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                    <Share2 className="h-4 w-4 sm:mr-2" />
-                                    <span className="hidden sm:inline">Share</span>
-                                    <ChevronDown className="h-4 w-4 ml-1 -mr-1 hidden sm:inline-flex"/>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleShare('viewer')}>
-                                    <Users className="mr-2 h-4 w-4" />
-                                    Share with viewer
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleShare('editor')}>
-                                    <PenSquare className="mr-2 h-4 w-4" />
-                                    Share with editor
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-            </header>
-
-            <div className="flex-grow p-4 sm:p-6 lg:p-8">
-                <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-lg rounded-lg border border-border/50">
-                    <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
-                         <div>
-                             <EditableField
-                                value={order.customer?.restaurant}
-                                onSave={(val) => handleOrderUpdate({ ...order, customer: { ...order.customer, restaurant: val } })}
-                                placeholder="Business Name"
-                                className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground"
-                                inputClassName="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
-                            />
-                             <p className="font-bold text-lg text-muted-foreground mt-2">Doc ID: {order.orderId}</p>
-                        </div>
-                        <div className="text-right text-muted-foreground text-sm space-y-1">
-                            <p className="flex items-center justify-end gap-2"><CalendarDays className="h-4 w-4" />{formatDate(order.orderDate)}</p>
-                        </div>
-                    </div>
-                    
-                    <section>
-                         <div
-                            className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
-                            style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
-                        >
-                            Document Summary
-                        </div>
-                        <div className="flex items-center gap-2 mb-6">
-                            <div className="relative flex-grow">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    type="search"
-                                    placeholder={`Search ${searchFilterType}...`}
-                                    className="pl-10 w-full"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+            <div className="bg-muted min-h-screen flex flex-col">
+                <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
+                    <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <div className="h-6 border-l border-border"></div>
+                            <div className="flex flex-col">
+                                <EditableField
+                                    value={order.customer?.restaurant}
+                                    onSave={(val) => handleOrderUpdate({ ...order, customer: { ...order.customer, restaurant: val } })}
+                                    placeholder="Business Name"
+                                    className="text-lg font-semibold text-foreground"
+                                    inputClassName="text-lg font-semibold"
                                 />
+                                <p className="text-xs text-muted-foreground">Doc ID: {order.orderId}</p>
                             </div>
-                            <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Search by..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="items">Search Items</SelectItem>
-                                    <SelectItem value="categories">Search Categories</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
 
-                         <div>
-                        {categoriesForRender.map((category) => (
-                          <div key={category.id}>
-                            <div className="mb-8 group/category">
-                                <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
-                                    <span className="text-xl mr-2 text-primary">{category.icon}</span>
-                                    <EditableField
-                                        value={category.name}
-                                        onSave={(val) => handleCategoryNameChange(category.id, val)}
-                                        placeholder="Category Name"
-                                        className="text-xl font-semibold text-primary"
-                                        inputClassName="text-xl font-semibold"
+                        <div className="flex items-center gap-4">
+                            <SaveStatusIndicator />
+                            <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
+                                <FileArchive className="h-4 w-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Download</span>
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)}>
+                                <Shuffle className="h-4 w-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Shuffle</span>
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Share2 className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Share</span>
+                                        <ChevronDown className="h-4 w-4 ml-1 -mr-1 hidden sm:inline-flex" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleShare('viewer')}>
+                                        <Users className="mr-2 h-4 w-4" />
+                                        Share with viewer
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleShare('editor')}>
+                                        <PenSquare className="mr-2 h-4 w-4" />
+                                        Share with editor
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="flex-grow p-4 sm:p-6 lg:p-8">
+                    <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-lg rounded-lg border border-border/50">
+                        <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
+                            <div>
+                                <EditableField
+                                    value={order.customer?.restaurant}
+                                    onSave={(val) => handleOrderUpdate({ ...order, customer: { ...order.customer, restaurant: val } })}
+                                    placeholder="Business Name"
+                                    className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground"
+                                    inputClassName="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
+                                />
+                                <p className="font-bold text-lg text-muted-foreground mt-2">Doc ID: {order.orderId}</p>
+                            </div>
+                            <div className="text-right text-muted-foreground text-sm space-y-1">
+                                <p className="flex items-center justify-end gap-2"><CalendarDays className="h-4 w-4" />{formatDate(order.orderDate)}</p>
+                            </div>
+                        </div>
+
+                        <section>
+                            <div
+                                className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
+                                style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
+                            >
+                                Document Summary
+                            </div>
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="relative flex-grow">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="search"
+                                        placeholder={`Search ${searchFilterType}...`}
+                                        className="pl-10 w-full"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
                                     />
-                                    <Badge variant="secondary">{category.items.length}</Badge>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => handleRemoveCategory(category.id)}><X className="h-4 w-4"/></Button>
-                                    <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => handleOpenAddDialog(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
                                 </div>
-                                
-                                <div className="space-y-3">
-                                    <AnimatePresence>
-                                        {category.items.map((item) => (
-                                            <motion.div
-                                                key={item.id}
-                                                layout
-                                                initial={{ opacity: 0, y: -10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-                                                className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
-                                            >
-                                                <div className="flex items-start gap-3">
-                                                    <div className="flex-grow">
-                                                        <div className="flex justify-between items-start gap-4">
-                                                            <p className="font-bold text-foreground">{decodeHtmlEntities(item.name)}</p>
-                                                            <p className="font-bold text-foreground text-right">৳{item.price.toLocaleString()}</p>
-                                                        </div>
-                                                        {item.description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(item.description)}</p>}
-                                                        
-                                                        {item.subItems && item.subItems.length > 0 && (
-                                                            <>
-                                                                <Button variant="link" size="sm" onClick={() => handleToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary -ml-1 mt-2">
-                                                                    {expandedSubItems[item.id] ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                                                                    Variations
-                                                                </Button>
-                                                                {expandedSubItems[item.id] && (
-                                                                    <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
-                                                                        {item.subItems?.map((subItem, index) => (
-                                                                            <div key={subItem.id || index} className="flex justify-between items-center text-sm">
-                                                                                <p className="text-muted-foreground">- {decodeHtmlEntities(subItem.name)}</p>
-                                                                                <p className="text-muted-foreground">৳{subItem.price?.toLocaleString()}</p>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                     <div className="flex flex-col gap-1 shrink-0">
-                                                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleOpenEditDialog(item)}><Edit className="h-4 w-4"/></Button>
-                                                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4"/></Button>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        ))}
-                                    </AnimatePresence>
-                                </div>
+                                <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
+                                    <SelectTrigger className="w-[180px]">
+                                        <SelectValue placeholder="Search by..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="items">Search Items</SelectItem>
+                                        <SelectItem value="categories">Search Categories</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
-                           </div>
-                        ))}
-                         {categoriesForRender.length === 0 && (
-                            <div className="text-center text-muted-foreground py-10">
-                                <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                <p>No results found for your search.</p>
-                            </div>
-                        )}
-                        </div>
 
-                        <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
-                           <Plus className="mr-2 h-4 w-4"/>Add Category
-                        </Button>
-                    </section>
-                </main>
+                            <div>
+                                {categoriesForRender.map((category) => (
+                                    <div key={category.id}>
+                                        <div className="mb-8 group/category">
+                                            <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
+                                                <span className="text-xl mr-2 text-primary">{category.icon}</span>
+                                                <EditableField
+                                                    value={category.name}
+                                                    onSave={(val) => handleCategoryNameChange(category.id, val)}
+                                                    placeholder="Category Name"
+                                                    className="text-xl font-semibold text-primary"
+                                                    inputClassName="text-xl font-semibold"
+                                                />
+                                                <Badge variant="secondary">{category.items.length}</Badge>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => handleRemoveCategory(category.id)}><X className="h-4 w-4" /></Button>
+                                                <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => handleOpenAddDialog(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <AnimatePresence>
+                                                    {category.items.map((item) => (
+                                                        <motion.div
+                                                            key={item.id}
+                                                            layout
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
+                                                            className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
+                                                        >
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="flex-grow">
+                                                                    <div className="flex justify-between items-start gap-4">
+                                                                        <p className="font-bold text-foreground">{decodeHtmlEntities(item.name)}</p>
+                                                                        <p className="font-bold text-foreground text-right">৳{item.price.toLocaleString()}</p>
+                                                                    </div>
+                                                                    {item.description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(item.description)}</p>}
+
+                                                                    {item.subItems && item.subItems.length > 0 && (
+                                                                        <>
+                                                                            <Button variant="link" size="sm" onClick={() => handleToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary -ml-1 mt-2">
+                                                                                {expandedSubItems[item.id] ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+                                                                                Variations
+                                                                            </Button>
+                                                                            {expandedSubItems[item.id] && (
+                                                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
+                                                                                    {item.subItems?.map((subItem, index) => (
+                                                                                        <div key={subItem.id || index} className="flex justify-between items-center text-sm">
+                                                                                            <p className="text-muted-foreground">- {decodeHtmlEntities(subItem.name)}</p>
+                                                                                            <p className="text-muted-foreground">৳{subItem.price?.toLocaleString()}</p>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex flex-col gap-1 shrink-0">
+                                                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleOpenEditDialog(item)}><Edit className="h-4 w-4" /></Button>
+                                                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    ))}
+                                                </AnimatePresence>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {categoriesForRender.length === 0 && (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                        <p>No results found for your search.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
+                                <Plus className="mr-2 h-4 w-4" />Add Category
+                            </Button>
+                        </section>
+                    </main>
+                </div>
             </div>
-        </div>
-        <MenuItemForm
-            isOpen={isFormOpen}
-            onOpenChange={setIsFormOpen}
-            onSubmit={handleFormSubmit}
-            initialData={editingItem}
-            categoryName={
-                editingItem
-                    ? categoriesForRender.find(c => c.id === editingItem.categoryId)?.name
-                    : categoriesForRender.find(c => c.id === addingToCategoryId)?.name
-            }
-        />
-        {order && (
-            <OrderPreviewDialog
-                isOpen={isPreviewOpen}
-                onOpenChange={setIsPreviewOpen}
-                initialOrder={order}
-                allCategories={allCategories}
-                onSaveChanges={(newItems) => handleOrderUpdate({ ...order, items: newItems })}
+            <MenuItemForm
+                isOpen={isFormOpen}
+                onOpenChange={setIsFormOpen}
+                onSubmit={handleFormSubmit}
+                initialData={editingItem}
+                categoryName={
+                    editingItem
+                        ? categoriesForRender.find(c => c.id === editingItem.categoryId)?.name
+                        : categoriesForRender.find(c => c.id === addingToCategoryId)?.name
+                }
             />
-        )}
+            {order && (
+                <OrderPreviewDialog
+                    isOpen={isPreviewOpen}
+                    onOpenChange={setIsPreviewOpen}
+                    initialOrder={order}
+                    allCategories={allCategories}
+                    onSaveChanges={(newItems) => handleOrderUpdate({ ...order, items: newItems })}
+                />
+            )}
         </>
     )
 }
 
-    
 
-    
+

@@ -11,11 +11,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+interface User {
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
 export function useAuth() {
   return {
-    user: null,
+    user: null as User | null,
     loading: false,
-    login: () => {},
-    logout: () => {},
+    login: () => { },
+    logout: () => { },
   };
 }

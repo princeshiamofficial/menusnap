@@ -28,7 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const mainNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/menu-items', label: 'Menu Items', icon: ListOrdered, hasChevron: true },
+  { href: '/magictab', label: 'MagicTab', icon: ListOrdered, hasChevron: true },
   { href: '/templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/draft', label: 'Draft', icon: FileEdit, hasChevron: true },
   { href: '/order-history', label: 'Order History', icon: History, hasChevron: true },

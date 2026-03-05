@@ -4,19 +4,19 @@
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Search, 
-  Clock, 
-  ListChecks, 
-  RotateCcw, 
-  Trash2, 
+import {
+  Search,
+  Clock,
+  ListChecks,
+  RotateCcw,
+  Trash2,
   CalendarDays,
   Tag,
   ChevronRight,
@@ -24,9 +24,9 @@ import {
   FileText,
   AlertTriangle,
   Square,
-  Utensils, 
+  Utensils,
   Sparkles,
-  FolderOpen 
+  FolderOpen
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
@@ -51,18 +51,18 @@ interface DraftSubItem {
   id: string;
   name: string;
   price: number;
-  categoryId: string; 
+  categoryId: string;
 }
 
 interface DraftItem {
   id: string;
-  name: string; 
-  createdAt: string; 
+  name: string;
+  createdAt: string;
   itemCount: number;
-  primaryTag: string; 
-  price: number; 
-  previewAvatars: string[]; 
-  items?: DraftSubItem[]; 
+  primaryTag: string;
+  price: number;
+  previewAvatars: string[];
+  items?: DraftSubItem[];
 }
 
 interface DraftCardProps {
@@ -71,7 +71,7 @@ interface DraftCardProps {
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
   onToggleExpand: (id: string) => void;
-  masterCategoryList: Category[]; 
+  masterCategoryList: Category[];
 }
 
 const extractMenuTypeFromTag = (tag: string): string => {
@@ -100,7 +100,7 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
   const relativeTime = isValidDate && hasMounted ? formatDistanceToNowStrict(createdAtDate, { addSuffix: true }) : 'Calculating...';
   const formattedCreationDate = isValidDate ? format(createdAtDate, 'EEE, MMM d, hh:mm a') : 'Invalid Date';
   const formattedShortDateBadge = isValidDate ? format(createdAtDate, 'MMM d') : 'N/A';
-  
+
   const avatarsToShowCount = Math.min(draft.itemCount > 0 ? 3 : draft.previewAvatars.length, 3);
   const remainingAvatars = Math.max(0, draft.itemCount - avatarsToShowCount);
 
@@ -124,21 +124,21 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
 
   const categoriesInDraftOrder = useMemo(() => {
     if (!draft.items || !masterCategoryList || idPrefixForDraft === "unknown") return [];
-    
+
     const categoryIdsInDraft = new Set<string>();
     const orderedPrefixedCategoryIds: string[] = [];
 
     draft.items.forEach(item => {
-        const prefixedCatId = `${idPrefixForDraft}-${item.categoryId}`;
-        if(!categoryIdsInDraft.has(prefixedCatId)){
-            categoryIdsInDraft.add(prefixedCatId);
-            orderedPrefixedCategoryIds.push(prefixedCatId);
-        }
+      const prefixedCatId = `${idPrefixForDraft}-${item.categoryId}`;
+      if (!categoryIdsInDraft.has(prefixedCatId)) {
+        categoryIdsInDraft.add(prefixedCatId);
+        orderedPrefixedCategoryIds.push(prefixedCatId);
+      }
     });
 
     return orderedPrefixedCategoryIds
-        .map(prefixedId => masterCategoryList.find(cat => cat.id === prefixedId))
-        .filter((cat): cat is Category => cat !== undefined);
+      .map(prefixedId => masterCategoryList.find(cat => cat.id === prefixedId))
+      .filter((cat): cat is Category => cat !== undefined);
   }, [draft.items, masterCategoryList, idPrefixForDraft]);
 
 
@@ -166,11 +166,11 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <Badge variant="default" className="bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-700/20 dark:text-orange-400 dark:border-orange-600 font-normal py-1 px-2.5 text-xs">
-            <MenuTypeIcon className="h-3 w-3 mr-1.5 opacity-80"/>
+            <MenuTypeIcon className="h-3 w-3 mr-1.5 opacity-80" />
             {menuTypeDisplay}
           </Badge>
           <Badge variant="outline" className="border-border text-muted-foreground font-medium py-1 px-2.5 text-xs">
-            <CalendarDays className="h-3 w-3 mr-1.5 opacity-70"/>
+            <CalendarDays className="h-3 w-3 mr-1.5 opacity-70" />
             {formattedShortDateBadge}
           </Badge>
         </div>
@@ -178,10 +178,10 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
           <div className="flex -space-x-2">
             {Array.from({ length: avatarsToShowCount }).map((_, index) => (
               <Avatar key={index} className="h-7 w-7 border-2 border-card shadow-sm bg-muted">
-                <AvatarImage 
-                  src={STATIC_AVATAR_IMAGE_URL} 
-                  alt="Item preview" 
-                  data-ai-hint="item illustration" 
+                <AvatarImage
+                  src={STATIC_AVATAR_IMAGE_URL}
+                  alt="Item preview"
+                  data-ai-hint="item illustration"
                   className="object-contain"
                 />
                 <AvatarFallback className="text-xs bg-muted text-muted-foreground">
@@ -193,9 +193,9 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
           {remainingAvatars > 0 && (
             <span className="text-xs font-medium text-muted-foreground ml-1">+{remainingAvatars}</span>
           )}
-          <Button 
-            variant="link" 
-            className="text-xs h-auto p-0 text-primary hover:text-primary/80" 
+          <Button
+            variant="link"
+            className="text-xs h-auto p-0 text-primary hover:text-primary/80"
             onClick={() => onToggleExpand(draft.id)}
             disabled={!draft.items || draft.items.length === 0}
           >
@@ -212,7 +212,7 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
               return (
                 <div key={category.id}>
                   <div className="flex items-center mb-2">
-                    <span className="text-lg mr-2 text-primary">{category.icon || <FolderOpen className="h-5 w-5"/>}</span>
+                    <span className="text-lg mr-2 text-primary">{category.icon || <FolderOpen className="h-5 w-5" />}</span>
                     <h4 className="text-md font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h4>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
@@ -230,23 +230,23 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
               );
             })}
             {categoriesInDraftOrder.length === 0 && (
-                 <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
-                    Could not match items to any known categories for this draft type.
-                 </div>
+              <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
+                Could not match items to any known categories for this draft type.
+              </div>
             )}
           </div>
         )}
-         {isExpanded && (!draft.items || draft.items.length === 0) && (
-           <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
-             No item details available for this draft.
-           </div>
-         )}
+        {isExpanded && (!draft.items || draft.items.length === 0) && (
+          <div className="mt-4 pt-4 border-t border-border text-center text-sm text-muted-foreground">
+            No item details available for this draft.
+          </div>
+        )}
       </CardContent>
       <CardFooter className="bg-muted/30 px-5 py-3 flex justify-between items-center border-t border-border">
         <p className="text-xs text-muted-foreground">Created on {formattedCreationDate}</p>
-        <Button 
-          variant="default" 
-          size="sm" 
+        <Button
+          variant="default"
+          size="sm"
           className="bg-foreground text-background hover:bg-foreground/80"
           onClick={() => onRestore(draft.id)}
         >
@@ -277,8 +277,8 @@ function DraftSkeletonCard(): ReactNode {
       </CardHeader>
       <CardContent className="px-5 pt-2 pb-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Skeleton className="h-6 w-24 rounded-full" /> {}
-          <Skeleton className="h-6 w-20 rounded-full" /> {}
+          <Skeleton className="h-6 w-24 rounded-full" /> { }
+          <Skeleton className="h-6 w-20 rounded-full" /> { }
         </div>
         <div className="flex items-center space-x-2">
           <div className="flex -space-x-2">
@@ -302,13 +302,13 @@ function DraftSkeletonCard(): ReactNode {
 export default function DraftPage(): ReactNode {
   const [drafts, setDrafts] = useState<DraftItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDrafts, setExpandedDrafts] = useState<Record<string, boolean>>({});
   const [masterCategoryList, setMasterCategoryList] = useState<Category[]>([]);
   const { toast } = useToast();
-  const router = useRouter(); 
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchAllCategories() {
@@ -321,23 +321,23 @@ export default function DraftPage(): ReactNode {
 
         const restaurantData = restaurantRes.ok ? await restaurantRes.json() : { success: false, data: { categories: [] } };
         const parlourData = parlourRes.ok ? await parlourRes.json() : { success: false, data: { categories: [] } };
-        
+
         let combinedCategories: Category[] = [];
         if (restaurantData.success && Array.isArray(restaurantData.data.categories)) {
           combinedCategories = combinedCategories.concat(
             restaurantData.data.categories.map((cat: any): Category => ({
-                id: `restaurant-${String(cat.id)}`,
-                name: String(cat.name || 'Unnamed Category'),
-                icon: String(cat.icon || '📁'),
+              id: `restaurant-${String(cat.id)}`,
+              name: String(cat.name || 'Unnamed Category'),
+              icon: String(cat.icon || '📁'),
             }))
           );
         }
         if (parlourData.success && Array.isArray(parlourData.data.categories)) {
-           combinedCategories = combinedCategories.concat(
+          combinedCategories = combinedCategories.concat(
             parlourData.data.categories.map((cat: any): Category => ({
-                id: `parlour-${String(cat.id)}`,
-                name: String(cat.name || 'Unnamed Category'),
-                icon: String(cat.icon || '✨'),
+              id: `parlour-${String(cat.id)}`,
+              name: String(cat.name || 'Unnamed Category'),
+              icon: String(cat.icon || '✨'),
             }))
           );
         }
@@ -360,23 +360,23 @@ export default function DraftPage(): ReactNode {
       if (storedDrafts) {
         const parsedDrafts: any[] = JSON.parse(storedDrafts);
         const validatedDrafts = parsedDrafts.map(draft => {
-            const validatedItems = Array.isArray(draft.items) ? draft.items.map((item: any) => {
-                const finalCatId = item.categoryId || item.category; // Check for new property, fallback to old
-                return {
-                    ...item,
-                    categoryId: finalCatId === null || finalCatId === undefined ? 'unknown' : String(finalCatId),
-                };
-            }) : [];
-
+          const validatedItems = Array.isArray(draft.items) ? draft.items.map((item: any) => {
+            const finalCatId = item.categoryId || item.category; // Check for new property, fallback to old
             return {
-                ...draft,
-                items: validatedItems,
-                previewAvatars: Array.isArray(draft.previewAvatars) ? draft.previewAvatars : [],
+              ...item,
+              categoryId: finalCatId === null || finalCatId === undefined ? 'unknown' : String(finalCatId),
             };
+          }) : [];
+
+          return {
+            ...draft,
+            items: validatedItems,
+            previewAvatars: Array.isArray(draft.previewAvatars) ? draft.previewAvatars : [],
+          };
         });
         setDrafts(validatedDrafts);
       } else {
-        setDrafts([]); 
+        setDrafts([]);
       }
     } catch (e: any) {
       console.error("Error loading drafts from localStorage:", e);
@@ -395,8 +395,8 @@ export default function DraftPage(): ReactNode {
   const handleRestoreDraft = (id: string) => {
     try {
       localStorage.setItem('draftToRestoreId', id);
-      router.push('/menu-items');
-      toast({ title: "Restoring Draft...", description: "You will be redirected to the Menu Items page." });
+      router.push('/magictab');
+      toast({ title: "Restoring Draft...", description: "You will be redirected to the MagicTab page." });
     } catch (e) {
       console.error("Error setting item in localStorage for draft restoration:", e);
       toast({ title: "Error", description: "Could not initiate draft restoration.", variant: "destructive" });
@@ -405,7 +405,7 @@ export default function DraftPage(): ReactNode {
 
   const handleDeleteDraft = (id: string) => {
     const draftName = drafts.find(d => d.id === id)?.name || "Draft";
-    
+
     try {
       const storedDrafts = localStorage.getItem(DRAFTS_STORAGE_KEY);
       let updatedDrafts: DraftItem[] = [];
@@ -416,7 +416,7 @@ export default function DraftPage(): ReactNode {
       }
       setDrafts(prevDrafts => prevDrafts.filter(draft => draft.id !== id));
       setExpandedDrafts(prev => {
-        const newExpanded = {...prev};
+        const newExpanded = { ...prev };
         delete newExpanded[id];
         return newExpanded;
       });
@@ -435,7 +435,7 @@ export default function DraftPage(): ReactNode {
     if (!searchTerm) return drafts;
     return drafts.filter(draft =>
       decodeHtmlEntities(draft.name).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      extractMenuTypeFromTag(draft.primaryTag).toLowerCase().includes(searchTerm.toLowerCase()) || 
+      extractMenuTypeFromTag(draft.primaryTag).toLowerCase().includes(searchTerm.toLowerCase()) ||
       (isValid(parseISO(draft.createdAt)) && format(parseISO(draft.createdAt), 'dd/MM/yyyy').includes(searchTerm))
     );
   }, [drafts, searchTerm]);
@@ -445,7 +445,7 @@ export default function DraftPage(): ReactNode {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center">
-             <FileText className="h-8 w-8 mr-3 text-primary" />
+            <FileText className="h-8 w-8 mr-3 text-primary" />
             Saved Drafts
           </h1>
           <p className="text-muted-foreground mt-1 text-sm sm:text-base">
@@ -480,10 +480,10 @@ export default function DraftPage(): ReactNode {
             <p className="text-muted-foreground text-lg font-medium">
               {searchTerm ? "No drafts match your search." : "You have no saved drafts."}
             </p>
-             {!searchTerm && drafts.length === 0 && (
-                <p className="text-sm text-muted-foreground mt-2">
-                    Looks like your draft list is empty. Go to the Menu Items page to start selecting!
-                </p>
+            {!searchTerm && drafts.length === 0 && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Looks like your draft list is empty. Go to the MagicTab page to start selecting!
+              </p>
             )}
           </div>
         ) : (

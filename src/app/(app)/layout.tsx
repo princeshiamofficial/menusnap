@@ -21,13 +21,7 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
     }
   }, [isClientLoggedIn, clientLoading, router]);
 
-  useEffect(() => {
-    if (clientUser?.businessName) {
-      document.title = `${clientUser.businessName} | Menu Builder`;
-    } else {
-      document.title = 'Color Hut - Menu Builder';
-    }
-  }, [clientUser]);
+
 
 
   if (clientLoading || !isClientLoggedIn) {

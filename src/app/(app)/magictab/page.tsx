@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MenuPreviewDialog } from '@/components/menu/menu-preview-dialog';
+import { MenuPreviewDialog, type MenuItem, type SubMenuItem, type Category as MenuCategory } from '@/components/menu/menu-preview-dialog';
 import { CategoryList } from '@/components/menu/category-list';
 import { useToast } from "@/hooks/use-toast";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -53,7 +53,7 @@ const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
 const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
 
 interface Category {
-  id: string; 
+  id: string;
   name: string;
   icon: string;
   itemCount?: number;
@@ -63,27 +63,7 @@ interface Category {
   visibleToUsers?: boolean;
 }
 
-interface SubMenuItem {
-  id: string; 
-  name: string;
-  price?: number;
-}
 
-interface MenuItem {
-  id: string; 
-  name: string;
-  price: number;
-  category: string; 
-  description?: string;
-  image?: string; 
-  status?: string;
-  featured?: boolean;
-  visibleToUsers?: boolean;
-  subItems?: SubMenuItem[];
-  createdAt?: string;
-  updatedAt?: string;
-  iconPlaceholder?: boolean;
-}
 
 const menuItemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100),
@@ -137,20 +117,20 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
 
 
   const handleAddSubItemClick = () => {
-    form.clearErrors("subItems.root"); 
+    form.clearErrors("subItems");
     const nameVal = newSubItemName.trim();
     const priceStr = newSubItemPrice.trim();
 
     if (!nameVal) {
-      form.setError("subItems.root", { type: "manual", message: "Variation name cannot be empty." });
+      form.setError("subItems", { type: "manual", message: "Variation name cannot be empty." });
       return;
     }
-    
+
     let priceVal: number | undefined = undefined;
     if (priceStr !== '') {
       const parsedPrice = parseFloat(priceStr);
       if (isNaN(parsedPrice) || parsedPrice < 0) {
-        form.setError("subItems.root", { type: "manual", message: "Variation price must be a valid non-negative number if provided." });
+        form.setError("subItems", { type: "manual", message: "Variation price must be a valid non-negative number if provided." });
         return;
       }
       priceVal = parsedPrice;
@@ -167,7 +147,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
       form.reset({
         name: decodeHtmlEntities(initialData?.name),
         price: initialData?.price || 0,
-        description: decodeHtmlEntities(initialData?.description),
+        description: (initialData?.description === null ? undefined : decodeHtmlEntities(initialData?.description)) as string | undefined,
         subItems: initialData?.subItems?.map(si => ({ ...si, name: decodeHtmlEntities(si.name) })) || [],
       });
       setScrolled(false);
@@ -181,7 +161,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
           "p-6 pb-4 border-b transition-shadow",
           scrolled && "shadow-md"
         )}>
-          <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'Menu Item'}</DialogTitle>
+          <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'MagicTab Item'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
           <ScrollArea className="flex-grow p-6" onScroll={handleScroll}>
@@ -193,49 +173,49 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
               </div>
               <div>
                 <Label htmlFor="item-price">Base Price (৳)</Label>
-                <Input id="item-price" type="number" {...form.register("price")} placeholder="0" step="0.01"/>
+                <Input id="item-price" type="number" {...form.register("price")} placeholder="0" step="0.01" />
                 {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
               </div>
               <div>
                 <Label htmlFor="item-description">Description</Label>
-                <Textarea id="item-description" {...form.register("description")} placeholder="Describe the item"/>
+                <Textarea id="item-description" {...form.register("description")} placeholder="Describe the item" />
                 {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
               </div>
               <div className="pt-4">
-                 <Label className="font-semibold">Variations / Sizes</Label>
-                 <div className="mt-2 flex items-start gap-2">
-                   <div className="flex-grow space-y-1">
-                     <Label htmlFor="new-subitem-name" className="sr-only">Variation Name</Label>
-                     <Input 
-                       id="new-subitem-name"
-                       placeholder="Variation name (e.g., Small)"
-                       value={newSubItemName}
-                       onChange={(e) => setNewSubItemName(e.target.value)}
-                     />
-                   </div>
-                   <div className="w-40 space-y-1">
-                     <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
-                     <Input 
-                       id="new-subitem-price"
-                       type="number"
-                       placeholder="Price (optional)"
-                       value={newSubItemPrice}
-                       onChange={(e) => setNewSubItemPrice(e.target.value)}
-                       step="0.01"
-                     />
-                   </div>
-                   <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick} className="mt-0 h-10 w-10 shrink-0" aria-label="Add variation">
-                     <Plus className="h-5 w-5" />
-                   </Button>
-                 </div>
-                 {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
-                 {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
-                   <div key={index}>
-                     {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
-                     {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
-                   </div>
-                 ))}
-               </div>
+                <Label className="font-semibold">Variations / Sizes</Label>
+                <div className="mt-2 flex items-start gap-2">
+                  <div className="flex-grow space-y-1">
+                    <Label htmlFor="new-subitem-name" className="sr-only">Variation Name</Label>
+                    <Input
+                      id="new-subitem-name"
+                      placeholder="Variation name (e.g., Small)"
+                      value={newSubItemName}
+                      onChange={(e) => setNewSubItemName(e.target.value)}
+                    />
+                  </div>
+                  <div className="w-40 space-y-1">
+                    <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
+                    <Input
+                      id="new-subitem-price"
+                      type="number"
+                      placeholder="Price (optional)"
+                      value={newSubItemPrice}
+                      onChange={(e) => setNewSubItemPrice(e.target.value)}
+                      step="0.01"
+                    />
+                  </div>
+                  <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick} className="mt-0 h-10 w-10 shrink-0" aria-label="Add variation">
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </div>
+                {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
+                {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
+                  <div key={index}>
+                    {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
+                    {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
+                  </div>
+                ))}
+              </div>
 
 
               {fields.length > 0 && (
@@ -246,25 +226,25 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
                       const currentPrice = form.watch(`subItems.${index}.price`);
                       return (
                         <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
-                           <div className="flex items-center gap-2 flex-grow">
-                             <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
-                             {typeof currentPrice === 'number' && (
-                               <>
-                                 <span className="text-xs text-muted-foreground">-</span>
-                                 <span className="text-sm font-medium text-foreground whitespace-nowrap">
-                                    ৳{currentPrice.toLocaleString()}
-                                 </span>
-                               </>
-                             )}
-                             {currentPrice === undefined && (
-                               <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
-                             )}
+                          <div className="flex items-center gap-2 flex-grow">
+                            <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
+                            {typeof currentPrice === 'number' && (
+                              <>
+                                <span className="text-xs text-muted-foreground">-</span>
+                                <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                                  ৳{currentPrice.toLocaleString()}
+                                </span>
+                              </>
+                            )}
+                            {currentPrice === undefined && (
+                              <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
+                            )}
                           </div>
-                          <Button 
-                            type="button" 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => remove(index)} 
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => remove(index)}
                             className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
                             aria-label={`Remove ${form.watch(`subItems.${index}.name`)} variation`}
                           >
@@ -297,11 +277,11 @@ interface MenuItemCardProps {
   isSubItemsExpanded: boolean;
 }
 
-const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardProps>(function MenuItemCard({ 
-  item, 
-  isSelected, 
-  onSelectItem, 
-  onEditItem, 
+const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardProps>(function MenuItemCard({
+  item,
+  isSelected,
+  onSelectItem,
+  onEditItem,
   onToggleSubItems,
   isSubItemsExpanded
 }, ref) {
@@ -327,7 +307,7 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
                   transition={{ duration: 0.2 }}
                 >
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)} aria-label="Edit item">
-                    <Edit className="h-4 w-4"/>
+                    <Edit className="h-4 w-4" />
                   </Button>
                 </motion.div>
               )}
@@ -393,7 +373,7 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting, initialDat
   }, [isOpen, initialData, form]);
 
   const dialogTitle = initialData ? "Edit Category" : "Add New Category";
-  const dialogDescription = initialData ? "Update the details for this category." : "Create a new category to organize your menu items.";
+  const dialogDescription = initialData ? "Update the details for this category." : "Create a new category to organize your MagicTab items.";
   const submitButtonText = initialData ? (isSubmitting ? 'Saving...' : 'Save Changes') : (isSubmitting ? 'Adding...' : 'Add Category');
 
   return (
@@ -432,12 +412,12 @@ const customSlugify = (text: string): string => {
   if (!text) return '';
   const parts = text.trim().split(/\s+/);
   if (parts.length === 0) return '';
-  
+
   const firstWord = parts[0];
   const restOfText = parts.slice(1).join(' ');
   // Remove non-alphanumeric chars from the rest, but keep spaces to then remove them
   const sanitizedRest = restOfText.replace(/[^\w\s]/g, '').replace(/\s+/g, '');
-  
+
   if (sanitizedRest) {
     return `${firstWord}-${sanitizedRest}`;
   }
@@ -482,7 +462,7 @@ const Typewriter = React.memo(function Typewriter({ words, className }: { words:
   const [wordIndex, setWordIndex] = useState(0);
   const [text, setText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   const typeSpeed = 150;
   const deleteSpeed = 75;
   const pauseDuration = 2000;
@@ -492,7 +472,7 @@ const Typewriter = React.memo(function Typewriter({ words, className }: { words:
 
     const handleTyping = () => {
       const currentWord = words[wordIndex % words.length];
-      
+
       if (isDeleting) {
         // Deleting text
         if (text.length > 0) {
@@ -541,23 +521,23 @@ const Typewriter = React.memo(function Typewriter({ words, className }: { words:
 });
 
 
-export default function MenuItemsPage() {
+export default function MagicTabPage() {
   const { clientUser, clientLoading } = useClientAuth();
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({}); 
+  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [selectedMenuType, setSelectedMenuType] = useState<string>('');
   const [itemsToSelectFromDraft, setItemsToSelectFromDraft] = useState<string[] | null>(null);
 
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingItems, setLoadingItems] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]); 
-  
-  const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({}); 
+
+  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]);
+
+  const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const router = useRouter();
 
@@ -565,16 +545,16 @@ export default function MenuItemsPage() {
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
 
-  const [animations, setAnimations] = useState<{id: number, startX: number, startY: number, endX: number, endY: number}[]>([]);
+  const [animations, setAnimations] = useState<{ id: number, startX: number, startY: number, endX: number, endY: number }[]>([]);
   const [isMounted, setIsMounted] = useState(false);
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   const itemCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
-  
+
   const selectedCategory = useMemo(() => {
     return apiCategories.find(c => c.id === activeCategoryId) || null;
   }, [apiCategories, activeCategoryId]);
@@ -619,9 +599,9 @@ export default function MenuItemsPage() {
       const uniqueCategories = Array.from(new Map(combinedCategories.map(cat => [cat.id, cat])).values());
 
       setApiCategories(uniqueCategories);
-      
+
       // Don't set active category here to avoid re-renders. Let the CategoryList component handle it.
-      
+
     } catch (err: any) {
       setError(err.message || "Could not load categories.");
       setApiCategories([]);
@@ -639,23 +619,23 @@ export default function MenuItemsPage() {
       const itemsRes = await fetch(menuItemsApiUrl);
       if (!itemsRes.ok) throw new Error("Failed to fetch menu items from API.");
       const itemsData = await itemsRes.json();
-      
+
       let rawServerItems: any[] = [];
       if (Array.isArray(itemsData)) {
-          rawServerItems = itemsData;
+        rawServerItems = itemsData;
       } else if (itemsData.success && Array.isArray(itemsData.data)) {
-          rawServerItems = itemsData.data;
+        rawServerItems = itemsData.data;
       } else if (itemsData.success && itemsData.data && Array.isArray(itemsData.data.items)) {
-          rawServerItems = itemsData.data.items;
+        rawServerItems = itemsData.data.items;
       }
 
       const serverItems: MenuItem[] = rawServerItems
         .filter((item: any) => item.visibleToUsers)
-        .map((item: any) => ({ 
+        .map((item: any) => ({
           ...item,
           id: String(item.id),
           price: parseFloat(item.price) || 0,
-          category: String(item.category || item.categoryId) 
+          category: String(item.category || item.categoryId)
         }));
 
       const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
@@ -673,8 +653,8 @@ export default function MenuItemsPage() {
 
   useEffect(() => {
     if (selectedMenuType) {
-        loadCategories(selectedMenuType);
-        loadItems(selectedMenuType);
+      loadCategories(selectedMenuType);
+      loadItems(selectedMenuType);
     }
   }, [selectedMenuType, loadCategories, loadItems]);
 
@@ -690,7 +670,7 @@ export default function MenuItemsPage() {
         if (allDraftsRaw) {
           const allDrafts = JSON.parse(allDraftsRaw);
           const draftToRestore = allDrafts.find((d: any) => d.id === draftIdToRestore);
-          
+
           if (draftToRestore) {
             if (draftToRestore.primaryTag) {
               setSelectedMenuType(draftToRestore.primaryTag);
@@ -720,7 +700,7 @@ export default function MenuItemsPage() {
         });
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]); // Run only on mount
 
   // Effect to apply selections after data has finished loading
@@ -749,7 +729,7 @@ export default function MenuItemsPage() {
     setEditingItem(null);
     setIsFormDialogOpen(true);
   };
-  
+
   const handleOpenEditItem = useCallback((item: MenuItem) => {
     setEditingItem(item);
     setIsFormDialogOpen(true);
@@ -757,9 +737,9 @@ export default function MenuItemsPage() {
 
   const handleFormSubmit = useCallback((data: MenuItemFormValues) => {
     setIsSubmitting(true);
-    
-    let newItems;
-    let itemToSave;
+
+    let newItems: MenuItem[];
+    let itemToSave: MenuItem;
 
     if (editingItem) {
       itemToSave = { ...editingItem, ...data };
@@ -779,12 +759,12 @@ export default function MenuItemsPage() {
         category: selectedCategory.id,
         visibleToUsers: true,
         createdAt: new Date().toISOString(),
-      };
+      } as MenuItem;
       newItems = [...allMenuItems, itemToSave];
       toast({ title: "Item Added", description: `"${decodeHtmlEntities(data.name)}" has been added.` });
-      setSelectedItems(prev => ({...prev, [itemToSave.id]: true}));
+      setSelectedItems(prev => ({ ...prev, [itemToSave.id]: true }));
     }
-    
+
     try {
       const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
       const existingIndex = localItems.findIndex(i => i.id === itemToSave.id);
@@ -794,7 +774,7 @@ export default function MenuItemsPage() {
         localItems.push(itemToSave);
       }
       localStorage.setItem(CUSTOM_MENU_ITEMS_STORAGE_KEY, JSON.stringify(localItems));
-    } catch(e) {
+    } catch (e) {
       toast({ title: "Error", description: "Could not save custom item locally.", variant: "destructive" });
     }
 
@@ -803,7 +783,7 @@ export default function MenuItemsPage() {
     setEditingItem(null);
     setIsSubmitting(false);
   }, [allMenuItems, editingItem, selectedCategory, toast]);
-  
+
   const handleOpenAddCategory = () => {
     setEditingCategory(null);
     setIsCategoryFormOpen(true);
@@ -817,51 +797,51 @@ export default function MenuItemsPage() {
 
   const handleCategoryFormSubmit = useCallback((data: CategoryFormValues) => {
     setIsCategorySubmitting(true);
-    
+
     let updatedCategories;
     let newCategory = null;
 
     if (editingCategory) {
-        // Editing an existing category
-        const categoryToUpdate = { ...editingCategory, ...data };
-        updatedCategories = apiCategories.map(cat =>
-            cat.id === editingCategory.id ? categoryToUpdate : cat
-        );
-        newCategory = categoryToUpdate;
-        toast({ title: "Category Updated", description: `"${decodeHtmlEntities(data.name)}" has been updated.` });
+      // Editing an existing category
+      const categoryToUpdate = { ...editingCategory, ...data };
+      updatedCategories = apiCategories.map(cat =>
+        cat.id === editingCategory.id ? categoryToUpdate : cat
+      );
+      newCategory = categoryToUpdate;
+      toast({ title: "Category Updated", description: `"${decodeHtmlEntities(data.name)}" has been updated.` });
     } else {
-        // Adding a new category
-        newCategory = {
-            id: `custom-category-${customSlugify(data.name)}-${Date.now()}`,
-            name: data.name,
-            icon: data.icon,
-            visibleToUsers: true,
-            itemCount: 0,
-            createdAt: new Date().toISOString(),
-        };
-        updatedCategories = [...apiCategories, newCategory];
-        toast({ title: "Category Added", description: `"${decodeHtmlEntities(data.name)}" has been added locally.` });
+      // Adding a new category
+      newCategory = {
+        id: `custom-category-${customSlugify(data.name)}-${Date.now()}`,
+        name: data.name,
+        icon: data.icon,
+        visibleToUsers: true,
+        itemCount: 0,
+        createdAt: new Date().toISOString(),
+      };
+      updatedCategories = [...apiCategories, newCategory];
+      toast({ title: "Category Added", description: `"${decodeHtmlEntities(data.name)}" has been added locally.` });
     }
-    
+
     setApiCategories(updatedCategories);
-    
+
     try {
-        const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
-        if (editingCategory) {
-            const index = localCategories.findIndex(c => c.id === editingCategory.id);
-            if (index > -1) {
-                localCategories[index] = { ...localCategories[index], ...data };
-            } else { 
-              localCategories.push(newCategory);
-            }
+      const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
+      if (editingCategory) {
+        const index = localCategories.findIndex(c => c.id === editingCategory.id);
+        if (index > -1) {
+          localCategories[index] = { ...localCategories[index], ...data };
         } else {
-            localCategories.push(newCategory);
+          localCategories.push(newCategory);
         }
-        localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
-    } catch(e) {
-        toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
+      } else {
+        localCategories.push(newCategory);
+      }
+      localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
+    } catch (e) {
+      toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
     }
-    
+
     setIsCategoryFormOpen(false);
     setEditingCategory(null);
     setIsCategorySubmitting(false);
@@ -869,15 +849,15 @@ export default function MenuItemsPage() {
 
   const currentMenuItems = useMemo(() => {
     if (!activeCategoryId) {
-        return [];
+      return [];
     }
 
     let itemsToFilter = allMenuItems.filter(item => item.category === activeCategoryId);
-    
+
     if (!debouncedSearchTerm) {
-        return itemsToFilter;
+      return itemsToFilter;
     }
-    
+
     return itemsToFilter.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
   }, [activeCategoryId, allMenuItems, debouncedSearchTerm]);
 
@@ -921,7 +901,7 @@ export default function MenuItemsPage() {
     return Object.values(selectedItems).filter(Boolean).length;
   }, [selectedItems]);
 
-  const toggleSubItems = useCallback((itemId: string) => { 
+  const toggleSubItems = useCallback((itemId: string) => {
     setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
   }, []);
 
@@ -964,17 +944,17 @@ export default function MenuItemsPage() {
   }, [allMenuItems, selectedItems, selectedMenuType, toast]);
 
   const preparedSelectedItemsForPreview = useMemo(() => {
-    return allMenuItems.filter(item => selectedItems[item.id]); 
+    return allMenuItems.filter(item => selectedItems[item.id]);
   }, [allMenuItems, selectedItems]);
 
-  const handleRemoveItemFromPreview = useCallback((itemIdToRemove: string) => { 
+  const handleRemoveItemFromPreview = useCallback((itemIdToRemove: string) => {
     setSelectedItems(prev => {
       const updated = { ...prev };
       delete updated[itemIdToRemove];
       return updated;
     });
   }, []);
-  
+
   const gridLayoutClasses = useMemo(() => {
     const itemCount = currentMenuItems.length;
     if (itemCount === 1) {
@@ -985,9 +965,9 @@ export default function MenuItemsPage() {
     }
     return "md:grid-cols-2 lg:grid-cols-3";
   }, [currentMenuItems.length]);
-  
+
   const loading = loadingCategories || loadingItems;
-  
+
   return (
     <>
       {isMounted && createPortal(
@@ -1006,20 +986,20 @@ export default function MenuItemsPage() {
       )}
 
       <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]">
-        
+
         <CategoryList
-            categories={apiCategories}
-            onCategoryChange={setActiveCategoryId}
-            onAddCategory={handleOpenAddCategory}
-            onEditCategory={handleOpenEditCategory}
-            loading={loadingCategories}
-            error={error}
+          categories={apiCategories}
+          onCategoryChange={setActiveCategoryId}
+          onAddCategory={handleOpenAddCategory}
+          onEditCategory={handleOpenEditCategory}
+          loading={loadingCategories}
+          error={error}
         />
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
           <div className="py-4 px-6 border-b border-border bg-card space-y-3">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{selectedCategory ? `Select ${decodeHtmlEntities(selectedCategory.name)} Items` : 'Select Menu Items'}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{selectedCategory ? `Select ${decodeHtmlEntities(selectedCategory.name)} Items` : 'Select MagicTab Items'}</h1>
               <Select value={selectedMenuType} onValueChange={setSelectedMenuType} disabled={clientLoading}>
                 <SelectTrigger className="w-full md:w-[200px] text-sm"><SelectValue placeholder="Select menu type" /></SelectTrigger>
                 <SelectContent>
@@ -1028,7 +1008,7 @@ export default function MenuItemsPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* Mobile-only Category Selector */}
             <div className="md:hidden flex items-end gap-2">
               <div className="flex-grow">
@@ -1048,7 +1028,7 @@ export default function MenuItemsPage() {
                         <span>{decodeHtmlEntities(selectedCategory.name)}</span>
                       </div>
                     ) : (
-                       <span className="text-muted-foreground">Select a category...</span>
+                      <span className="text-muted-foreground">Select a category...</span>
                     )}
                   </SelectTrigger>
                   <SelectContent>
@@ -1056,8 +1036,8 @@ export default function MenuItemsPage() {
                       apiCategories.map(category => (
                         <SelectItem key={category.id} value={category.id}>
                           <div className="flex items-center gap-2">
-                              <span className="text-base">{category.icon}</span>
-                              <span>{decodeHtmlEntities(category.name)}</span>
+                            <span className="text-base">{category.icon}</span>
+                            <span>{decodeHtmlEntities(category.name)}</span>
                           </div>
                         </SelectItem>
                       ))
@@ -1079,36 +1059,36 @@ export default function MenuItemsPage() {
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-3">
-                <div className="relative w-full md:flex-grow">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search menu item..." className="pl-10 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-                <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
-                    <Button
-                        ref={previewButtonRef}
-                        onClick={handlePreviewAndSave}
-                        disabled={selectedCount === 0}
-                        className={cn(
-                          "h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden",
-                           selectedCount > 0 && "animate-glow"
-                        )}
-                        variant="default"
-                    >
-                        <div className="flex items-stretch h-full">
-                            <div className="hidden md:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
-                                {clientUser?.businessName ? (
-                                    <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
-                                ) : (
-                                    <span>Your Menu</span>
-                                )}
-                            </div>
-                            <div className="bg-primary text-primary-foreground px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
-                                Menu ({selectedCount})
-                            </div>
-                        </div>
-                    </Button>
-                    <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
-                </div>
+              <div className="relative w-full md:flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input type="search" placeholder="Search MagicTab item..." className="pl-10 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              </div>
+              <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
+                <Button
+                  ref={previewButtonRef}
+                  onClick={handlePreviewAndSave}
+                  disabled={selectedCount === 0}
+                  className={cn(
+                    "h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden",
+                    selectedCount > 0 && "animate-glow"
+                  )}
+                  variant="default"
+                >
+                  <div className="flex items-stretch h-full">
+                    <div className="hidden md:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
+                      {clientUser?.businessName ? (
+                        <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
+                      ) : (
+                        <span>Your Menu</span>
+                      )}
+                    </div>
+                    <div className="bg-primary text-primary-foreground px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
+                      MagicTab ({selectedCount})
+                    </div>
+                  </div>
+                </Button>
+                <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
+              </div>
             </div>
           </div>
 
@@ -1119,7 +1099,7 @@ export default function MenuItemsPage() {
               <div className="text-center py-10"><p className="text-destructive">Error: {error}</p></div>
             ) : (
               <>
-                {selectedCategory && 
+                {selectedCategory &&
                   <h2 className="text-xl font-semibold text-foreground mb-4 md:hidden">
                     {decodeHtmlEntities(selectedCategory.name)}
                   </h2>
@@ -1140,15 +1120,15 @@ export default function MenuItemsPage() {
                       isSubItemsExpanded={!!expandedSubItems[item.id]}
                     />
                   ))}
-                   {currentMenuItems.length === 0 && <div className="text-center py-10 col-span-full"><p className="text-muted-foreground text-sm">No items match your search or category.</p></div>}
+                  {currentMenuItems.length === 0 && <div className="text-center py-10 col-span-full"><p className="text-muted-foreground text-sm">No items match your search or category.</p></div>}
                 </div>
               </>
             )}
           </ScrollArea>
         </main>
       </div>
-      
-      <MenuItemForm 
+
+      <MenuItemForm
         isOpen={isFormDialogOpen}
         onOpenChange={setIsFormDialogOpen}
         onSubmit={handleFormSubmit}
@@ -1157,7 +1137,7 @@ export default function MenuItemsPage() {
         isSubmitting={isSubmitting}
       />
 
-      <CategoryForm 
+      <CategoryForm
         isOpen={isCategoryFormOpen}
         onOpenChange={setIsCategoryFormOpen}
         onSubmit={handleCategoryFormSubmit}
@@ -1168,8 +1148,8 @@ export default function MenuItemsPage() {
       <MenuPreviewDialog
         isOpen={isPreviewDialogOpen}
         onOpenChange={setIsPreviewDialogOpen}
-        selectedItems={preparedSelectedItemsForPreview} 
-        allCategories={apiCategories} 
+        selectedItems={preparedSelectedItemsForPreview}
+        allCategories={apiCategories}
         onRemoveItem={handleRemoveItemFromPreview}
         selectedMenuType={selectedMenuType}
         clientUser={clientUser}

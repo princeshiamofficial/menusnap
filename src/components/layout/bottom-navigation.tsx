@@ -10,7 +10,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/menu-items', label: 'Menu', icon: ListOrdered },
+  { href: '/magictab', label: 'MagicTab', icon: ListOrdered },
   { href: '/templates', label: 'Templates', icon: Layers },
   { href: '/draft', label: 'Drafts', icon: FileEdit },
   { href: '/order-history', label: 'History', icon: History },
@@ -54,7 +54,7 @@ export function BottomNavigation() {
           <Link
             key={item.href}
             href={item.href}
-            ref={(el) => navItemsRef.current.set(item.href, el)}
+            ref={(el) => { navItemsRef.current.set(item.href, el); }}
             className="relative z-10 flex flex-col items-center justify-center p-2 text-xs font-medium w-1/5 h-full"
             aria-current={activeItem.href === item.href ? "page" : undefined}
           >
@@ -72,41 +72,41 @@ export function BottomNavigation() {
         ))}
 
         <AnimatePresence>
-        {indicatorStyle.opacity === 1 && (
+          {indicatorStyle.opacity === 1 && (
             <motion.div
-                className="absolute h-16 flex flex-col items-center"
-                style={{
-                    left: indicatorStyle.left,
-                    width: indicatorStyle.width,
-                    top: '-1px', // Position the indicator to perfectly cover the top border
-                }}
-                transition={{
-                    type: "spring",
-                    stiffness: 350,
-                    damping: 30,
-                }}
+              className="absolute h-16 flex flex-col items-center"
+              style={{
+                left: indicatorStyle.left,
+                width: indicatorStyle.width,
+                top: '-1px', // Position the indicator to perfectly cover the top border
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 350,
+                damping: 30,
+              }}
             >
-                {/* This div creates the cutout illusion. It MUST match the page background. */}
-                <div className="absolute top-0 w-20 h-4 bg-background" />
+              {/* This div creates the cutout illusion. It MUST match the page background. */}
+              <div className="absolute top-0 w-20 h-4 bg-background" />
 
-                <div className="w-14 h-14 -mt-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg relative z-10">
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={activeItem.href}
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }}
-                        exit={{ opacity: 0, scale: 0.5 }}
-                      >
-                        <activeItem.icon className="h-6 w-6"/>
-                      </motion.div>
-                    </AnimatePresence>
-                </div>
-                
-                <span className="text-xs text-primary font-bold mt-1 relative z-10">
-                    {activeItem.label}
-                </span>
+              <div className="w-14 h-14 -mt-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg relative z-10">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeItem.href}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                  >
+                    <activeItem.icon className="h-6 w-6" />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              <span className="text-xs text-primary font-bold mt-1 relative z-10">
+                {activeItem.label}
+              </span>
             </motion.div>
-        )}
+          )}
         </AnimatePresence>
       </div>
     </nav>

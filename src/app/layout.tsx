@@ -2,7 +2,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { ClientSideOnlyToaster } from '@/components/layout/client-side-only-toaster';
@@ -23,6 +24,40 @@ const robotoMono = Roboto_Mono({
 // Metadata can't be exported from a client component, so we remove it.
 // Next.js will use a default title or you can add a <Head> component in pages.
 
+function PageTitleManager() {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!pathname) return;
+
+    // Check exclusion routes as requested by user
+    if (
+      pathname.match(/\/manage-orders\/[^/]+/) ||
+      pathname.match(/^\/share\/[^/]+/) ||
+      pathname.match(/^\/editor\/[^/]+/)
+    ) {
+      return;
+    }
+
+    const segments = pathname.split('/').filter(Boolean);
+    let pageName = 'Home';
+
+    if (segments.length > 0) {
+      pageName = segments[segments.length - 1];
+    }
+
+    // Capitalize and replace dashes
+    const formattedName = pageName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+    document.title = `${formattedName} | MenuSnap`;
+  }, [pathname]);
+
+  return null;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,6 +74,7 @@ export default function RootLayout({
           <ThemeProvider>
             <Suspense fallback={null}>
               <MetaPixelScriptLoader />
+              <PageTitleManager />
             </Suspense>
             {children}
             <ClientSideOnlyToaster />

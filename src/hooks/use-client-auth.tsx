@@ -8,12 +8,12 @@ import { useToast } from "@/hooks/use-toast";
 
 const CLIENT_STORAGE_KEY = 'colorHutClientUser';
 
-interface ClientUser {
-    businessName: string;
-    type: 'restaurant' | 'parlour';
+export interface ClientUser {
+  businessName: string;
+  type: 'restaurant' | 'parlour';
 }
 
-interface ClientAuthContextType {
+export interface ClientAuthContextType {
   clientUser: ClientUser | null;
   isClientLoggedIn: boolean;
   clientLoading: boolean;
@@ -31,15 +31,15 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-        const storedUser = localStorage.getItem(CLIENT_STORAGE_KEY);
-        if (storedUser) {
-            setClientUser(JSON.parse(storedUser));
-        }
+      const storedUser = localStorage.getItem(CLIENT_STORAGE_KEY);
+      if (storedUser) {
+        setClientUser(JSON.parse(storedUser));
+      }
     } catch (error) {
-        console.error("Failed to parse client user from localStorage", error);
-        localStorage.removeItem(CLIENT_STORAGE_KEY);
+      console.error("Failed to parse client user from localStorage", error);
+      localStorage.removeItem(CLIENT_STORAGE_KEY);
     } finally {
-        setClientLoading(false);
+      setClientLoading(false);
     }
   }, []);
 
@@ -48,28 +48,28 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     // Mock authentication: In a real app, this would be an API call.
     // We'll accept any business name for now as a demo.
     if (businessName.trim() && (type === 'restaurant' || type === 'parlour')) {
-        const userToStore = { businessName: businessName.trim(), type };
-        localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
-        setClientUser(userToStore);
-        toast({
-            title: "Login Successful",
-            description: `Welcome, ${businessName}!`,
-        });
+      const userToStore = { businessName: businessName.trim(), type };
+      localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
+      setClientUser(userToStore);
+      toast({
+        title: "Login Successful",
+        description: `Welcome, ${businessName}!`,
+      });
 
-        // Play welcome sound
-        const welcomeSound = new Audio('https://colorhutbd.xyz/audio/welcome.mp3');
-        welcomeSound.play().catch(error => {
-            console.error("Welcome sound playback failed:", error);
-            // We don't need to bother the user if the sound fails to play.
-        });
+      // Play welcome sound
+      const welcomeSound = new Audio('https://colorhutbd.xyz/audio/welcome.mp3');
+      welcomeSound.play().catch(error => {
+        console.error("Welcome sound playback failed:", error);
+        // We don't need to bother the user if the sound fails to play.
+      });
 
-        router.push('/dashboard');
+      router.push('/dashboard');
     } else {
-        toast({
-            title: "Login Failed",
-            description: "Please provide a valid business name and type.",
-            variant: "destructive",
-        });
+      toast({
+        title: "Login Failed",
+        description: "Please provide a valid business name and type.",
+        variant: "destructive",
+      });
     }
     setClientLoading(false);
   }, [router, toast]);
@@ -79,8 +79,8 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     setClientUser(null);
     router.push('/login');
     toast({
-        title: "Logged Out",
-        description: "You have been successfully logged out.",
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
     });
   }, [router, toast]);
 
