@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
-import { Plus, FileText, Trash2, Search, ArrowUpDown, MoreVertical, Eye, Edit3, RefreshCw, AlertTriangle, ShoppingCart, CalendarDays, Copy } from "lucide-react";
+import { Plus, FileText, Trash2, Search, ArrowUpDown, MoreVertical, Eye, Edit3, RefreshCw, AlertTriangle, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from "next/navigation";
@@ -34,7 +34,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+
 import { parseISO, isValid as isValidDate, format } from 'date-fns';
 
 interface MagicDocument {
@@ -56,7 +56,7 @@ export default function MagicDocsPage(): ReactNode {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
 
-    const { toast } = useToast();
+
 
     // Load docs on mount
     const fetchDocs = useCallback(async () => {
