@@ -19,7 +19,7 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/manage-categories', label: 'Manage Categories', icon: LayoutList, hasChevron: true },
   { href: '/m-admin/manage-magictab', label: 'Manage MagicTab', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Manage Templates', icon: Layers, hasChevron: true },
-  { href: '/m-admin/ch-docs', label: 'CH Docs', icon: FolderOpen, hasChevron: true },
+  { href: '/m-admin/magic-docs', label: 'Magic Docs', icon: FolderOpen, hasChevron: true },
   { href: '/m-admin/settings', label: 'Admin Settings', icon: Settings, hasChevron: true },
 ];
 

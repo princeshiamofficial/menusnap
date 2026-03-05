@@ -1,0 +1,429 @@
+"use client";
+
+import type { ReactNode } from 'react';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { AdminLoginForm } from '@/components/auth/admin-login-form';
+import { Plus, FileText, Trash2, Search, ArrowUpDown, MoreVertical, Eye, Edit3, RefreshCw, AlertTriangle, ShoppingCart, CalendarDays, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
+import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableHead,
+    TableCell,
+    TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { parseISO, isValid as isValidDate, format } from 'date-fns';
+
+interface MagicDocument {
+    id: string;
+    title: string;
+    content: string;
+    lastUpdated: string;
+}
+
+export default function MagicDocsPage(): ReactNode {
+    const router = useRouter();
+    const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+    const [docs, setDocs] = useState<MagicDocument[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortOption, setSortOption] = useState<'newest' | 'oldest' | 'title-asc' | 'title-desc'>('newest');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
+    const { toast } = useToast();
+
+    // Load docs on mount
+    const fetchDocs = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { data, error } = await supabase
+                .from('magic_docs')
+                .select('*')
+                .order('last_updated', { ascending: false });
+
+            if (error) {
+                console.error("Error fetching docs:", error);
+                // Fallback to localStorage for existing users
+                const stored = localStorage.getItem('magic-internal-docs') || localStorage.getItem('ch-internal-docs');
+                if (stored) {
+                    try {
+                        setDocs(JSON.parse(stored));
+                        setIsLoading(false);
+                        return;
+                    } catch (e) {
+                        console.error("Failed to parse local docs", e);
+                    }
+                }
+                throw new Error("Failed to load documents");
+            }
+
+            if (data) {
+                const formattedDocs = data.map(d => ({
+                    id: d.id,
+                    title: d.title,
+                    content: d.content,
+                    lastUpdated: d.last_updated
+                }));
+                setDocs(formattedDocs);
+            }
+        } catch (e: any) {
+            setError(e.message || "Failed to load docs");
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAdminLoggedIn) {
+            fetchDocs();
+        }
+    }, [fetchDocs, isAdminLoggedIn]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, sortOption]);
+
+    const handleRefresh = useCallback(() => {
+        fetchDocs();
+        setCurrentPage(1);
+    }, [fetchDocs]);
+
+    const handleCreateNew = async () => {
+        const newDoc = {
+            title: "Untitled Document",
+            content: "",
+            last_updated: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+            .from('magic_docs')
+            .insert([newDoc])
+            .select();
+
+        if (error) {
+            console.error("Error creating doc:", error);
+            alert("Failed to create document in Supabase");
+            return;
+        }
+
+        if (data && data[0]) {
+            router.push(`/m-admin/magic-docs/${data[0].id}`);
+        }
+    };
+
+    const handleDelete = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (confirm("Are you sure you want to delete this document?")) {
+            const { error } = await supabase
+                .from('magic_docs')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                console.error("Error deleting doc:", error);
+                alert("Failed to delete document");
+            } else {
+                setDocs(docs.filter(d => d.id !== id));
+            }
+        }
+    };
+
+    const formatDateForDisplay = (dateString: string, includeTime: boolean = true): string => {
+        try {
+            const date = parseISO(dateString);
+            if (!isValidDate(date)) return "Invalid Date";
+            return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
+        } catch {
+            return "Invalid Date";
+        }
+    };
+
+    const filteredAndSortedDocs = useMemo(() => {
+        let filteredDocs = docs.filter(doc =>
+            doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            doc.id.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        switch (sortOption) {
+            case 'newest':
+                filteredDocs.sort((a, b) => {
+                    try { return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(); } catch { return 0; }
+                });
+                break;
+            case 'oldest':
+                filteredDocs.sort((a, b) => {
+                    try { return new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime(); } catch { return 0; }
+                });
+                break;
+            case 'title-asc':
+                filteredDocs.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'title-desc':
+                filteredDocs.sort((a, b) => b.title.localeCompare(a.title));
+                break;
+        }
+        return filteredDocs;
+    }, [docs, searchTerm, sortOption]);
+
+    const totalPages = useMemo(() => Math.ceil(filteredAndSortedDocs.length / ITEMS_PER_PAGE), [filteredAndSortedDocs.length]);
+
+    const paginatedDocs = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredAndSortedDocs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredAndSortedDocs, currentPage]);
+
+    const orderRowSkeletons = Array.from({ length: Math.min(ITEMS_PER_PAGE, 5) }).map((_, i) => (
+        <motion.tr
+            key={`skeleton-${i}`}
+            className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: i * 0.05 }}
+        >
+            <TableCell><Skeleton className="h-5 w-8" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-[150px]" /></TableCell>
+            <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+        </motion.tr>
+    ));
+
+    if (adminLoading) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+                <p>Loading Admin Area...</p>
+            </div>
+        );
+    }
+
+    if (!isAdminLoggedIn) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
+                <AdminLoginForm />
+            </div>
+        );
+    }
+
+    return (
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6 h-full flex flex-col">
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                        Magic Docs
+                    </h1>
+                    <p className="text-sm text-muted-foreground mt-1">Manage all your internal documents.</p>
+                </div>
+                <div className="flex gap-2">
+                    <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+                        <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+                            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                            Refresh Data
+                        </Button>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+                        <Button variant="default" onClick={handleCreateNew}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Document
+                        </Button>
+                    </motion.div>
+                </div>
+            </header>
+
+            <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border flex flex-col flex-grow min-h-0">
+                <div className="flex flex-col sm:flex-row items-center gap-2 mb-4 pb-4 border-b border-border">
+                    <div className="relative flex-grow w-full sm:w-auto sm:flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="Search by Title or ID..."
+                            className="pl-10 w-full h-9 text-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex w-full sm:w-auto items-center gap-2 mt-2 sm:mt-0">
+                        <Select value={sortOption} onValueChange={(value) => setSortOption(value as any)}>
+                            <SelectTrigger className="w-full sm:w-auto min-w-[180px] h-9 text-sm">
+                                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                                <SelectValue placeholder="Sort by..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="newest">Date (Newest First)</SelectItem>
+                                <SelectItem value="oldest">Date (Oldest First)</SelectItem>
+                                <SelectItem value="title-asc">Title (A-Z)</SelectItem>
+                                <SelectItem value="title-desc">Title (Z-A)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="flex-grow min-h-0">
+                    {isLoading ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[50px] text-center">SL</TableHead>
+                                    <TableHead>Document Title</TableHead>
+                                    <TableHead className="w-[200px]">Last Updated</TableHead>
+                                    <TableHead className="w-[150px]">Docs ID</TableHead>
+                                    <TableHead className="text-right w-[100px]">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
+                        </Table>
+                    ) : error ? (
+                        <motion.div
+                            className="text-center py-10 text-destructive"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            <AlertTriangle className="mx-auto h-12 w-12 mb-4" />
+                            <p className="text-lg">Error loading docs: {error}</p>
+                            <Button variant="outline" onClick={handleRefresh} className="mt-4">
+                                <RefreshCw className="h-4 w-4 mr-2" /> Try Again
+                            </Button>
+                        </motion.div>
+                    ) : paginatedDocs.length === 0 ? (
+                        <motion.div
+                            className="text-center py-10 text-muted-foreground"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                        >
+                            <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                            <p className="text-lg">No documents found.</p>
+                            {searchTerm && <p>Try adjusting your search or filters.</p>}
+                        </motion.div>
+                    ) : (
+                        <ScrollArea className="w-full h-full">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[50px] text-center">SL</TableHead>
+                                        <TableHead>Document Title</TableHead>
+                                        <TableHead className="w-[200px]">Last Updated</TableHead>
+                                        <TableHead className="w-[150px]">Docs ID</TableHead>
+                                        <TableHead className="text-right w-[100px]">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    <AnimatePresence>
+                                        {paginatedDocs.map((doc, index) => (
+                                            <motion.tr
+                                                key={doc.id}
+                                                className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                                                transition={{ duration: 0.3, delay: index * 0.03 }}
+                                            >
+                                                <TableCell className="text-center text-muted-foreground font-medium text-xs">
+                                                    {filteredAndSortedDocs.length - ((currentPage - 1) * ITEMS_PER_PAGE + index)}
+                                                </TableCell>
+                                                <TableCell className="font-medium">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-1.5 bg-primary/10 rounded">
+                                                            <FileText className="h-4 w-4 text-primary" />
+                                                        </div>
+                                                        <span className="hover:underline cursor-pointer text-primary" onClick={() => router.push(`/m-admin/magic-docs/${doc.id}`)}>
+                                                            {doc.title}
+                                                        </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-xs text-muted-foreground">
+                                                    <div className="flex items-center">
+                                                        <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+                                                        {formatDateForDisplay(doc.lastUpdated)}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]" title={doc.id}>
+                                                    {doc.id.split('-')[0]}...
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => router.push(`/m-admin/magic-docs/${doc.id}`)}>
+                                                                <Edit3 className="mr-2 h-4 w-4" /> Edit Content
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => window.open(`/docs/view/${doc.id}`, '_blank')}>
+                                                                <Eye className="mr-2 h-4 w-4" /> View Read-Only
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem onClick={(e) => handleDelete(doc.id, e as any)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </motion.tr>
+                                        ))}
+                                    </AnimatePresence>
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+                    )}
+                </div>
+
+                <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
+                    <p>Showing {paginatedDocs.length} of {filteredAndSortedDocs.length} docs.</p>
+                    <div className="flex items-center space-x-1">
+                        <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1 || isLoading}
+                            >
+                                Previous
+                            </Button>
+                        </motion.div>
+                        <span className="px-2">Page {currentPage} of {Math.max(1, totalPages)}</span>
+                        <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages || totalPages === 0 || isLoading}
+                            >
+                                Next
+                            </Button>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    );
+}
