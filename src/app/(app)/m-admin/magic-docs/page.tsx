@@ -42,6 +42,7 @@ interface MagicDocument {
     title: string;
     content: string;
     lastUpdated: string;
+    createdAt?: string;
 }
 
 export default function MagicDocsPage(): ReactNode {
@@ -81,7 +82,11 @@ export default function MagicDocsPage(): ReactNode {
                         console.error("Failed to parse local docs", e);
                     }
                 }
-                throw new Error("Failed to load documents");
+                // Fallback to empty docs list so the user can still interact and page doesn't crash completely
+                // throw new Error("Failed to load documents");
+                setDocs([]);
+                setIsLoading(false);
+                return;
             }
 
             if (data) {
@@ -89,7 +94,8 @@ export default function MagicDocsPage(): ReactNode {
                     id: d.id,
                     title: d.title,
                     content: d.content,
-                    lastUpdated: d.last_updated
+                    lastUpdated: d.last_updated,
+                    createdAt: d.created_at
                 }));
                 setDocs(formattedDocs);
             }
@@ -210,7 +216,8 @@ export default function MagicDocsPage(): ReactNode {
             <TableCell><Skeleton className="h-5 w-8" /></TableCell>
             <TableCell><Skeleton className="h-5 w-48" /></TableCell>
             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-[150px]" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
             <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
         </motion.tr>
     ));
@@ -291,9 +298,10 @@ export default function MagicDocsPage(): ReactNode {
                                 <TableRow>
                                     <TableHead className="w-[50px] text-center">SL</TableHead>
                                     <TableHead>Document Title</TableHead>
-                                    <TableHead className="w-[200px]">Last Updated</TableHead>
-                                    <TableHead className="w-[150px]">Docs ID</TableHead>
-                                    <TableHead className="text-right w-[100px]">Action</TableHead>
+                                    <TableHead className="w-[180px]">Created</TableHead>
+                                    <TableHead className="w-[180px]">Updated</TableHead>
+                                    <TableHead className="w-[120px]">Docs ID</TableHead>
+                                    <TableHead className="text-right w-[80px]">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
@@ -329,9 +337,10 @@ export default function MagicDocsPage(): ReactNode {
                                     <TableRow>
                                         <TableHead className="w-[50px] text-center">SL</TableHead>
                                         <TableHead>Document Title</TableHead>
-                                        <TableHead className="w-[200px]">Last Updated</TableHead>
-                                        <TableHead className="w-[150px]">Docs ID</TableHead>
-                                        <TableHead className="text-right w-[100px]">Action</TableHead>
+                                        <TableHead className="w-[180px]">Created</TableHead>
+                                        <TableHead className="w-[180px]">Updated</TableHead>
+                                        <TableHead className="w-[120px]">Docs ID</TableHead>
+                                        <TableHead className="text-right w-[80px]">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -359,7 +368,13 @@ export default function MagicDocsPage(): ReactNode {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-xs text-muted-foreground">
-                                                    <div className="flex items-center">
+                                                    <div className="flex items-center" title="Created Date">
+                                                        <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+                                                        {formatDateForDisplay(doc.createdAt || doc.lastUpdated)}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-xs text-muted-foreground">
+                                                    <div className="flex items-center" title="Last Updated Date">
                                                         <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" />
                                                         {formatDateForDisplay(doc.lastUpdated)}
                                                     </div>

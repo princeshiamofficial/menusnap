@@ -34,7 +34,9 @@ export default function GoogleDocsApp({
   onSave,
   readOnly = false,
   hideHeader = false,
-  docId
+  docId,
+  showWatermark = false,
+  customPaperHeader,
 }: {
   initialTitle?: string;
   initialContent?: string;
@@ -42,6 +44,8 @@ export default function GoogleDocsApp({
   readOnly?: boolean;
   hideHeader?: boolean;
   docId?: string;
+  showWatermark?: boolean;
+  customPaperHeader?: React.ReactNode;
 }) {
   const [title, setTitle] = useState(initialTitle)
   const [content, setContent] = useState(initialContent)
@@ -98,6 +102,8 @@ export default function GoogleDocsApp({
             onChange={setContent}
             onReady={setEditor}
             readOnly={readOnly}
+            showWatermark={showWatermark}
+            customPaperHeader={customPaperHeader}
           />
         </div>
       </main>

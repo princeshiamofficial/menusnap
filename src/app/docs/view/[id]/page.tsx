@@ -4,6 +4,9 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
+import { CalendarDays } from "lucide-react";
+import { format, parseISO, isValid as isValidDate } from 'date-fns';
 
 const GoogleDocsApp = dynamic(() => import("@/components/editor/google-docs/google-docs-app"), {
     ssr: false,
@@ -15,6 +18,7 @@ interface MagicDocument {
     title: string;
     content: string;
     lastUpdated: string;
+    createdAt?: string;
 }
 
 export default function MagicDocView() {
@@ -47,7 +51,8 @@ export default function MagicDocView() {
                     id: data.id,
                     title: data.title,
                     content: data.content,
-                    lastUpdated: data.last_updated
+                    lastUpdated: data.last_updated,
+                    createdAt: data.created_at
                 });
             }
             setLoading(false);
@@ -75,7 +80,8 @@ export default function MagicDocView() {
                                 ...current,
                                 title: newData.title,
                                 content: newData.content,
-                                lastUpdated: newData.last_updated
+                                lastUpdated: newData.last_updated,
+                                createdAt: newData.created_at || current.createdAt
                             };
                         }
                         return current;
@@ -112,12 +118,46 @@ export default function MagicDocView() {
         );
     }
 
+    const formatDate = (dateString?: string): string => {
+        if (!dateString) return 'N/A';
+        try {
+            const date = parseISO(dateString);
+            return isValidDate(date) ? format(date, "MMMM d, yyyy") : "Invalid Date";
+        } catch {
+            return "Invalid Date";
+        }
+    };
+
+    const customHeader = (
+        <div className="flex justify-between items-start border-b-2 border-primary/20 pb-8 mb-4 mt-8 sm:mt-12 mx-6 sm:mx-16 px-2">
+            <div className="bg-black p-4 rounded-lg shadow-md print:shadow-none">
+                <Image
+                    src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
+                    alt="Color Hut Logo"
+                    width={180}
+                    height={72}
+                    className="object-contain"
+                    priority
+                />
+            </div>
+            <div className="text-right text-muted-foreground text-sm space-y-1">
+                <p className="font-bold text-xl text-primary">{doc.title}</p>
+                <p className="flex items-center justify-end gap-2 font-medium">
+                    <CalendarDays className="h-4 w-4" />
+                    {formatDate(doc.createdAt || doc.lastUpdated)}
+                </p>
+            </div>
+        </div>
+    );
+
     return (
         <GoogleDocsApp
             initialTitle={doc.title}
             initialContent={doc.content}
             readOnly={true}
             hideHeader={true}
+            showWatermark={true}
+            customPaperHeader={customHeader}
         />
     );
 }

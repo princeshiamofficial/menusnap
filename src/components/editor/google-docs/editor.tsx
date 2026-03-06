@@ -102,9 +102,11 @@ interface EditorProps {
     onChange: (html: string) => void;
     onReady: (editor: any) => void;
     readOnly?: boolean;
+    showWatermark?: boolean;
+    customPaperHeader?: React.ReactNode;
 }
 
-export default function GoogleDocsEditor({ content, onChange, onReady, readOnly = false }: EditorProps) {
+export default function GoogleDocsEditor({ content, onChange, onReady, readOnly = false, showWatermark = false, customPaperHeader }: EditorProps) {
     const editor = useEditor({
         parseOptions: {
             preserveWhitespace: 'full',
@@ -194,7 +196,7 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
         editable: !readOnly,
         editorProps: {
             attributes: {
-                class: `focus:outline-none min-h-[1056px] w-full max-w-[816px] py-8 px-6 sm:py-12 sm:px-16 ${readOnly ? 'cursor-default' : 'cursor-text'}`,
+                class: `focus:outline-none min-[1056px]:min-h-[1056px] min-h-[1056px] w-full max-w-[816px] px-6 sm:px-16 ${customPaperHeader ? 'pb-8 pt-4 sm:pb-12 sm:pt-6' : 'py-8 sm:py-12'} ${readOnly ? 'cursor-default' : 'cursor-text'}`,
             },
         },
     })
@@ -224,8 +226,9 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                    className="bg-white shadow-xl border border-gray-200 w-full"
+                    className={`bg-white shadow-xl border border-gray-200 w-full ${showWatermark ? 'bg-watermark' : ''}`}
                 >
+                    {customPaperHeader}
                     <EditorContent editor={editor} />
                 </motion.div>
             </div>

@@ -1,17 +1,17 @@
 const { Client } = require('pg');
 
-const DATABASE_URL = "postgresql://postgres:C0l0rHu7@456@db.sdkrbzzdnbljkhzaqqxy.supabase.co:5432/postgres";
+const DATABASE_URL = "postgresql://postgres:C0l0rHu7%40456@db.sdkrbzzdnbljkhzaqqxy.supabase.co:5432/postgres";
 
 const client = new Client({
-    connectionString: DATABASE_URL,
+  connectionString: DATABASE_URL,
 });
 
 async function run() {
-    try {
-        await client.connect();
-        console.log("Connected to Supabase PostgreSQL.");
+  try {
+    await client.connect();
+    console.log("Connected to Supabase PostgreSQL.");
 
-        const sql = `
+    const sql = `
       -- Create the magic_docs table
       create table if not exists public.magic_docs (
         id uuid default gen_random_uuid() primary key,
@@ -46,14 +46,14 @@ async function run() {
       alter publication supabase_realtime add table public.magic_docs;
     `;
 
-        await client.query(sql);
-        console.log("Successfully created magic_docs table, policies, and enabled Realtime!");
+    await client.query(sql);
+    console.log("Successfully created magic_docs table, policies, and enabled Realtime!");
 
-    } catch (err) {
-        console.error("Error executing SQL:", err.message);
-    } finally {
-        await client.end();
-    }
+  } catch (err) {
+    console.error("Error executing SQL:", err.message);
+  } finally {
+    await client.end();
+  }
 }
 
 run();
