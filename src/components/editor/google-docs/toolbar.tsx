@@ -286,23 +286,27 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                             </Button>
                         </motion.div>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="p-1 min-w-[120px] grid grid-cols-4 gap-1 animate-in slide-in-from-top-2 duration-200">
+                    <DropdownMenuContent
+                        align="start"
+                        sideOffset={8}
+                        className="p-2 min-w-[140px] grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200 z-[100] shadow-xl border border-[#dadce0] bg-white"
+                    >
                         {COLORS.map(c => (
                             <DropdownMenuItem
                                 key={c.value}
                                 onClick={() => editor.chain().focus().setColor(c.value).run()}
-                                className="p-0 flex items-center justify-center w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform"
+                                className="p-0 flex items-center justify-center w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform border border-gray-100"
                                 style={{ backgroundColor: c.value }}
                                 title={c.label}
                             >
                                 {editor.getAttributes('textStyle').color === c.value && (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm border border-black/10" />
                                 )}
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuItem
                             onClick={() => editor.chain().focus().unsetColor().run()}
-                            className="col-span-4 p-1 text-[10px] text-center justify-center hover:bg-[#f1f3f4]"
+                            className="col-span-4 mt-1 p-1.5 text-[11px] font-medium text-center justify-center hover:bg-[#f1f3f4] rounded-md transition-colors border-t border-gray-100"
                         >
                             Reset color
                         </DropdownMenuItem>
@@ -318,12 +322,16 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                             </Button>
                         </motion.div>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="p-1 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
+                    <DropdownMenuContent
+                        align="start"
+                        sideOffset={8}
+                        className="p-1 min-w-[150px] animate-in slide-in-from-top-2 duration-200 z-[100] shadow-xl border border-[#dadce0] bg-white"
+                    >
                         {TEXT_CASES.map(tc => (
                             <DropdownMenuItem
                                 key={tc.value}
                                 onClick={() => (editor.commands as any).setTextCase(tc.value)}
-                                className="p-2 text-xs rounded-sm cursor-pointer hover:bg-[#f1f3f4]"
+                                className="p-2 text-xs font-medium rounded-sm cursor-pointer hover:bg-[#f1f3f4] transition-colors"
                             >
                                 {tc.label}
                             </DropdownMenuItem>
