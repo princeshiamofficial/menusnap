@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
-import { Plus, FileText, Trash2, Search, ArrowUpDown, MoreVertical, Eye, Edit3, RefreshCw, AlertTriangle, CalendarDays } from "lucide-react";
+import { Plus, FileText, Trash2, Search, ArrowUpDown, MoreVertical, Eye, Edit3, RefreshCw, AlertTriangle, CalendarDays, Undo2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from "next/navigation";
@@ -34,6 +34,13 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog";
 
 import { parseISO, isValid as isValidDate, format } from 'date-fns';
 
@@ -43,6 +50,8 @@ interface MagicDocument {
     content: string;
     lastUpdated: string;
     createdAt?: string;
+    isDeleted?: boolean;
+    deletedAt?: string;
 }
 
 export default function MagicDocsPage(): ReactNode {
@@ -55,6 +64,8 @@ export default function MagicDocsPage(): ReactNode {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortOption, setSortOption] = useState<'newest' | 'oldest' | 'title-asc' | 'title-desc'>('newest');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isTrashOpen, setIsTrashOpen] = useState(false);
+    const [trashDocs, setTrashDocs] = useState<MagicDocument[]>([]);
     const ITEMS_PER_PAGE = 10;
 
 
@@ -90,14 +101,17 @@ export default function MagicDocsPage(): ReactNode {
             }
 
             if (data) {
-                const formattedDocs = data.map(d => ({
+                const allMapped = data.map(d => ({
                     id: d.id,
                     title: d.title,
                     content: d.content,
                     lastUpdated: d.last_updated,
-                    createdAt: d.created_at
+                    createdAt: d.created_at,
+                    isDeleted: d.is_deleted || false,
+                    deletedAt: d.deleted_at
                 }));
-                setDocs(formattedDocs);
+                setDocs(allMapped.filter(d => !d.isDeleted));
+                setTrashDocs(allMapped.filter(d => d.isDeleted));
             }
         } catch (e: any) {
             setError(e.message || "Failed to load docs");
@@ -144,19 +158,49 @@ export default function MagicDocsPage(): ReactNode {
         }
     };
 
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
+    const handleMoveToTrash = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm("Are you sure you want to delete this document?")) {
+        if (confirm("Move this document to trash?")) {
+            const { error } = await supabase
+                .from('magic_docs')
+                .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
+                .eq('id', id);
+
+            if (error) {
+                console.error("Error moving to trash:", error);
+                alert("Failed to move document to trash. Note: You might need to add 'is_deleted' (boolean) and 'deleted_at' (TIMESTAMPTZ) columns to your magic_docs table.");
+            } else {
+                fetchDocs();
+            }
+        }
+    };
+
+    const handleRestore = async (id: string) => {
+        const { error } = await supabase
+            .from('magic_docs')
+            .update({ is_deleted: false, deleted_at: null } as any)
+            .eq('id', id);
+
+        if (error) {
+            console.error("Error restoring doc:", error);
+            alert("Failed to restore document.");
+        } else {
+            fetchDocs();
+        }
+    };
+
+    const handlePermanentDelete = async (id: string) => {
+        if (confirm("Are you sure you want to permanently delete this document? This action cannot be undone.")) {
             const { error } = await supabase
                 .from('magic_docs')
                 .delete()
                 .eq('id', id);
 
             if (error) {
-                console.error("Error deleting doc:", error);
-                alert("Failed to delete document");
+                console.error("Error permanently deleting doc:", error);
+                alert("Failed to delete document permanently.");
             } else {
-                setDocs(docs.filter(d => d.id !== id));
+                fetchDocs();
             }
         }
     };
@@ -255,6 +299,12 @@ export default function MagicDocsPage(): ReactNode {
                         <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
                             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                             Refresh Data
+                        </Button>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+                        <Button variant="outline" onClick={() => setIsTrashOpen(true)} className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700">
+                            <History className="h-4 w-4 mr-2" />
+                            Trash ({trashDocs.length})
                         </Button>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
@@ -400,7 +450,7 @@ export default function MagicDocsPage(): ReactNode {
                                                                 <Eye className="mr-2 h-4 w-4" /> View Read-Only
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={(e) => handleDelete(doc.id, e as any)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                            <DropdownMenuItem onClick={(e) => handleMoveToTrash(doc.id, e as any)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
@@ -442,6 +492,91 @@ export default function MagicDocsPage(): ReactNode {
                     </div>
                 </div>
             </section>
+            {/* Trash Recovery Dialog */}
+            <Dialog open={isTrashOpen} onOpenChange={setIsTrashOpen}>
+                <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 border-none shadow-2xl bg-white rounded-2xl overflow-hidden">
+                    <DialogHeader className="px-8 py-8 space-y-2 select-none">
+                        <div className="flex items-center justify-between">
+                            <DialogTitle className="text-2xl font-semibold tracking-tight text-gray-900 flex items-center gap-2">
+                                <Trash2 className="h-5 w-5 text-red-500" />
+                                Trash Bin
+                            </DialogTitle>
+                        </div>
+                        <DialogDescription className="text-gray-500 text-[15px] leading-relaxed">
+                            These items will be kept for recovery. You can restore them anytime or remove them permanently.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex-1 overflow-hidden flex flex-col px-4 pb-4">
+                        <ScrollArea className="flex-1 px-4">
+                            <AnimatePresence mode="popLayout">
+                                {trashDocs.length === 0 ? (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="flex flex-col items-center justify-center py-24 text-center"
+                                    >
+                                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                            <History className="h-8 w-8 text-gray-300" />
+                                        </div>
+                                        <p className="text-gray-900 font-medium">Your trash is clear</p>
+                                        <p className="text-gray-500 text-sm mt-1">Deleted documents will appear here temporarily.</p>
+                                    </motion.div>
+                                ) : (
+                                    <div className="space-y-2 py-2">
+                                        {trashDocs.map((doc) => (
+                                            <motion.div
+                                                key={doc.id}
+                                                layout
+                                                initial={{ opacity: 0, scale: 0.98 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.98 }}
+                                                className="group relative flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-gray-100 hover:bg-gray-50/50 transition-all duration-200"
+                                            >
+                                                <div className="flex items-center gap-4 min-w-0">
+                                                    <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-white transition-colors">
+                                                        <FileText className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-sm font-medium text-gray-900 truncate">
+                                                            {doc.title}
+                                                        </span>
+                                                        <span className="text-[12px] text-gray-400 flex items-center gap-1 mt-0.5">
+                                                            <CalendarDays className="h-3 w-3" />
+                                                            Deleted {doc.deletedAt ? new Date(doc.deletedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'recently'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-1.5 ml-4">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-9 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg font-medium transition-all"
+                                                        onClick={() => handleRestore(doc.id)}
+                                                    >
+                                                        <Undo2 className="h-4 w-4 mr-1.5" />
+                                                        Restore
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-9 w-9 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                        onClick={() => handlePermanentDelete(doc.id)}
+                                                        title="Delete permanently"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
+                            </AnimatePresence>
+                        </ScrollArea>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

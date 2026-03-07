@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
+import { NotFoundSpace } from "@/components/error/not-found-space";
 
 const GoogleDocsApp = dynamic(() => import("@/components/editor/google-docs/google-docs-app"), {
     ssr: false,
@@ -43,12 +44,16 @@ export default function MagicDocEdit() {
                     } catch (e) { }
                 }
             } else if (data) {
-                setDoc({
-                    id: data.id,
-                    title: data.title,
-                    content: data.content,
-                    lastUpdated: data.last_updated
-                });
+                if (data.is_deleted) {
+                    setDoc(null);
+                } else {
+                    setDoc({
+                        id: data.id,
+                        title: data.title,
+                        content: data.content,
+                        lastUpdated: data.last_updated
+                    });
+                }
             }
             setLoading(false);
         };
@@ -113,18 +118,7 @@ export default function MagicDocEdit() {
     }
 
     if (!doc) {
-        return (
-            <div className="flex flex-col h-screen w-full items-center justify-center bg-[#f8f9fa] font-sans px-4 text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2 font-sans">Document Not Found</h1>
-                <p className="text-gray-600 mb-6 font-sans">The document you're looking for doesn't exist or has been removed.</p>
-                <button
-                    onClick={() => router.push('/')}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition font-medium font-sans"
-                >
-                    Back to Home
-                </button>
-            </div>
-        );
+        return <NotFoundSpace />;
     }
 
     return (

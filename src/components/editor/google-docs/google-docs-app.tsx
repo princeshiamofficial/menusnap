@@ -56,7 +56,7 @@ export default function GoogleDocsApp({
   const [isSaving, setIsSaving] = useState(false)
   const [isFindOpen, setIsFindOpen] = useState(false)
   const [isFindReplaceDialogOpen, setIsFindReplaceDialogOpen] = useState(false)
-  const [margins, setMargins] = useState({ left: 56, right: 56, indent: 0 })
+  const [margins, setMargins] = useState({ left: 56, right: 56, indent: 0, tabStops: [] as any[] })
 
   // Handle Ctrl+F
   useEffect(() => {
@@ -138,6 +138,7 @@ export default function GoogleDocsApp({
             readOnly={readOnly}
             showWatermark={showWatermark}
             customPaperHeader={customPaperHeader}
+            tabStops={margins.tabStops}
           />
         </div>
       </main>

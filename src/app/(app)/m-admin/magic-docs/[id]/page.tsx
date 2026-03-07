@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { AdminLoginForm } from "@/components/auth/admin-login-form";
 import { supabase } from "@/lib/supabase";
+import { NotFoundSpace } from "@/components/error/not-found-space";
 
 const GoogleDocsApp = dynamic(() => import("@/components/editor/google-docs/google-docs-app"), {
     ssr: false,
@@ -49,12 +50,16 @@ export default function MagicDocDetail() {
                     } catch (e) { }
                 }
             } else if (data) {
-                setDoc({
-                    id: data.id,
-                    title: data.title,
-                    content: data.content,
-                    lastUpdated: data.last_updated
-                });
+                if (data.is_deleted) {
+                    setDoc(null);
+                } else {
+                    setDoc({
+                        id: data.id,
+                        title: data.title,
+                        content: data.content,
+                        lastUpdated: data.last_updated
+                    });
+                }
             }
             setLoading(false);
         };
@@ -128,15 +133,7 @@ export default function MagicDocDetail() {
 
     if (!doc) {
         return (
-            <div className="flex flex-col h-screen w-full items-center justify-center bg-[#f8f9fa] font-sans">
-                <h1 className="text-2xl font-bold text-gray-800 mb-4 font-sans">Document not found</h1>
-                <button
-                    onClick={() => router.push('/m-admin/magic-docs')}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition font-medium"
-                >
-                    Back to Dashboard
-                </button>
-            </div>
+            <NotFoundSpace />
         );
     }
 

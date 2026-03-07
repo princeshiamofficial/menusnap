@@ -31,7 +31,17 @@ export const TabNode = Node.create({
     inline: true,
     selectable: false,
     marks: '_',
-
+    addAttributes() {
+        return {
+            width: {
+                default: '24px',
+                parseHTML: element => element.style.width,
+                renderHTML: attributes => ({
+                    style: `display: inline-block; width: ${attributes.width}; white-space: pre; border-bottom: 1px transparent;`,
+                }),
+            },
+        }
+    },
     parseHTML() {
         return [
             {
@@ -41,7 +51,7 @@ export const TabNode = Node.create({
     },
 
     renderHTML({ HTMLAttributes }) {
-        return ['span', mergeAttributes(HTMLAttributes, { 'data-type': 'tab', style: 'white-space: pre' }), '\t']
+        return ['span', mergeAttributes(HTMLAttributes, { 'data-type': 'tab' }), '\t']
     },
 })
 
@@ -195,9 +205,10 @@ interface EditorProps {
     readOnly?: boolean;
     showWatermark?: boolean;
     customPaperHeader?: React.ReactNode;
+    tabStops?: { position: number, type: 'left' | 'center' | 'right' }[];
 }
 
-export default function GoogleDocsEditor({ content, onChange, onReady, readOnly = false, showWatermark = false, customPaperHeader }: EditorProps) {
+export default function GoogleDocsEditor({ content, onChange, onReady, readOnly = false, showWatermark = false, customPaperHeader, tabStops = [] }: EditorProps) {
     const editor = useEditor({
         parseOptions: {
             preserveWhitespace: 'full',
@@ -254,11 +265,42 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
             Extension.create({
                 name: 'tabKey',
                 priority: 1000,
+                addStorage() {
+                    return {
+                        tabStops: [] as any[],
+                    }
+                },
                 addKeyboardShortcuts() {
                     return {
                         Tab: () => {
-                            // Insert atomic Tab node to guarantee it survives database saves and real-time syncs perfectly
-                            return this.editor.chain().focus().insertContent([{ type: 'tabNode' }, { type: 'tabNode' }]).run()
+                            const { state, view } = this.editor
+                            const { selection } = state
+                            const coords = view.coordsAtPos(selection.from)
+                            const editorPort = view.dom.getBoundingClientRect()
+                            const currentX = coords.left - editorPort.left
+
+                            // 1. Find next tab stop from ruler (px positions)
+                            const stops = this.storage.tabStops || []
+                            const sortedStops = [...stops].sort((a: any, b: any) => a.position - b.position)
+                            const nextStop = sortedStops.find(t => t.position > currentX + 2) // +2 for small buffer
+
+                            let tabWidth = 48 // Default tab width
+
+                            if (nextStop) {
+                                tabWidth = nextStop.position - currentX
+                            } else {
+                                // Default tab behavior: align to next 48px increment
+                                const nextDefault = Math.ceil((currentX + 1) / 48) * 48
+                                tabWidth = nextDefault - currentX
+                                if (tabWidth < 10) tabWidth += 48 // Ensure minimum tab width
+                            }
+
+                            return this.editor.chain().focus().insertContent([
+                                {
+                                    type: 'tabNode',
+                                    attrs: { width: `${tabWidth}px` }
+                                }
+                            ]).run()
                         },
                         'Mod-Tab': () => {
                             // Ctrl + Tab to create a sub-list (sink list item)
@@ -417,6 +459,12 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
             editor.commands.setContent(content)
         }
     }, [content, editor])
+
+    useEffect(() => {
+        if (editor && tabStops) {
+            (editor.storage as any).tabKey.tabStops = tabStops
+        }
+    }, [editor, tabStops])
 
     return (
         <motion.div
