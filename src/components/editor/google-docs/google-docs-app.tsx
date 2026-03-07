@@ -4,6 +4,9 @@ import dynamic from 'next/dynamic'
 import { useState, useEffect, useCallback } from 'react'
 import Header from './header'
 import Toolbar from './toolbar'
+import Ruler from './ruler'
+import FindReplace from './find-replace'
+import FindReplaceDialog from './find-replace-dialog'
 import { Editor } from '@tiptap/react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -51,6 +54,25 @@ export default function GoogleDocsApp({
   const [content, setContent] = useState(initialContent)
   const [editor, setEditor] = useState<Editor | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isFindOpen, setIsFindOpen] = useState(false)
+  const [isFindReplaceDialogOpen, setIsFindReplaceDialogOpen] = useState(false)
+  const [margins, setMargins] = useState({ left: 56, right: 56, indent: 0 })
+
+  // Handle Ctrl+F
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        setIsFindOpen(true)
+      }
+      if (e.key === 'Escape') {
+        setIsFindOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Handle autosave
   useEffect(() => {
@@ -81,7 +103,14 @@ export default function GoogleDocsApp({
   }, [])
 
   return (
-    <div className="flex flex-col bg-[#f8f9fa] min-h-screen">
+    <div
+      className="flex flex-col bg-[#f8f9fa] min-h-screen"
+      style={{
+        '--editor-left-margin': `${margins.left}px`,
+        '--editor-right-margin': `${margins.right}px`,
+        '--editor-first-line-indent': `${margins.indent}px`,
+      } as React.CSSProperties}
+    >
       {!hideHeader && (
         <div className="sticky top-0 z-[60] flex flex-col">
           <Header
@@ -91,7 +120,12 @@ export default function GoogleDocsApp({
             readOnly={readOnly}
             docId={docId}
           />
-          {!readOnly && <Toolbar editor={editor} />}
+          {!readOnly && (
+            <>
+              <Toolbar editor={editor} title={title} />
+              <Ruler onMarginsChange={setMargins} />
+            </>
+          )}
         </div>
       )}
 
@@ -108,8 +142,45 @@ export default function GoogleDocsApp({
         </div>
       </main>
 
+      <AnimatePresence>
+        {isFindOpen && (
+          <FindReplace
+            isOpen={isFindOpen}
+            onClose={() => setIsFindOpen(false)}
+            editor={editor}
+            onOpenDialog={() => {
+              setIsFindOpen(false)
+              setIsFindReplaceDialogOpen(true)
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isFindReplaceDialogOpen && (
+          <FindReplaceDialog
+            isOpen={isFindReplaceDialogOpen}
+            onClose={() => setIsFindReplaceDialogOpen(false)}
+            editor={editor}
+          />
+        )}
+      </AnimatePresence>
+
       <style jsx global>{`
         /* Global typography and editor specific styles */
+        .search-result {
+          background-color: #ceead6;
+          color: black;
+          border-radius: 2px;
+        }
+
+        .search-result-current {
+          background-color: #f7e200;
+          color: black;
+          border-radius: 2px;
+          box-shadow: 0 0 0 1px #fbc02d;
+        }
+
         .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
@@ -119,6 +190,8 @@ export default function GoogleDocsApp({
         }
 
         .ProseMirror {
+          padding-left: var(--editor-left-margin, 56px);
+          padding-right: var(--editor-right-margin, 56px);
           font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           font-size: 11pt;
           line-height: 1.6;
@@ -127,6 +200,11 @@ export default function GoogleDocsApp({
           white-space: pre-wrap;
           tab-size: 4;
           -moz-tab-size: 4;
+        }
+
+        .ProseMirror p {
+          text-indent: var(--editor-first-line-indent, 0px);
+          margin-bottom: 0.5rem;
         }
 
         .ProseMirror h1 { font-size: 24pt; font-weight: bold; margin-bottom: 24px; transition: color 0.2s; }

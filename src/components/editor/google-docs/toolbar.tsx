@@ -5,7 +5,8 @@ import {
     Bold, Italic, Underline, Undo, Redo, List, ListOrdered, Type,
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
     Link as LinkIcon, Image as ImageIcon, Code, Highlighter,
-    ChevronDown, Minus, Plus, Quote, Printer, CheckSquare, RemoveFormatting
+    ChevronDown, Minus, Plus, Quote, CheckSquare, RemoveFormatting, Download,
+    Baseline, CaseSensitive, Palette
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,9 +15,12 @@ import {
 import { Separator } from "@/components/ui/separator"
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
+import { generateDocxFromJSON } from '@/lib/docx-generator'
+import { saveAs } from 'file-saver'
 
 interface ToolbarProps {
     editor: Editor | null
+    title?: string
 }
 
 const FONTS = [
@@ -35,10 +39,62 @@ const HEADINGS = [
     { label: 'Heading 3', value: 3 },
 ]
 
-export default function Toolbar({ editor }: ToolbarProps) {
+const COLORS = [
+    { label: 'Black', value: '#000000' },
+    { label: 'Gray', value: '#5f6368' },
+    { label: 'Red', value: '#ea4335' },
+    { label: 'Orange', value: '#ff6d01' },
+    { label: 'Yellow', value: '#fbbc04' },
+    { label: 'Green', value: '#34a853' },
+    { label: 'Blue', value: '#4285f4' },
+    { label: 'Purple', value: '#a142f4' },
+]
+
+const TEXT_CASES = [
+    { label: 'Upper Case', value: 'uppercase' },    // HELLO WORLD
+    { label: 'Lower Case', value: 'lowercase' },    // hello world
+    { label: 'Title Case', value: 'title' },        // Hello World
+    { label: 'Sentence Case', value: 'sentence' },  // Hello world
+    { label: 'Camel Case', value: 'camel' },        // helloWorld
+    { label: 'Pascal Case', value: 'pascal' },      // HelloWorld
+    { label: 'Snake Case', value: 'snake' },        // hello_world
+    { label: 'Kebab Case', value: 'kebab' },        // hello-world
+    { label: 'Constant Case', value: 'constant' },  // HELLO_WORLD
+    { label: 'Dot Case', value: 'dot' },            // hello.world
+]
+
+export default function Toolbar({ editor, title }: ToolbarProps) {
     if (!editor) return null
 
     const [fontSize, setFontSize] = useState(11)
+
+    // Auto-detect font size on selection change
+    React.useEffect(() => {
+        if (!editor) return
+
+        const updateFontSize = () => {
+            const attrs = editor.getAttributes('textStyle')
+            if (attrs.fontSize) {
+                // If it's a string like "14pt", extract the number
+                const size = parseInt(attrs.fontSize)
+                if (!isNaN(size)) {
+                    setFontSize(size)
+                }
+            } else {
+                // Default to 11 if no specific font size is set
+                // or check if it's a heading which might have a different default size
+                setFontSize(11)
+            }
+        }
+
+        editor.on('selectionUpdate', updateFontSize)
+        editor.on('transaction', updateFontSize)
+
+        return () => {
+            editor.off('selectionUpdate', updateFontSize)
+            editor.off('transaction', updateFontSize)
+        }
+    }, [editor])
 
     const incrementFontSize = () => {
         const newSize = fontSize + 1
@@ -72,6 +128,17 @@ export default function Toolbar({ editor }: ToolbarProps) {
         editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
     }
 
+    const handleDownload = async () => {
+        if (!editor) return
+        try {
+            const json = editor.getJSON()
+            const blob = await generateDocxFromJSON(json)
+            saveAs(blob, `${title || 'document'}.docx`)
+        } catch (error) {
+            console.error('Failed to export DOCX:', error)
+        }
+    }
+
     return (
         <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -93,9 +160,9 @@ export default function Toolbar({ editor }: ToolbarProps) {
                     tooltip="Redo (Ctrl+Y)"
                 />
                 <ToolbarButton
-                    onClick={() => window.print()}
-                    icon={<Printer className="w-4 h-4" />}
-                    tooltip="Print (Ctrl+P)"
+                    onClick={handleDownload}
+                    icon={<Download className="w-4 h-4" />}
+                    tooltip="Download as Word (.docx)"
                 />
             </div>
 
@@ -158,9 +225,29 @@ export default function Toolbar({ editor }: ToolbarProps) {
             {/* Font Size */}
             <div className="flex items-center bg-white border border-[#dadce0] rounded-md px-0.5 sm:px-1 h-7 sm:h-8 shadow-sm">
                 <ToolbarButton onClick={decrementFontSize} icon={<Minus className="w-3 h-3" />} transparent />
-                <div className="px-1 sm:px-2 py-0.5 text-xs sm:text-sm font-medium min-w-[24px] sm:min-w-[32px] text-center select-none font-sans">
-                    {fontSize}
-                </div>
+                <input
+                    type="text"
+                    value={fontSize}
+                    onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '')
+                        if (val === '') setFontSize(0)
+                        else setFontSize(parseInt(val))
+                    }}
+                    onBlur={() => {
+                        if (fontSize > 0) {
+                            editor.chain().focus().setFontSize(`${fontSize}pt`).run()
+                        } else {
+                            // Reset to default or previous if invalid
+                            setFontSize(11)
+                        }
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.currentTarget.blur()
+                        }
+                    }}
+                    className="w-[28px] sm:w-[36px] h-full text-xs sm:text-sm font-medium text-center focus:outline-none bg-transparent"
+                />
                 <ToolbarButton onClick={incrementFontSize} icon={<Plus className="w-3 h-3" />} transparent />
             </div>
 
@@ -188,6 +275,61 @@ export default function Toolbar({ editor }: ToolbarProps) {
                     active={editor.isActive('highlight')}
                     icon={<Highlighter className="w-4 h-4" />}
                 />
+
+                {/* Text Color */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md hover:bg-white border border-transparent hover:border-[#dadce0] hover:shadow-sm flex flex-col items-center justify-center gap-0">
+                                <Baseline className="w-4 h-4 text-gray-600" />
+                                <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: editor.getAttributes('textStyle').color || '#000000' }} />
+                            </Button>
+                        </motion.div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="p-1 min-w-[120px] grid grid-cols-4 gap-1 animate-in slide-in-from-top-2 duration-200">
+                        {COLORS.map(c => (
+                            <DropdownMenuItem
+                                key={c.value}
+                                onClick={() => editor.chain().focus().setColor(c.value).run()}
+                                className="p-0 flex items-center justify-center w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform"
+                                style={{ backgroundColor: c.value }}
+                                title={c.label}
+                            >
+                                {editor.getAttributes('textStyle').color === c.value && (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />
+                                )}
+                            </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuItem
+                            onClick={() => editor.chain().focus().unsetColor().run()}
+                            className="col-span-4 p-1 text-[10px] text-center justify-center hover:bg-[#f1f3f4]"
+                        >
+                            Reset color
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Text Case */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md hover:bg-white border border-transparent hover:border-[#dadce0] hover:shadow-sm">
+                                <CaseSensitive className="w-4 h-4 text-gray-600" />
+                            </Button>
+                        </motion.div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="p-1 min-w-[120px] animate-in slide-in-from-top-2 duration-200">
+                        {TEXT_CASES.map(tc => (
+                            <DropdownMenuItem
+                                key={tc.value}
+                                onClick={() => (editor.commands as any).setTextCase(tc.value)}
+                                className="p-2 text-xs rounded-sm cursor-pointer hover:bg-[#f1f3f4]"
+                            >
+                                {tc.label}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
 
             <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />

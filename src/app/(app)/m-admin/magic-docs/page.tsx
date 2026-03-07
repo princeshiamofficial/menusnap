@@ -67,7 +67,7 @@ export default function MagicDocsPage(): ReactNode {
             const { data, error } = await supabase
                 .from('magic_docs')
                 .select('*')
-                .order('last_updated', { ascending: false });
+                .order('created_at', { ascending: false });
 
             if (error) {
                 console.error("Error fetching docs:", error);
@@ -176,16 +176,19 @@ export default function MagicDocsPage(): ReactNode {
             doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             doc.id.toLowerCase().includes(searchTerm.toLowerCase())
         );
-
         switch (sortOption) {
             case 'newest':
                 filteredDocs.sort((a, b) => {
-                    try { return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(); } catch { return 0; }
+                    const dateA = a.createdAt || a.lastUpdated;
+                    const dateB = b.createdAt || b.lastUpdated;
+                    try { return new Date(dateB).getTime() - new Date(dateA).getTime(); } catch { return 0; }
                 });
                 break;
             case 'oldest':
                 filteredDocs.sort((a, b) => {
-                    try { return new Date(a.lastUpdated).getTime() - new Date(b.lastUpdated).getTime(); } catch { return 0; }
+                    const dateA = a.createdAt || a.lastUpdated;
+                    const dateB = b.createdAt || b.lastUpdated;
+                    try { return new Date(dateA).getTime() - new Date(dateB).getTime(); } catch { return 0; }
                 });
                 break;
             case 'title-asc':
@@ -282,8 +285,8 @@ export default function MagicDocsPage(): ReactNode {
                                 <SelectValue placeholder="Sort by..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="newest">Date (Newest First)</SelectItem>
-                                <SelectItem value="oldest">Date (Oldest First)</SelectItem>
+                                <SelectItem value="newest">Created (Newest First)</SelectItem>
+                                <SelectItem value="oldest">Created (Oldest First)</SelectItem>
                                 <SelectItem value="title-asc">Title (A-Z)</SelectItem>
                                 <SelectItem value="title-desc">Title (Z-A)</SelectItem>
                             </SelectContent>

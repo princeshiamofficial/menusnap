@@ -19,6 +19,8 @@ import { TaskItem } from '@tiptap/extension-task-item'
 import { Placeholder } from '@tiptap/extension-placeholder'
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { Plugin, TextSelection } from '@tiptap/pm/state'
+import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
 // Custom extension for font size
 import { Extension, Node, mergeAttributes } from '@tiptap/core'
@@ -93,9 +95,98 @@ declare module '@tiptap/core' {
         fontSize: {
             setFontSize: (size: string) => ReturnType
             unsetFontSize: () => ReturnType
+        },
+        searchReplace: {
+            setSearchTerm: (term: string) => ReturnType
+            goToNextResult: () => ReturnType
+            goToPrevResult: () => ReturnType
+            replace: (replaceWith: string) => ReturnType
+            replaceAll: (replaceWith: string) => ReturnType
+        },
+        textCase: {
+            setTextCase: (type: 'uppercase' | 'lowercase' | 'title' | 'sentence' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant' | 'dot') => ReturnType
         }
     }
 }
+
+export const TextCase = Extension.create({
+    name: 'textCase',
+    addCommands() {
+        return {
+            setTextCase: (type: 'uppercase' | 'lowercase' | 'title' | 'sentence' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant' | 'dot') => ({ editor, chain }) => {
+                const { from, to } = editor.state.selection
+                if (from === to) return false
+
+                const text = editor.state.doc.textBetween(from, to)
+                let transformedText = text
+
+                // Helper to get words from any common case
+                const getWords = (str: string) => {
+                    return str
+                        .replace(/([a-z])([A-Z])/g, '$1 $2') // split camelCase
+                        .replace(/[_-]/g, ' ') // split snake/kebab
+                        .replace(/\./g, ' ') // split dot.case
+                        .trim()
+                        .split(/\s+/)
+                }
+
+                switch (type) {
+                    case 'uppercase':
+                        transformedText = text.toUpperCase()
+                        break
+                    case 'lowercase':
+                        transformedText = text.toLowerCase()
+                        break
+                    case 'title':
+                        transformedText = getWords(text)
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(' ')
+                        break
+                    case 'sentence':
+                        transformedText = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
+                        break
+                    case 'camel': {
+                        const words = getWords(text)
+                        transformedText = words[0].toLowerCase() + words.slice(1)
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join('')
+                        break
+                    }
+                    case 'pascal':
+                        transformedText = getWords(text)
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join('')
+                        break
+                    case 'snake':
+                        transformedText = getWords(text)
+                            .map(word => word.toLowerCase())
+                            .join('_')
+                        break
+                    case 'kebab':
+                        transformedText = getWords(text)
+                            .map(word => word.toLowerCase())
+                            .join('-')
+                        break
+                    case 'constant':
+                        transformedText = getWords(text)
+                            .map(word => word.toUpperCase())
+                            .join('_')
+                        break
+                    case 'dot':
+                        transformedText = getWords(text)
+                            .map(word => word.toLowerCase())
+                            .join('.')
+                        break
+                }
+
+                return chain()
+                    .insertContent(transformedText)
+                    .setTextSelection({ from, to: from + transformedText.length })
+                    .run()
+            },
+        }
+    },
+})
 
 interface EditorProps {
     content: string;
@@ -121,6 +212,9 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                     keepMarks: true,
                     keepAttributes: false,
                 },
+                // Disable to avoid duplicates as we add them manually with custom config
+                underline: false,
+                link: false,
             }),
             Underline,
             Link.configure({
@@ -156,6 +250,7 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                 placeholder: 'Write something or type "/" for commands...',
             }),
             TabNode,
+            TextCase,
             Extension.create({
                 name: 'tabKey',
                 priority: 1000,
@@ -188,6 +283,115 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                     }
                 },
             }),
+            Extension.create({
+                name: 'searchReplace',
+                addStorage() {
+                    return {
+                        searchTerm: '',
+                        results: [] as { from: number; to: number }[],
+                        currentIndex: 0,
+                    }
+                },
+                addCommands() {
+                    return {
+                        setSearchTerm: (term: string) => ({ editor }) => {
+                            this.storage.searchTerm = term
+                            this.storage.results = []
+                            this.storage.currentIndex = 0
+
+                            if (term) {
+                                const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+                                editor.state.doc.descendants((node, pos) => {
+                                    if (node.isText) {
+                                        const text = node.text || ''
+                                        let match
+                                        while ((match = regex.exec(text)) !== null) {
+                                            this.storage.results.push({
+                                                from: pos + match.index,
+                                                to: pos + match.index + match[0].length,
+                                            })
+                                        }
+                                    }
+                                })
+                            }
+
+                            const { tr } = editor.state
+                            editor.view.dispatch(tr)
+                            return true
+                        },
+                        goToNextResult: () => ({ editor }) => {
+                            if (this.storage.results.length === 0) return false
+                            this.storage.currentIndex = (this.storage.currentIndex + 1) % this.storage.results.length
+                            const result = this.storage.results[this.storage.currentIndex]
+                            const { tr } = editor.state
+                            editor.view.dispatch(tr.setSelection(TextSelection.create(editor.state.doc, result.from)).scrollIntoView())
+                            return true
+                        },
+                        goToPrevResult: () => ({ editor }) => {
+                            if (this.storage.results.length === 0) return false
+                            this.storage.currentIndex = (this.storage.currentIndex - 1 + this.storage.results.length) % this.storage.results.length
+                            const result = this.storage.results[this.storage.currentIndex]
+                            const { tr } = editor.state
+                            editor.view.dispatch(tr.setSelection(TextSelection.create(editor.state.doc, result.from)).scrollIntoView())
+                            return true
+                        },
+                        replace: (replaceWith: string) => ({ editor }) => {
+                            const { results, currentIndex, searchTerm } = this.storage
+                            if (results.length === 0) return false
+
+                            const currentResult = results[currentIndex]
+                            const { tr } = editor.state
+                            tr.insertText(replaceWith, currentResult.from, currentResult.to)
+                            editor.view.dispatch(tr)
+
+                            // Refresh search results after mutation
+                            this.editor.commands.setSearchTerm(searchTerm)
+                            return true
+                        },
+                        replaceAll: (replaceWith: string) => ({ editor }) => {
+                            const { results, searchTerm } = this.storage
+                            if (results.length === 0) return false
+
+                            let { tr } = editor.state
+                            // Track offset because replacing changes positions
+                            let offset = 0
+                            results.forEach((result: any) => {
+                                tr.insertText(replaceWith, result.from + offset, result.to + offset)
+                                offset += replaceWith.length - (result.to - result.from)
+                            })
+
+                            editor.view.dispatch(tr)
+
+                            // Clear Search
+                            this.editor.commands.setSearchTerm('')
+                            return true
+                        },
+                    }
+                },
+                addProseMirrorPlugins() {
+                    return [
+                        new Plugin({
+                            props: {
+                                decorations: (state: any) => {
+                                    const decorations: any[] = []
+                                    if (this.storage.searchTerm && this.storage.results.length > 0) {
+                                        this.storage.results.forEach((result: any, index: number) => {
+                                            const isCurrent = index === this.storage.currentIndex
+                                            decorations.push(
+                                                Decoration.inline(result.from, result.to, {
+                                                    class: isCurrent ? 'search-result-current' : 'search-result',
+                                                    style: isCurrent ? 'background-color: #f7e200; color: black;' : 'background-color: #ceead6; color: black;'
+                                                })
+                                            )
+                                        })
+                                    }
+                                    return DecorationSet.create(state.doc, decorations)
+                                }
+                            }
+                        })
+                    ]
+                }
+            }),
         ],
         content: content,
         onUpdate: ({ editor }) => {
@@ -196,7 +400,7 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
         editable: !readOnly,
         editorProps: {
             attributes: {
-                class: `focus:outline-none min-[1056px]:min-h-[1056px] min-h-[1056px] w-full max-w-[816px] px-6 sm:px-16 ${customPaperHeader ? 'pb-8 pt-4 sm:pb-12 sm:pt-6' : 'py-8 sm:py-12'} ${readOnly ? 'cursor-default' : 'cursor-text'}`,
+                class: `focus:outline-none min-[1056px]:min-h-[1056px] min-h-[1056px] w-full max-w-[816px] ${customPaperHeader ? 'pb-8 pt-4 sm:pb-12 sm:pt-6' : 'py-8 sm:py-12'} ${readOnly ? 'cursor-default' : 'cursor-text'}`,
             },
         },
     })
