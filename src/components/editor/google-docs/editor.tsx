@@ -226,7 +226,10 @@ interface EditorProps {
 }
 
 export default function GoogleDocsEditor({ content, onChange, onReady, readOnly = false, showWatermark = false, customPaperHeader, tabStops = [], docId }: EditorProps) {
-    const WS_URL = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'ws://localhost:1234'
+    const baseWsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'ws://localhost:1234'
+    const WS_URL = typeof window !== 'undefined' && window.location.protocol === 'https:'
+        ? baseWsUrl.replace(/^ws:\/\//i, 'wss://')
+        : baseWsUrl;
 
     // Set up Yjs doc and WebSocket provider only when docId is provided
     const { ydoc, provider, user } = useMemo(() => {
