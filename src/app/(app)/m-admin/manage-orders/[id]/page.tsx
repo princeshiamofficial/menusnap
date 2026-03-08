@@ -529,7 +529,8 @@ export default function OrderDetailsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
 
-    const pendingSaveData = useRef<ApiOrder | null>(null);
+    const lastSavedDataRef = useRef<string>("");
+    const isSavingRef = useRef(false);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -593,43 +594,51 @@ export default function OrderDetailsPage() {
         fetchOrderAndCategoryDetails();
     }, [orderIdFromUrl, isAdminLoggedIn, adminLoading, fetchOrderAndCategoryDetails]);
 
-    const handleSaveChanges = useCallback(async (orderToSave: ApiOrder) => {
-        if (saveStatus === 'saving') {
-            pendingSaveData.current = orderToSave;
+    // Robust saving effect with debounce
+    useEffect(() => {
+        if (!order || saveStatus === "saved" || isSavingRef.current) return;
+
+        const currentDataString = JSON.stringify(order);
+        if (currentDataString === lastSavedDataRef.current) {
+            setSaveStatus("saved");
             return;
         }
 
-        setSaveStatus("saving");
-        pendingSaveData.current = null;
+        const timer = setTimeout(async () => {
+            isSavingRef.current = true;
+            setSaveStatus("saving");
+            
+            try {
+                console.log("Auto-saving document:", order.orderId);
+                const result = await updateOrderInMySql(order);
+                
+                if (!result.success) {
+                    throw new Error(result.message || "Failed to save document changes.");
+                }
 
-        try {
-            const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(orderToSave),
-            });
-
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-                throw new Error(result.message || "Failed to save document changes.");
+                lastSavedDataRef.current = JSON.stringify(order);
+                setSaveStatus("saved");
+                console.log("Auto-save successful.");
+            } catch (e: any) {
+                console.error("Save error:", e);
+                setSaveStatus("unsaved");
+                toast({
+                    title: "Save Failed",
+                    description: e.message || "Changes could not be saved to the database.",
+                    variant: "destructive"
+                });
+            } finally {
+                isSavingRef.current = false;
             }
+        }, 1500); // 1.5s debounce for stability
 
-            setSaveStatus("saved");
-
-        } catch (e: any) {
-            setSaveStatus("unsaved");
-        } finally {
-            if (pendingSaveData.current) {
-                handleSaveChanges(pendingSaveData.current);
-            }
-        }
-    }, [saveStatus]);
+        return () => clearTimeout(timer);
+    }, [order, saveStatus, toast]);
 
     const handleOrderUpdate = useCallback((updatedOrder: ApiOrder) => {
         setOrder(updatedOrder);
         setSaveStatus("unsaved");
-        handleSaveChanges(updatedOrder);
-    }, [handleSaveChanges]);
+    }, []);
 
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {

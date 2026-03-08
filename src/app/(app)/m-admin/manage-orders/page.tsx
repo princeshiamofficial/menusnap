@@ -371,6 +371,7 @@ export default function ManageOrdersPage(): ReactNode {
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortOption, setSortOption] = useState<SortOptionOrders>('newest');
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -450,8 +451,15 @@ export default function ManageOrdersPage(): ReactNode {
   }, [fetchOrders, isAdminLoggedIn]);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, sortOption]);
+  }, [debouncedSearch, sortOption]);
 
 
   const handleRefresh = useCallback(() => {
@@ -594,10 +602,11 @@ export default function ManageOrdersPage(): ReactNode {
 
   const filteredAndSortedOrders = useMemo(() => {
     let orders = allOrders.filter(order => {
+      const lowerSearch = debouncedSearch.toLowerCase();
       const matchesSearch =
-        order.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.customerName && decodeHtmlEntities(order.customerName).toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (order.businessName && decodeHtmlEntities(order.businessName).toLowerCase().includes(searchTerm.toLowerCase()));
+        order.orderId.toLowerCase().includes(lowerSearch) ||
+        (order.customerName && decodeHtmlEntities(order.customerName).toLowerCase().includes(lowerSearch)) ||
+        (order.businessName && decodeHtmlEntities(order.businessName).toLowerCase().includes(lowerSearch));
       return matchesSearch;
     });
 
@@ -645,16 +654,17 @@ export default function ManageOrdersPage(): ReactNode {
   const hasMore = currentPage < totalPages;
 
   const sentinelRef = useCallback((node: HTMLTableRowElement | null) => {
+    if (isLoading) return;
     if (observer.current) observer.current.disconnect();
 
-    if (node && hasMore && !isLoading) {
+    if (node && hasMore) {
       observer.current = new IntersectionObserver(
         (entries) => {
-          if (entries[0].isIntersecting) {
+          if (entries[0].isIntersecting && hasMore) {
             setCurrentPage(prev => prev + 1);
           }
         },
-        { threshold: 0.1 }
+        { threshold: 0.1, rootMargin: '100px' } // Add rootMargin for smoother loading
       );
       observer.current.observe(node);
     }
