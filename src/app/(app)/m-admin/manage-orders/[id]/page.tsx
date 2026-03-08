@@ -128,7 +128,7 @@ interface ApiOrder {
     items?: OrderItemDetail[];
 }
 
-const EditableField = ({ value, onSave, placeholder = "Click to edit", multiline = false, className = '', inputClassName = '' }: { value?: string | number | null, onSave: (newValue: string) => void, placeholder?: string, multiline?: boolean, className?: string, inputClassName?: string }) => {
+const EditableField = React.memo(({ value, onSave, placeholder = "Click to edit", multiline = false, className = '', inputClassName = '' }: { value?: string | number | null, onSave: (newValue: string) => void, placeholder?: string, multiline?: boolean, className?: string, inputClassName?: string }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentValue, setCurrentValue] = useState(String(value || ''));
     const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -193,7 +193,99 @@ const EditableField = ({ value, onSave, placeholder = "Click to edit", multiline
             <Edit3 className="h-3 w-3 text-muted-foreground absolute top-1/2 -translate-y-1/2 right-1 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
     );
-};
+});
+EditableField.displayName = "EditableField";
+
+// --- Memoized Category Section ---
+const CategorySection = React.memo(({ 
+    category, 
+    onAddCategory, 
+    onRemoveCategory, 
+    onCategoryNameChange, 
+    onAddItemToCategory, 
+    onEditItem, 
+    onRemoveItem, 
+    onToggleSubItems,
+    expandedSubItems 
+}: { 
+    category: any;
+    onAddCategory: () => void;
+    onRemoveCategory: (id: string) => void;
+    onCategoryNameChange: (id: string, name: string) => void;
+    onAddItemToCategory: (id: string) => void;
+    onEditItem: (item: any) => void;
+    onRemoveItem: (id: string) => void;
+    onToggleSubItems: (id: string) => void;
+    expandedSubItems: Record<string, boolean>;
+}) => {
+    return (
+        <div className="mb-8 group/category">
+            <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
+                <span className="text-xl mr-2 text-primary">{category.icon}</span>
+                <EditableField
+                    value={category.name}
+                    onSave={(val) => onCategoryNameChange(category.id, val)}
+                    placeholder="Category Name"
+                    className="text-xl font-semibold text-primary"
+                    inputClassName="text-xl font-semibold"
+                />
+                <Badge variant="secondary">{category.items.length}</Badge>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => onRemoveCategory(category.id)}><X className="h-4 w-4" /></Button>
+                <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => onAddItemToCategory(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+            </div>
+
+            <div className="space-y-3">
+                <AnimatePresence mode="popLayout">
+                    {category.items.map((item: any) => (
+                        <motion.div
+                            key={item.id}
+                            layout
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
+                        >
+                            <div className="flex items-start gap-3">
+                                <div className="flex-grow">
+                                    <div className="flex justify-between items-start gap-4">
+                                        <p className="font-bold text-foreground">{decodeHtmlEntities(item.name)}</p>
+                                        <p className="font-bold text-foreground text-right">৳{item.price.toLocaleString()}</p>
+                                    </div>
+                                    {item.description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(item.description)}</p>}
+
+                                    {item.subItems && item.subItems.length > 0 && (
+                                        <>
+                                            <Button variant="link" size="sm" onClick={() => onToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary -ml-1 mt-2">
+                                                {expandedSubItems[item.id] ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+                                                Variations
+                                            </Button>
+                                            {expandedSubItems[item.id] && (
+                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
+                                                    {item.subItems?.map((subItem: any, index: number) => (
+                                                        <div key={subItem.id || index} className="flex justify-between items-center text-sm">
+                                                            <p className="text-muted-foreground">- {decodeHtmlEntities(subItem.name)}</p>
+                                                            <p className="text-muted-foreground">৳{subItem.price?.toLocaleString()}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                                <div className="flex flex-col gap-1 shrink-0">
+                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+});
+CategorySection.displayName = "CategorySection";
 
 // --- Add/Edit Item Form ---
 const menuItemFormSchema = z.object({
@@ -511,6 +603,7 @@ type SaveStatus = "unsaved" | "saving" | "saved";
 export default function OrderDetailsPage() {
     const params = useParams();
     const router = useRouter();
+    const { toast } = useToast();
     const { isAdminLoggedIn, adminLoading } = useAdminAuth();
     const orderIdFromUrl = params.id as string;
 
@@ -527,6 +620,7 @@ export default function OrderDetailsPage() {
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
 
     const lastSavedDataRef = useRef<string>("");
@@ -713,6 +807,13 @@ export default function OrderDetailsPage() {
         }
     };
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     const categoriesForRender = useMemo(() => {
         if (!order?.items) return [];
 
@@ -728,9 +829,9 @@ export default function OrderDetailsPage() {
         });
 
         let filteredItems = order.items;
-        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        const lowerCaseSearchTerm = debouncedSearch.toLowerCase();
 
-        if (searchTerm) {
+        if (debouncedSearch) {
             if (searchFilterType === 'items') {
                 filteredItems = order.items.filter(item =>
                     decodeHtmlEntities(item.name).toLowerCase().includes(lowerCaseSearchTerm)
@@ -1015,69 +1116,17 @@ export default function OrderDetailsPage() {
                             <div>
                                 {categoriesForRender.map((category) => (
                                     <div key={category.id}>
-                                        <div className="mb-8 group/category">
-                                            <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
-                                                <span className="text-xl mr-2 text-primary">{category.icon}</span>
-                                                <EditableField
-                                                    value={category.name}
-                                                    onSave={(val) => handleCategoryNameChange(category.id, val)}
-                                                    placeholder="Category Name"
-                                                    className="text-xl font-semibold text-primary"
-                                                    inputClassName="text-xl font-semibold"
-                                                />
-                                                <Badge variant="secondary">{category.items.length}</Badge>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => handleRemoveCategory(category.id)}><X className="h-4 w-4" /></Button>
-                                                <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => handleOpenAddDialog(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <AnimatePresence>
-                                                    {category.items.map((item) => (
-                                                        <motion.div
-                                                            key={item.id}
-                                                            layout
-                                                            initial={{ opacity: 0, y: -10 }}
-                                                            animate={{ opacity: 1, y: 0 }}
-                                                            exit={{ opacity: 0, x: -20, transition: { duration: 0.2 } }}
-                                                            className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
-                                                        >
-                                                            <div className="flex items-start gap-3">
-                                                                <div className="flex-grow">
-                                                                    <div className="flex justify-between items-start gap-4">
-                                                                        <p className="font-bold text-foreground">{decodeHtmlEntities(item.name)}</p>
-                                                                        <p className="font-bold text-foreground text-right">৳{item.price.toLocaleString()}</p>
-                                                                    </div>
-                                                                    {item.description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(item.description)}</p>}
-
-                                                                    {item.subItems && item.subItems.length > 0 && (
-                                                                        <>
-                                                                            <Button variant="link" size="sm" onClick={() => handleToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary -ml-1 mt-2">
-                                                                                {expandedSubItems[item.id] ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                                                                                Variations
-                                                                            </Button>
-                                                                            {expandedSubItems[item.id] && (
-                                                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
-                                                                                    {item.subItems?.map((subItem, index) => (
-                                                                                        <div key={subItem.id || index} className="flex justify-between items-center text-sm">
-                                                                                            <p className="text-muted-foreground">- {decodeHtmlEntities(subItem.name)}</p>
-                                                                                            <p className="text-muted-foreground">৳{subItem.price?.toLocaleString()}</p>
-                                                                                        </div>
-                                                                                    ))}
-                                                                                </div>
-                                                                            )}
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex flex-col gap-1 shrink-0">
-                                                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleOpenEditDialog(item)}><Edit className="h-4 w-4" /></Button>
-                                                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
-                                                                </div>
-                                                            </div>
-                                                        </motion.div>
-                                                    ))}
-                                                </AnimatePresence>
-                                            </div>
-                                        </div>
+                                       <CategorySection
+                                            category={category}
+                                            onAddCategory={handleAddCategory}
+                                            onRemoveCategory={handleRemoveCategory}
+                                            onCategoryNameChange={handleCategoryNameChange}
+                                            onAddItemToCategory={handleOpenAddDialog}
+                                            onEditItem={handleOpenEditDialog}
+                                            onRemoveItem={handleRemoveItem}
+                                            onToggleSubItems={handleToggleSubItems}
+                                            expandedSubItems={expandedSubItems}
+                                       />
                                     </div>
                                 ))}
                                 {categoriesForRender.length === 0 && (

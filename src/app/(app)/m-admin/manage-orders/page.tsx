@@ -166,6 +166,83 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
   { value: 'customer-desc', label: 'Customer (Z-A)' },
 ];
 
+// --- Memoized Table Row for Performance ---
+const OrderTableRow = React.memo(({ 
+  order, 
+  index, 
+  totalCount, 
+  onView, 
+  onCopy, 
+  onDelete 
+}: { 
+  order: ApiOrder; 
+  index: number; 
+  totalCount: number; 
+  onView: (o: ApiOrder) => void; 
+  onCopy: (o: ApiOrder) => void; 
+  onDelete: (o: ApiOrder) => void; 
+}) => {
+  const router = useRouter();
+
+  return (
+    <motion.tr
+      key={order.id}
+      className="border-b transition-all duration-200 hover:bg-primary/5 cursor-default group/row"
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, delay: Math.min(index * 0.01, 0.1) }} // Cap delay
+    >
+      <TableCell className="text-center font-mono font-medium text-muted-foreground/60 transition-colors group-hover/row:text-primary">
+        {totalCount - index}
+      </TableCell>
+      <TableCell className="text-xs text-muted-foreground tabular-nums font-medium whitespace-nowrap">
+        <div className="flex items-center gap-1.5">
+          <CalendarDays className="h-3.5 w-3.5 opacity-40 shrink-0" />
+          <span>{order.orderDate}</span>
+        </div>
+      </TableCell>
+      <TableCell 
+        className="font-bold text-primary transition-all group-hover/row:underline cursor-pointer decoration-2 underline-offset-4" 
+        onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
+      >
+        {order.orderId}
+      </TableCell>
+      <TableCell className="font-medium tracking-tight">
+        {order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground/40 italic">Not set</span>}
+      </TableCell>
+      <TableCell className="font-medium tracking-tight">
+        {order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground/40 italic">Not set</span>}
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={order.status || 'Pending'} />
+      </TableCell>
+      <TableCell className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onView(order)}>
+              <Eye className="mr-2 h-4 w-4" /> View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onCopy(order)}>
+              <Copy className="h-4 w-4 mr-2" /> Copy Docs
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onDelete(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </motion.tr>
+  );
+});
+OrderTableRow.displayName = "OrderTableRow";
+
+
 function StatusBadge({ status }: { status: string }) {
   const s = status?.toLowerCase() || 'pending';
   
@@ -672,15 +749,11 @@ export default function ManageOrdersPage(): ReactNode {
 
 
 
-  const formatDateForDisplay = (input: string | Date, includeTime: boolean = true): string => {
+  const formatDateForDisplay = useCallback((input: string | Date, includeTime: boolean = true): string => {
     try {
       if (!input) return "N/A";
-      
-      // If it's a string from MySQL without timezone, force it to be evaluated as UTC
-      // so Javascript naturally converts it to the user's local timezone.
       const dateStr = typeof input === 'string' ? (input.endsWith('Z') || input.includes('+') ? input : `${input}Z`) : input;
       const date = typeof dateStr === 'string' ? parseISO(dateStr) : dateStr;
-      
       if (!isValidDate(date)) {
         const fallbackDate = new Date(dateStr);
         if (isValidDate(fallbackDate)) {
@@ -689,10 +762,17 @@ export default function ManageOrdersPage(): ReactNode {
         return "Invalid Date";
       }
       return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
-    } catch {
-      return "Invalid Date";
-    }
-  };
+    } catch { return "Invalid Date"; }
+  }, []);
+
+  const fetchedOrdersCount = allOrders.length;
+  // Pre-formatted dates to avoid calculating them inside row renders
+  const formattedOrders = useMemo(() => {
+    return paginatedOrders.map(o => ({
+      ...o,
+      orderDate: formatDateForDisplay(o.orderDate)
+    }));
+  }, [paginatedOrders, formatDateForDisplay]);
 
   const orderRowSkeletons = Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
     <motion.tr
@@ -821,58 +901,17 @@ export default function ManageOrdersPage(): ReactNode {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="relative z-10">
-                  <AnimatePresence>
-                    {paginatedOrders.map((order, index) => (
-                      <motion.tr
+                  <AnimatePresence mode="popLayout">
+                    {formattedOrders.map((order, index) => (
+                      <OrderTableRow 
                         key={order.id}
-                        className="border-b transition-all duration-300 hover:bg-primary/5 hover:translate-x-1 cursor-default group/row"
-                        initial={{ opacity: 0, scale: 0.98, x: -10 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.3, delay: index * 0.02, type: "spring", stiffness: 100, damping: 15 }}
-                      >
-                        <TableCell className="text-center font-mono font-medium text-muted-foreground/60 transition-colors group-hover/row:text-primary">
-                          {filteredAndSortedOrders.length - index}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground tabular-nums font-medium whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <CalendarDays className="h-3.5 w-3.5 opacity-40 shrink-0" />
-                            <span>{formatDateForDisplay(order.orderDate)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell 
-                          className="font-bold text-primary transition-all group-hover/row:underline cursor-pointer decoration-2 underline-offset-4" 
-                          onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
-                        >
-                          {order.orderId}
-                        </TableCell>
-                        <TableCell className="font-medium tracking-tight">{order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground/40 italic">Not set</span>}</TableCell>
-                        <TableCell className="font-medium tracking-tight">{order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground/40 italic">Not set</span>}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={order.status || 'Pending'} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewDetails(order)}>
-                                <Eye className="mr-2 h-4 w-4" /> View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleCopyDocs(order)}>
-                                <Copy className="h-4 w-4 mr-2" /> Copy Docs
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleDeleteOrder(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </motion.tr>
+                        order={order}
+                        index={index}
+                        totalCount={filteredAndSortedOrders.length}
+                        onView={handleViewDetails}
+                        onCopy={handleCopyDocs}
+                        onDelete={handleDeleteOrder}
+                      />
                     ))}
                   </AnimatePresence>
                   {hasMore && (
