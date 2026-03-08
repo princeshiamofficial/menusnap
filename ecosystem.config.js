@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'menusnap-app',
       script: 'node_modules/next/dist/bin/next',
-      args: 'start -p 3000',
+      args: 'start -p 3007',
       instances: 'max',
       exec_mode: 'cluster',
       env: {
