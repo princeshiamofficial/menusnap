@@ -42,29 +42,30 @@ function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePrevi
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-full h-[90vh] p-2 bg-transparent border-none shadow-none">
+      <DialogContent className="max-w-4xl w-[95vw] md:w-full h-[80vh] md:h-[90vh] p-0 bg-transparent border-none shadow-none outline-none">
           <DialogHeader className="sr-only">
             <DialogTitle>Template Preview</DialogTitle>
             <DialogDescription>A larger view of the selected template.</DialogDescription>
           </DialogHeader>
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full bg-black/5 rounded-2xl overflow-hidden">
             <Image
               src={imageUrl}
               alt="Template Preview"
               fill
               className="object-contain"
               data-ai-hint="template full-view"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1000px"
+              sizes="(max-width: 768px) 95vw, (max-width: 1200px) 80vw, 1000px"
+              priority
             />
           </div>
           <DialogClose asChild>
              <Button
-                variant="ghost"
+                variant="secondary"
                 size="icon"
-                className="absolute top-2 right-2 h-10 w-10 bg-black/50 text-white hover:bg-black/70 rounded-full"
+                className="absolute top-4 right-4 h-10 w-10 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 border border-white/20 rounded-full shadow-2xl z-50 transition-all active:scale-95"
                 aria-label="Close preview"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </Button>
           </DialogClose>
       </DialogContent>
@@ -102,47 +103,47 @@ function TemplateCard({
       whileHover={{ y: -5, scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 300, damping: 15 }}
     >
-      <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full">
+      <Card className="overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl flex flex-col h-full border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader className="p-0 relative">
           <div className="aspect-[4/3] relative group">
             <Image
               src={actualImageUrl}
               alt={decodeHtmlEntities(title)}
               fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-110"
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             {isTopRated && (
-              <Badge className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2.5 shadow">
-                <Star className="h-4 w-4 mr-1.5 fill-current text-yellow-900" />
-                TOP RATED
+              <Badge className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 border-yellow-500 font-bold py-0.5 px-1.5 shadow-lg border-none scale-75 md:scale-100 origin-top-left">
+                <Star className="h-3 w-3 mr-1 fill-current text-yellow-900" />
+                TOP
               </Badge>
             )}
             <Button
-              variant="ghost"
+              variant="secondary"
               size="icon"
-              className="absolute bottom-2 right-2 h-9 w-9 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+              className="absolute bottom-2 right-2 h-7 w-7 md:h-9 md:w-9 bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-full shadow-lg"
               aria-label="Maximize template preview"
               onClick={() => onPreview(actualImageUrl)}
             >
-              <Maximize className="h-5 w-5" />
+              <Maximize className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="p-4 flex-grow">
-          <h2 className="text-lg font-semibold mb-1.5 text-foreground">{decodeHtmlEntities(title)}</h2>
-          <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px]">{decodeHtmlEntities(description)}</p>
+        <CardContent className="p-4 md:p-5 flex-grow">
+          <h2 className="text-base md:text-lg font-bold mb-1.5 text-foreground line-clamp-1">{decodeHtmlEntities(title)}</h2>
+          <p className="text-xs md:text-sm text-muted-foreground mb-3 leading-relaxed min-h-[32px] md:min-h-[40px] line-clamp-2">{decodeHtmlEntities(description)}</p>
         </CardContent>
-        <CardFooter className="p-4 border-t mt-auto">
+        <CardFooter className="p-2 md:p-4 border-t border-border/50 bg-muted/20">
           {isSelectionAllowed && (
             <Button
-              variant="outline"
-              className="w-full"
+              variant="default"
+              className="w-full h-8 md:h-11 text-[10px] md:text-sm font-semibold shadow-sm transition-all active:scale-[0.98] rounded-lg md:rounded-xl"
               onClick={() => onSelect(template)}
-              title="Select this template"
             >
-              Select Template
+              Select
             </Button>
           )}
         </CardFooter>
@@ -363,34 +364,38 @@ export default function TemplatesPage(): ReactNode {
   const isSelectionAllowed = !!pendingOrderId;
 
   return (
-    <div className="space-y-8 p-4 md:p-6 lg:p-8">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <Layers className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              {pageTitle}
-            </h1>
+    <div className="flex flex-col min-h-screen bg-background pb-10">
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 md:px-8 py-4 md:py-6">
+        <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-primary/10 rounded-xl">
+                 <Layers className="h-6 w-6 md:h-7 md:w-7 text-primary" />
+              </div>
+              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+                {pageTitle}
+              </h1>
+            </div>
+            <p className="text-muted-foreground mt-1 text-xs md:text-sm lg:text-base max-w-lg">
+              {pageDescription}
+            </p>
           </div>
-          <p className="text-muted-foreground mt-1.5 text-sm sm:text-base">
-            {pageDescription}
-          </p>
-        </div>
-        <div className="relative w-full sm:w-auto mt-4 sm:mt-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search templates..."
-            className="pl-10 w-full sm:w-64 md:w-72 text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className="relative w-full sm:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search templates..."
+              className="pl-9 h-10 w-full sm:w-64 md:w-72 text-sm bg-muted/40 border-none rounded-full focus-visible:ring-primary/20"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
       </header>
 
-      <main>
+      <main className="px-4 md:px-8 py-6 md:py-8 max-w-7xl mx-auto w-full">
         {isLoading || clientLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <TemplateSkeletonCard key={index} />
             ))}
@@ -412,7 +417,7 @@ export default function TemplatesPage(): ReactNode {
             </div>
         ) : (
           <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 lg:gap-8"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
