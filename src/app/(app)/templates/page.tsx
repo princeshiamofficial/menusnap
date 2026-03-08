@@ -132,10 +132,7 @@ function TemplateCard({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="p-4 md:p-5 flex-grow">
-          <h2 className="text-base md:text-lg font-bold mb-1.5 text-foreground line-clamp-1">{decodeHtmlEntities(title)}</h2>
-          <p className="text-xs md:text-sm text-muted-foreground mb-3 leading-relaxed min-h-[32px] md:min-h-[40px] line-clamp-2">{decodeHtmlEntities(description)}</p>
-        </CardContent>
+        {/* Content removed for a cleaner, big-image look */}
         <CardFooter className="p-2 md:p-4 border-t border-border/50 bg-muted/20">
           {isSelectionAllowed && (
             <Button
@@ -365,7 +362,7 @@ export default function TemplatesPage(): ReactNode {
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-10">
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/50 px-4 md:px-8 py-4 md:py-6">
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/50 px-3 md:px-8 py-4 md:py-6">
         <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <div className="flex items-center gap-2.5">
@@ -393,9 +390,9 @@ export default function TemplatesPage(): ReactNode {
         </div>
       </header>
 
-      <main className="px-4 md:px-8 py-6 md:py-8 max-w-7xl mx-auto w-full">
+      <main className="px-0 md:px-8 py-3 md:py-8 max-w-7xl mx-auto w-full">
         {isLoading || clientLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <TemplateSkeletonCard key={index} />
             ))}
@@ -417,7 +414,7 @@ export default function TemplatesPage(): ReactNode {
             </div>
         ) : (
           <motion.div 
-            className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 lg:gap-8"
+            className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-8"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
