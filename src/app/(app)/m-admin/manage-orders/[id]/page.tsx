@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
@@ -128,7 +127,7 @@ interface ApiOrder {
     items?: OrderItemDetail[];
 }
 
-const EditableField = React.memo(({ value, onSave, placeholder = "Click to edit", multiline = false, className = '', inputClassName = '' }: { value?: string | number | null, onSave: (newValue: string) => void, placeholder?: string, multiline?: boolean, className?: string, inputClassName?: string }) => {
+const EditableField = memo(({ value, onSave, placeholder = "Click to edit", multiline = false, className = '', inputClassName = '' }: { value?: string | number | null, onSave: (newValue: string) => void, placeholder?: string, multiline?: boolean, className?: string, inputClassName?: string }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentValue, setCurrentValue] = useState(String(value || ''));
     const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -151,7 +150,7 @@ const EditableField = React.memo(({ value, onSave, placeholder = "Click to edit"
         setIsEditing(false);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: any) => {
         if (e.key === 'Enter' && !multiline) {
             handleSave();
             e.preventDefault();
@@ -197,7 +196,7 @@ const EditableField = React.memo(({ value, onSave, placeholder = "Click to edit"
 EditableField.displayName = "EditableField";
 
 // --- Memoized Category Section ---
-const CategorySection = React.memo(({ 
+const CategorySection = memo(({ 
     category, 
     onAddCategory, 
     onRemoveCategory, 

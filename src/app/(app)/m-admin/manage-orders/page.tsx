@@ -1,10 +1,8 @@
+'use client';
 
-"use client";
-
-import type { ReactNode } from 'react';
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
@@ -167,7 +165,7 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
 ];
 
 // --- Memoized Table Row for Performance ---
-const OrderTableRow = React.memo(({ 
+const OrderTableRow = memo(({ 
   order, 
   index, 
   totalCount, 
