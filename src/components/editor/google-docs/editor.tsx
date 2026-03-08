@@ -17,7 +17,7 @@ import { FontFamily } from '@tiptap/extension-font-family'
 import { TaskList } from '@tiptap/extension-task-list'
 import { TaskItem } from '@tiptap/extension-task-item'
 import { Placeholder } from '@tiptap/extension-placeholder'
-import { useEffect, useMemo } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Plugin, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
@@ -133,7 +133,6 @@ export const TextCase = Extension.create({
                 const text = editor.state.doc.textBetween(from, to)
                 let transformedText = text
 
-                // Helper to get words from any common case
                 const getWords = (str: string) => {
                     return str
                         .replace(/([a-z])([A-Z])/g, '$1 $2') // split camelCase
@@ -225,29 +224,57 @@ interface EditorProps {
     docId?: string; // used as the Yjs room name for collaboration
 }
 
-export default function GoogleDocsEditor({ content, onChange, onReady, readOnly = false, showWatermark = false, customPaperHeader, tabStops = [], docId }: EditorProps) {
-    const baseWsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'ws://localhost:1234'
-    const WS_URL = typeof window !== 'undefined' && window.location.protocol === 'https:'
-        ? baseWsUrl.replace(/^ws:\/\//i, 'wss://')
-        : baseWsUrl;
+export default function GoogleDocsEditor(props: EditorProps) {
+    const { docId } = props
+    const [collabData, setCollabData] = useState<{ ydoc: Y.Doc | null; provider: WebsocketProvider | null; user: { name: string; color: string } | null }>({ ydoc: null, provider: null, user: null })
 
-    // Set up Yjs doc and WebSocket provider only when docId is provided
-    const { ydoc, provider, user } = useMemo(() => {
-        if (!docId) return { ydoc: null, provider: null, user: null }
+    useEffect(() => {
+        if (!docId) return
+        
+        const baseWsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'ws://localhost:1234'
+        const WS_URL = window.location.protocol === 'https:'
+            ? baseWsUrl.replace(/^ws:\/\//i, 'wss://')
+            : baseWsUrl;
+
         const ydoc = new Y.Doc()
         const provider = new WebsocketProvider(WS_URL, `doc-${docId}`, ydoc)
         const user = { name: getGuestName(), color: getRandomColor() }
-        return { ydoc, provider, user }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        
+        setCollabData({ ydoc, provider, user })
+
+        return () => {
+            provider.destroy()
+            ydoc.destroy()
+        }
     }, [docId])
 
-    // Cleanup provider on unmount
-    useEffect(() => {
-        return () => {
-            provider?.destroy()
-            ydoc?.destroy()
-        }
-    }, [provider, ydoc])
+    if (docId && !collabData.ydoc) {
+        return (
+            <div className="flex items-center justify-center p-20 bg-[#f8f9fa] min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground animate-pulse">Initializing Collaboration...</p>
+                </div>
+            </div>
+        )
+    }
+
+    return <GoogleDocsEditorInner {...props} collab={collabData} />
+}
+
+function GoogleDocsEditorInner({ 
+    content, 
+    onChange, 
+    onReady, 
+    readOnly = false, 
+    showWatermark = false, 
+    customPaperHeader, 
+    tabStops = [], 
+    docId,
+    collab
+}: EditorProps & { collab: any }) {
+    const { ydoc } = collab
+
     const editor = useEditor({
         parseOptions: {
             preserveWhitespace: 'full',
@@ -262,14 +289,10 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                     keepMarks: true,
                     keepAttributes: false,
                 },
-                // Disable to avoid duplicates as we add them manually with custom config
                 underline: false,
                 link: false,
-                // Yjs has its own undo/redo - must disable StarterKit history when collab is on
                 ...(ydoc ? { history: false } : {}),
             }),
-            // Yjs collaboration extension (only when docId is present)
-            // Note: CollaborationCursor removed due to ySyncPluginKey init race condition
             ...(ydoc ? [
                 Collaboration.configure({ document: ydoc }),
             ] : []),
@@ -325,20 +348,18 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                             const editorPort = view.dom.getBoundingClientRect()
                             const currentX = coords.left - editorPort.left
 
-                            // 1. Find next tab stop from ruler (px positions)
                             const stops = this.storage.tabStops || []
                             const sortedStops = [...stops].sort((a: any, b: any) => a.position - b.position)
-                            const nextStop = sortedStops.find(t => t.position > currentX + 2) // +2 for small buffer
+                            const nextStop = sortedStops.find(t => t.position > currentX + 2)
 
-                            let tabWidth = 48 // Default tab width
+                            let tabWidth = 48 
 
                             if (nextStop) {
                                 tabWidth = nextStop.position - currentX
                             } else {
-                                // Default tab behavior: align to next 48px increment
                                 const nextDefault = Math.ceil((currentX + 1) / 48) * 48
                                 tabWidth = nextDefault - currentX
-                                if (tabWidth < 10) tabWidth += 48 // Ensure minimum tab width
+                                if (tabWidth < 10) tabWidth += 48
                             }
 
                             return this.editor.chain().focus().insertContent([
@@ -349,7 +370,6 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                             ]).run()
                         },
                         'Mod-Tab': () => {
-                            // Ctrl + Tab to create a sub-list (sink list item)
                             if (this.editor.isActive('bulletList') || this.editor.isActive('orderedList')) {
                                 return this.editor.chain().focus().sinkListItem('listItem').run()
                             }
@@ -359,7 +379,6 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                             return false
                         },
                         'Shift-Tab': () => {
-                            // If in a list, we can keep the outdent behavior as it's useful and doesn't conflict with "always spaces" for Tab
                             if (this.editor.isActive('bulletList') || this.editor.isActive('orderedList')) {
                                 return this.editor.chain().focus().liftListItem('listItem').run()
                             }
@@ -432,7 +451,6 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                             tr.insertText(replaceWith, currentResult.from, currentResult.to)
                             editor.view.dispatch(tr)
 
-                            // Refresh search results after mutation
                             this.editor.commands.setSearchTerm(searchTerm)
                             return true
                         },
@@ -441,7 +459,6 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                             if (results.length === 0) return false
 
                             let { tr } = editor.state
-                            // Track offset because replacing changes positions
                             let offset = 0
                             results.forEach((result: any) => {
                                 tr.insertText(replaceWith, result.from + offset, result.to + offset)
@@ -449,8 +466,6 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                             })
 
                             editor.view.dispatch(tr)
-
-                            // Clear Search
                             this.editor.commands.setSearchTerm('')
                             return true
                         },
@@ -481,7 +496,6 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                 }
             }),
         ],
-        // When Yjs is active, content is managed by Yjs — don't pass content directly
         content: ydoc ? undefined : content,
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML())
@@ -501,24 +515,19 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
         }
     }, [editor, onReady])
 
-    // When collab is active, seed the Yjs doc from DB content only if the doc is still empty
-    // (i.e. first person to open it). If others are already editing, Yjs state takes precedence.
     useEffect(() => {
         if (!editor || !ydoc || !content) return
         const yXml = ydoc.getXmlFragment('prosemirror')
         if (yXml.length === 0) {
-            // Small delay so Yjs bindings are fully ready
             const timer = setTimeout(() => {
                 editor.commands.setContent(content)
             }, 200)
             return () => clearTimeout(timer)
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editor, ydoc])
+    }, [editor, ydoc, content])
 
-    // Sync content if it changes externally (standalone mode only — Yjs handles it otherwise)
     useEffect(() => {
-        if (ydoc) return // Yjs manages content in collab mode
+        if (ydoc) return 
         if (editor && content !== editor.getHTML()) {
             editor.commands.setContent(content)
         }
