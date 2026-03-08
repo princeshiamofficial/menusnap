@@ -31,6 +31,7 @@ import {
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { getCategoriesFromMySql } from '@/app/actions/orders';
 
 const STATIC_AVATAR_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
@@ -314,37 +315,24 @@ export default function DraftPage(): ReactNode {
     async function fetchAllCategories() {
       setIsLoadingCategories(true);
       try {
-        const [restaurantRes, parlourRes] = await Promise.all([
-          fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
-          fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
-        ]);
+        const result = await getCategoriesFromMySql();
 
-        const restaurantData = restaurantRes.ok ? await restaurantRes.json() : { success: false, data: { categories: [] } };
-        const parlourData = parlourRes.ok ? await parlourRes.json() : { success: false, data: { categories: [] } };
+        if (!result.success) {
+            throw new Error(result.message || "Failed to fetch categories from local DB");
+        }
 
-        let combinedCategories: Category[] = [];
-        if (restaurantData.success && Array.isArray(restaurantData.data.categories)) {
-          combinedCategories = combinedCategories.concat(
-            restaurantData.data.categories.map((cat: any): Category => ({
-              id: `restaurant-${String(cat.id)}`,
-              name: String(cat.name || 'Unnamed Category'),
-              icon: String(cat.icon || '📁'),
-            }))
-          );
-        }
-        if (parlourData.success && Array.isArray(parlourData.data.categories)) {
-          combinedCategories = combinedCategories.concat(
-            parlourData.data.categories.map((cat: any): Category => ({
-              id: `parlour-${String(cat.id)}`,
-              name: String(cat.name || 'Unnamed Category'),
-              icon: String(cat.icon || '✨'),
-            }))
-          );
-        }
+        const categories = result.data as any[];
+        const combinedCategories: Category[] = categories.map((cat: any): Category => ({
+            id: `${cat.type}-${String(cat.id)}`,
+            name: String(cat.name || 'Unnamed Category'),
+            icon: String(cat.icon || (cat.type === 'parlour' ? '✨' : '📁')),
+            visibleToUsers: Boolean(cat.visibleToUsers)
+        }));
+
         setMasterCategoryList(combinedCategories);
       } catch (e) {
         console.error("Error fetching master category list:", e);
-        toast({ title: "Error", description: "Could not load category details for drafts.", variant: "destructive" });
+        toast({ title: "Error", description: "Could not load category details from local DB.", variant: "destructive" });
       } finally {
         setIsLoadingCategories(false);
       }

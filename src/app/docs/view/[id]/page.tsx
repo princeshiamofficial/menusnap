@@ -123,21 +123,21 @@ export default function MagicDocView() {
     };
 
     const customHeader = (
-        <div className="flex justify-between items-start border-b-2 border-primary/20 pb-8 mb-4 mt-8 sm:mt-12 mx-6 sm:mx-16 px-2">
-            <div className="bg-black p-4 rounded-lg shadow-md print:shadow-none">
+        <div className="flex justify-between items-start border-b-2 border-primary/20 pb-8 mb-4 mt-8 sm:mt-12 mx-4 sm:mx-16 px-2">
+            <div className="bg-black p-3 sm:p-4 rounded-lg shadow-md print:shadow-none">
                 <Image
                     src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
                     alt="Color Hut Logo"
                     width={180}
                     height={72}
-                    className="object-contain"
+                    className="w-32 sm:w-44 h-auto object-contain"
                     priority
                 />
             </div>
             <div className="text-right text-muted-foreground text-sm space-y-1">
-                <p className="font-bold text-xl text-primary">{doc.title}</p>
-                <p className="flex items-center justify-end gap-2 font-medium">
-                    <CalendarDays className="h-4 w-4" />
+                <p className="font-bold text-lg sm:text-xl text-primary">{doc.title}</p>
+                <p className="flex items-center justify-end gap-2 font-medium text-xs sm:text-sm">
+                    <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     {formatDate(doc.createdAt || doc.lastUpdated)}
                 </p>
             </div>

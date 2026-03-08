@@ -45,19 +45,20 @@ export function SidebarNav() {
         "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2.5",
         "group-data-[state=expanded]:p-4 group-data-[state=expanded]:h-[80px]"
       )}>
-        <Link href="/dashboard" passHref legacyBehavior>
-          <a className="group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded-sm flex items-center">
-            <div className="relative h-12 w-44 sm:w-48">
-              <Image
-                src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
-                alt="Color Hut Logo"
-                fill
-                sizes="(max-width: 640px) 176px, 192px"
-                className="object-contain"
-                priority
-              />
-            </div>
-          </a>
+        <Link 
+          href="/dashboard" 
+          className="group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded-sm flex items-center"
+        >
+          <div className="relative h-12 w-44 sm:w-48">
+            <Image
+              src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
+              alt="Color Hut Logo"
+              fill
+              sizes="(max-width: 640px) 176px, 192px"
+              className="object-contain"
+              priority
+            />
+          </div>
         </Link>
         <SidebarTrigger className="text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent" />
       </div>
@@ -66,7 +67,7 @@ export function SidebarNav() {
           <SidebarMenu>
             {mainNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} passHref legacyBehavior>
+                <Link href={item.href}>
                   <SidebarMenuButton
                     variant="default"
                     className={cn(

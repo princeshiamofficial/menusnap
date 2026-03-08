@@ -18,6 +18,7 @@ import {
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { decodeHtmlEntities } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { getOrderByIdFromMySql, getCategoriesFromMySql } from '@/app/actions/orders';
 
 // Interfaces
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -140,67 +141,38 @@ export default function SharePage() {
             setIsLoading(true);
             setError(null);
             try {
-                const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
-                    fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
-                    fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
-                    fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
-                ]);
-    
-                // Process categories
+                // Fetch categories from MySQL
+                const result = await getCategoriesFromMySql();
                 const newCategoryMap = new Map<string, string>();
-                if (restaurantCategoriesResponse.ok) {
-                    const resCatResult = await restaurantCategoriesResponse.json();
-                    if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
-                        resCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
-                    }
-                }
-                if (parlourCategoriesResponse.ok) {
-                    const parCatResult = await parlourCategoriesResponse.json();
-                    if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
-                        parCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
-                    }
+                if (result.success) {
+                    (result.data as any[]).forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
                 }
                 setCategoryMap(newCategoryMap);
 
-                // Process orders
-                if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
-                const result = await ordersResponse.json();
+                // Fetch specific order from MySQL
+                const orderResult = await getOrderByIdFromMySql(orderIdFromUrl);
 
-                let rawOrdersArray: any[] = [];
-                if (result.success) {
-                    if (result.data && Array.isArray(result.data.orders)) {
-                        rawOrdersArray = result.data.orders;
-                    } else if (Array.isArray(result.data)) {
-                        rawOrdersArray = result.data;
-                    } else {
-                        throw new Error('Invalid data format from API for orders.');
-                    }
-                } else {
-                    throw new Error(result.message || 'API request for orders was not successful.');
-                }
-                
-                const orderData = rawOrdersArray.find(o => String(o.id) === orderIdFromUrl);
-
-                if (orderData) {
+                if (orderResult.success && orderResult.data) {
+                    const orderData = orderResult.data;
                     const formattedOrder: ApiOrder = {
                         id: String(orderData.id),
-                        orderId: String(orderData.orderId || orderData.id), 
-                        orderDate: String(orderData.orderDate || orderData.createdAt || orderData.date || new Date().toISOString()),
+                        orderId: String(orderData.id), 
+                        orderDate: String(orderData.createdAt),
                         status: ALL_ORDER_STATUSES.includes(orderData.status) ? orderData.status : "Pending",
                         templateName: orderData.template?.name ? String(orderData.template.name) : 'Custom Selection',
-                        customerName: orderData.customer?.name,
-                        customerEmail: orderData.customer?.email,
-                        customerPhone: orderData.customer?.phone,
-                        customerAddress: orderData.customer?.address,
-                        businessName: orderData.customer?.restaurant,
-                        businessRole: orderData.customer?.role,
-                        totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
+                        customerName: orderData.customerData?.name,
+                        customerEmail: orderData.customerData?.email,
+                        customerPhone: orderData.customerData?.phone,
+                        customerAddress: orderData.customerData?.address,
+                        businessName: orderData.customerData?.restaurant,
+                        businessRole: orderData.customerData?.role,
+                        totalAmount: parseFloat(orderData.total || 0),
                         items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
                             id: String(item.id),
                             name: String(item.name),
                             quantity: Number(item.quantity || 1),
                             price: Number(item.price),
-                            categoryId: String(item.categoryId || item.category || `custom-${index}`),
+                            categoryId: String(item.categoryId || `custom-${index}`),
                             categoryName: item.categoryName,
                             description: item.description || null,
                             subItems: Array.isArray(item.subItems) ? item.subItems : [],
@@ -209,7 +181,7 @@ export default function SharePage() {
                     };
                     setOrder(formattedOrder);
                 } else {
-                    setError(`This shared link is invalid or the selection has been removed.`);
+                    setError(orderResult.message || `This shared link is invalid or the selection has been removed.`);
                 }
             } catch (e: any) {
                 setError(e.message || 'Failed to load the shared menu selection.');

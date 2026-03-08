@@ -65,6 +65,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { 
+  getTemplatesFromMySql, 
+  upsertTemplateToMySql, 
+  deleteTemplateFromMySql 
+} from "@/app/actions/orders";
 
 const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
 
@@ -382,21 +387,15 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       isPublished: data.isPublished,
       tags: [data.tag],
       imageUrl: uploadedImageUrl,
-      items: [], 
     };
 
     try {
-      const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST", 
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(templatePayload),
-      });
-      const templateResult = await templateResponse.json();
+      const result = await upsertTemplateToMySql(templatePayload);
 
-      if (!templateResponse.ok || !templateResult.success) {
-        throw new Error(templateResult.message || `Failed to add template. Status: ${templateResponse.status}`);
+      if (!result.success) {
+        throw new Error(result.message || `Failed to add template to local database.`);
       }
-      toast({ title: "Template Added", description: `Template "${data.templateName}" created successfully.` });
+      toast({ title: "Template Added", description: `Template "${data.templateName}" created successfully in local DB.` });
       onSuccess();
     } catch (error: any) {
       toast({ title: "Template Add Error", description: error.message, variant: "destructive" });
@@ -671,32 +670,18 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       isPublished: data.isPublished,
       tags: [data.tag],
       imageUrl: finalImageUrl,
-      items: templateData.tags, 
     };
 
     try {
-      const templateResponse = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        method: "POST", 
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(templatePayload),
-      });
-      const templateResult = await templateResponse.json();
+      const result = await upsertTemplateToMySql(templatePayload);
 
-      if (!templateResponse.ok || !templateResult.success) {
-        let backendErrorMessage = "Failed to update template.";
-        if (templateResult && templateResult.message) {
-            backendErrorMessage = templateResult.message;
-        } else if (templateResult && templateResult.data && typeof templateResult.data === 'string') {
-            backendErrorMessage = templateResult.data; 
-        } else if (templateResponse.statusText) {
-            backendErrorMessage = `Failed to update template. Status: ${templateResponse.status} ${templateResponse.statusText}`;
-        }
-        throw new Error(backendErrorMessage);
+      if (!result.success) {
+        throw new Error(result.message || "Failed to update local template.");
       }
-      toast({ title: "Template Updated", description: `Template "${data.templateName}" updated successfully.` });
+      toast({ title: "Success", description: `Template "${data.templateName}" updated locally.` });
       onSuccess();
     } catch (error: any) {
-      toast({ title: "Template Update Error", description: error.message, variant: "destructive" });
+      toast({ title: "Update Error", description: error.message, variant: "destructive" });
     }
   }
 
@@ -831,49 +816,24 @@ export default function ManageTemplatesPage(): ReactNode {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`API error! status: ${response.status}`);
-      }
-      const result = await response.json();
-      if (!result.success || !result.data || !Array.isArray(result.data.templates)) {
-        console.error("Invalid API response structure for templates:", result);
-        throw new Error("Invalid data format from API");
-      }
-      
-      const fetchedTemplatesSource: ApiAdminTemplate[] = result.data.templates.map((t: any, index: number) => ({
-        id: String(t.id), 
-        name: t.name || `Untitled Template ${index + 1}`,
-        description: t.description || 'No description available.',
-        isTopRated: t.isTopRated === undefined ? false : Boolean(t.isTopRated),
-        isPublished: t.isPublished === undefined ? (index % 2 === 0) : Boolean(t.isPublished),
-        tags: Array.isArray(t.tags) ? t.tags : ['untagged'],
+      const result = await getTemplatesFromMySql();
+      if (!result.success) throw new Error(result.message || "Failed to fetch templates.");
+
+      const fetchedTemplates: ApiAdminTemplate[] = (result.data as any[]).map((t: any) => ({
+        id: String(t.id),
+        name: String(t.name),
+        description: String(t.description),
         imageUrl: t.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL,
-        createdAt: t.createdAt || new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-        version: t.version || `${Math.floor(Math.random() * 3) + 1}.0`,
-        category: t.category || "General",
+        tags: Array.isArray(t.tags) ? t.tags : [],
+        isPublished: Boolean(t.isPublished),
+        isTopRated: Boolean(t.isTopRated),
+        createdAt: t.createdAt
       }));
-
-      const uniqueFetchedTemplates: ApiAdminTemplate[] = [];
-      const seenIds = new Set<string>();
-      for (const t of fetchedTemplatesSource) {
-        const templateIdString = String(t.id); // Ensure id is treated as a string for Set
-        if (!seenIds.has(templateIdString)) {
-          uniqueFetchedTemplates.push({ ...t, id: templateIdString }); // Store with string ID
-          seenIds.add(templateIdString);
-        }
-      }
-      setAllTemplates(uniqueFetchedTemplates);
-
+      setAllTemplates(fetchedTemplates);
     } catch (e: any) {
       console.error("Failed to fetch templates:", e);
-      setError(e.message || "Failed to load templates. Please try again later.");
-      setAllTemplates([]); 
+      setError(e.message || "Failed to load templates.");
+      setAllTemplates([]);
     } finally {
       setIsLoading(false);
     }
@@ -891,7 +851,7 @@ export default function ManageTemplatesPage(): ReactNode {
 
   const handleAddTemplateSuccess = useCallback(() => {
     setIsAddTemplateDialogOpen(false);
-    fetchTemplates(); 
+    fetchTemplates();
   }, [fetchTemplates]);
 
   const handleEditTemplateSuccess = useCallback(() => {
@@ -899,7 +859,7 @@ export default function ManageTemplatesPage(): ReactNode {
     setEditingTemplateData(null);
     fetchTemplates();
   }, [fetchTemplates]);
-  
+
   const handleOpenEditTemplateDialog = useCallback((id: string) => {
     const templateToEdit = allTemplates.find(t => t.id === id);
     if (templateToEdit) {
@@ -924,23 +884,17 @@ export default function ManageTemplatesPage(): ReactNode {
 
     const { id, name } = templateToDeleteInfo;
     try {
-      const response = await fetch(`https://colorhutbd.xyz/vm/api/templates.php?id=${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      const result = await deleteTemplateFromMySql(id);
+      
+      if (result.success) {
         setAllTemplates(prev => prev.filter(t => t.id !== id));
         toast({
           title: "Success",
-          description: result.message || `Template "${name}" deleted successfully.`,
+          description: `Template "${name}" deleted successfully from local DB.`,
           variant: "default",
         });
       } else {
-        throw new Error(result.message || `Failed to delete template "${name}". Status: ${response.status}`);
+        throw new Error(result.message || `Failed to delete template "${name}".`);
       }
     } catch (error: any) {
       console.error(`Failed to delete template ${id}:`, error);
@@ -963,19 +917,14 @@ export default function ManageTemplatesPage(): ReactNode {
     const updatedTemplate = { ...template, isPublished: !template.isPublished };
 
     try {
-        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-            method: "POST", 
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedTemplate),
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) {
+        const result = await upsertTemplateToMySql(updatedTemplate);
+        if (!result.success) {
             throw new Error(result.message || "Failed to update publish status.");
         }
         setAllTemplates(prev => prev.map(t => (t.id === id ? updatedTemplate : t)));
         toast({
             title: "Status Updated",
-            description: `Template "${template.name}" is now ${updatedTemplate.isPublished ? "published" : "unpublished"}.`,
+            description: `Template "${template.name}" is now ${updatedTemplate.isPublished ? "published" : "unpublished"} in local DB.`,
         });
     } catch (error: any) {
         toast({ title: "Update Error", description: error.message, variant: "destructive" });
@@ -989,21 +938,16 @@ export default function ManageTemplatesPage(): ReactNode {
     const updatedTemplate = { ...template, isTopRated: !template.isTopRated };
     
     try {
-        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-            method: "POST", 
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updatedTemplate),
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) {
+        const result = await upsertTemplateToMySql(updatedTemplate);
+        if (!result.success) {
             throw new Error(result.message || "Failed to update top-rated status.");
         }
         setAllTemplates(prev => prev.map(t => (t.id === id ? updatedTemplate : t)));
         toast({
-            title: "Status Updated",
-            description: `Template "${template.name}" ${updatedTemplate.isTopRated ? "is now" : "is no longer"} top-rated.`,
+            title: "Template Updated",
+            description: `Template "${template.name}" is now ${updatedTemplate.isTopRated ? "Top Rated" : "standard"}.`,
         });
-    } catch (error:any) {
+    } catch (error: any) {
         toast({ title: "Update Error", description: error.message, variant: "destructive" });
     }
   }, [allTemplates, toast]);

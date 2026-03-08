@@ -64,8 +64,6 @@ const TEXT_CASES = [
 ]
 
 export default function Toolbar({ editor, title }: ToolbarProps) {
-    if (!editor) return null
-
     const [fontSize, setFontSize] = useState(11)
 
     // Auto-detect font size on selection change
@@ -82,7 +80,6 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                 }
             } else {
                 // Default to 11 if no specific font size is set
-                // or check if it's a heading which might have a different default size
                 setFontSize(11)
             }
         }
@@ -95,6 +92,8 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
             editor.off('transaction', updateFontSize)
         }
     }, [editor])
+
+    if (!editor) return null
 
     const incrementFontSize = () => {
         const newSize = fontSize + 1
@@ -144,7 +143,7 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.1 }}
-            className="flex items-center gap-0.5 px-1 sm:px-3 py-1 bg-[#edf2fa] border-b border-[#dadce0] overflow-x-auto no-scrollbar min-h-[40px] sm:min-h-[44px] shadow-sm sticky top-[48px] sm:top-[64px] z-[55]"
+            className="flex items-center gap-0.5 px-1 sm:px-3 py-1 bg-[#edf2fa] border-b border-[#dadce0] overflow-x-auto no-scrollbar min-h-[40px] sm:min-h-[44px] shadow-sm z-[55]"
         >
             <div className="flex items-center gap-0.5">
                 <ToolbarButton

@@ -23,6 +23,7 @@ import { X, ChevronLeft, ShoppingCart, FileText, GripVertical } from 'lucide-rea
 import { CustomerDetailsForm, type CustomerDetailsFormValues } from './customer-details-form';
 import { useToast } from "@/hooks/use-toast";
 import type { ClientUser } from '@/hooks/use-client-auth';
+import { submitOrderToMySql } from '@/app/actions/orders';
 
 
 // Interfaces matching MenuItemsPage for consistency
@@ -132,15 +133,14 @@ export function MenuPreviewDialog({
       const random3Digit = Math.floor(100 + Math.random() * 900);
       const date = new Date();
       const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+      const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = String(date.getFullYear()).slice(-2);
       newOrderId = `RO-${random3Digit}${day}${month}${year}`;
     } else {
-      // For parlour and other types
       const random3Digit = Math.floor(100 + Math.random() * 900);
       const date = new Date();
       const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+      const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = String(date.getFullYear()).slice(-2);
       newOrderId = `PO-${random3Digit}${day}${month}${year}`;
     }
@@ -148,19 +148,20 @@ export function MenuPreviewDialog({
     const reorderedItemsPayload = orderedDialogCategories.flatMap(category => {
       const itemsInCategory = itemsGroupedByCategory[category.id] || [];
       return itemsInCategory.map(item => ({
-        id: item.id,
+        id: String(item.id),
         name: item.name,
         quantity: 1,
-        price: item.price,
-        categoryId: category.id,
+        price: Number(item.price),
+        categoryId: String(category.id),
         categoryName: category.name,
         description: item.description || '',
-        subItems: item.subItems,
+        subItems: Array.isArray(item.subItems) ? item.subItems : [],
       }));
     });
 
     const orderPayload = {
       id: newOrderId,
+      orderId: newOrderId,
       customer: {
         name: data.customerName,
         email: data.email,
@@ -168,10 +169,10 @@ export function MenuPreviewDialog({
         address: data.deliveryAddress,
         restaurant: data.businessName,
         role: data.role,
-        userId: 'anonymous'
       },
       items: reorderedItemsPayload,
-      total: totalAmount,
+      total: Number(totalAmount),
+      totalAmount: Number(totalAmount),
       status: 'Pending',
       orderDate: new Date().toISOString(),
       template: {
@@ -180,20 +181,20 @@ export function MenuPreviewDialog({
     };
 
     try {
-      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(orderPayload),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to submit order. Status: ${response.status}`);
+      console.log("Submitting order payload locally to MySQL:", orderPayload);
+      
+      const result = await submitOrderToMySql(orderPayload);
+      console.log("MySQL Persistence result:", result);
+      
+      if (!result.success) {
+        toast({
+          title: "Order Error",
+          description: result.message || "Failed to submit order directly to MySQL.",
+          variant: "destructive"
+        });
+        throw new Error(result.message || "Failed to submit order to local MySQL.");
       }
+
 
       // Save order to local storage
       try {
@@ -203,20 +204,13 @@ export function MenuPreviewDialog({
         localStorage.setItem('colorHutOrders', JSON.stringify(existingOrders));
       } catch (e) {
         console.error("Failed to save order to local storage", e);
-        toast({
-          title: "Could Not Save Locally",
-          description: "Your order was submitted but could not be saved to your device's history.",
-          variant: "destructive"
-        });
       }
 
-      // Store the order ID to be used on the templates page
-      localStorage.setItem('pendingOrderIdForTemplate', orderPayload.id);
-      console.log("Order ID saved to local storage:", orderPayload.id);
-
+      localStorage.setItem('pendingOrderIdForTemplate', newOrderId);
+      
       toast({
         title: "Order Submitted Successfully!",
-        description: `Your order #${orderPayload.id} has been placed. Now, please select a template.`,
+        description: `Your order #${newOrderId} has been placed. Now, please select a template.`,
       });
       setIsCustomerFormOpen(false);
       onOpenChange(false);
@@ -327,8 +321,8 @@ export function MenuPreviewDialog({
                       <Badge variant="secondary" className="ml-2 text-xs">{items.length}</Badge>
                     </div>
                     <div className="space-y-3">
-                      {items.map(item => (
-                        <div key={item.id} className="flex items-center p-3 border rounded-lg bg-card shadow-sm">
+                      {items.map((item, idx) => (
+                        <div key={`preview-item-${category.id}-${item.id}-${idx}`} className="flex items-center p-3 border rounded-lg bg-card shadow-sm">
                           <Image
                             src={STATIC_ITEM_IMAGE_URL}
                             alt={decodeHtmlEntities(item.name)}

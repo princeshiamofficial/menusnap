@@ -238,6 +238,7 @@ export function SpeedDialFAB(): ReactNode {
                         src="https://colorhutbd.xyz/help.png"
                         alt="Help"
                         fill
+                        sizes="(max-width: 768px) 48px, 56px"
                         className="object-contain"
                     />
                 </motion.div>

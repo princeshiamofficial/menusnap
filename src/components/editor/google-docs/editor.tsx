@@ -17,10 +17,13 @@ import { FontFamily } from '@tiptap/extension-font-family'
 import { TaskList } from '@tiptap/extension-task-list'
 import { TaskItem } from '@tiptap/extension-task-item'
 import { Placeholder } from '@tiptap/extension-placeholder'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Plugin, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
+import * as Y from 'yjs'
+import { WebsocketProvider } from 'y-websocket'
+import { Collaboration } from '@tiptap/extension-collaboration'
 
 // Custom extension for font size
 import { Extension, Node, mergeAttributes } from '@tiptap/core'
@@ -198,6 +201,19 @@ export const TextCase = Extension.create({
     },
 })
 
+// Random pastel color for collaboration cursor
+function getRandomColor() {
+    const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
+    return colors[Math.floor(Math.random() * colors.length)]
+}
+
+// Random guest name
+function getGuestName() {
+    const adjectives = ['Swift', 'Bright', 'Calm', 'Bold', 'Wise', 'Kind']
+    const nouns = ['Editor', 'Writer', 'Author', 'Scribe', 'Coder', 'Creator']
+    return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`
+}
+
 interface EditorProps {
     content: string;
     onChange: (html: string) => void;
@@ -206,9 +222,29 @@ interface EditorProps {
     showWatermark?: boolean;
     customPaperHeader?: React.ReactNode;
     tabStops?: { position: number, type: 'left' | 'center' | 'right' }[];
+    docId?: string; // used as the Yjs room name for collaboration
 }
 
-export default function GoogleDocsEditor({ content, onChange, onReady, readOnly = false, showWatermark = false, customPaperHeader, tabStops = [] }: EditorProps) {
+export default function GoogleDocsEditor({ content, onChange, onReady, readOnly = false, showWatermark = false, customPaperHeader, tabStops = [], docId }: EditorProps) {
+    const WS_URL = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'ws://localhost:1234'
+
+    // Set up Yjs doc and WebSocket provider only when docId is provided
+    const { ydoc, provider, user } = useMemo(() => {
+        if (!docId) return { ydoc: null, provider: null, user: null }
+        const ydoc = new Y.Doc()
+        const provider = new WebsocketProvider(WS_URL, `doc-${docId}`, ydoc)
+        const user = { name: getGuestName(), color: getRandomColor() }
+        return { ydoc, provider, user }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [docId])
+
+    // Cleanup provider on unmount
+    useEffect(() => {
+        return () => {
+            provider?.destroy()
+            ydoc?.destroy()
+        }
+    }, [provider, ydoc])
     const editor = useEditor({
         parseOptions: {
             preserveWhitespace: 'full',
@@ -226,7 +262,14 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                 // Disable to avoid duplicates as we add them manually with custom config
                 underline: false,
                 link: false,
+                // Yjs has its own undo/redo - must disable StarterKit history when collab is on
+                ...(ydoc ? { history: false } : {}),
             }),
+            // Yjs collaboration extension (only when docId is present)
+            // Note: CollaborationCursor removed due to ySyncPluginKey init race condition
+            ...(ydoc ? [
+                Collaboration.configure({ document: ydoc }),
+            ] : []),
             Underline,
             Link.configure({
                 openOnClick: false,
@@ -435,16 +478,18 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
                 }
             }),
         ],
-        content: content,
+        // When Yjs is active, content is managed by Yjs — don't pass content directly
+        content: ydoc ? undefined : content,
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML())
         },
         editable: !readOnly,
         editorProps: {
             attributes: {
-                class: `focus:outline-none min-[1056px]:min-h-[1056px] min-h-[1056px] w-full max-w-[816px] ${customPaperHeader ? 'pb-8 pt-4 sm:pb-12 sm:pt-6' : 'py-8 sm:py-12'} ${readOnly ? 'cursor-default' : 'cursor-text'}`,
+                class: `focus:outline-none min-[1056px]:min-h-[1056px] min-h-[1056px] w-full max-w-[816px] ${customPaperHeader ? 'pb-12 pt-6' : 'py-12'} ${readOnly ? 'cursor-default' : 'cursor-text'}`,
             },
         },
+        immediatelyRender: false,
     })
 
     useEffect(() => {
@@ -453,12 +498,28 @@ export default function GoogleDocsEditor({ content, onChange, onReady, readOnly 
         }
     }, [editor, onReady])
 
-    // Sync content if it changes externally (e.g. from template/load or real-time)
+    // When collab is active, seed the Yjs doc from DB content only if the doc is still empty
+    // (i.e. first person to open it). If others are already editing, Yjs state takes precedence.
     useEffect(() => {
+        if (!editor || !ydoc || !content) return
+        const yXml = ydoc.getXmlFragment('prosemirror')
+        if (yXml.length === 0) {
+            // Small delay so Yjs bindings are fully ready
+            const timer = setTimeout(() => {
+                editor.commands.setContent(content)
+            }, 200)
+            return () => clearTimeout(timer)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editor, ydoc])
+
+    // Sync content if it changes externally (standalone mode only — Yjs handles it otherwise)
+    useEffect(() => {
+        if (ydoc) return // Yjs manages content in collab mode
         if (editor && content !== editor.getHTML()) {
             editor.commands.setContent(content)
         }
-    }, [content, editor])
+    }, [content, editor, ydoc])
 
     useEffect(() => {
         if (editor && tabStops) {

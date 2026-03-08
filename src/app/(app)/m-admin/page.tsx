@@ -43,6 +43,7 @@ import {
   subYears,
   isWithinInterval
 } from 'date-fns';
+import { getOrdersFromMySql, getTemplatesFromMySql, getCategoriesFromMySql, getMenuItemsFromMySql } from '@/app/actions/orders';
 
 interface StatCardAdminProps {
   title: string;
@@ -137,119 +138,43 @@ export default function MAdminDashboardPage() {
       setIsLoadingStats(true);
       setStatsError(null);
 
-      const combinedStatsData: Record<string, number | string> = {};
-      adminStatConfigs.forEach(config => {
-        combinedStatsData[config.id] = 0;
-      });
-
-      let errorMessages: string[] = [];
-
       try {
         const [
-          restaurantCategoriesResponseSettled,
-          menuItemsResponseSettled,
-          parlourCategoriesResponseSettled,
-          parlourItemsResponseSettled,
-          templatesResponseSettled,
-          ordersResponseSettled,
-        ] = await Promise.allSettled([
-          fetch("https://colorhutbd.xyz/vm/api/categories.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/menu-items.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/parlour-categories.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/parlour-items.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/templates.php", { headers: { 'Accept': 'application/json' } }),
-          fetch("https://colorhutbd.xyz/vm/api/orders.php", { headers: { 'Accept': 'application/json' } }),
+          catResult,
+          itemResult,
+          templateResult,
+          orderResult
+        ] = await Promise.all([
+          getCategoriesFromMySql(),
+          getMenuItemsFromMySql(),
+          getTemplatesFromMySql(),
+          getOrdersFromMySql(),
         ]);
 
-        if (restaurantCategoriesResponseSettled.status === 'fulfilled') {
-          const response = restaurantCategoriesResponseSettled.value;
-          if (!response.ok) {
-            errorMessages.push(`Restaurant Categories API error (${response.status}).`);
-          } else {
-            const result = await response.json();
-            if (result.success && result.data && Array.isArray(result.data.categories)) {
-              combinedStatsData.totalRestaurantCategories = result.data.categories.length;
-            } else { errorMessages.push("Invalid data (Res Categories)."); }
-          }
-        } else { errorMessages.push("Network error (Res Categories)."); }
-
-        if (menuItemsResponseSettled.status === 'fulfilled') {
-          const response = menuItemsResponseSettled.value;
-          if (!response.ok) {
-            errorMessages.push(`Restaurant Items API error (${response.status}).`);
-          } else {
-            const result = await response.json();
-            if (result.success && Array.isArray(result.data)) {
-              combinedStatsData.totalRestaurantItems = result.data.length;
-            } else { errorMessages.push("Invalid data (Res Items)."); }
-          }
-        } else { errorMessages.push("Network error (Res Items)."); }
-
-        if (parlourCategoriesResponseSettled.status === 'fulfilled') {
-          const response = parlourCategoriesResponseSettled.value;
-          if (!response.ok) {
-            errorMessages.push(`Parlour Categories API error (${response.status}).`);
-          } else {
-            const result = await response.json();
-            if (result.success && result.data && Array.isArray(result.data.categories)) {
-              combinedStatsData.totalParlourCategories = result.data.categories.length;
-            } else { errorMessages.push("Invalid data (Parlour Cat)."); }
-          }
-        } else { errorMessages.push("Network error (Parlour Cat)."); }
-
-        if (parlourItemsResponseSettled.status === 'fulfilled') {
-          const response = parlourItemsResponseSettled.value;
-          if (!response.ok) {
-            errorMessages.push(`Parlour Items API error (${response.status}).`);
-          } else {
-            const result = await response.json();
-            if (result.success && Array.isArray(result.data)) {
-              combinedStatsData.totalParlourItems = result.data.length;
-            } else { errorMessages.push("Invalid data (Parlour Items)."); }
-          }
-        } else { errorMessages.push("Network error (Parlour Items)."); }
-
-        if (templatesResponseSettled.status === 'fulfilled') {
-          const response = templatesResponseSettled.value;
-          if (!response.ok) {
-            errorMessages.push(`Templates API error (${response.status}).`);
-          } else {
-            const result = await response.json();
-            if (result.success && result.data && Array.isArray(result.data.templates)) {
-              combinedStatsData.totalTemplates = result.data.templates.length;
-            } else { errorMessages.push("Invalid data (Templates)."); }
-          }
-        } else { errorMessages.push("Network error (Templates)."); }
-
-        if (ordersResponseSettled.status === 'fulfilled') {
-          const response = ordersResponseSettled.value;
-          if (!response.ok) {
-            errorMessages.push(`Orders API error (${response.status}).`);
-            setAllApiOrders([]);
-          } else {
-            const result = await response.json();
-            let fetchedApiOrders: ApiOrder[] = [];
-            if (result.success) {
-              if (result.data && Array.isArray(result.data.orders)) {
-                fetchedApiOrders = result.data.orders;
-              } else if (Array.isArray(result.data)) {
-                fetchedApiOrders = result.data;
-              } else { errorMessages.push("Invalid data format for orders."); }
-              combinedStatsData.totalOrders = fetchedApiOrders.length;
-              setAllApiOrders(fetchedApiOrders);
-            } else {
-              errorMessages.push(result.message || "Failed to load orders.");
-              setAllApiOrders([]);
-            }
-          }
-        } else {
-          errorMessages.push("Network error (Orders).");
-          setAllApiOrders([]);
+        const combinedStatsData: Record<string, number | string> = {};
+        
+        if (catResult.success) {
+            const categories = catResult.data as any[];
+            combinedStatsData.totalRestaurantCategories = categories.filter(c => c.type === 'restaurant').length;
+            combinedStatsData.totalParlourCategories = categories.filter(c => c.type === 'parlour').length;
         }
 
-        if (errorMessages.length > 0) {
-          setStatsError(errorMessages.join(' '));
+        if (itemResult.success) {
+            const items = itemResult.data as any[];
+            combinedStatsData.totalRestaurantItems = items.filter(i => i.type === 'restaurant').length;
+            combinedStatsData.totalParlourItems = items.filter(i => i.type === 'parlour').length;
         }
+
+        if (templateResult.success) {
+            combinedStatsData.totalTemplates = (templateResult.data as any[]).length;
+        }
+
+        if (orderResult.success) {
+            const orders = orderResult.data as any[];
+            combinedStatsData.totalOrders = orders.length;
+            setAllApiOrders(orders);
+        }
+
         setStatsData(combinedStatsData);
 
       } catch (e: any) {
@@ -317,7 +242,7 @@ export default function MAdminDashboardPage() {
         const orderDateField = order.createdAt || order.orderDate || order.date;
         if (!orderDateField) return false;
         try {
-          const orderDate = parseISO(orderDateField);
+          const orderDate = typeof orderDateField === 'string' ? parseISO(orderDateField) : new Date(orderDateField);
           if (isNaN(orderDate.getTime())) return false; // Check for invalid date
           return isWithinInterval(orderDate, dateFilterRange!);
         } catch {
@@ -333,7 +258,8 @@ export default function MAdminDashboardPage() {
       try {
         const orderDateField = order.createdAt || order.orderDate || order.date;
         if (orderDateField) {
-          const orderDate = parseISO(orderDateField);
+          const orderDate = typeof orderDateField === 'string' ? parseISO(orderDateField) : new Date(orderDateField);
+          if (isNaN(orderDate.getTime())) return;
           const monthIndex = getMonth(orderDate);
           if (monthIndex >= 0 && monthIndex < 12) {
             monthlyOrders[monthIndex].orders += 1;

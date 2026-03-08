@@ -44,10 +44,12 @@ function CategoryListComponent({
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     // If there's no selection or the current selection is no longer valid, select the first category
     if (categories.length > 0 && (!selectedCategoryId || !categories.some(c => c.id === selectedCategoryId))) {
-      const firstCategoryId = categories.sort((a,b) => a.name.localeCompare(b.name))[0].id;
+      const firstCategoryId = [...categories].sort((a,b) => a.name.localeCompare(b.name))[0].id; // Create a copy to sort
       setSelectedCategoryId(firstCategoryId);
       onCategoryChange(firstCategoryId);
     } else if (categories.length === 0) {
@@ -55,6 +57,16 @@ function CategoryListComponent({
       onCategoryChange(null);
     }
   }, [categories, selectedCategoryId, onCategoryChange]);
+
+  // Scroll to active category on mobile horizontal scroll
+  useEffect(() => {
+    if (selectedCategoryId && containerRef.current) {
+        const activeElement = containerRef.current.querySelector(`[data-category-id="${selectedCategoryId}"]`);
+        if (activeElement) {
+            activeElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    }
+  }, [selectedCategoryId]);
 
   const handleSelectCategory = (categoryId: string | null) => {
     setSelectedCategoryId(categoryId);
@@ -66,56 +78,86 @@ function CategoryListComponent({
   }, [categories]);
 
   return (
-    <aside className="hidden md:flex w-72 bg-card border-r border-border flex-col">
-      <div className="p-4 border-b border-border flex justify-between items-center">
+    <aside className="w-full md:w-72 bg-card border-b md:border-b-0 md:border-r border-border flex flex-col shrink-0">
+      <div className="p-4 border-b border-border hidden md:flex justify-between items-center">
         <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
         <Button variant="ghost" size="icon" onClick={onAddCategory} className="h-8 w-8" aria-label="Add New Category">
           <PlusCircle className="h-5 w-5" />
         </Button>
       </div>
-      <ScrollArea className="flex-1">
+
+      <div 
+        ref={containerRef}
+        className="flex-1 flex md:block overflow-x-auto md:overflow-x-hidden md:overflow-y-auto no-scrollbar scroll-smooth"
+      >
         {loading && (
-          <div className="p-2 space-y-2.5">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}</div>
+          <div className="flex md:block p-2 space-x-2 md:space-x-0 md:space-y-2.5 min-w-full">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-24 md:w-full rounded-full md:rounded-md shrink-0" />
+            ))}
+          </div>
         )}
-        {error && <p className="p-4 text-sm text-destructive">Error: {error}</p>}
-        {!loading && !error && sortedCategories.length === 0 && <p className="p-4 text-sm text-muted-foreground">No categories found.</p>}
+        
+        {error && <p className="p-4 text-sm text-destructive whitespace-nowrap">Error: {error}</p>}
+        
+        {!loading && !error && sortedCategories.length === 0 && (
+          <p className="p-4 text-sm text-muted-foreground whitespace-nowrap">No categories found.</p>
+        )}
+        
         {!loading && !error && sortedCategories.length > 0 && (
-          <div className="p-2 space-y-2.5">
+          <div className="flex md:block p-2 md:p-3 space-x-2 md:space-x-0 md:space-y-2.5 min-w-full items-center">
+            {/* Mobile Header Button for Adding Category */}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={onAddCategory} 
+              className="md:hidden h-9 w-9 shrink-0 rounded-full border-dashed"
+              aria-label="Add Category"
+            >
+              <PlusCircle className="h-4 w-4" />
+            </Button>
+
             {sortedCategories.map(category => (
               <div 
                 key={category.id} 
-                className="bg-card rounded-md group"
+                data-category-id={category.id}
+                className="shrink-0 group"
               >
                 <div className={cn(
-                    'w-full flex justify-start items-center text-sm h-9 border border-border rounded-md',
+                    'flex justify-start items-center text-sm h-9 border transition-all duration-200',
+                    'md:w-full md:rounded-md rounded-full px-1',
                      selectedCategoryId === category.id
-                     ? 'bg-muted font-semibold text-foreground border-primary'
-                     : 'bg-card text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
+                     ? 'bg-primary/10 font-semibold text-primary border-primary shadow-sm'
+                     : 'bg-card text-muted-foreground border-border hover:bg-muted/50 hover:text-card-foreground'
                 )}>
                   {selectedCategoryId === category.id && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 ml-1 text-primary hover:bg-primary/10"
+                      className="h-7 w-7 ml-0.5 text-primary hover:bg-primary/20 rounded-full"
                       onClick={() => onEditCategory(category)}
                     >
-                       <Edit className="h-4 w-4"/>
+                       <Edit className="h-3.5 w-3.5"/>
                     </Button>
                   )}
                   <Button
                     variant="ghost"
-                    className="w-full h-full justify-start items-center px-2 py-0"
+                    className={cn(
+                        "h-full justify-start items-center py-0 rounded-full md:rounded-md",
+                        selectedCategoryId === category.id ? "px-2 pl-1" : "px-4 md:px-2",
+                        "md:w-full"
+                    )}
                     onClick={() => handleSelectCategory(category.id)}
                   >
-                    <span className="mr-2 text-sm">{category.icon || "📁"}</span>
-                    <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>
+                    <span className="mr-2 text-base shrink-0">{category.icon || "📁"}</span>
+                    <span className="whitespace-nowrap truncate">{decodeHtmlEntities(category.name)}</span>
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </aside>
   );
 }

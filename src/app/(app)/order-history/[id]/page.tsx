@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
+import { getOrderByIdFromMySql, getCategoriesFromMySql } from '@/app/actions/orders';
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -151,34 +152,21 @@ export default function ClientOrderDetailsPage() {
             setIsLoading(true);
             setError(null);
             try {
-                 // Fetch categories from API
-                const [restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
-                    fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
-                    fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
-                ]);
-    
+                // Fetch categories from MySQL
+                const result = await getCategoriesFromMySql();
                 const newCategoryMap = new Map<string, string>();
-                if (restaurantCategoriesResponse.ok) {
-                    const resCatResult = await restaurantCategoriesResponse.json();
-                    if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
-                        resCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
-                    }
-                }
-                if (parlourCategoriesResponse.ok) {
-                    const parCatResult = await parlourCategoriesResponse.json();
-                    if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
-                        parCatResult.data.categories.forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
-                    }
+                if (result.success) {
+                    (result.data as any[]).forEach((cat: any) => newCategoryMap.set(String(cat.id), cat.name));
                 }
                 setCategoryMap(newCategoryMap);
 
-                // Get orders from local storage
-                const storedOrdersRaw = localStorage.getItem('colorHutOrders');
-                const rawOrdersArray = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : [];
-                const orderData = rawOrdersArray.find((o:any) => String(o.id) === orderIdFromUrl);
+                // Fetch specific order from MySQL
+                const orderResult = await getOrderByIdFromMySql(orderIdFromUrl);
 
-                if (orderData) {
-                    const orderBusinessName = orderData.customer?.restaurant;
+                if (orderResult.success && orderResult.data) {
+                    const orderData = orderResult.data;
+                    const orderBusinessName = orderData.customerData?.restaurant;
+
                     if (orderBusinessName !== clientUser.businessName) {
                         setIsAuthorized(false);
                         setError("You are not authorized to view this order.");
@@ -189,23 +177,23 @@ export default function ClientOrderDetailsPage() {
                     setIsAuthorized(true);
                     const formattedOrder: ApiOrder = {
                         id: String(orderData.id),
-                        orderId: String(orderData.orderId || orderData.id), 
-                        orderDate: String(orderData.orderDate || orderData.createdAt || orderData.date || new Date().toISOString()),
+                        orderId: String(orderData.id), 
+                        orderDate: String(orderData.createdAt),
                         status: ALL_ORDER_STATUSES.includes(orderData.status) ? orderData.status : "Pending",
                         templateName: orderData.template?.name ? String(orderData.template.name) : 'Custom Selection',
-                        customerName: orderData.customer?.name,
-                        customerEmail: orderData.customer?.email,
-                        customerPhone: orderData.customer?.phone,
-                        customerAddress: orderData.customer?.address,
-                        businessName: orderData.customer?.restaurant,
-                        businessRole: orderData.customer?.role,
-                        totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
+                        customerName: orderData.customerData?.name,
+                        customerEmail: orderData.customerData?.email,
+                        customerPhone: orderData.customerData?.phone,
+                        customerAddress: orderData.customerData?.address,
+                        businessName: orderData.customerData?.restaurant,
+                        businessRole: orderData.customerData?.role,
+                        totalAmount: parseFloat(orderData.total || 0),
                         items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
                             id: String(item.id),
                             name: String(item.name),
                             quantity: Number(item.quantity || 1),
                             price: Number(item.price),
-                            categoryId: String(item.categoryId || item.category || `custom-${index}`),
+                            categoryId: String(item.categoryId || `custom-${index}`),
                             categoryName: item.categoryName,
                             description: item.description || null,
                             subItems: Array.isArray(item.subItems) ? item.subItems : [],
@@ -216,7 +204,7 @@ export default function ClientOrderDetailsPage() {
                     };
                     setOrder(formattedOrder);
                 } else {
-                    setError(`Order with ID ${orderIdFromUrl} not found.`);
+                    setError(orderResult.message || `Order with ID ${orderIdFromUrl} not found.`);
                 }
             } catch (e: any) {
                 setError((e as Error).message || 'Failed to load order details.');

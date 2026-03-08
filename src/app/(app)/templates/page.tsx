@@ -18,6 +18,7 @@ import { BubbleConfetti } from '@/components/ui/bubble-confetti';
 import { useToast } from "@/hooks/use-toast";
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities } from '@/lib/utils';
+import { getTemplatesFromMySql, updateOrderInMySql, getOrdersFromMySql } from '@/app/actions/orders';
 
 interface ApiTemplate {
   id: string;
@@ -191,31 +192,23 @@ export default function TemplatesPage(): ReactNode {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          }
-        });
-        if (!response.ok) {
-          throw new Error(`API error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        if (!result.success || !result.data || !Array.isArray(result.data.templates)) {
-          console.error("Invalid API response structure:", result);
-          throw new Error("Invalid data format from API");
-        }
-        const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any, index: number) => ({
-          ...t,
-          isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
+        const result = await getTemplatesFromMySql();
+        if (!result.success) throw new Error(result.message || "Failed to fetch local templates.");
+
+        const fetchedTemplates: ApiTemplate[] = (result.data as any[]).map((t: any, index: number) => ({
+          id: String(t.id),
+          name: t.name,
+          description: t.description,
+          imageUrl: t.imageUrl || '',
+          isPublished: Boolean(t.isPublished),
+          isTopRated: Boolean(t.isTopRated),
           tags: Array.isArray(t.tags) ? t.tags : [],
-          imageUrl: t.imageUrl || '', // Ensure imageUrl is at least an empty string
-          createdAt: t.createdAt || new Date(Date.now() - Math.random() * 10000000000 * (index + 1)).toISOString(),
+          createdAt: t.createdAt || new Date().toISOString(),
         }));
         setTemplates(fetchedTemplates);
       } catch (e: any) {
         console.error("Failed to fetch templates:", e);
-        setError(e.message || "Failed to load templates. Please try again later.");
+        setError(e.message || "Failed to load templates.");
       } finally {
         setIsLoading(false);
       }
@@ -236,32 +229,19 @@ export default function TemplatesPage(): ReactNode {
     if (!templateToConfirm || !pendingOrderId) return;
 
     try {
-      // Step 1: Fetch all orders to find the one we need to update
-      const ordersResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php");
-      if (!ordersResponse.ok) {
-        throw new Error("Could not fetch existing orders to update.");
-      }
-      const existingOrdersResult = await ordersResponse.json();
-      
-      let ordersArray = [];
-      if (Array.isArray(existingOrdersResult)) {
-          ordersArray = existingOrdersResult;
-      } else if (existingOrdersResult.success && Array.isArray(existingOrdersResult.data)) {
-          ordersArray = existingOrdersResult.data;
-      } else if (existingOrdersResult.success && existingOrdersResult.data && Array.isArray(existingOrdersResult.data.orders)) {
-          ordersArray = existingOrdersResult.data.orders;
-      }
+      const ordersResult = await getOrdersFromMySql();
+      if (!ordersResult.success) throw new Error(ordersResult.message || "Failed to fetch local orders.");
 
+      const ordersArray = ordersResult.data as any[];
       const orderToUpdate = ordersArray.find((o: any) => String(o.id) === pendingOrderId);
       
       if (!orderToUpdate) {
-        throw new Error(`Order #${pendingOrderId} not found on the server.`);
+        throw new Error(`Order #${pendingOrderId} not found.`);
       }
       
-      // Step 2: Create the updated payload by merging
       const updatedOrderPayload = {
-        ...orderToUpdate, // This includes the existing 'items' array
-        template: { // This adds/overwrites the template info
+        ...orderToUpdate,
+        template: {
           id: templateToConfirm.id,
           name: templateToConfirm.name,
           imageUrl: templateToConfirm.imageUrl,
@@ -270,19 +250,12 @@ export default function TemplatesPage(): ReactNode {
         },
       };
 
-      // Step 3: Send the complete, updated object
-      const updateResponse = await fetch("https://colorhutbd.xyz/vm/api/orders.php", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify(updatedOrderPayload),
-      });
-      
-      const updateResult = await updateResponse.json();
-      if (!updateResponse.ok || !updateResult.success) {
-        throw new Error(updateResult.message || "Failed to apply template to order.");
+      const updateResult = await updateOrderInMySql(updatedOrderPayload);
+      if (!updateResult.success) {
+        throw new Error(updateResult.message || "Failed to update order in local database.");
       }
       
-      // Step 4: Update local storage as well
+      // Update local storage for sync if needed
       try {
           const localOrdersRaw = localStorage.getItem('colorHutOrders');
           if (localOrdersRaw) {
@@ -294,12 +267,7 @@ export default function TemplatesPage(): ReactNode {
               }
           }
       } catch(e) {
-          console.error("Could not update order in local storage", e);
-          toast({
-              title: "Local History Warning",
-              description: "Your order was updated, but the local history might be out of sync.",
-              variant: "default",
-          });
+          console.error("Could not update local storage sync", e);
       }
 
       setShowConfetti(true);

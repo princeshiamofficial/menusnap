@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -83,11 +83,17 @@ import {
   Trash2,
   Copy,
   PenSquare,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Truck,
+  Package,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { EditableField } from "@/components/ui/editable-field";
+import { getOrdersFromMySql, deleteOrderFromMySql, submitOrderToMySql, updateOrderInMySql, getCategoriesFromMySql } from "@/app/actions/orders";
 
 interface OrderItemDetailAdmin {
   id: string;
@@ -160,16 +166,49 @@ const sortOptionsListOrders: { value: SortOptionOrders; label: string }[] = [
   { value: 'customer-desc', label: 'Customer (Z-A)' },
 ];
 
+function StatusBadge({ status }: { status: string }) {
+  const s = status?.toLowerCase() || 'pending';
+  
+  const config: Record<string, { label: string; icon: any; className: string }> = {
+    pending: { label: 'Pending', icon: Clock, className: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200" },
+    processing: { label: 'Processing', icon: RefreshCw, className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200" },
+    ready: { label: 'Ready', icon: Package, className: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200" },
+    shipped: { label: 'Shipped', icon: Truck, className: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200" },
+    completed: { label: 'Completed', icon: CheckCircle2, className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200" },
+    cancelled: { label: 'Cancelled', icon: XCircle, className: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-rose-200" },
+  };
+
+  const { label, icon: Icon, className } = config[s] || config.pending;
+
+  return (
+    <Badge variant="outline" className={cn("flex items-center gap-1.5 px-2 py-0.5 font-medium border shadow-sm transition-all duration-300", className)}>
+      <Icon className={cn("h-3 w-3", s === 'processing' && "animate-spin-slow")} />
+      {label}
+    </Badge>
+  );
+}
+
 
 function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpdateOrder }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; allCategories: Category[]; onUpdateOrder: (updated: ApiOrder) => void; }) {
   const router = useRouter();
 
   if (!order) return null;
 
-  const formatDate = (dateString: string, includeTime: boolean = true): string => {
+  const formatDate = (input: string | Date, includeTime: boolean = true): string => {
     try {
-      const date = parseISO(dateString);
-      if (!isValidDate(date)) return "Invalid Date";
+      if (!input) return "N/A";
+      
+      // If it's a string, attempt to interpret it as UTC if it doesn't have a timezone already
+      const dateStr = typeof input === 'string' ? (input.endsWith('Z') || input.includes('+') ? input : `${input}Z`) : input;
+      const date = typeof dateStr === 'string' ? parseISO(dateStr) : dateStr;
+      
+      if (!isValidDate(date)) {
+        const fallbackDate = new Date(dateStr);
+        if (isValidDate(fallbackDate)) {
+           return includeTime ? format(fallbackDate, "MMM d, yyyy, h:mm a") : format(fallbackDate, "MMM d, yyyy");
+        }
+        return "Invalid Date";
+      }
       return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
     } catch {
       return "Invalid Date";
@@ -191,11 +230,14 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
         </DialogHeader>
         <ScrollArea className="flex-1 overflow-y-auto bg-muted/30 p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="text-base">Personal Information</CardTitle></CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-start">
-                  <User className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+            <Card className="shadow-sm border border-border/50 bg-card/10 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center gap-2 space-y-0 py-3 border-b border-border/20">
+                <User className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Personal Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4 text-sm font-medium">
+                <div className="flex items-start group">
+                  <User className="h-4 w-4 mr-3 mt-1 text-muted-foreground/40 shrink-0 group-hover:text-primary transition-colors" />
                   <div>
                     <EditableField
                       value={order.customerName}
@@ -222,11 +264,14 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
                 </div>
               </CardContent>
             </Card>
-            <Card className="shadow-sm">
-              <CardHeader><CardTitle className="text-base">Business Information</CardTitle></CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-start">
-                  <Building2 className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+            <Card className="shadow-sm border border-border/50 bg-card/10 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center gap-2 space-y-0 py-3 border-b border-border/20">
+                <Building2 className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Business Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4 text-sm font-medium">
+                <div className="flex items-start group">
+                  <Building2 className="h-4 w-4 mr-3 mt-1 text-muted-foreground/40 shrink-0 group-hover:text-primary transition-colors" />
                   <div>
                     <EditableField
                       value={order.businessName}
@@ -334,6 +379,7 @@ export default function ManageOrdersPage(): ReactNode {
   const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<ApiOrder | null>(null);
 
   const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const observer = useRef<IntersectionObserver | null>(null);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [orderToDeleteInfo, setOrderToDeleteInfo] = useState<{ id: string; orderId: string } | null>(null);
@@ -345,79 +391,52 @@ export default function ManageOrdersPage(): ReactNode {
     setIsLoading(true);
     setError(null);
     try {
-      const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
-        fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
-        fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
-        fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
-      ]);
-
+      const catResult = await getCategoriesFromMySql();
       const combinedCategories: Category[] = [];
-      if (restaurantCategoriesResponse.ok) {
-        const resCatResult = await restaurantCategoriesResponse.json();
-        if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
-          combinedCategories.push(...resCatResult.data.categories);
-        }
-      }
-      if (parlourCategoriesResponse.ok) {
-        const parCatResult = await parlourCategoriesResponse.json();
-        if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
-          combinedCategories.push(...parCatResult.data.categories);
-        }
+      if (catResult.success && Array.isArray(catResult.data)) {
+        combinedCategories.push(...(catResult.data as any[]));
       }
       setAllCategories(combinedCategories);
 
-
-      if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
-      const result = await ordersResponse.json();
-
-      let rawOrdersArray: any[] = [];
-      if (result.success) {
-        if (result.data && Array.isArray(result.data.orders)) {
-          rawOrdersArray = result.data.orders;
-        } else if (Array.isArray(result.data)) {
-          rawOrdersArray = result.data;
-        } else {
-          console.error('Invalid data format for orders: "orders" array not found in data.', result);
-          throw new Error('Invalid data format from API for docs.');
-        }
-      } else {
-        throw new Error(result.message || 'API request for docs was not successful.');
+      const result = await getOrdersFromMySql();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch orders from local database.');
       }
 
+      const rawOrdersArray = result.data || [];
+
       const fetchedOrders: ApiOrder[] = rawOrdersArray.map((order: any, index: number): ApiOrder => ({
-        id: String(order.id || `mock-${index}-${Date.now()}`),
-        orderId: String(order.orderId || order.id || `ORD-${Date.now() + index}`),
-        orderDate: String(order.orderDate || order.createdAt || order.date || new Date(Date.now() - index * 86400000).toISOString()),
-        templateName: order.template?.name ? String(order.template.name) : `Template ${index % 5 + 1}`,
-        customerName: order.customer?.name ? String(order.customer.name) : `Customer ${index + 1}`,
-        customerEmail: order.customer?.email || `customer${index + 1}@example.com`,
-        customerPhone: order.customer?.phone || `019100000${index % 100 < 10 ? '0' : ''}${index % 100}`,
-        customerAddress: order.customer?.address || `${index + 1} Dhaka, Bangladesh`,
+        id: String(order.id),
+        orderId: String(order.orderId || order.orderid || order.id || ""),
+        orderDate: (order.orderDate || order.orderdate || ""),
+        templateName: order.template?.name,
+        customerName: order.customer?.name,
+        customerEmail: order.customer?.email,
+        customerPhone: order.customer?.phone,
+        customerAddress: order.customer?.address,
         businessName: order.customer?.restaurant,
         businessRole: order.customer?.role,
-        bio: `This is a sample bio for customer ${index + 1}. They ordered template: ${order.template?.name || `Template ${index % 5 + 1}`}.`,
-        totalAmount: parseFloat(order.totalAmount || order.total || (Math.random() * 1000 + 500).toFixed(2)),
+        bio: order.bio || "",
+        totalAmount: Number(order.totalAmount || order.total || 0),
         items: (order.items || []).map((item: any): OrderItemDetailAdmin => ({
           id: String(item.id),
           name: String(item.name),
           quantity: Number(item.quantity || 1),
           price: Number(item.price),
-          categoryId: String(item.categoryId || item.category),
+          categoryId: String(item.categoryId),
           categoryName: item.categoryName,
           description: item.description || null,
-          subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({ id: String(si.id), name: String(si.name), price: si.price !== null && si.price !== undefined ? parseFloat(si.price) : undefined })) : [],
+          subItems: Array.isArray(item.subItems) ? item.subItems : [],
         })),
-        templateImageUrl: order.template?.imageUrl || `https://placehold.co/600x400.png`,
-        templateDescription: order.template?.description || 'A fresh and floral design, ideal for spring menus or garden cafes.',
-        templateTags: order.template?.tags || ['Restaurant', 'Cafe', 'Seasonal'],
-        customer: order.customer,
-        template: order.template,
         status: order.status || 'Pending',
+        template: order.template,
+        customer: order.customer,
       }));
       setAllOrders(fetchedOrders);
     } catch (e: any) {
-      console.error('Failed to fetch orders:', e);
-      setError(e.message || 'Failed to load docs.');
+      console.error('Failed to fetch orders from local MySQL:', e);
+      setError(e.message || 'Failed to load docs from database.');
       setAllOrders([]);
     } finally {
       setIsLoading(false);
@@ -448,17 +467,13 @@ export default function ManageOrdersPage(): ReactNode {
         setSelectedOrderForDetails(updatedOrder);
       }
 
-      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(updatedOrder),
-      });
+      const result = await updateOrderInMySql(updatedOrder);
 
-      const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Failed to save document changes.");
+      if (result.success) {
+        toast({ title: "Order Updated", description: "The order has been updated successfully." });
+      } else {
+        throw new Error(result.message || 'Failed to update order on server.');
       }
-      toast({ title: "Updated", description: "Changes saved successfully." });
     } catch (e: any) {
       toast({ title: "Update Failed", description: e.message, variant: "destructive" });
       fetchOrders(); // Rollback
@@ -531,28 +546,20 @@ export default function ManageOrdersPage(): ReactNode {
     };
 
     try {
-      const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(clonePayload),
-      });
-
-      const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || 'Failed to clone docs.');
+      const result = await submitOrderToMySql(clonePayload);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to clone docs locally.');
       }
 
       toast({
         title: "Docs Copied",
-        description: `Docs #${originalOrder.orderId} has been copied as #${newOrderId}.`,
+        description: `Docs #${originalOrder.orderId} has been copied as #${newOrderId} in local database.`,
       });
-      fetchOrders(); // Refresh the list
+      fetchOrders();
     } catch (error: any) {
       toast({
-        title: "Copy Failed",
+        title: "Local Copy Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -562,18 +569,23 @@ export default function ManageOrdersPage(): ReactNode {
   const confirmDeleteOrder = async () => {
     if (!orderToDeleteInfo) return;
     try {
-      const response = await fetch(`https://colorhutbd.xyz/vm/api/orders.php?id=${orderToDeleteInfo.id}`, {
-        method: 'DELETE',
-        headers: { 'Accept': 'application/json' },
-      });
-      const result = await response.json();
-      if (!response.ok || (result && result.success === false)) {
-        throw new Error(result.message || 'Failed to delete docs.');
+      const result = await deleteOrderFromMySql(orderToDeleteInfo.id);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to delete from local database.');
       }
-      toast({ title: "Success", description: `Docs #${orderToDeleteInfo.orderId} deleted.` });
+
+      toast({
+        title: "Deleted",
+        description: "Order removed from local database.",
+      });
       fetchOrders();
-    } catch (error: any) {
-      toast({ title: "Error Deleting Docs", description: error.message, variant: "destructive" });
+    } catch (e: any) {
+      toast({
+        title: "Delete Failed",
+        description: e.message,
+        variant: "destructive"
+      });
     } finally {
       setIsDeleteDialogOpen(false);
       setOrderToDeleteInfo(null);
@@ -627,24 +639,45 @@ export default function ManageOrdersPage(): ReactNode {
   }, [filteredAndSortedOrders.length]);
 
   const paginatedOrders = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredAndSortedOrders.slice(startIndex, endIndex);
+    return filteredAndSortedOrders.slice(0, currentPage * ITEMS_PER_PAGE);
   }, [filteredAndSortedOrders, currentPage]);
 
-  const handlePreviousPage = () => {
-    setCurrentPage(prev => Math.max(1, prev - 1));
-  };
+  const hasMore = currentPage < totalPages;
 
-  const handleNextPage = () => {
-    setCurrentPage(prev => Math.min(totalPages, prev + 1));
-  };
+  const sentinelRef = useCallback((node: HTMLTableRowElement | null) => {
+    if (observer.current) observer.current.disconnect();
+
+    if (node && hasMore && !isLoading) {
+      observer.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            setCurrentPage(prev => prev + 1);
+          }
+        },
+        { threshold: 0.1 }
+      );
+      observer.current.observe(node);
+    }
+  }, [hasMore, isLoading]);
 
 
-  const formatDateForDisplay = (dateString: string, includeTime: boolean = true): string => {
+
+  const formatDateForDisplay = (input: string | Date, includeTime: boolean = true): string => {
     try {
-      const date = parseISO(dateString);
-      if (!isValidDate(date)) return "Invalid Date";
+      if (!input) return "N/A";
+      
+      // If it's a string from MySQL without timezone, force it to be evaluated as UTC
+      // so Javascript naturally converts it to the user's local timezone.
+      const dateStr = typeof input === 'string' ? (input.endsWith('Z') || input.includes('+') ? input : `${input}Z`) : input;
+      const date = typeof dateStr === 'string' ? parseISO(dateStr) : dateStr;
+      
+      if (!isValidDate(date)) {
+        const fallbackDate = new Date(dateStr);
+        if (isValidDate(fallbackDate)) {
+           return includeTime ? format(fallbackDate, "MMM d, yyyy, h:mm a") : format(fallbackDate, "MMM d, yyyy");
+        }
+        return "Invalid Date";
+      }
       return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
     } catch {
       return "Invalid Date";
@@ -654,17 +687,18 @@ export default function ManageOrdersPage(): ReactNode {
   const orderRowSkeletons = Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
     <motion.tr
       key={`skeleton-${i}`}
-      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+      className="border-b transition-colors"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, delay: i * 0.05 }}
     >
-      <TableCell><Skeleton className="h-5 w-8" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-5 w-20 whitespace-nowrap" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
       <TableCell><Skeleton className="h-5 w-28" /></TableCell>
       <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-      <TableCell><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
+      <TableCell><Skeleton className="h-8 w-20 rounded-full" /></TableCell>
+      <TableCell className="text-right pr-6"><Skeleton className="h-8 w-8 rounded-md ml-auto" /></TableCell>
     </motion.tr>
   ));
 
@@ -686,43 +720,33 @@ export default function ManageOrdersPage(): ReactNode {
 
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6 h-full flex flex-col">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            Docs Management
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">View and manage all customer docs.</p>
-        </div>
-        <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-          <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh Data
-          </Button>
-        </motion.div>
-      </header>
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8 relative">
+      {/* Background Decorative Blurs */}
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/10 rounded-full blur-3xl -z-10 animate-pulse" />
+      <div className="absolute bottom-0 -right-4 w-72 h-72 bg-secondary/10 rounded-full blur-3xl -z-10 animate-pulse" />
 
-      <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border flex flex-col flex-grow min-h-0">
-        <div className="flex flex-col sm:flex-row items-center gap-2 mb-4 pb-4 border-b border-border">
-          <div className="relative flex-grow w-full sm:w-auto sm:flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+      <section className="bg-white/70 dark:bg-black/40 backdrop-blur-xl p-0 rounded-2xl shadow-2xl border border-white/20 dark:border-white/10 flex flex-col overflow-hidden group">
+        <div className="px-6 py-6 border-b border-border/50 bg-background/80 backdrop-blur-md flex flex-col sm:flex-row items-center gap-4 shadow-md">
+          <div className="relative flex-grow w-full sm:w-auto">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 transition-colors group-focus-within:text-primary" />
             <Input
               type="search"
-              placeholder="Search by Docs ID, Company, or Customer..."
-              className="pl-10 w-full h-9 text-sm"
+              placeholder="Filter by ID, Company, or Customer..."
+              className="pl-11 pr-4 w-full h-11 bg-muted/50 border-2 border-transparent focus-visible:border-primary/30 focus-visible:ring-0 transition-all text-base rounded-xl shadow-inner hover:bg-muted/80"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex w-full sm:w-auto items-center gap-2 mt-2 sm:mt-0">
+          <div className="flex w-full sm:w-auto items-center gap-3">
             <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOptionOrders)}>
-              <SelectTrigger className="w-full sm:w-auto min-w-[180px] h-9 text-sm">
-                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                <SelectValue placeholder="Sort by..." />
+              <SelectTrigger className="w-full sm:w-auto min-w-[200px] h-11 bg-muted/50 border-2 border-transparent focus:border-primary/30 transition-all rounded-xl shadow-inner hover:bg-muted/80">
+                <ArrowUpDown className="h-4 w-4 mr-2.5 text-muted-foreground/60" />
+                <SelectValue placeholder="Sort orders" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="rounded-xl p-1">
                 {sortOptionsListOrders.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem key={option.value} value={option.value} className="rounded-lg">
                     {option.label}
                   </SelectItem>
                 ))}
@@ -731,25 +755,24 @@ export default function ManageOrdersPage(): ReactNode {
           </div>
         </div>
 
-        <div className="flex-grow min-h-0">
-          {isLoading ? (
-            <Table>
-              <TableHeader>
-                <motion.tr
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <TableHead className="w-[50px] text-center">SL</TableHead>
-                  <TableHead className="w-[200px]">Date</TableHead>
-                  <TableHead className="w-[150px]">Docs ID</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="text-right w-[100px]">Action</TableHead>
-                </motion.tr>
-              </TableHeader>
-              <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
-            </Table>
+        <div className="flex-grow min-h-0 relative">
+          {isLoading && allOrders.length === 0 ? (
+            <div className="p-6">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-none hover:bg-transparent">
+                    <TableHead className="w-[60px] text-center font-bold">SL</TableHead>
+                    <TableHead className="w-[180px] font-bold">Date</TableHead>
+                    <TableHead className="w-[140px] font-bold">Docs ID</TableHead>
+                    <TableHead className="font-bold">Company</TableHead>
+                    <TableHead className="font-bold">Customer</TableHead>
+                    <TableHead className="w-[140px] font-bold">Status</TableHead>
+                    <TableHead className="text-right w-[80px] font-bold">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody><AnimatePresence>{orderRowSkeletons}</AnimatePresence></TableBody>
+              </Table>
+            </div>
           ) : error ? (
             <motion.div
               className="text-center py-10 text-destructive"
@@ -775,45 +798,49 @@ export default function ManageOrdersPage(): ReactNode {
               {searchTerm && <p>Try adjusting your search or filters.</p>}
             </motion.div>
           ) : (
-            <ScrollArea className="w-full h-full">
-              <Table>
-                <TableHeader>
-                  <motion.tr
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <TableHead className="w-[50px] text-center">SL</TableHead>
-                    <TableHead className="w-[200px]">Date</TableHead>
-                    <TableHead className="w-[150px]">Docs ID</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="text-right w-[100px]">Action</TableHead>
-                  </motion.tr>
+            <Table wrapperClassName="w-full h-[65vh] 2xl:h-[75vh]" className="relative">
+                <TableHeader className="sticky top-0 bg-muted border-b z-20 shadow-sm">
+                  <TableRow className="bg-muted hover:bg-muted [&>th]:bg-transparent">
+                    <TableHead className="w-16 text-center font-bold">SL</TableHead>
+                    <TableHead className="font-bold">Date</TableHead>
+                    <TableHead className="font-bold">Docs ID</TableHead>
+                    <TableHead className="font-bold">Company</TableHead>
+                    <TableHead className="font-bold">Customer</TableHead>
+                    <TableHead className="w-32 font-bold">Status</TableHead>
+                    <TableHead className="text-right w-20 font-bold">Action</TableHead>
+                  </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="relative z-10">
                   <AnimatePresence>
                     {paginatedOrders.map((order, index) => (
                       <motion.tr
                         key={order.id}
-                        className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                        transition={{ duration: 0.3, delay: index * 0.03 }}
+                        className="border-b transition-all duration-300 hover:bg-primary/5 hover:translate-x-1 cursor-default group/row"
+                        initial={{ opacity: 0, scale: 0.98, x: -10 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.3, delay: index * 0.02, type: "spring", stiffness: 100, damping: 15 }}
                       >
-                        <TableCell className="text-center text-muted-foreground font-medium text-xs">
-                          {filteredAndSortedOrders.length - ((currentPage - 1) * ITEMS_PER_PAGE + index)}
+                        <TableCell className="text-center font-mono font-medium text-muted-foreground/60 transition-colors group-hover/row:text-primary">
+                          {filteredAndSortedOrders.length - index}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          <div className="flex items-center">
-                            <CalendarDays className="h-3.5 w-3.5 mr-1.5 opacity-70" />
-                            {formatDateForDisplay(order.orderDate)}
+                        <TableCell className="text-xs text-muted-foreground tabular-nums font-medium whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <CalendarDays className="h-3.5 w-3.5 opacity-40 shrink-0" />
+                            <span>{formatDateForDisplay(order.orderDate)}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium text-primary hover:underline cursor-pointer whitespace-nowrap" onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}>{order.orderId}</TableCell>
-                        <TableCell>{order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
-                        <TableCell>{order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground italic">N/A</span>}</TableCell>
+                        <TableCell 
+                          className="font-bold text-primary transition-all group-hover/row:underline cursor-pointer decoration-2 underline-offset-4" 
+                          onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
+                        >
+                          {order.orderId}
+                        </TableCell>
+                        <TableCell className="font-medium tracking-tight">{order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground/40 italic">Not set</span>}</TableCell>
+                        <TableCell className="font-medium tracking-tight">{order.customerName !== 'N/A' ? decodeHtmlEntities(order.customerName) : <span className="text-muted-foreground/40 italic">Not set</span>}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={order.status || 'Pending'} />
+                        </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -838,49 +865,30 @@ export default function ManageOrdersPage(): ReactNode {
                       </motion.tr>
                     ))}
                   </AnimatePresence>
+                  {hasMore && (
+                    <tr ref={sentinelRef} className="h-10">
+                      <TableCell colSpan={7} className="text-center py-4">
+                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          <span>Loading more...</span>
+                        </div>
+                      </TableCell>
+                    </tr>
+                  )}
                 </TableBody>
               </Table>
-            </ScrollArea>
           )}
         </div>
         <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
           <p>Showing {paginatedOrders.length} of {filteredAndSortedOrders.length} docs.</p>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
+            {!hasMore && filteredAndSortedOrders.length > 0 && (
+              <span className="text-xs italic bg-muted px-2 py-1 rounded">All docs loaded</span>
+            )}
             <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1 || isLoading}
-              >
-                Previous
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button
-                variant={totalPages === 0 ? "outline" : "default"}
-                size="sm"
-                className="w-8 h-8 p-0"
-                disabled={totalPages === 0 || isLoading}
-                onClick={() => setCurrentPage(1)}
-              >
-                {totalPages > 0 ? currentPage : '-'}
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages || totalPages === 0 || isLoading}
-              >
-                Next
-              </Button>
+              <Button variant="outline" size="sm" disabled>Export Docs</Button>
             </motion.div>
           </div>
-          <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-            <Button variant="outline" size="sm" disabled>Export Docs</Button>
-          </motion.div>
         </div>
       </section>
       <OrderDetailsDialog

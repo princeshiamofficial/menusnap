@@ -70,6 +70,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { generateMenuDocx } from '@/lib/docx-generator';
 import { saveAs } from 'file-saver';
+import { 
+    getOrderByIdFromMySql, 
+    getCategoriesFromMySql, 
+    updateOrderInMySql 
+} from '@/app/actions/orders';
+import { useToast } from "@/hooks/use-toast";
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 import Image from 'next/image';
 
@@ -529,53 +535,32 @@ export default function OrderDetailsPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
-                fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
-                fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
-                fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
+            const [orderRes, resCatRes, parCatRes] = await Promise.all([
+                getOrderByIdFromMySql(orderIdFromUrl),
+                getCategoriesFromMySql('restaurant'),
+                getCategoriesFromMySql('parlour')
             ]);
 
             const combinedCategories: any[] = [];
-            if (restaurantCategoriesResponse.ok) {
-                const resCatResult = await restaurantCategoriesResponse.json();
-                if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
-                    combinedCategories.push(...resCatResult.data.categories);
-                }
+            if (resCatRes.success && Array.isArray(resCatRes.data)) {
+                combinedCategories.push(...resCatRes.data);
             }
-            if (parlourCategoriesResponse.ok) {
-                const parCatResult = await parlourCategoriesResponse.json();
-                if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
-                    combinedCategories.push(...parCatResult.data.categories);
-                }
+            if (parCatRes.success && Array.isArray(parCatRes.data)) {
+                combinedCategories.push(...parCatRes.data);
             }
             setAllCategories(combinedCategories);
 
-            if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
-            const result = await ordersResponse.json();
-
-            let rawOrdersArray: any[] = [];
-            if (result.success) {
-                if (result.data && Array.isArray(result.data.orders)) {
-                    rawOrdersArray = result.data.orders;
-                } else if (Array.isArray(result.data)) {
-                    rawOrdersArray = result.data;
-                } else {
-                    throw new Error('Invalid data format from API for orders.');
-                }
-            } else {
-                throw new Error(result.message || 'API request for orders was not successful.');
-            }
-
-            const orderData = rawOrdersArray.find(o => String(o.id) === orderIdFromUrl);
+            if (!orderRes.success) throw new Error(orderRes.message || 'Failed to fetch docs.');
+            const orderData = orderRes.data;
 
             if (orderData) {
                 const formattedOrder: ApiOrder = {
                     id: String(orderData.id),
                     orderId: String(orderData.orderId || orderData.id),
                     orderDate: String(orderData.orderDate || orderData.createdAt || orderData.date || new Date().toISOString()),
-                    status: ALL_ORDER_STATUSES.includes(orderData.status) ? orderData.status : "Pending",
-                    customer: orderData.customer,
-                    template: orderData.template,
+                    status: ALL_ORDER_STATUSES.includes(orderData.status as any) ? orderData.status as OrderStatus : "Pending",
+                    customer: orderData.customerData || orderData.customer,
+                    template: orderData.templateData || orderData.template,
                     totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
                     items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
                         id: String(item.id || `custom-item-${Date.now()}-${index}`),

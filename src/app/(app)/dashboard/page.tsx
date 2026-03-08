@@ -12,6 +12,7 @@ import { Users, FileArchive, BookOpenCheck, FileText, Building2, Globe2, Star, A
 import { motion, animate } from "framer-motion";
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities } from '@/lib/utils';
+import { getTemplatesFromMySql } from '@/app/actions/orders';
 
 interface StatCardProps {
   title: string;
@@ -168,33 +169,26 @@ export default function DashboardPage() {
       setIsLoadingTemplates(true);
       setTemplatesError(null);
       try {
-        const response = await fetch("https://colorhutbd.xyz/vm/api/templates.php", {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          }
-        });
-        if (!response.ok) {
-          throw new Error(`API error! status: ${response.status}`);
-        }
-        const result = await response.json();
-        if (!result.success || !result.data || !Array.isArray(result.data.templates)) {
-          console.error("Invalid API response structure for templates:", result);
-          throw new Error("Invalid data format from API");
+        const result = await getTemplatesFromMySql();
+        if (!result.success) {
+          throw new Error(result.message || "Failed to fetch templates from local DB.");
         }
 
-        const fetchedTemplates: ApiTemplate[] = result.data.templates.map((t: any) => ({
-          ...t,
-          isPublished: t.isPublished === undefined ? false : Boolean(t.isPublished),
+        const fetchedTemplates: ApiTemplate[] = (result.data as any[]).map((t: any) => ({
+          id: String(t.id),
+          name: t.name,
+          description: t.description,
+          imageUrl: t.imageUrl || '',
+          isPublished: Boolean(t.isPublished),
+          isTopRated: Boolean(t.isTopRated),
           tags: Array.isArray(t.tags) ? t.tags : [],
-          imageUrl: t.imageUrl || '', // Ensure imageUrl is at least an empty string
         }));
 
         const filteredTopRated = fetchedTemplates.filter(
           template =>
             template.isPublished &&
             template.isTopRated &&
-            template.tags.some(tag => tag.toLowerCase() === clientUser.type)
+            template.tags.some(tag => tag.toLowerCase() === clientUser.type?.toLowerCase())
         );
         setTopRatedTemplates(filteredTopRated);
 

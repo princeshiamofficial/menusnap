@@ -147,4 +147,16 @@
       transform: translateX(-100%);
     }
   }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
 }

@@ -88,6 +88,12 @@ import {
   isValid as isValidDate
 } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import {
+  getCategoriesFromMySql,
+  getMenuItemsFromMySql,
+  upsertMenuItemToMySql,
+  deleteMenuItemFromMySql
+} from "@/app/actions/orders";
 import { Reorder } from "framer-motion";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -370,15 +376,6 @@ export default function ManageMagicTabPage(): ReactNode {
 
   const { toast } = useToast();
 
-  const getCategoriesApiUrl = (type: MenuType) => type === 'parlour'
-    ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
-    : 'https://colorhutbd.xyz/vm/api/categories.php';
-
-  const getMenuItemsApiUrl = (type: MenuType) => type === 'parlour'
-    ? 'https://colorhutbd.xyz/vm/api/parlour-items.php'
-    : 'https://colorhutbd.xyz/vm/api/menu-items.php';
-
-
   const fetchCategoriesAndItems = useCallback(async (currentMenuType: MenuType, retainSelectedCategory: boolean = false) => {
     setLoadingCategories(true);
     setErrorCategories(null);
@@ -387,68 +384,35 @@ export default function ManageMagicTabPage(): ReactNode {
 
     const prevSelectedCategoryId = retainSelectedCategory ? selectedCategory?.id : null;
 
-    const categoriesApiUrl = getCategoriesApiUrl(currentMenuType);
-    const menuItemsApiUrl = getMenuItemsApiUrl(currentMenuType);
-
     try {
-      const [categoriesResponse, menuItemsResponse] = await Promise.all([
-        fetch(categoriesApiUrl, { headers: { 'Accept': 'application/json' } }),
-        fetch(menuItemsApiUrl, { headers: { 'Accept': 'application/json' } })
+      const type = currentMenuType === 'parlour' ? 'parlour' : 'restaurant';
+      const [catsResult, itemsResult] = await Promise.all([
+        getCategoriesFromMySql(type),
+        getMenuItemsFromMySql(type)
       ]);
 
-      if (!categoriesResponse.ok) throw new Error(`Categories API error! status: ${categoriesResponse.status}`);
-      const categoriesResult = await categoriesResponse.json();
-      if (!categoriesResult.success || !categoriesResult.data || !Array.isArray(categoriesResult.data.categories)) {
-        throw new Error('Invalid data format for categories.');
-      }
-      const fetchedCategoriesRaw: Omit<CategoryAdmin, 'itemCount'>[] = categoriesResult.data.categories.map((cat: any): Omit<CategoryAdmin, 'itemCount'> => ({
+      if (!catsResult.success) throw new Error(catsResult.message || 'Failed to fetch categories.');
+      if (!itemsResult.success) throw new Error(itemsResult.message || 'Failed to fetch menu items.');
+
+      const fetchedCategoriesRaw: Omit<CategoryAdmin, 'itemCount'>[] = (catsResult.data as any[]).map((cat: any) => ({
         id: String(cat.id),
         name: String(cat.name || 'Unnamed Category'),
         icon: String(cat.icon || '📁'),
-        visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers),
+        visibleToUsers: Boolean(cat.visibleToUsers),
       }));
 
-      let visibleAdminCategories = fetchedCategoriesRaw.filter(cat => cat.visibleToUsers);
-      // Sort visible categories alphabetically by name
-      visibleAdminCategories = [...visibleAdminCategories].sort((a, b) => a.name.localeCompare(b.name));
-
-      setAllCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 })));
-      setOrderedCategories(visibleAdminCategories.map(cat => ({ ...cat, itemCount: 0 })));
-
-
-      if (!menuItemsResponse.ok) throw new Error(`Menu Items API error! status: ${menuItemsResponse.status}`);
-      const menuItemsResult = await menuItemsResponse.json();
-
-      let rawItemsArray: any[] = [];
-      if (currentMenuType === 'restaurant' && Array.isArray(menuItemsResult)) {
-        rawItemsArray = menuItemsResult;
-      } else if (menuItemsResult.success) {
-        if (Array.isArray(menuItemsResult.data)) {
-          rawItemsArray = menuItemsResult.data;
-        } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.items)) {
-          rawItemsArray = menuItemsResult.data.items;
-        } else if (menuItemsResult.data && Array.isArray(menuItemsResult.data.menuItems)) {
-          rawItemsArray = menuItemsResult.data.menuItems;
-        } else {
-          throw new Error('Invalid data format for menu items (expected array under "data", "data.items", or "data.menuItems" for parlour, or direct array for restaurant).');
-        }
-      } else if (Array.isArray(menuItemsResult)) {
-        rawItemsArray = menuItemsResult;
-      }
-      else {
-        throw new Error(menuItemsResult.message || 'API request for menu items was not successful and data format is unrecognized.');
-      }
+      const rawItemsArray = itemsResult.data || [];
 
       const fetchedMenuItems: MenuItemAdmin[] = rawItemsArray.map((item: any): MenuItemAdmin => ({
         id: String(item.id),
         name: String(item.name || 'Unnamed Item'),
-        price: parseFloat(item.price) || 0,
+        price: Number(item.price) || 0,
         description: item.description || null,
-        status: (String(item.status).toLowerCase() === 'active' || item.visibleToUsers === true || String(item.visibleToUsers) === '1') ? 'Active' : 'Inactive',
-        addedDate: item.createdAt || item.addedDate || new Date().toISOString(),
-        categoryId: String(item.category || item.categoryId),
-        visibleToUsers: item.visibleToUsers === undefined ? true : Boolean(item.visibleToUsers),
-        image: item.image || null,
+        status: item.visible ? 'Active' : 'Inactive',
+        addedDate: item.createdAt || new Date().toISOString(),
+        categoryId: String(item.categoryId),
+        visibleToUsers: Boolean(item.visible),
+        image: item.imageUrl || null,
         subItems: Array.isArray(item.subItems) ? item.subItems.map((si: any) => ({ id: String(si.id), name: String(si.name), price: si.price !== null && si.price !== undefined ? parseFloat(si.price) : undefined })) : [],
       }));
       setAllMenuItems(fetchedMenuItems);
@@ -458,7 +422,7 @@ export default function ManageMagicTabPage(): ReactNode {
         return acc;
       }, {} as Record<string, number>);
 
-      const updatedCategoriesWithCounts = visibleAdminCategories.map(cat => ({
+      const updatedCategoriesWithCounts = fetchedCategoriesRaw.map(cat => ({
         ...cat,
         itemCount: categoryCounts[cat.id] || 0
       }));
@@ -545,36 +509,25 @@ export default function ManageMagicTabPage(): ReactNode {
     }
 
     const payload = {
+      id: `item-${Date.now()}`, // ID will be generated by the DB, but a temporary one is fine for client-side
       name: formData.name,
       price: formData.price,
       description: formData.description,
-      category: selectedCategory.id,
-      status: formData.visibleToUsers ? 'Active' : 'Inactive',
-      visibleToUsers: formData.visibleToUsers,
-      subItems: formData.subItems ? formData.subItems.map(si => {
-        const subItemPayload: any = { name: si.name };
-        if (si.price !== undefined) subItemPayload.price = si.price;
-        return subItemPayload;
-      }) : [],
+      categoryId: selectedCategory.id,
+      type: menuType,
+      visible: !!formData.visibleToUsers,
+      subItems: formData.subItems || [],
+      imageUrl: STATIC_ITEM_IMAGE_URL, // Default image for new items
     };
 
     try {
-      const response = await fetch(getMenuItemsApiUrl(menuType), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
+      const result = await upsertMenuItemToMySql(payload);
 
-      if (!response.ok || !result.success || !result.data || !result.data.item) {
-        let errorMsg = result.message || `Request failed with status: ${response.status}`;
-        if (response.ok && result.success && (!result.data || !result.data.item)) {
-          errorMsg = "API reported success but item data was missing in the response.";
-        }
-        throw new Error(errorMsg);
+      if (!result.success) {
+        throw new Error(result.message || "Failed to add item to local database.");
       }
 
-      toast({ title: "Success", description: result.message || `Item "${decodeHtmlEntities(formData.name)}" added to ${decodeHtmlEntities(selectedCategory?.name) || 'category'}.` });
+      toast({ title: "Success", description: `Item "${decodeHtmlEntities(formData.name)}" added successfully.` });
       setIsAddItemDialogOpen(false);
       fetchCategoriesAndItems(menuType, true);
     } catch (error: any) {
@@ -597,38 +550,22 @@ export default function ManageMagicTabPage(): ReactNode {
       name: formData.name,
       price: formData.price,
       description: formData.description,
-      category: editingItemData.categoryId,
-      status: formData.visibleToUsers ? 'Active' : 'Inactive',
-      visibleToUsers: formData.visibleToUsers,
-      subItems: formData.subItems ? formData.subItems.map(si => {
-        const subItemPayload: any = { name: si.name };
-        if (si.id) subItemPayload.id = si.id;
-        if (si.price !== undefined) subItemPayload.price = si.price;
-        return subItemPayload;
-      }) : [],
+      categoryId: editingItemData.categoryId,
+      type: menuType,
+      visible: !!formData.visibleToUsers,
+      subItems: formData.subItems || [],
+      imageUrl: editingItemData.image
     };
+
     try {
-      const response = await fetch(getMenuItemsApiUrl(menuType), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
+      const result = await upsertMenuItemToMySql(payload);
+      if (!result.success) throw new Error(result.message || "Failed to update local database.");
 
-      if (!response.ok || !result.success || !result.data || !result.data.item) {
-        let errorMsg = result.message || `Request failed with status: ${response.status}`;
-        if (response.ok && result.success && (!result.data || !result.data.item)) {
-          errorMsg = "API reported success but item data was missing in the response.";
-        }
-        throw new Error(errorMsg);
-      }
-
-      toast({ title: "Success", description: result.message || `Item "${decodeHtmlEntities(formData.name)}" updated.` });
+      toast({ title: "Success", description: `Item "${decodeHtmlEntities(formData.name)}" updated.` });
       setIsEditItemDialogOpen(false);
-      setEditingItemData(null);
       fetchCategoriesAndItems(menuType, true);
     } catch (error: any) {
-      toast({ title: "Error Updating Item", description: error.message, variant: "destructive" });
+      toast({ title: "Update Failed", description: error.message, variant: "destructive" });
     }
   };
 
@@ -636,30 +573,19 @@ export default function ManageMagicTabPage(): ReactNode {
     setItemToDeleteInfo({ id: item.id, name: item.name });
     setIsDeleteItemDialogOpen(true);
   };
-
   const confirmDeleteItem = async () => {
     if (!itemToDeleteInfo) return;
     try {
-      const response = await fetch(`${getMenuItemsApiUrl(menuType)}?id=${itemToDeleteInfo.id}`, {
-        method: 'DELETE',
-        headers: { 'Accept': 'application/json' },
-      });
-      const result = await response.json();
-      if (!response.ok || (result && result.success === false && response.status !== 404)) {
-        if (response.status === 404 && result.message && result.message.toLowerCase().includes('not found')) {
-          toast({ title: "Item Not Found", description: result.message || `Item "${decodeHtmlEntities(itemToDeleteInfo.name)}" was already removed or did not exist.` });
-        } else {
-          throw new Error(result.message || `Failed to delete item. Status: ${response.status}`);
-        }
-      } else {
-        toast({ title: "Success", description: result.message || `Item "${decodeHtmlEntities(itemToDeleteInfo.name)}" deleted.` });
-      }
+      const result = await deleteMenuItemFromMySql(itemToDeleteInfo.id);
+      if (!result.success) throw new Error(result.message);
+
+      toast({ title: "Deleted", description: `Item "${decodeHtmlEntities(itemToDeleteInfo.name)}" removed from database.` });
+      fetchCategoriesAndItems(menuType, true);
     } catch (error: any) {
-      toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
+      toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
     } finally {
       setIsDeleteItemDialogOpen(false);
       setItemToDeleteInfo(null);
-      fetchCategoriesAndItems(menuType, true);
     }
   };
 

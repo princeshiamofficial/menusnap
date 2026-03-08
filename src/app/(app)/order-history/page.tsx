@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { History, Search, AlertTriangle, ShoppingCart, CalendarDays, FileText as FileTextIcon, ChevronRight } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
+import { getOrdersFromMySql } from '@/app/actions/orders';
 
 interface ApiOrder {
     id: string;
@@ -102,30 +103,32 @@ export default function OrderHistoryPage() {
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchOrders = useCallback(() => {
+    const fetchOrders = useCallback(async () => {
         if (!clientUser) return;
         setIsLoading(true);
         setError(null);
         try {
-            const storedOrdersRaw = localStorage.getItem('colorHutOrders');
-            const rawOrdersArray = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : [];
+            const result = await getOrdersFromMySql();
+            if (!result.success) throw new Error(result.message || "Failed to fetch orders from local DB.");
+
+            const rawOrdersArray = result.data as any[];
 
             const fetchedOrders: ApiOrder[] = rawOrdersArray
-                .filter((order: any) => order.customer?.restaurant === clientUser.businessName)
+                .filter((order: any) => order.customerData?.restaurant === clientUser.businessName)
                 .map((order: any, index: number): ApiOrder => ({
-                    id: String(order.id || `mock-${index}-${Date.now()}`),
-                    orderId: String(order.orderId || order.id),
-                    orderDate: String(order.orderDate || order.createdAt || order.date),
+                    id: String(order.id),
+                    orderId: String(order.id),
+                    orderDate: String(order.createdAt),
                     templateName: order.template?.name,
-                    customerName: order.customer?.name,
-                    businessName: order.customer?.restaurant,
-                    totalAmount: parseFloat(order.totalAmount || order.total || 0),
+                    customerName: order.customerData?.name,
+                    businessName: order.customerData?.restaurant,
+                    totalAmount: parseFloat(order.total || 0),
                     itemCount: Array.isArray(order.items) ? order.items.length : 0,
                 }));
 
             setAllOrders(fetchedOrders);
         } catch (e: any) {
-            setError((e as Error).message || "Failed to load orders from local storage.");
+            setError((e as Error).message || "Failed to load orders.");
         } finally {
             setIsLoading(false);
         }

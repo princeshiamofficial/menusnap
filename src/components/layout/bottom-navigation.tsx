@@ -92,7 +92,7 @@ export function BottomNavigation() {
               <div className="w-14 h-14 -mt-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg relative z-10">
                 <AnimatePresence mode="wait">
                   <motion.div
-                    key={activeItem.href}
+                    key={`indicator-icon-${activeItem.href}`}
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }}
                     exit={{ opacity: 0, scale: 0.5 }}

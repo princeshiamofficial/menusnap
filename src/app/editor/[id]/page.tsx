@@ -68,6 +68,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { generateMenuDocx } from '@/lib/docx-generator';
 import { saveAs } from 'file-saver';
+import { 
+    getOrderByIdFromMySql, 
+    getCategoriesFromMySql, 
+    getMenuItemsFromMySql,
+    updateOrderInMySql 
+} from '@/app/actions/orders';
+import { useToast } from "@/hooks/use-toast";
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 import Image from 'next/image';
 
@@ -526,44 +533,23 @@ export default function EditorPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const [ordersResponse, restaurantCategoriesResponse, parlourCategoriesResponse] = await Promise.all([
-                fetch('https://colorhutbd.xyz/vm/api/orders.php', { headers: { 'Accept': 'application/json' } }),
-                fetch('https://colorhutbd.xyz/vm/api/categories.php', { headers: { 'Accept': 'application/json' } }),
-                fetch('https://colorhutbd.xyz/vm/api/parlour-categories.php', { headers: { 'Accept': 'application/json' } })
+            const [orderRes, resCatRes, parCatRes] = await Promise.all([
+                getOrderByIdFromMySql(orderIdFromUrl),
+                getCategoriesFromMySql('restaurant'),
+                getCategoriesFromMySql('parlour')
             ]);
 
             const combinedCategories: any[] = [];
-            if (restaurantCategoriesResponse.ok) {
-                const resCatResult = await restaurantCategoriesResponse.json();
-                if (resCatResult.success && Array.isArray(resCatResult.data.categories)) {
-                    combinedCategories.push(...resCatResult.data.categories);
-                }
+            if (resCatRes.success && Array.isArray(resCatRes.data)) {
+                combinedCategories.push(...resCatRes.data);
             }
-            if (parlourCategoriesResponse.ok) {
-                const parCatResult = await parlourCategoriesResponse.json();
-                if (parCatResult.success && Array.isArray(parCatResult.data.categories)) {
-                    combinedCategories.push(...parCatResult.data.categories);
-                }
+            if (parCatRes.success && Array.isArray(parCatRes.data)) {
+                combinedCategories.push(...parCatRes.data);
             }
             setAllCategories(combinedCategories);
 
-            if (!ordersResponse.ok) throw new Error(`API error! status: ${ordersResponse.status}`);
-            const result = await ordersResponse.json();
-
-            let rawOrdersArray: any[] = [];
-            if (result.success) {
-                if (result.data && Array.isArray(result.data.orders)) {
-                    rawOrdersArray = result.data.orders;
-                } else if (Array.isArray(result.data)) {
-                    rawOrdersArray = result.data;
-                } else {
-                    throw new Error('Invalid data format from API for orders.');
-                }
-            } else {
-                throw new Error(result.message || 'API request for orders was not successful.');
-            }
-
-            const orderData = rawOrdersArray.find(o => String(o.id) === orderIdFromUrl);
+            if (!orderRes.success) throw new Error(orderRes.message || 'Failed to fetch order.');
+            const orderData = orderRes.data;
 
             if (orderData) {
                 const formattedOrder: ApiOrder = {
@@ -571,8 +557,8 @@ export default function EditorPage() {
                     orderId: String(orderData.orderId || orderData.id),
                     orderDate: String(orderData.orderDate || orderData.createdAt || orderData.date || new Date().toISOString()),
                     status: ALL_ORDER_STATUSES.includes(orderData.status) ? orderData.status : "Pending",
-                    customer: orderData.customer,
-                    template: orderData.template,
+                    customer: orderData.customerData || orderData.customer, // Use customerData from DB or customer from payload
+                    template: orderData.templateData || orderData.template,
                     totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
                     items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
                         id: String(item.id || `custom-item-${Date.now()}-${index}`),
@@ -588,10 +574,10 @@ export default function EditorPage() {
                 setOrder(formattedOrder);
                 setSaveStatus("saved");
             } else {
-                setError(`This shared link is invalid or the selection has been removed.`);
+                setError(`This shared link is invalid or the document has been removed.`);
             }
         } catch (e: any) {
-            setError(e.message || 'Failed to load the shared menu selection.');
+            setError(e.message || 'Failed to load the menu document.');
         } finally {
             setIsLoading(false);
         }
@@ -611,26 +597,17 @@ export default function EditorPage() {
         setSaveStatus("saving");
         pendingSaveData.current = null;
 
-        console.log("Saving data for Editor. Payload:", JSON.stringify(orderToSave, null, 2));
         try {
-            const response = await fetch('https://colorhutbd.xyz/vm/api/orders.php', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(orderToSave),
-            });
+            // Prepare payload for updateOrderInMySql
+            const payload = {
+                ...orderToSave,
+                customerData: orderToSave.customer,
+                templateData: orderToSave.template
+            };
 
-            let result;
-            try {
-                result = await response.json();
-                console.log("Editor save response from server:", result);
-            } catch (e) {
-                console.error("Could not parse server response as JSON.", e);
-                const textResponse = await response.text();
-                console.log("Raw server response (editor):", textResponse);
-                throw new Error("Server sent an invalid response.");
-            }
+            const result = await updateOrderInMySql(payload);
 
-            if (!response.ok || !result.success) {
+            if (!result.success) {
                 throw new Error(result.message || "Failed to save document changes.");
             }
 

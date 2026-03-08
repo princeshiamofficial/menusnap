@@ -103,13 +103,13 @@ import {
 import {
   useToast
 } from "@/hooks/use-toast";
-import {
-  useForm,
-  Controller
-} from "react-hook-form";
-import {
-  zodResolver
-} from "@hookform/resolvers/zod";
+import { 
+  getCategoriesFromMySql, 
+  upsertCategoryToMySql, 
+  deleteCategoryFromMySql 
+} from '@/app/actions/orders';
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 type CategoryType = "restaurant" | "parlour";
@@ -276,10 +276,6 @@ export default function ManageCategoriesPage(): ReactNode {
 
   const { toast } = useToast();
 
-  const getApiUrl = (type: CategoryType) => type === 'parlour'
-    ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php'
-    : 'https://colorhutbd.xyz/vm/api/categories.php';
-
   const updateLastUpdatedTime = useCallback(() => {
     setLastUpdated(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
   }, [setLastUpdated]);
@@ -287,19 +283,11 @@ export default function ManageCategoriesPage(): ReactNode {
   const fetchCategories = useCallback(async (type: CategoryType) => {
     setIsLoading(true);
     setError(null);
-    const apiUrl = getApiUrl(type);
-
     try {
-      const response = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
-      if (!response.ok) throw new Error(`API error! status: ${response.status}`);
-      const result = await response.json();
+      const result = await getCategoriesFromMySql(type);
+      if (!result.success) throw new Error(result.message || `Failed to fetch categories.`);
 
-      if (!result.success || !result.data || !Array.isArray(result.data.categories)) {
-        console.error(`Invalid API response structure for ${type} categories:`, result);
-        throw new Error(`Invalid data format from API for ${type} categories.`);
-      }
-
-      const fetchedCategories: ApiCategory[] = result.data.categories.map((cat: any): ApiCategory => ({
+      const fetchedCategories: ApiCategory[] = (result.data as any[]).map((cat: any): ApiCategory => ({
         id: String(cat.id),
         name: String(cat.name || 'Unnamed Category'),
         description: cat.description || null,
@@ -348,22 +336,22 @@ export default function ManageCategoriesPage(): ReactNode {
     };
 
     try {
-      const response = await fetch(getApiUrl(categoryType), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(newCategoryPayload),
-      });
+      const payload = {
+        id: newCategoryId,
+        ...data,
+        type: categoryType,
+        itemCount: 0,
+        createdAt: new Date().toISOString(),
+        status: data.visibleToUsers ? 'active' : 'inactive',
+      };
 
-      const result = await response.json();
+      const result = await upsertCategoryToMySql(payload);
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to add category. Status: ${response.status}`);
+      if (!result.success) {
+        throw new Error(result.message || `Failed to add category.`);
       }
 
-      toast({ title: "Success", description: result.message || `Category "${decodeHtmlEntities(data.name)}" added.` });
+      toast({ title: "Success", description: `Category "${decodeHtmlEntities(data.name)}" added locally.` });
       setIsAddDialogOpen(false);
       fetchCategories(categoryType);
     } catch (error: any) {
@@ -381,22 +369,20 @@ export default function ManageCategoriesPage(): ReactNode {
     };
 
     try {
-      const response = await fetch(getApiUrl(categoryType), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(updatedCategoryPayload),
-      });
+      const updatedCategoryPayload = {
+        ...editingCategoryData,
+        ...data,
+        type: categoryType,
+        status: data.visibleToUsers ? 'active' : 'inactive',
+      };
 
-      const result = await response.json();
+      const result = await upsertCategoryToMySql(updatedCategoryPayload);
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to update category. Status: ${response.status}`);
+      if (!result.success) {
+        throw new Error(result.message || `Failed to update category.`);
       }
 
-      toast({ title: "Success", description: result.message || `Category "${decodeHtmlEntities(data.name)}" updated.` });
+      toast({ title: "Success", description: `Category "${decodeHtmlEntities(data.name)}" updated locally.` });
       setIsEditDialogOpen(false);
       setEditingCategoryData(null);
       fetchCategories(categoryType);
@@ -418,18 +404,13 @@ export default function ManageCategoriesPage(): ReactNode {
   const confirmDeleteCategory = async () => {
     if (!categoryToDeleteInfo) return;
     try {
-      const response = await fetch(`${getApiUrl(categoryType)}?id=${categoryToDeleteInfo.id}`, {
-        method: 'DELETE',
-        headers: { 'Accept': 'application/json' },
-      });
+      const result = await deleteCategoryFromMySql(categoryToDeleteInfo.id);
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to delete category. Status: ${response.status}`);
+      if (!result.success) {
+        throw new Error(result.message || `Failed to delete category.`);
       }
 
-      toast({ title: "Success", description: result.message || `Category "${decodeHtmlEntities(categoryToDeleteInfo.name)}" deleted.` });
+      toast({ title: "Success", description: `Category "${decodeHtmlEntities(categoryToDeleteInfo.name)}" deleted from local DB.` });
       setIsDeleteDialogOpen(false);
       setCategoryToDeleteInfo(null);
       fetchCategories(categoryType);
@@ -454,19 +435,10 @@ export default function ManageCategoriesPage(): ReactNode {
     };
 
     try {
-      const response = await fetch(getApiUrl(categoryType), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(updatedCategoryPayload),
-      });
+      const result = await upsertCategoryToMySql(updatedCategoryPayload);
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || `Failed to update visibility. Status: ${response.status}`);
+      if (!result.success) {
+        throw new Error(result.message || `Failed to update visibility.`);
       }
 
       toast({ title: "Status Updated", description: `Visibility for "${decodeHtmlEntities(categoryToUpdate.name)}" ${updatedCategoryPayload.visibleToUsers ? 'set to visible' : 'set to hidden'}.` });

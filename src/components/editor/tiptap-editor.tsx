@@ -64,6 +64,7 @@ export default function TiptapEditor({
                 class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-full',
             },
         },
+        immediatelyRender: false,
     })
 
     useEffect(() => {

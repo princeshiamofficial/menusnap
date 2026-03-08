@@ -130,7 +130,7 @@ export default function GoogleDocsApp({
       )}
 
       <main className="flex-1">
-        <div className="flex justify-center py-2 sm:py-10 animate-in fade-in zoom-in-95 duration-500 ease-out fill-mode-forwards px-4">
+        <div className="flex justify-center py-10 animate-in fade-in zoom-in-95 duration-500 ease-out fill-mode-forwards px-4">
           <EditorComponent
             content={content}
             onChange={setContent}
@@ -139,6 +139,7 @@ export default function GoogleDocsApp({
             showWatermark={showWatermark}
             customPaperHeader={customPaperHeader}
             tabStops={margins.tabStops}
+            docId={docId}
           />
         </div>
       </main>
@@ -201,6 +202,37 @@ export default function GoogleDocsApp({
           white-space: pre-wrap;
           tab-size: 4;
           -moz-tab-size: 4;
+        }
+
+        @media (max-width: 640px) {
+          .ProseMirror {
+             padding-left: 16px !important;
+             padding-right: 16px !important;
+          }
+          
+          /* Responsive Name-Price Alignment */
+          /* Only apply flex if the paragraph contains a tab node (used as a spacer/separator) */
+          .ProseMirror p:has(span[data-type="tab"]) {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: baseline;
+            gap: 4px;
+            width: 100%;
+          }
+          
+          .ProseMirror p:has(span[data-type="tab"]) span[data-type="tab"] {
+            flex-grow: 1;
+            width: auto !important;
+            min-width: 8px;
+            display: inline-block;
+          }
+          
+          /* The last child (usually the price) goes to the right */
+          .ProseMirror p:has(span[data-type="tab"]) > *:last-child {
+            white-space: nowrap;
+            margin-left: auto;
+            flex-shrink: 0;
+          }
         }
 
         .ProseMirror p {

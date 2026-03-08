@@ -47,6 +47,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useClientAuth } from '@/hooks/use-client-auth';
+import { getCategoriesFromMySql, getMenuItemsFromMySql } from '@/app/actions/orders';
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
@@ -583,15 +584,13 @@ export default function MagicTabPage() {
     if (!menuType) return;
     setLoadingCategories(true);
     setError(null);
-    const categoriesApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-categories.php' : 'https://colorhutbd.xyz/vm/api/categories.php';
     try {
-      const categoriesRes = await fetch(categoriesApiUrl);
-      if (!categoriesRes.ok) throw new Error("Failed to fetch categories from API.");
-      const categoriesData = await categoriesRes.json();
-      if (!categoriesData.success || !Array.isArray(categoriesData.data.categories)) throw new Error("Invalid category data format.");
+      const type = menuType === 'parlour' ? 'parlour' : 'restaurant';
+      const result = await getCategoriesFromMySql(type, true); // true for visibleOnly
+      
+      if (!result.success) throw new Error(result.message || "Failed to fetch categories from local MySQL.");
 
-      const serverCategories: Category[] = categoriesData.data.categories
-        .filter((cat: any) => cat.visibleToUsers)
+      const serverCategories: Category[] = (result.data as any[])
         .map((cat: any) => ({ ...cat, id: String(cat.id) }));
 
       const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
@@ -600,9 +599,8 @@ export default function MagicTabPage() {
 
       setApiCategories(uniqueCategories);
 
-      // Don't set active category here to avoid re-renders. Let the CategoryList component handle it.
-
     } catch (err: any) {
+      console.error("Local Categories Error:", err);
       setError(err.message || "Could not load categories.");
       setApiCategories([]);
       setActiveCategoryId(null);
@@ -614,28 +612,17 @@ export default function MagicTabPage() {
   const loadItems = useCallback(async (menuType: string) => {
     if (!menuType) return;
     setLoadingItems(true);
-    const menuItemsApiUrl = menuType === 'parlour' ? 'https://colorhutbd.xyz/vm/api/parlour-items.php?visibleOnly=true' : 'https://colorhutbd.xyz/vm/api/menu-items.php?visibleOnly=true';
     try {
-      const itemsRes = await fetch(menuItemsApiUrl);
-      if (!itemsRes.ok) throw new Error("Failed to fetch menu items from API.");
-      const itemsData = await itemsRes.json();
+      const type = menuType === 'parlour' ? 'parlour' : 'restaurant';
+      const result = await getMenuItemsFromMySql(type, true); // true for visibleOnly
+      
+      if (!result.success) throw new Error(result.message || "Failed to fetch items from local MySQL.");
 
-      let rawServerItems: any[] = [];
-      if (Array.isArray(itemsData)) {
-        rawServerItems = itemsData;
-      } else if (itemsData.success && Array.isArray(itemsData.data)) {
-        rawServerItems = itemsData.data;
-      } else if (itemsData.success && itemsData.data && Array.isArray(itemsData.data.items)) {
-        rawServerItems = itemsData.data.items;
-      }
-
-      const serverItems: MenuItem[] = rawServerItems
-        .filter((item: any) => item.visibleToUsers)
-        .map((item: any) => ({
+      const serverItems: MenuItem[] = (result.data as any[]).map((item: any) => ({
           ...item,
           id: String(item.id),
           price: parseFloat(item.price) || 0,
-          category: String(item.category || item.categoryId)
+          category: String(item.categoryId)
         }));
 
       const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
@@ -644,6 +631,7 @@ export default function MagicTabPage() {
       setAllMenuItems(uniqueItems);
 
     } catch (err: any) {
+      console.error("Local Items Error:", err);
       setError(err.message || "Could not load menu items.");
       setAllMenuItems([]);
     } finally {
@@ -961,9 +949,9 @@ export default function MagicTabPage() {
       return "grid-cols-1";
     }
     if (itemCount === 2) {
-      return "md:grid-cols-2";
+      return "grid-cols-1 md:grid-cols-2";
     }
-    return "md:grid-cols-2 lg:grid-cols-3";
+    return "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
   }, [currentMenuItems.length]);
 
   const loading = loadingCategories || loadingItems;
@@ -1009,54 +997,8 @@ export default function MagicTabPage() {
               </Select>
             </div>
 
-            {/* Mobile-only Category Selector */}
-            <div className="md:hidden flex items-end gap-2">
-              <div className="flex-grow">
-                <Label htmlFor="mobile-category-select">Category</Label>
-                <Select
-                  value={activeCategoryId || ''}
-                  onValueChange={(value) => setActiveCategoryId(value)}
-                  disabled={loading}
-                >
-                  <SelectTrigger
-                    id="mobile-category-select"
-                    className={cn("w-full mt-1", selectedCategory && "border-primary ring-1 ring-primary")}
-                  >
-                    {selectedCategory ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{selectedCategory.icon}</span>
-                        <span>{decodeHtmlEntities(selectedCategory.name)}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Select a category...</span>
-                    )}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {apiCategories.length > 0 ? (
-                      apiCategories.map(category => (
-                        <SelectItem key={category.id} value={category.id}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">{category.icon}</span>
-                            <span>{decodeHtmlEntities(category.name)}</span>
-                          </div>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="none" disabled>No categories available</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleOpenAddCategory}
-                className="h-10 w-10 shrink-0"
-                aria-label="Add New Category"
-              >
-                <PlusCircle className="h-5 w-5" />
-              </Button>
-            </div>
+            {/* Category selection is now handled by the responsive CategoryList component */}
+
 
             <div className="flex flex-col md:flex-row items-center gap-3">
               <div className="relative w-full md:flex-grow">

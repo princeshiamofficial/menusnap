@@ -55,13 +55,8 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/m-admin');
-  const isMorePublicRoute = pathname.startsWith('/products');
 
   if (isAdminRoute) {
-    return <>{children}</>;
-  }
-
-  if (isMorePublicRoute) {
     return <>{children}</>;
   }
 
