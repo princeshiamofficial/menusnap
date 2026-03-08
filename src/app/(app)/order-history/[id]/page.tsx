@@ -161,11 +161,31 @@ export default function ClientOrderDetailsPage() {
                 setCategoryMap(newCategoryMap);
 
                 // Fetch specific order from MySQL
-                const orderResult = await getOrderByIdFromMySql(orderIdFromUrl);
+                let orderData: any = null;
+                try {
+                    const orderResult = await getOrderByIdFromMySql(orderIdFromUrl);
+                    if (orderResult.success && orderResult.data) {
+                        orderData = orderResult.data;
+                    }
+                } catch (e) {
+                    console.error("MySQL Fetch Order error:", e);
+                }
 
-                if (orderResult.success && orderResult.data) {
-                    const orderData = orderResult.data;
-                    const orderBusinessName = orderData.customerData?.restaurant;
+                // Fallback to Local Storage if not found in MySQL
+                if (!orderData) {
+                    try {
+                        const rawLocal = localStorage.getItem('colorHutOrders');
+                        if (rawLocal) {
+                            const localOrders = JSON.parse(rawLocal);
+                            orderData = localOrders.find((o: any) => String(o.id || o.orderId) === orderIdFromUrl);
+                        }
+                    } catch (e) {
+                        console.error("Local storage order detail fallback error:", e);
+                    }
+                }
+
+                if (orderData) {
+                    const orderBusinessName = orderData.businessName || orderData.customer?.restaurant || orderData.customerData?.restaurant;
 
                     if (orderBusinessName !== clientUser.businessName) {
                         setIsAuthorized(false);
@@ -176,18 +196,18 @@ export default function ClientOrderDetailsPage() {
 
                     setIsAuthorized(true);
                     const formattedOrder: ApiOrder = {
-                        id: String(orderData.id),
-                        orderId: String(orderData.id), 
-                        orderDate: String(orderData.createdAt),
-                        status: ALL_ORDER_STATUSES.includes(orderData.status) ? orderData.status : "Pending",
-                        templateName: orderData.template?.name ? String(orderData.template.name) : 'Custom Selection',
-                        customerName: orderData.customerData?.name,
-                        customerEmail: orderData.customerData?.email,
-                        customerPhone: orderData.customerData?.phone,
-                        customerAddress: orderData.customerData?.address,
-                        businessName: orderData.customerData?.restaurant,
-                        businessRole: orderData.customerData?.role,
-                        totalAmount: parseFloat(orderData.total || 0),
+                        id: String(orderData.id || orderData.orderId),
+                        orderId: String(orderData.orderId || orderData.id), 
+                        orderDate: String(orderData.orderDate || orderData.createdAt || new Date().toISOString()),
+                        status: ALL_ORDER_STATUSES.includes(orderData.status as any) ? (orderData.status as OrderStatus) : "Pending",
+                        templateName: (orderData.template?.name || orderData.templateData?.name) ? String(orderData.template?.name || orderData.templateData?.name) : 'Custom Selection',
+                        customerName: orderData.customer?.name || orderData.customerData?.name,
+                        customerEmail: orderData.customer?.email || orderData.customerData?.email,
+                        customerPhone: orderData.customer?.phone || orderData.customerData?.phone,
+                        customerAddress: orderData.customer?.address || orderData.customerData?.address,
+                        businessName: orderData.businessName || orderData.customer?.restaurant || orderData.customerData?.restaurant,
+                        businessRole: orderData.customer?.role || orderData.customerData?.role || orderData.businessRole,
+                        totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
                         items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
                             id: String(item.id),
                             name: String(item.name),
@@ -198,13 +218,13 @@ export default function ClientOrderDetailsPage() {
                             description: item.description || null,
                             subItems: Array.isArray(item.subItems) ? item.subItems : [],
                         })),
-                        templateImageUrl: orderData.template?.imageUrl,
-                        templateDescription: orderData.template?.description,
-                        templateTags: orderData.template?.tags,
+                        templateImageUrl: orderData.template?.imageUrl || orderData.templateData?.imageUrl,
+                        templateDescription: orderData.template?.description || orderData.templateData?.description,
+                        templateTags: orderData.template?.tags || orderData.templateData?.tags,
                     };
                     setOrder(formattedOrder);
                 } else {
-                    setError(orderResult.message || `Order with ID ${orderIdFromUrl} not found.`);
+                    setError(`Order with ID ${orderIdFromUrl} not found.`);
                 }
             } catch (e: any) {
                 setError((e as Error).message || 'Failed to load order details.');

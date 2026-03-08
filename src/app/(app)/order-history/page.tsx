@@ -108,25 +108,56 @@ export default function OrderHistoryPage() {
         setIsLoading(true);
         setError(null);
         try {
-            const result = await getOrdersFromMySql();
-            if (!result.success) throw new Error(result.message || "Failed to fetch orders from local DB.");
+            // Fetch from MySQL
+            let mysqlOrders: any[] = [];
+            try {
+                const result = await getOrdersFromMySql();
+                if (result.success) {
+                    mysqlOrders = result.data as any[];
+                }
+            } catch (e) {
+                console.error("MySQL Fetch error in history:", e);
+            }
 
-            const rawOrdersArray = result.data as any[];
+            // Fetch from Local Storage (for local-only fallback/sync)
+            let localOrders: any[] = [];
+            try {
+                const rawLocal = localStorage.getItem('colorHutOrders');
+                if (rawLocal) {
+                    localOrders = JSON.parse(rawLocal);
+                }
+            } catch (e) {
+                console.error("Local storage search error in history:", e);
+            }
 
-            const fetchedOrders: ApiOrder[] = rawOrdersArray
-                .filter((order: any) => order.customerData?.restaurant === clientUser.businessName)
-                .map((order: any, index: number): ApiOrder => ({
-                    id: String(order.id),
-                    orderId: String(order.id),
-                    orderDate: String(order.createdAt),
-                    templateName: order.template?.name,
-                    customerName: order.customerData?.name,
-                    businessName: order.customerData?.restaurant,
-                    totalAmount: parseFloat(order.total || 0),
+            // Combine and Deduplicate
+            const combinedRaw = [...mysqlOrders, ...localOrders];
+            const seenIds = new Set();
+            const uniqueRaw = combinedRaw.filter(order => {
+                const id = String(order.id || order.orderId);
+                if (seenIds.has(id)) return false;
+                seenIds.add(id);
+                return true;
+            });
+
+            // Map and Filter by Business Name
+            const mappedOrders: ApiOrder[] = uniqueRaw
+                .filter((order: any) => {
+                    const orderBusinessName = order.businessName || order.customer?.restaurant || order.customerData?.restaurant;
+                    return orderBusinessName === clientUser.businessName;
+                })
+                .map((order: any): ApiOrder => ({
+                    id: String(order.id || order.orderId),
+                    orderId: String(order.orderId || order.id),
+                    orderDate: String(order.orderDate || order.orderDate || order.createdAt || new Date().toISOString()),
+                    templateName: order.template?.name || order.templateData?.name || "Custom Selection",
+                    customerName: order.customer?.name || order.customerData?.name || "Customer",
+                    businessName: order.businessName || order.customer?.restaurant || order.customerData?.restaurant,
+                    totalAmount: parseFloat(order.totalAmount || order.total || 0),
                     itemCount: Array.isArray(order.items) ? order.items.length : 0,
                 }));
 
-            setAllOrders(fetchedOrders);
+            setAllOrders(mappedOrders);
         } catch (e: any) {
             setError((e as Error).message || "Failed to load orders.");
         } finally {

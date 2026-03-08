@@ -11,6 +11,10 @@ export async function submitOrderToMySql(orderPayload: any) {
   try {
     const { id, orderId, customer, items, totalAmount, status, orderDate, template } = orderPayload;
 
+    // Ensure we have objects even if not provided
+    const finalCustomer = customer || {};
+    const finalTemplate = template || {};
+
     await pool.execute(
       `INSERT INTO orders (
         id, orderId, customerName, customerEmail, customerPhone, customerAddress, 
@@ -20,18 +24,18 @@ export async function submitOrderToMySql(orderPayload: any) {
       [
         id,
         orderId,
-        customer.name,
-        customer.email,
-        customer.phone,
-        customer.address,
-        customer.restaurant,
-        customer.role,
-        template.name,
-        totalAmount,
-        status,
+        finalCustomer.name || '',
+        finalCustomer.email || '',
+        finalCustomer.phone || '',
+        finalCustomer.address || '',
+        finalCustomer.restaurant || '',
+        finalCustomer.role || '',
+        finalTemplate.name || '',
+        totalAmount || 0,
+        status || 'Pending',
         new Date(orderDate).toISOString().slice(0, 19).replace('T', ' '), 
-        JSON.stringify(customer),
-        JSON.stringify(template),
+        JSON.stringify(finalCustomer),
+        JSON.stringify(finalTemplate),
         JSON.stringify(items || [])
       ]
     );
@@ -52,13 +56,23 @@ export async function getOrdersFromMySql() {
       `SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%dT%H:%i:%s.000Z') as utcOrderDate FROM orders ORDER BY orderDate DESC`
     );
 
-    const formattedOrders = rows.map((order: any) => ({
-      ...order,
-      orderDate: order.utcOrderDate || order.orderDate,
-      items: typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []),
-      customer: typeof order.customerData === 'string' ? JSON.parse(order.customerData) : (order.customerData || {}),
-      template: typeof order.templateData === 'string' ? JSON.parse(order.templateData) : (order.templateData || {})
-    }));
+    const formattedOrders = rows.map((order: any) => {
+      // Parse JSON from database safely
+      const items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+      const customerData = typeof order.customerData === 'string' ? JSON.parse(order.customerData) : (order.customerData || {});
+      const templateData = typeof order.templateData === 'string' ? JSON.parse(order.templateData) : (order.templateData || {});
+
+      return {
+        ...order,
+        orderDate: order.utcOrderDate || order.orderDate,
+        customerData,
+        templateData,
+        // Map to friendlier names for UI consistency
+        customer: customerData,
+        template: templateData,
+        items
+      };
+    });
 
     return { success: true, data: formattedOrders };
   } catch (error: any) {
@@ -85,20 +99,41 @@ export async function deleteOrderFromMySql(orderId: string) {
  */
 export async function updateOrderInMySql(order: any) {
   try {
-    const { id, subtotal, discount, total, totalAmount, customerData, status, templateData, items } = order;
+    const { id, total, totalAmount, customer, customerData, status, template, templateData, items } = order;
     
-    // Support both totalAmount and total for backward compatibility or different UI states
+    // PRIORITY: Use the "clean" objects if they exist, otherwise fallback to the "Data" variants
+    // This solves the issue where getOrdersFromMySql returns both, and we want to update one.
+    const finalCustomer = customer || customerData || {};
+    const finalTemplate = template || templateData || {};
     const finalTotal = totalAmount !== undefined ? totalAmount : total;
 
     await pool.execute(
       `UPDATE orders 
-       SET totalAmount = ?, customerData = ?, status = ?, templateData = ?, items = ?
+       SET totalAmount = ?, 
+           customerName = ?, 
+           customerEmail = ?, 
+           customerPhone = ?, 
+           customerAddress = ?, 
+           businessName = ?, 
+           businessRole = ?, 
+           templateName = ?,
+           customerData = ?, 
+           status = ?, 
+           templateData = ?, 
+           items = ?
        WHERE id = ?`,
       [
-        finalTotal || 0, 
-        JSON.stringify(customerData || {}), 
-        status || 'pending', 
-        JSON.stringify(templateData || {}), 
+        finalTotal || 0,
+        finalCustomer.name || '',
+        finalCustomer.email || '',
+        finalCustomer.phone || '',
+        finalCustomer.address || '',
+        finalCustomer.restaurant || '',
+        finalCustomer.role || '',
+        finalTemplate.name || '',
+        JSON.stringify(finalCustomer), 
+        status || 'Pending', 
+        JSON.stringify(finalTemplate), 
         JSON.stringify(items || []),
         id
       ]
