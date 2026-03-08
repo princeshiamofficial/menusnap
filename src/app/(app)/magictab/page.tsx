@@ -973,23 +973,51 @@ export default function MagicTabPage() {
         document.body
       )}
 
-      <div className="flex flex-col md:flex-row md:h-[calc(100vh-theme(spacing.16)-1px)]">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-theme(spacing.16)-1px)] overflow-hidden">
 
-        <CategoryList
-          categories={apiCategories}
-          onCategoryChange={setActiveCategoryId}
-          onAddCategory={handleOpenAddCategory}
-          onEditCategory={handleOpenEditCategory}
-          loading={loadingCategories}
-          error={error}
-        />
+        <div className="hidden md:block">
+          <CategoryList
+            categories={apiCategories}
+            onCategoryChange={setActiveCategoryId}
+            onAddCategory={handleOpenAddCategory}
+            onEditCategory={handleOpenEditCategory}
+            loading={loadingCategories}
+            error={error}
+          />
+        </div>
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
-          <div className="py-4 px-6 border-b border-border bg-card space-y-3">
+          <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card space-y-3 shadow-sm md:shadow-none">
             <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{selectedCategory ? `Select ${decodeHtmlEntities(selectedCategory.name)} Items` : 'Select MagicTab Items'}</h1>
+              <div className="flex items-center justify-between gap-2">
+                <h1 className="text-lg md:text-2xl font-bold tracking-tight text-foreground">
+                  {selectedCategory ? `${decodeHtmlEntities(selectedCategory.name)}` : 'MagicTab'}
+                </h1>
+                
+                {/* Mobile Modern Category Dropdown */}
+                <div className="md:hidden flex-1 max-w-[160px]">
+                  <Select value={activeCategoryId || ''} onValueChange={setActiveCategoryId}>
+                    <SelectTrigger className="h-9 border-none bg-muted/50 hover:bg-muted text-xs font-medium rounded-full px-3">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {apiCategories.sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
+                        <SelectItem key={cat.id} value={cat.id} className="text-xs">
+                          <span className="mr-2">{cat.icon}</span> {decodeHtmlEntities(cat.name)}
+                        </SelectItem>
+                      ))}
+                      <div className="p-1 border-t mt-1">
+                        <Button variant="ghost" className="w-full justify-start h-8 text-xs font-normal" onClick={handleOpenAddCategory}>
+                          <PlusCircle className="h-3.5 w-3.5 mr-2" /> New Category
+                        </Button>
+                      </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <Select value={selectedMenuType} onValueChange={setSelectedMenuType} disabled={clientLoading}>
-                <SelectTrigger className="w-full md:w-[200px] text-sm"><SelectValue placeholder="Select menu type" /></SelectTrigger>
+                <SelectTrigger className="w-full md:w-[200px] h-9 md:h-10 text-xs md:text-sm bg-muted/30 md:bg-background"><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="restaurant">Restaurant Menu</SelectItem>
                   <SelectItem value="parlour">Parlour Menu</SelectItem>
@@ -1005,7 +1033,7 @@ export default function MagicTabPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input type="search" placeholder="Search MagicTab item..." className="pl-10 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
-              <div className="flex w-full md:w-auto gap-2 mt-2 md:mt-0">
+              <div className="flex w-full md:w-auto gap-2 md:mt-0">
                 <Button
                   ref={previewButtonRef}
                   onClick={handlePreviewAndSave}
@@ -1029,24 +1057,18 @@ export default function MagicTabPage() {
                     </div>
                   </div>
                 </Button>
-                <Button variant="outline" className="text-sm flex-1 md:flex-none" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2" />Add Item</Button>
+                <Button variant="outline" className="text-sm flex-1 md:flex-none h-10 px-3 md:px-4" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2 hidden xs:block" />Add Item</Button>
               </div>
             </div>
           </div>
 
-          <ScrollArea className="flex-1 p-4 sm:p-6">
+          <ScrollArea className="flex-1 px-4 py-4 sm:p-6 bg-[#fafafa]/50">
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-24 w-full" />)}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-24 w-full rounded-xl" />)}</div>
             ) : error ? (
-              <div className="text-center py-10"><p className="text-destructive">Error: {error}</p></div>
+              <div className="text-center py-10"><p className="text-destructive font-medium">Error: {error}</p></div>
             ) : (
-              <>
-                {selectedCategory &&
-                  <h2 className="text-xl font-semibold text-foreground mb-4 md:hidden">
-                    {decodeHtmlEntities(selectedCategory.name)}
-                  </h2>
-                }
-                <div className={cn("grid grid-cols-1 gap-4", gridLayoutClasses)}>
+              <div className={cn("grid grid-cols-1 gap-3 md:gap-4", gridLayoutClasses)}>
                   {currentMenuItems.map((item) => (
                     <MenuItemCard
                       key={item.id}
@@ -1062,9 +1084,15 @@ export default function MagicTabPage() {
                       isSubItemsExpanded={!!expandedSubItems[item.id]}
                     />
                   ))}
-                  {currentMenuItems.length === 0 && <div className="text-center py-10 col-span-full"><p className="text-muted-foreground text-sm">No items match your search or category.</p></div>}
-                </div>
-              </>
+                {currentMenuItems.length === 0 && (
+                  <div className="text-center py-20 col-span-full">
+                    <div className="bg-muted/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-border">
+                        <Search className="h-6 w-6 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-muted-foreground text-sm font-medium">No items found here.</p>
+                  </div>
+                )}
+              </div>
             )}
           </ScrollArea>
         </main>

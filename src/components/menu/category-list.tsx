@@ -88,10 +88,10 @@ function CategoryListComponent({
 
       <div 
         ref={containerRef}
-        className="flex-1 flex md:block overflow-x-auto md:overflow-x-hidden md:overflow-y-auto no-scrollbar scroll-smooth"
+        className="flex-1 flex md:block overflow-x-auto md:overflow-x-hidden md:overflow-y-auto no-scrollbar scroll-smooth h-14 md:h-auto"
       >
         {loading && (
-          <div className="flex md:block p-2 space-x-2 md:space-x-0 md:space-y-2.5 min-w-full">
+          <div className="flex md:block p-2.5 space-x-2 md:space-x-0 md:space-y-2.5 min-w-full items-center">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-9 w-24 md:w-full rounded-full md:rounded-md shrink-0" />
             ))}
@@ -105,7 +105,7 @@ function CategoryListComponent({
         )}
         
         {!loading && !error && sortedCategories.length > 0 && (
-          <div className="flex md:block p-2 md:p-3 space-x-2 md:space-x-0 md:space-y-2.5 min-w-full items-center">
+          <div className="flex md:block p-2.5 transition-all md:p-3 space-x-2 md:space-x-0 md:space-y-2.5 min-w-full items-center">
             {/* Mobile Header Button for Adding Category */}
             <Button 
               variant="outline" 
