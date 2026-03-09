@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 9002",
     "collab:server": "node collab-server.mjs",
+    "socket:server": "node socket-server.mjs",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "migrate:db": "node migrate_db.js",
@@ -90,6 +91,8 @@
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.54.2",
     "recharts": "^2.15.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "y-prosemirror": "^1.3.7",
