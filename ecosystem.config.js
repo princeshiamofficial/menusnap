@@ -2,21 +2,12 @@ module.exports = {
   apps: [
     {
       name: 'menusnap-app',
-      script: 'node_modules/next/dist/bin/next',
-      args: 'start -p 3007',
-      instances: 'max',
-      exec_mode: 'cluster',
-      env: {
-        NODE_ENV: 'production',
-      },
-    },
-    {
-      name: 'menusnap-socket',
-      script: 'socket-server.mjs',
+      script: 'server.js',
       instances: 1,
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        SOCKET_PORT: 1234,
+        PORT: 3007,
       },
     },
   ],
