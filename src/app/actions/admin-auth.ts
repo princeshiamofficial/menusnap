@@ -6,18 +6,28 @@ import { cookies } from 'next/headers';
 
 const SESSION_COOKIE = 'admin_session';
 
-// Simple session token store (in-memory for dev; replace with Redis/DB for production)
-const activeSessions = new Map<string, { email: string; id: number }>();
+async function ensureSessionTable() {
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS admin_sessions (
+      token VARCHAR(255) PRIMARY KEY,
+      admin_id INT NOT NULL,
+      email VARCHAR(255) NOT NULL,
+      expires_at TIMESTAMP NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
 
 function generateToken(): string {
   return Array.from(
-    { length: 32 },
-    () => Math.random().toString(36)[2]
+    { length: 64 },
+    () => Math.random().toString(36)[2] || '0'
   ).join('');
 }
 
 export async function adminLoginAction(email: string, password: string): Promise<{ success: boolean; error?: string }> {
   try {
+    await ensureSessionTable();
     const [rows]: any = await pool.execute(
       'SELECT id, email, password_hash FROM admins WHERE email = ? LIMIT 1',
       [email]
@@ -36,14 +46,19 @@ export async function adminLoginAction(email: string, password: string): Promise
 
     // Create session
     const token = generateToken();
-    activeSessions.set(token, { email: admin.email, id: admin.id });
+    const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 7 * 1000); // 7 days
+    
+    await pool.execute(
+      'INSERT INTO admin_sessions (token, admin_id, email, expires_at) VALUES (?, ?, ?, ?)',
+      [token, admin.id, admin.email, expiresAt.toISOString().slice(0, 19).replace('T', ' ')]
+    );
 
     const cookieStore = await cookies();
     cookieStore.set(SESSION_COOKIE, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 30, // 30 days cookie
       path: '/',
     });
 
@@ -58,7 +73,7 @@ export async function adminLogoutAction(): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (token) {
-    activeSessions.delete(token);
+    await pool.execute('DELETE FROM admin_sessions WHERE token = ?', [token]);
     cookieStore.delete(SESSION_COOKIE);
   }
 }
@@ -68,8 +83,16 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE)?.value;
     if (!token) return null;
-    return activeSessions.get(token) ?? null;
-  } catch {
+
+    const [rows]: any = await pool.execute(
+      'SELECT admin_id as id, email FROM admin_sessions WHERE token = ? AND expires_at > CURRENT_TIMESTAMP LIMIT 1',
+      [token]
+    );
+
+    if (!rows.length) return null;
+    return rows[0];
+  } catch (e) {
+    console.error('Session check error:', e);
     return null;
   }
 }
@@ -101,11 +124,11 @@ export async function updateAdminEmailAction(
 
     await pool.execute('UPDATE admins SET email = ? WHERE id = ?', [newEmail, session.id]);
 
-    // Update session
+    // Update session in DB
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE)?.value;
-    if (token && activeSessions.has(token)) {
-      activeSessions.set(token, { ...activeSessions.get(token)!, email: newEmail });
+    if (token) {
+      await pool.execute('UPDATE admin_sessions SET email = ? WHERE token = ?', [newEmail, token]);
     }
 
     return { success: true };

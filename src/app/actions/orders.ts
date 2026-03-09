@@ -1,6 +1,7 @@
 
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import pool from '@/lib/mysql';
 
 /**
@@ -40,6 +41,7 @@ export async function submitOrderToMySql(orderPayload: any) {
       ]
     );
 
+    revalidatePath('/m-admin/manage-orders');
     return { success: true, message: 'Order submitted directly to MySQL.' };
   } catch (error: any) {
     console.error('MySQL Persistence Error:', error);
@@ -87,6 +89,7 @@ export async function getOrdersFromMySql() {
 export async function deleteOrderFromMySql(orderId: string) {
   try {
     await pool.execute('DELETE FROM orders WHERE id = ?', [orderId]);
+    revalidatePath('/m-admin/manage-orders');
     return { success: true, message: 'Order deleted successfully.' };
   } catch (error: any) {
     console.error('MySQL Delete Error:', error);
@@ -138,6 +141,7 @@ export async function updateOrderInMySql(order: any) {
         id
       ]
     );
+    revalidatePath('/m-admin/manage-orders');
     return { success: true };
   } catch (error: any) {
     console.error('MySQL Order Update Error:', error);

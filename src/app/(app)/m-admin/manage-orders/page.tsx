@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef, memo, ReactNode } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -439,7 +439,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
 }
 
 
-export default function ManageOrdersPage(): ReactNode {
+export default function ManageOrdersPage(): React.ReactNode {
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [allOrders, setAllOrders] = useState<ApiOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -559,7 +559,7 @@ export default function ManageOrdersPage(): ReactNode {
       }
     } catch (e: any) {
       toast({ title: "Update Failed", description: e.message, variant: "destructive" });
-      fetchOrders(); // Rollback
+      await fetchOrders(); // Rollback
     }
   };
 
@@ -639,7 +639,7 @@ export default function ManageOrdersPage(): ReactNode {
         title: "Docs Copied",
         description: `Docs #${originalOrder.orderId} has been copied as #${newOrderId} in local database.`,
       });
-      fetchOrders();
+      await fetchOrders();
     } catch (error: any) {
       toast({
         title: "Local Copy Failed",
@@ -662,7 +662,7 @@ export default function ManageOrdersPage(): ReactNode {
         title: "Deleted",
         description: "Order removed from local database.",
       });
-      fetchOrders();
+      await fetchOrders();
     } catch (e: any) {
       toast({
         title: "Delete Failed",
@@ -716,7 +716,7 @@ export default function ManageOrdersPage(): ReactNode {
         break;
     }
     return orders;
-  }, [allOrders, searchTerm, sortOption]);
+  }, [allOrders, debouncedSearch, sortOption]);
 
   const totalPages = useMemo(() => {
     return Math.ceil(filteredAndSortedOrders.length / ITEMS_PER_PAGE);
