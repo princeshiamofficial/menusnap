@@ -85,7 +85,7 @@ export default function GoogleDocsApp({
     }
 
     const socketInstance = io(socketUrl, {
-        path: '/socket.io',
+        path: '/socket',
         transports: ['websocket', 'polling']
     });
     
