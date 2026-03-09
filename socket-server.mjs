@@ -4,14 +4,12 @@ import { Server } from 'socket.io';
 const PORT = process.env.SOCKET_PORT || 1234;
 const httpServer = createServer();
 const io = new Server(httpServer, {
-  path: '/socket',
-  serveClient: false,
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
     credentials: true
   },
-  allowEIO3: true // Support older clients if needed
+  allowEIO3: true
 });
 
 // Store document content and active users

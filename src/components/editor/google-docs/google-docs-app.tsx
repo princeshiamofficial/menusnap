@@ -74,7 +74,6 @@ export default function GoogleDocsApp({
         : (process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234');
 
     const socketInstance = io(socketUrl, {
-        path: '/socket',
         transports: ['websocket', 'polling'],
         // Reconnection settings for stability
         reconnection: true,
