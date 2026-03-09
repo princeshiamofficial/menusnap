@@ -59,42 +59,17 @@ export default function MagicDocEdit() {
         };
 
         fetchDoc();
-
-        // Subscribe to real-time changes
-        const channel = supabase
-            .channel(`public:magic_docs:${id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'magic_docs',
-                    filter: `id=eq.${id}`
-                },
-                (payload) => {
-                    const newData = payload.new as any;
-                    // Only update if it's different to prevent loops
-                    setDoc(current => {
-                        if (current && (current.title !== newData.title || current.content !== newData.content)) {
-                            return {
-                                ...current,
-                                title: newData.title,
-                                content: newData.content,
-                                lastUpdated: newData.last_updated
-                            };
-                        }
-                        return current;
-                    });
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
     }, [id]);
 
     const handleSave = async (data: { title: string; content: string }) => {
+        // Update local state immediately to avoid re-fetching
+        setDoc(current => current ? { 
+            ...current, 
+            title: data.title, 
+            content: data.content,
+            lastUpdated: new Date().toISOString()
+        } : null);
+
         const { error } = await supabase
             .from('magic_docs')
             .update({
@@ -123,6 +98,7 @@ export default function MagicDocEdit() {
 
     return (
         <GoogleDocsApp
+            key={id}
             initialTitle={doc.title}
             initialContent={doc.content}
             onSave={handleSave}

@@ -506,6 +506,7 @@ function GoogleDocsEditorInner({
                 class: `focus:outline-none min-[1056px]:min-h-[1056px] min-h-[1056px] w-full max-w-[816px] ${customPaperHeader ? 'pb-12 pt-6' : 'py-12'} ${readOnly ? 'cursor-default' : 'cursor-text'}`,
             },
         },
+        autofocus: false,
         immediatelyRender: false,
     })
 
@@ -540,23 +541,15 @@ function GoogleDocsEditorInner({
     }, [editor, tabStops])
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="flex justify-center w-full bg-[#f8f9fa] min-h-screen"
-        >
+        <div className="flex justify-center w-full bg-[#f8f9fa] min-h-screen">
             <div className="mt-2 sm:mt-4 mb-10 w-full max-w-[816px] mx-auto px-0 sm:px-4">
-                <motion.div
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+                <div
                     className={`bg-white shadow-xl border border-gray-200 w-full ${showWatermark ? 'bg-watermark' : ''}`}
                 >
                     {customPaperHeader}
                     <EditorContent editor={editor} />
-                </motion.div>
+                </div>
             </div>
-        </motion.div>
+        </div>
     )
 }

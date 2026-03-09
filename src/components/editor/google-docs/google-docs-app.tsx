@@ -90,12 +90,10 @@ export default function GoogleDocsApp({
     return () => clearTimeout(timer)
   }, [title, content, onSave])
 
-  // Load from props and set browser tab title
+  // Set initial browser tab title and update on title change
   useEffect(() => {
-    setTitle(initialTitle)
-    setContent(initialContent)
-    document.title = `${initialTitle} - Magic Docs`
-  }, [initialTitle, initialContent])
+    document.title = `${title} - Magic Docs`
+  }, [title])
 
   const handleTitleChange = useCallback((newTitle: string) => {
     setTitle(newTitle)
@@ -130,7 +128,7 @@ export default function GoogleDocsApp({
       )}
 
       <main className="flex-1">
-        <div className="flex justify-center py-10 animate-in fade-in zoom-in-95 duration-500 ease-out fill-mode-forwards px-4">
+        <div className="flex justify-center py-10 px-4">
           <EditorComponent
             content={content}
             onChange={setContent}
