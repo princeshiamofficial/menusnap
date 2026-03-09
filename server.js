@@ -46,6 +46,14 @@ app.prepare().then(() => {
       socket.to(docId).emit('document-update', content);
     });
 
+    socket.on('mouse-move', ({ docId, position, user }) => {
+      socket.to(docId).emit('mouse-update', {
+        userId: socket.id,
+        position,
+        user
+      });
+    });
+
     socket.on('disconnect', () => {
       const user = users.get(socket.id);
       if (user) {
