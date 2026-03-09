@@ -819,16 +819,30 @@ export default function ManageTemplatesPage(): ReactNode {
       const result = await getTemplatesFromMySql();
       if (!result.success) throw new Error(result.message || "Failed to fetch templates.");
 
-      const fetchedTemplates: ApiAdminTemplate[] = (result.data as any[]).map((t: any) => ({
-        id: String(t.id),
-        name: String(t.name),
-        description: String(t.description),
-        imageUrl: t.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL,
-        tags: Array.isArray(t.tags) ? t.tags : [],
-        isPublished: Boolean(t.isPublished),
-        isTopRated: Boolean(t.isTopRated),
-        createdAt: t.createdAt
-      }));
+      const fetchedTemplates: ApiAdminTemplate[] = (result.data as any[]).map((t: any) => {
+        // Ensure createdAt is always a string to avoid React Error #31
+        let createdAtStr = new Date().toISOString();
+        if (t.created_at || t.createdAt) {
+          const rawDate = t.created_at || t.createdAt;
+          if (rawDate instanceof Date) {
+            createdAtStr = rawDate.toISOString();
+          } else if (typeof rawDate === 'string') {
+            createdAtStr = rawDate;
+          }
+        }
+
+        return {
+          id: String(t.id),
+          name: String(t.name),
+          description: String(t.description),
+          imageUrl: t.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL,
+          // Ensure tags are an array of strings, never objects
+          tags: Array.isArray(t.tags) ? t.tags.map((tag: any) => String(tag)) : [],
+          isPublished: Boolean(t.isPublished),
+          isTopRated: Boolean(t.isTopRated),
+          createdAt: createdAtStr
+        };
+      });
       setAllTemplates(fetchedTemplates);
     } catch (e: any) {
       console.error("Failed to fetch templates:", e);

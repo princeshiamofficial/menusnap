@@ -287,16 +287,29 @@ export default function ManageCategoriesPage(): ReactNode {
       const result = await getCategoriesFromMySql(type);
       if (!result.success) throw new Error(result.message || `Failed to fetch categories.`);
 
-      const fetchedCategories: ApiCategory[] = (result.data as any[]).map((cat: any): ApiCategory => ({
-        id: String(cat.id),
-        name: String(cat.name || 'Unnamed Category'),
-        description: cat.description || null,
-        icon: String(cat.icon || (type === 'parlour' ? '✨' : '📁')),
-        itemCount: parseInt(cat.itemCount) || 0,
-        visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers),
-        createdAt: cat.createdAt || new Date().toISOString(),
-        status: cat.status
-      }));
+      const fetchedCategories: ApiCategory[] = (result.data as any[]).map((cat: any): ApiCategory => {
+        // Ensure createdAt is always a string to avoid React Error #31
+        let createdAtStr = new Date().toISOString();
+        if (cat.created_at || cat.createdAt) {
+          const rawDate = cat.created_at || cat.createdAt;
+          if (rawDate instanceof Date) {
+            createdAtStr = rawDate.toISOString();
+          } else if (typeof rawDate === 'string') {
+            createdAtStr = rawDate;
+          }
+        }
+
+        return {
+          id: String(cat.id),
+          name: String(cat.name || 'Unnamed Category'),
+          description: cat.description || null,
+          icon: String(cat.icon || (type === 'parlour' ? '✨' : '📁')),
+          itemCount: parseInt(cat.itemCount) || 0,
+          visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers),
+          createdAt: createdAtStr,
+          status: cat.status
+        };
+      });
       setAllCategories(fetchedCategories);
       updateLastUpdatedTime();
     } catch (e: any) {

@@ -185,7 +185,7 @@ export async function getOrderByIdFromMySql(id: string) {
  */
 export async function getCategoriesFromMySql(type?: 'restaurant' | 'parlour', visibleOnly = false) {
   try {
-    let query = 'SELECT * FROM categories';
+    let query = "SELECT *, DATE_FORMAT(createdAt, '%Y-%m-%dT%H:%i:%s.000Z') as createdAt FROM categories";
     const params: any[] = [];
     const conditions: string[] = [];
 
@@ -257,7 +257,7 @@ export async function getMenuItemsFromMySql(type?: 'restaurant' | 'parlour', vis
  */
 export async function getTemplatesFromMySql() {
   try {
-    const [rows]: any = await pool.execute('SELECT * FROM templates ORDER BY createdAt DESC');
+    const [rows]: any = await pool.execute("SELECT *, DATE_FORMAT(createdAt, '%Y-%m-%dT%H:%i:%s.000Z') as createdAt FROM templates ORDER BY createdAt DESC");
     
     const formatted = rows.map((template: any) => ({
       ...template,
