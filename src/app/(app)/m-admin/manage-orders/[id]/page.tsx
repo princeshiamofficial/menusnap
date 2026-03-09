@@ -481,8 +481,8 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl w-[95vw] sm:w-full h-[95vh] sm:h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
                 <DialogHeader className="px-6 py-4 border-b">
                     <DialogTitle className="text-xl">Shuffle & Reorder Menu</DialogTitle>
                     <DialogDescription>Drag and drop categories or items to change their order.</DialogDescription>
@@ -491,12 +491,12 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                     </DialogClose>
                 </DialogHeader>
 
-                <div className="flex flex-1 overflow-hidden">
-                    <div className={cn("border-r bg-muted/40 transition-all duration-300 ease-in-out", isSidebarCollapsed ? "w-12" : "w-64")}>
-                        <div className="flex items-center justify-between p-2 h-14 border-b">
-                            {!isSidebarCollapsed && <span className="font-medium text-sm px-2">Categories</span>}
-                            <Button variant="ghost" size="icon" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="h-8 w-8">
-                                <ChevronLeft className={cn("h-4 w-4 transition-transform", isSidebarCollapsed && "rotate-180")} />
+                <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+                    <div className={cn("border-b lg:border-b-0 lg:border-r bg-muted/40 transition-all duration-300 ease-in-out", isSidebarCollapsed ? "h-12 lg:h-auto lg:w-12" : "h-auto max-h-[30vh] lg:max-h-none lg:w-64")}>
+                        <div className="flex items-center justify-between p-2 h-12 lg:h-14 border-b">
+                            {!isSidebarCollapsed && <span className="font-medium text-xs sm:text-sm px-2">Categories</span>}
+                            <Button variant="ghost" size="icon" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="h-7 w-7 sm:h-8 sm:w-8">
+                                <ChevronLeft className={cn("h-4 w-4 transition-transform", isSidebarCollapsed ? "rotate-90 lg:rotate-180" : "-rotate-90 lg:rotate-0")} />
                             </Button>
                         </div>
                         <ScrollArea className={cn("h-[calc(100%-56px)]", isSidebarCollapsed ? "p-1" : "p-2")}>
@@ -588,9 +588,9 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                     </ScrollArea>
                 </div>
 
-                <DialogFooter className="px-6 py-4 border-t">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSaveAndClose}><Save className="h-4 w-4 mr-2" />Save & Close</Button>
+                <DialogFooter className="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row gap-3">
+                    <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button className="w-full sm:w-auto" onClick={handleSaveAndClose}><Save className="h-4 w-4 mr-2" />Save & Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1065,21 +1065,21 @@ export default function OrderDetailsPage() {
                     </div>
                 </header>
 
-                <div className="flex-grow p-4 sm:p-6 lg:p-8">
-                    <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-lg rounded-lg border border-border/50">
+                <div className="flex-grow p-2 sm:p-6 lg:p-8">
+                    <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50 overflow-hidden">
                         <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
                             <div>
                                 <EditableField
                                     value={order.customer?.restaurant}
                                     onSave={(val) => handleOrderUpdate({ ...order, customer: { ...order.customer, restaurant: val } })}
                                     placeholder="Business Name"
-                                    className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground"
-                                    inputClassName="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
+                                    className="text-2xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground leading-tight"
+                                    inputClassName="text-2xl sm:text-5xl font-extrabold tracking-tight uppercase"
                                 />
-                                <p className="font-bold text-lg text-muted-foreground mt-2">Doc ID: {order.orderId}</p>
+                                <p className="font-bold text-sm sm:text-lg text-muted-foreground mt-2">Doc ID: {order.orderId}</p>
                             </div>
-                            <div className="text-right text-muted-foreground text-sm space-y-1">
-                                <p className="flex items-center justify-end gap-2"><CalendarDays className="h-4 w-4" />{formatDate(order.orderDate)}</p>
+                            <div className="text-right text-muted-foreground text-[10px] sm:text-sm space-y-1 shrink-0">
+                                <p className="flex items-center justify-end gap-1 sm:gap-2"><CalendarDays className="h-3 w-3 sm:h-4 sm:w-4" />{formatDate(order.orderDate)}</p>
                             </div>
                         </div>
 

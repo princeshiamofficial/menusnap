@@ -226,11 +226,11 @@ export default function SharePage() {
 
     if (isLoading) {
         return (
-            <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8">
+            <div className="bg-muted min-h-screen p-2 sm:p-6 lg:p-8">
                 <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4">
                     <Skeleton className="h-9 w-24" />
                 </header>
-                <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg">
+                <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-2xl rounded-lg">
                     <div className="flex justify-between items-start border-b pb-8 mb-8">
                         <Skeleton className="h-14 w-1/3" />
                         <div className="space-y-2 text-right">
@@ -264,13 +264,13 @@ export default function SharePage() {
     }
 
     return (
-        <div className="bg-muted min-h-screen p-4 sm:p-6 lg:p-8 print:bg-white print:p-0">
-            <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4 print:hidden">
-                {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})} className="bg-card"><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
+        <div className="bg-muted min-h-screen p-2 sm:p-6 lg:p-8 print:bg-white print:p-0">
+            <header className="max-w-5xl mx-auto flex justify-end gap-2 mb-4 print:hidden px-2 sm:px-0">
+                {isClient && navigator.share && <Button variant="outline" size="sm" onClick={() => navigator.share({title: `Menu Selection for ${order.businessName}`, url: window.location.href})} className="bg-card w-full sm:w-auto"><Share2 className="h-4 w-4 mr-2" /> Share</Button>}
             </header>
-            <main className="max-w-5xl mx-auto bg-card text-card-foreground p-8 sm:p-12 shadow-2xl rounded-lg bg-watermark print:shadow-none print:border-none print:rounded-none">
-                 <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
-                    <div className="bg-black p-4 rounded-lg">
+            <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-2xl rounded-lg bg-watermark print:shadow-none print:border-none print:rounded-none overflow-hidden">
+                 <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start border-b pb-8 mb-4 border-border gap-6">
+                    <div className="bg-black p-4 rounded-lg w-full sm:w-auto flex justify-center">
                         <Image
                             src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
                             alt="Color Hut Logo"
@@ -280,9 +280,9 @@ export default function SharePage() {
                             priority
                         />
                     </div>
-                    <div className="text-right text-muted-foreground text-sm space-y-1">
-                        <p className="font-bold text-lg text-foreground">For: {decodeHtmlEntities(order.businessName)}</p>
-                        <p className="flex items-center justify-end gap-2">
+                    <div className="text-center sm:text-right text-muted-foreground text-sm space-y-1">
+                        <p className="font-bold text-lg sm:text-2xl text-foreground">For: {decodeHtmlEntities(order.businessName)}</p>
+                        <p className="flex items-center justify-center sm:justify-end gap-2">
                            <CalendarDays className="h-4 w-4" />
                            {formatDate(order.orderDate)}
                         </p>

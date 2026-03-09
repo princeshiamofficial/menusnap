@@ -205,7 +205,7 @@ const OrderTableRow = memo(({
       >
         {order.orderId}
       </TableCell>
-      <TableCell className="font-medium tracking-tight">
+      <TableCell className="font-medium tracking-tight hidden md:table-cell text-muted-foreground/70">
         {order.businessName ? decodeHtmlEntities(order.businessName) : <span className="text-muted-foreground/40 italic">Not set</span>}
       </TableCell>
       <TableCell className="font-medium tracking-tight">
@@ -214,7 +214,7 @@ const OrderTableRow = memo(({
       <TableCell>
         <StatusBadge status={order.status || 'Pending'} />
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right p-2 sm:p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -292,7 +292,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-4xl w-[95vw] sm:w-full h-[95vh] sm:h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="text-xl">Docs Details</DialogTitle>
           <DialogDescription>
@@ -421,16 +421,17 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
             </Card>
           </div>
         </ScrollArea>
-        <DialogFooter className="px-6 py-4 border-t mt-auto bg-background flex justify-between">
+        <DialogFooter className="px-4 sm:px-6 py-4 border-t mt-auto bg-background flex flex-col sm:flex-row gap-3 sm:justify-between">
           <Button
             variant="secondary"
             onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
+            className="w-full sm:w-auto"
           >
             <Edit3 className="mr-2 h-4 w-4" />
             View & Edit Items
           </Button>
           <DialogClose asChild>
-            <Button variant="outline">Close</Button>
+            <Button variant="outline" className="w-full sm:w-auto">Close</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -889,13 +890,13 @@ export default function ManageOrdersPage(): React.ReactNode {
             <Table wrapperClassName="w-full h-[65vh] 2xl:h-[75vh]" className="relative">
                 <TableHeader className="sticky top-0 bg-muted border-b z-20 shadow-sm">
                   <TableRow className="bg-muted hover:bg-muted [&>th]:bg-transparent">
-                    <TableHead className="w-16 text-center font-bold">SL</TableHead>
-                    <TableHead className="font-bold">Date</TableHead>
-                    <TableHead className="font-bold">Docs ID</TableHead>
-                    <TableHead className="font-bold">Company</TableHead>
-                    <TableHead className="font-bold">Customer</TableHead>
-                    <TableHead className="w-32 font-bold">Status</TableHead>
-                    <TableHead className="text-right w-20 font-bold">Action</TableHead>
+                    <TableHead className="w-12 sm:w-16 text-center font-bold px-2 sm:px-4">SL</TableHead>
+                    <TableHead className="font-bold px-2 sm:px-4">Date</TableHead>
+                    <TableHead className="font-bold px-2 sm:px-4">Docs ID</TableHead>
+                    <TableHead className="font-bold px-2 sm:px-4 hidden md:table-cell">Company</TableHead>
+                    <TableHead className="font-bold px-2 sm:px-4">Customer</TableHead>
+                    <TableHead className="w-24 sm:w-32 font-bold px-2 sm:px-4">Status</TableHead>
+                    <TableHead className="text-right w-16 sm:w-20 font-bold px-2 sm:px-4">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="relative z-10">
