@@ -61,7 +61,6 @@ export default function GoogleDocsApp({
   const [margins, setMargins] = useState({ left: 56, right: 56, indent: 0, tabStops: [] as any[] })
   const [socket, setSocket] = useState<Socket | null>(null)
   const [onlineUsers, setOnlineUsers] = useState<any[]>([])
-  const [remoteCursors, setRemoteCursors] = useState<Record<string, any>>({})
 
   // Socket initialization
   useEffect(() => {
@@ -97,37 +96,10 @@ export default function GoogleDocsApp({
         setOnlineUsers(users)
     })
 
-    socketInstance.on('mouse-update', (data: any) => {
-        setRemoteCursors(prev => ({
-            ...prev,
-            [data.userId]: {
-                ...data,
-                lastUpdate: Date.now()
-            }
-        }))
-    })
-
     setSocket(socketInstance)
-
-    // Cleanup idle cursors
-    const interval = setInterval(() => {
-        const now = Date.now()
-        setRemoteCursors(prev => {
-            const next = { ...prev }
-            let changed = false
-            for (const id in next) {
-                if (now - next[id].lastUpdate > 5000) {
-                    delete next[id]
-                    changed = true
-                }
-            }
-            return changed ? next : prev
-        })
-    }, 2000)
 
     return () => {
         socketInstance.disconnect()
-        clearInterval(interval)
     }
   }, [docId])
 
@@ -214,7 +186,6 @@ export default function GoogleDocsApp({
             docId={docId}
             socket={socket}
             onlineUsers={onlineUsers}
-            remoteCursors={remoteCursors}
           />
         </div>
       </main>

@@ -182,12 +182,11 @@ interface EditorProps {
     docId?: string;
     socket?: Socket | null;
     onlineUsers?: any[];
-    remoteCursors?: Record<string, any>;
 }
 
 export default function GoogleDocsEditor(props: EditorProps) {
-    const { socket, onlineUsers = [], remoteCursors = {} } = props
-    return <GoogleDocsEditorInner {...props} socket={socket || null} onlineUsers={onlineUsers} remoteCursors={remoteCursors} />
+    const { socket, onlineUsers = [] } = props
+    return <GoogleDocsEditorInner {...props} socket={socket || null} onlineUsers={onlineUsers} />
 }
 
 function GoogleDocsEditorInner({ 
@@ -200,11 +199,9 @@ function GoogleDocsEditorInner({
     tabStops = [], 
     docId,
     socket,
-    onlineUsers,
-    remoteCursors
-}: EditorProps & { socket: Socket | null, onlineUsers: any[], remoteCursors: Record<string, any> }) {
+    onlineUsers
+}: EditorProps & { socket: Socket | null, onlineUsers: any[] }) {
     const isRemoteUpdate = useRef(false)
-    const containerRef = useRef<HTMLDivElement>(null)
 
     const editor = useEditor({
         parseOptions: {
@@ -375,77 +372,8 @@ function GoogleDocsEditorInner({
         if (editor && tabStops) (editor.storage as any).tabKey.tabStops = tabStops
     }, [editor, tabStops])
 
-    // Track mouse movement
-    useEffect(() => {
-        if (!socket || !docId || !containerRef.current) return
-
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!containerRef.current) return
-            const rect = containerRef.current.getBoundingClientRect()
-            const x = (e.clientX - rect.left) / rect.width
-            const y = (e.clientY - rect.top) / rect.height
-
-            socket.emit('mouse-move', {
-                docId,
-                position: { x, y },
-                user: {
-                    name: getGuestName(),
-                    color: getRandomColor()
-                }
-            })
-        }
-
-        const container = containerRef.current
-        container.addEventListener('mousemove', handleMouseMove)
-        return () => container.removeEventListener('mousemove', handleMouseMove)
-    }, [socket, docId])
-
     return (
-        <div 
-            ref={containerRef}
-            className="flex justify-center w-full bg-[#f8f9fa] min-h-screen relative overflow-hidden"
-        >
-            {/* Multi-user Cursors Overlay */}
-            {Object.entries(remoteCursors).map(([id, data]) => {
-                if (!containerRef.current) return null
-                const rect = containerRef.current.getBoundingClientRect()
-                const left = data.position.x * 100
-                const top = data.position.y * 100
-
-                return (
-                    <div
-                        key={id}
-                        className="pointer-events-none absolute z-[100] transition-all duration-75 ease-out"
-                        style={{
-                            left: `${left}%`,
-                            top: `${top}%`,
-                        }}
-                    >
-                        <svg
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            style={{ color: data.user.color }}
-                        >
-                            <path
-                                d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z"
-                                fill="currentColor"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                        <div
-                            className="ml-4 mt-2 px-2 py-0.5 rounded text-[10px] font-bold text-white whitespace-nowrap shadow-sm"
-                            style={{ backgroundColor: data.user.color }}
-                        >
-                            {data.user.name}
-                        </div>
-                    </div>
-                )
-            })}
+        <div className="flex justify-center w-full bg-[#f8f9fa] min-h-screen relative">
 
             <div className="mt-2 sm:mt-4 mb-10 w-full max-w-[816px] mx-auto px-0 sm:px-4">
                 <div className={`bg-white shadow-xl border border-gray-200 w-full ${showWatermark ? 'bg-watermark' : ''}`}>
