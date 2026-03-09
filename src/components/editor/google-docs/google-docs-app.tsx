@@ -73,12 +73,16 @@ export default function GoogleDocsApp({
         ? window.location.origin 
         : (process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234');
 
+    // For CyberPanel/LiteSpeed, we must ensure we don't use long-polling first if possible,
+    // as LiteSpeed often buffers those until they time out.
     const socketInstance = io(socketUrl, {
-        transports: ['websocket', 'polling'],
-        // Reconnection settings for stability
+        path: '/socket.io',
+        transports: ['websocket'], // Force WebSocket first to bypass LiteSpeed buffering
+        upgrade: true,
+        rememberUpgrade: true,
+        timeout: 10000,
         reconnection: true,
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000
+        reconnectionAttempts: 5,
     });
     
     const user = { name: getGuestName(), color: getRandomColor() };
