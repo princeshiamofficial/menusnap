@@ -69,7 +69,7 @@ export default function Header({ title, onTitleChange, isSaving, readOnly = fals
                     <div className="flex flex-col overflow-hidden">
                         <div className="flex items-center gap-1 group">
                             {readOnly ? (
-                                <span className="text-base sm:text-lg font-medium px-1 rounded font-sans cursor-default truncate max-w-[120px] sm:max-w-none">
+                                <span className="text-base sm:text-lg font-medium px-1 rounded font-sans cursor-default truncate max-w-[300px] sm:max-w-[500px]">
                                     {title}
                                 </span>
                             ) : (
@@ -77,7 +77,8 @@ export default function Header({ title, onTitleChange, isSaving, readOnly = fals
                                     className="text-base sm:text-lg font-medium bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-[#4285f4] px-1 rounded hover:bg-gray-100 transition-all duration-200 w-auto min-w-[50px] font-sans truncate"
                                     value={title}
                                     onChange={(e) => onTitleChange(e.target.value)}
-                                    style={{ width: `${Math.max(title.length, 5) + 1}ch`, maxWidth: '150px' }}
+                                    maxLength={104}
+                                    style={{ width: `${Math.min(Math.max(title.length, 5) + 1, 105)}ch`, maxWidth: '500px' }}
                                 />
                             )}
                             <motion.div whileTap={{ scale: 1.2 }} className="shrink-0">
