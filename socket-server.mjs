@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 const PORT = process.env.SOCKET_PORT || 1234;
 const httpServer = createServer();
 const io = new Server(httpServer, {
+  path: '/socket',
   cors: {
     origin: "*",
     methods: ["GET", "POST"]

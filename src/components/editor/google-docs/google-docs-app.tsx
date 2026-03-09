@@ -67,26 +67,19 @@ export default function GoogleDocsApp({
     if (!docId) return
     
     // Determine the socket URL
-    let socketUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234';
-    
-    // If we are in production and the URL is still local, or if we want to use the current domain
-    if (typeof window !== 'undefined') {
-        const isHttps = window.location.protocol === 'https:';
-        
-        // If the URL is just a port or localhost, and we're on a real domain, 
-        // it's often better to connect to the domain itself and let the reverse proxy handle it
-        if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_COLLAB_WS_URL) {
-            // Default to same domain, same protocol (wss if https)
-            socketUrl = isHttps ? `wss://${window.location.host}` : `ws://${window.location.host}`;
-        } else if (isHttps && socketUrl.startsWith('http:')) {
-            // Auto upgrade to wss if page is https
-            socketUrl = socketUrl.replace('http:', 'https:').replace('ws:', 'wss:');
-        }
-    }
+    // In production, we connect to the same domain (root) and let the /socket path handle the proxy
+    const isProd = process.env.NODE_ENV === 'production';
+    const socketUrl = isProd 
+        ? window.location.origin 
+        : (process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234');
 
     const socketInstance = io(socketUrl, {
         path: '/socket',
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        // Reconnection settings for stability
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000
     });
     
     const user = { name: getGuestName(), color: getRandomColor() };
