@@ -11,9 +11,10 @@ interface HeaderProps {
     isSaving?: boolean
     readOnly?: boolean
     docId?: string
+    onlineUsers?: any[]
 }
 
-export default function Header({ title, onTitleChange, isSaving, readOnly = false, docId }: HeaderProps) {
+export default function Header({ title, onTitleChange, isSaving, readOnly = false, docId, onlineUsers = [] }: HeaderProps) {
     const [isStarred, setIsStarred] = useState(false)
     const [showShareMenu, setShowShareMenu] = useState(false)
     const [copiedType, setCopiedType] = useState<'editor' | 'viewer' | null>(null)
@@ -103,16 +104,35 @@ export default function Header({ title, onTitleChange, isSaving, readOnly = fals
                 </div>
 
                 {/* Share button with dropdown */}
-                <div className="relative" ref={dropdownRef}>
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                            onClick={() => setShowShareMenu(prev => !prev)}
-                            className="bg-[#c2e7ff] text-[#001d35] hover:bg-[#b3d7ef] gap-1.5 sm:gap-2 rounded-full px-3 sm:px-5 font-semibold text-xs sm:text-sm shadow-none transition-colors duration-200"
-                        >
-                            <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span className="hidden xs:inline">Share</span>
-                        </Button>
-                    </motion.div>
+                <div className="flex items-center gap-3">
+                    {/* Presence Icons - Only shown on edit pages */}
+                    {!readOnly && onlineUsers.length > 0 && (
+                        <div className="flex -space-x-2 mr-2">
+                            {onlineUsers.map((u, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-sm ring-1 ring-gray-100"
+                                    style={{ backgroundColor: u.color }}
+                                    title={u.name}
+                                >
+                                    {u.name.charAt(0).toUpperCase()}
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="relative" ref={dropdownRef}>
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button
+                                onClick={() => setShowShareMenu(prev => !prev)}
+                                className="bg-[#c2e7ff] text-[#001d35] hover:bg-[#b3d7ef] gap-1.5 sm:gap-2 rounded-full px-3 sm:px-5 font-semibold text-xs sm:text-sm shadow-none transition-colors duration-200"
+                            >
+                                <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span className="hidden xs:inline">Share</span>
+                            </Button>
+                        </motion.div>
 
                     <AnimatePresence>
                         {showShareMenu && (
@@ -194,6 +214,7 @@ export default function Header({ title, onTitleChange, isSaving, readOnly = fals
                     </AnimatePresence>
                 </div>
             </div>
-        </motion.header>
-    )
+        </div>
+    </motion.header>
+)
 }

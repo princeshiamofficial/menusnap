@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { AdminLoginForm } from "@/components/auth/admin-login-form";
-import { supabase } from "@/lib/supabase";
+import { getMagicDocByIdFromMySql, upsertMagicDocToMySql } from "@/app/actions/magic-docs";
 import { NotFoundSpace } from "@/components/error/not-found-space";
 
 const GoogleDocsApp = dynamic(() => import("@/components/editor/google-docs/google-docs-app"), {
@@ -31,14 +31,10 @@ export default function MagicDocDetail() {
         if (!isAdminLoggedIn) return;
 
         const fetchDoc = async () => {
-            const { data, error } = await supabase
-                .from('magic_docs')
-                .select('*')
-                .eq('id', id)
-                .single();
+            const result = await getMagicDocByIdFromMySql(id);
 
-            if (error) {
-                console.error("Error fetching doc:", error);
+            if (!result.success) {
+                console.error("Error fetching doc:", result.message);
 
                 // Fallback to local storage
                 const stored = localStorage.getItem('magic-internal-docs');
@@ -49,17 +45,14 @@ export default function MagicDocDetail() {
                         if (found) setDoc(found);
                     } catch (e) { }
                 }
-            } else if (data) {
-                if (data.is_deleted) {
-                    setDoc(null);
-                } else {
-                    setDoc({
-                        id: data.id,
-                        title: data.title,
-                        content: data.content,
-                        lastUpdated: data.last_updated
-                    });
-                }
+            } else if (result.data) {
+                const data = result.data;
+                setDoc({
+                    id: data.id,
+                    title: data.title,
+                    content: data.content,
+                    lastUpdated: data.lastUpdated
+                });
             }
             setLoading(false);
         };
@@ -76,17 +69,14 @@ export default function MagicDocDetail() {
             lastUpdated: new Date().toISOString()
         } : null));
 
-        const { error } = await supabase
-            .from('magic_docs')
-            .update({
-                title: data.title,
-                content: data.content,
-                last_updated: new Date().toISOString()
-            })
-            .eq('id', id);
+        const result = await upsertMagicDocToMySql({
+            id,
+            title: data.title,
+            content: data.content
+        });
 
-        if (error) {
-            console.error("Failed to save doc to Supabase", error);
+        if (!result.success) {
+            console.error("Failed to save doc to MySQL", result.message);
         }
     };
 

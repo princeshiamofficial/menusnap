@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { 
+    getMagicDocsFromMySql, 
+    upsertMagicDocToMySql, 
+    deleteMagicDocFromMySql, 
+    permanentDeleteMagicDocFromMySql 
+} from '@/app/actions/magic-docs';
 import {
     Table,
     TableHeader,
@@ -75,13 +80,10 @@ export default function MagicDocsPage(): ReactNode {
         setIsLoading(true);
         setError(null);
         try {
-            const { data, error } = await supabase
-                .from('magic_docs')
-                .select('*')
-                .order('created_at', { ascending: false });
+            const result = await getMagicDocsFromMySql();
 
-            if (error) {
-                console.error("Error fetching docs:", error);
+            if (!result.success) {
+                console.error("Error fetching docs:", result.message);
                 // Fallback to localStorage for existing users
                 const stored = localStorage.getItem('magic-internal-docs') || localStorage.getItem('ch-internal-docs');
                 if (stored) {
@@ -93,25 +95,24 @@ export default function MagicDocsPage(): ReactNode {
                         console.error("Failed to parse local docs", e);
                     }
                 }
-                // Fallback to empty docs list so the user can still interact and page doesn't crash completely
-                // throw new Error("Failed to load documents");
                 setDocs([]);
                 setIsLoading(false);
                 return;
             }
 
-            if (data) {
-                const allMapped = data.map(d => ({
+            if (result.data) {
+                const data = result.data;
+                const allMapped = data.map((d: any) => ({
                     id: d.id,
                     title: d.title,
                     content: d.content,
-                    lastUpdated: d.last_updated,
-                    createdAt: d.created_at,
-                    isDeleted: d.is_deleted || false,
-                    deletedAt: d.deleted_at
+                    lastUpdated: d.lastUpdated,
+                    createdAt: d.createdAt,
+                    isDeleted: !!d.is_deleted,
+                    deletedAt: d.deletedAt
                 }));
-                setDocs(allMapped.filter(d => !d.isDeleted));
-                setTrashDocs(allMapped.filter(d => d.isDeleted));
+                setDocs(allMapped.filter((d: any) => !d.isDeleted));
+                setTrashDocs(allMapped.filter((d: any) => d.isDeleted));
             }
         } catch (e: any) {
             setError(e.message || "Failed to load docs");
@@ -136,39 +137,32 @@ export default function MagicDocsPage(): ReactNode {
     }, [fetchDocs]);
 
     const handleCreateNew = async () => {
+        const id = crypto.randomUUID();
         const newDoc = {
+            id,
             title: "Untitled Document",
             content: "",
-            last_updated: new Date().toISOString()
         };
 
-        const { data, error } = await supabase
-            .from('magic_docs')
-            .insert([newDoc])
-            .select();
+        const result = await upsertMagicDocToMySql(newDoc);
 
-        if (error) {
-            console.error("Error creating doc:", error);
-            alert("Failed to create document in Supabase");
+        if (!result.success) {
+            console.error("Error creating doc:", result.message);
+            alert("Failed to create document in MySQL");
             return;
         }
 
-        if (data && data[0]) {
-            router.push(`/m-admin/magic-docs/${data[0].id}`);
-        }
+        router.push(`/m-admin/magic-docs/${id}`);
     };
 
     const handleMoveToTrash = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirm("Move this document to trash?")) {
-            const { error } = await supabase
-                .from('magic_docs')
-                .update({ is_deleted: true, deleted_at: new Date().toISOString() } as any)
-                .eq('id', id);
+            const result = await deleteMagicDocFromMySql(id);
 
-            if (error) {
-                console.error("Error moving to trash:", error);
-                alert("Failed to move document to trash. Note: You might need to add 'is_deleted' (boolean) and 'deleted_at' (TIMESTAMPTZ) columns to your magic_docs table.");
+            if (!result.success) {
+                console.error("Error moving to trash:", result.message);
+                alert("Failed to move document to trash.");
             } else {
                 fetchDocs();
             }
@@ -176,13 +170,18 @@ export default function MagicDocsPage(): ReactNode {
     };
 
     const handleRestore = async (id: string) => {
-        const { error } = await supabase
-            .from('magic_docs')
-            .update({ is_deleted: false, deleted_at: null } as any)
-            .eq('id', id);
+        // Find the doc in trashDocs to get its metadata
+        const docToRestore = trashDocs.find(d => d.id === id);
+        if (!docToRestore) return;
 
-        if (error) {
-            console.error("Error restoring doc:", error);
+        const result = await upsertMagicDocToMySql({
+            ...docToRestore,
+            isDeleted: false,
+            deletedAt: null
+        });
+
+        if (!result.success) {
+            console.error("Error restoring doc:", result.message);
             alert("Failed to restore document.");
         } else {
             fetchDocs();
@@ -191,13 +190,10 @@ export default function MagicDocsPage(): ReactNode {
 
     const handlePermanentDelete = async (id: string) => {
         if (confirm("Are you sure you want to permanently delete this document? This action cannot be undone.")) {
-            const { error } = await supabase
-                .from('magic_docs')
-                .delete()
-                .eq('id', id);
+            const result = await permanentDeleteMagicDocFromMySql(id);
 
-            if (error) {
-                console.error("Error permanently deleting doc:", error);
+            if (!result.success) {
+                console.error("Error permanently deleting doc:", result.message);
                 alert("Failed to delete document permanently.");
             } else {
                 fetchDocs();

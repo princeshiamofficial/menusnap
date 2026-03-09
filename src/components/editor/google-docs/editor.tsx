@@ -23,6 +23,19 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { Extension, Node, mergeAttributes } from '@tiptap/core'
 import { io, Socket } from 'socket.io-client'
 
+// Random color for presence
+export function getRandomColor() {
+    const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
+    return colors[Math.floor(Math.random() * colors.length)]
+}
+
+// Random guest name
+export function getGuestName() {
+    const adjectives = ['Swift', 'Bright', 'Calm', 'Bold', 'Wise', 'Kind']
+    const nouns = ['Editor', 'Writer', 'Author', 'Scribe', 'Coder', 'Creator']
+    return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`
+}
+
 // ... (TabNode, FontSize, TextCase remain the same)
 // I'll skip re-writing them in this replacement block for brevity if the tool allows, 
 // but I must ensure they stay. I'll include them to be safe.
@@ -157,18 +170,6 @@ export const TextCase = Extension.create({
                 }
 })
 
-// Random color for presence
-function getRandomColor() {
-    const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
-    return colors[Math.floor(Math.random() * colors.length)]
-}
-
-// Random guest name
-function getGuestName() {
-    const adjectives = ['Swift', 'Bright', 'Calm', 'Bold', 'Wise', 'Kind']
-    const nouns = ['Editor', 'Writer', 'Author', 'Scribe', 'Coder', 'Creator']
-    return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`
-}
 
 interface EditorProps {
     content: string;
@@ -179,37 +180,13 @@ interface EditorProps {
     customPaperHeader?: React.ReactNode;
     tabStops?: { position: number, type: 'left' | 'center' | 'right' }[];
     docId?: string;
+    socket?: Socket | null;
+    onlineUsers?: any[];
 }
 
 export default function GoogleDocsEditor(props: EditorProps) {
-    const { docId } = props
-    const [socket, setSocket] = useState<Socket | null>(null)
-    const [onlineUsers, setOnlineUsers] = useState<any[]>([])
-
-    useEffect(() => {
-        if (!docId) return
-        
-        const baseWsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234'
-        const socketInstance = io(baseWsUrl)
-        
-        const user = { name: getGuestName(), color: getRandomColor() }
-        
-        socketInstance.on('connect', () => {
-            socketInstance.emit('join-room', { docId, user })
-        })
-
-        socketInstance.on('users-update', (users: any[]) => {
-            setOnlineUsers(users)
-        })
-
-        setSocket(socketInstance)
-
-        return () => {
-            socketInstance.disconnect()
-        }
-    }, [docId])
-
-    return <GoogleDocsEditorInner {...props} socket={socket} onlineUsers={onlineUsers} />
+    const { socket, onlineUsers = [] } = props
+    return <GoogleDocsEditorInner {...props} socket={socket || null} onlineUsers={onlineUsers} />
 }
 
 function GoogleDocsEditorInner({ 
@@ -397,19 +374,6 @@ function GoogleDocsEditorInner({
 
     return (
         <div className="flex justify-center w-full bg-[#f8f9fa] min-h-screen relative">
-            {/* Online Users Indicator */}
-            <div className="fixed bottom-4 right-4 z-[100] flex -space-x-2">
-                {onlineUsers.map((u, i) => (
-                    <div 
-                        key={i} 
-                        className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-md"
-                        style={{ backgroundColor: u.color }}
-                        title={u.name}
-                    >
-                        {u.name.charAt(0)}
-                    </div>
-                ))}
-            </div>
 
             <div className="mt-2 sm:mt-4 mb-10 w-full max-w-[816px] mx-auto px-0 sm:px-4">
                 <div className={`bg-white shadow-xl border border-gray-200 w-full ${showWatermark ? 'bg-watermark' : ''}`}>

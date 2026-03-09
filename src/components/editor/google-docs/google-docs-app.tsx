@@ -9,6 +9,8 @@ import FindReplace from './find-replace'
 import FindReplaceDialog from './find-replace-dialog'
 import { Editor } from '@tiptap/react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { io, Socket } from 'socket.io-client'
+import { getRandomColor, getGuestName } from './editor'
 
 // Dynamically import editor with no SSR to avoid hydrations issues
 const EditorComponent = dynamic(() => import('./editor'), {
@@ -57,6 +59,32 @@ export default function GoogleDocsApp({
   const [isFindOpen, setIsFindOpen] = useState(false)
   const [isFindReplaceDialogOpen, setIsFindReplaceDialogOpen] = useState(false)
   const [margins, setMargins] = useState({ left: 56, right: 56, indent: 0, tabStops: [] as any[] })
+  const [socket, setSocket] = useState<Socket | null>(null)
+  const [onlineUsers, setOnlineUsers] = useState<any[]>([])
+
+  // Socket initialization
+  useEffect(() => {
+    if (!docId) return
+    
+    const baseWsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234'
+    const socketInstance = io(baseWsUrl)
+    
+    const user = { name: getGuestName(), color: getRandomColor() }
+    
+    socketInstance.on('connect', () => {
+        socketInstance.emit('join-room', { docId, user })
+    })
+
+    socketInstance.on('users-update', (users: any[]) => {
+        setOnlineUsers(users)
+    })
+
+    setSocket(socketInstance)
+
+    return () => {
+        socketInstance.disconnect()
+    }
+  }, [docId])
 
   // Handle Ctrl+F
   useEffect(() => {
@@ -117,6 +145,7 @@ export default function GoogleDocsApp({
             isSaving={isSaving}
             readOnly={readOnly}
             docId={docId}
+            onlineUsers={onlineUsers}
           />
           {!readOnly && (
             <>
@@ -138,6 +167,8 @@ export default function GoogleDocsApp({
             customPaperHeader={customPaperHeader}
             tabStops={margins.tabStops}
             docId={docId}
+            socket={socket}
+            onlineUsers={onlineUsers}
           />
         </div>
       </main>

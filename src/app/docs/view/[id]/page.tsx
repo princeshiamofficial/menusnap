@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { supabase } from "@/lib/supabase";
+import { getMagicDocByIdFromMySql } from "@/app/actions/magic-docs";
 import Image from "next/image";
 import { CalendarDays } from "lucide-react";
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
@@ -30,14 +30,10 @@ export default function MagicDocView() {
 
     useEffect(() => {
         const fetchDoc = async () => {
-            const { data, error } = await supabase
-                .from('magic_docs')
-                .select('*')
-                .eq('id', id)
-                .single();
+            const result = await getMagicDocByIdFromMySql(id);
 
-            if (error) {
-                console.error("Error fetching doc:", error);
+            if (!result.success) {
+                console.error("Error fetching doc:", result.message);
                 // Fallback
                 const stored = localStorage.getItem('magic-internal-docs') || localStorage.getItem('ch-internal-docs');
                 if (stored) {
@@ -47,18 +43,15 @@ export default function MagicDocView() {
                         if (found) setDoc(found);
                     } catch (e) { }
                 }
-            } else if (data) {
-                if (data.is_deleted) {
-                    setDoc(null);
-                } else {
-                    setDoc({
-                        id: data.id,
-                        title: data.title,
-                        content: data.content,
-                        lastUpdated: data.last_updated,
-                        createdAt: data.created_at
-                    });
-                }
+            } else if (result.data) {
+                const data = result.data;
+                setDoc({
+                    id: data.id,
+                    title: data.title,
+                    content: data.content,
+                    lastUpdated: data.lastUpdated,
+                    createdAt: data.createdAt
+                });
             }
             setLoading(false);
         };
