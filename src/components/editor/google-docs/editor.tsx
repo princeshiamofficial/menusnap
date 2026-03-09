@@ -527,12 +527,6 @@ function GoogleDocsEditorInner({
         }
     }, [editor, ydoc, content])
 
-    useEffect(() => {
-        if (ydoc) return 
-        if (editor && content !== editor.getHTML()) {
-            editor.commands.setContent(content)
-        }
-    }, [content, editor, ydoc])
 
     useEffect(() => {
         if (editor && tabStops) {
