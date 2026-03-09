@@ -5,10 +5,13 @@ const PORT = process.env.SOCKET_PORT || 1234;
 const httpServer = createServer();
 const io = new Server(httpServer, {
   path: '/socket',
+  serveClient: false,
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  allowEIO3: true // Support older clients if needed
 });
 
 // Store document content and active users
