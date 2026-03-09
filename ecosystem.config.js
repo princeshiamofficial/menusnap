@@ -11,12 +11,12 @@ module.exports = {
       },
     },
     {
-      name: 'menusnap-collab',
-      script: 'collab-server.mjs',
+      name: 'menusnap-socket',
+      script: 'socket-server.mjs',
       instances: 1,
       env: {
         NODE_ENV: 'production',
-        COLLAB_PORT: 1234,
+        SOCKET_PORT: 1234,
       },
     },
   ],
