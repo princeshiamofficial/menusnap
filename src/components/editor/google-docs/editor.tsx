@@ -516,16 +516,26 @@ function GoogleDocsEditorInner({
         }
     }, [editor, onReady])
 
+    const initializedRef = React.useRef(false)
+
     useEffect(() => {
-        if (!editor || !ydoc || !content) return
+        if (!editor || !ydoc || !content || initializedRef.current) return
+        
         const yXml = ydoc.getXmlFragment('prosemirror')
+        // Only initialize from database if Yjs is empty
         if (yXml.length === 0) {
+            initializedRef.current = true
             const timer = setTimeout(() => {
-                editor.commands.setContent(content)
+                // Ensure editor still exists and is empty before setting
+                if (editor.isEmpty) {
+                    editor.commands.setContent(content)
+                }
             }, 200)
             return () => clearTimeout(timer)
+        } else {
+            initializedRef.current = true
         }
-    }, [editor, ydoc, content])
+    }, [editor, ydoc])
 
 
     useEffect(() => {
