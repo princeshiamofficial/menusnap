@@ -4,7 +4,11 @@ import pool from '@/lib/mysql';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
+import crypto from 'crypto';
+
 const SESSION_COOKIE = 'admin_session';
+const SESSION_EXPIRY_DAYS = 7;
+const COOKIE_EXPIRY_DAYS = 30;
 
 async function ensureSessionTable() {
   await pool.execute(`
@@ -19,15 +23,16 @@ async function ensureSessionTable() {
 }
 
 function generateToken(): string {
-  return Array.from(
-    { length: 64 },
-    () => Math.random().toString(36)[2] || '0'
-  ).join('');
+  return crypto.randomBytes(64).toString('hex');
 }
 
 export async function adminLoginAction(email: string, password: string): Promise<{ success: boolean; error?: string }> {
   try {
     await ensureSessionTable();
+    
+    // Cleanup expired sessions
+    await pool.execute('DELETE FROM admin_sessions WHERE expires_at < NOW()');
+
     const [rows]: any = await pool.execute(
       'SELECT id, email, password_hash FROM admins WHERE email = ? LIMIT 1',
       [email]
@@ -46,7 +51,7 @@ export async function adminLoginAction(email: string, password: string): Promise
 
     // Create session
     const token = generateToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 7 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 60 * 60 * 24 * SESSION_EXPIRY_DAYS * 1000);
     
     await pool.execute(
       'INSERT INTO admin_sessions (token, admin_id, email, expires_at) VALUES (?, ?, ?, ?)',
@@ -58,7 +63,7 @@ export async function adminLoginAction(email: string, password: string): Promise
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days cookie
+      maxAge: 60 * 60 * 24 * COOKIE_EXPIRY_DAYS,
       path: '/',
     });
 
@@ -90,6 +95,14 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
     );
 
     if (!rows.length) return null;
+
+    // Refresh expiration on each check (sliding session)
+    const newExpiry = new Date(Date.now() + 60 * 60 * 24 * SESSION_EXPIRY_DAYS * 1000);
+    await pool.execute(
+      'UPDATE admin_sessions SET expires_at = ? WHERE token = ?',
+      [newExpiry.toISOString().slice(0, 19).replace('T', ' '), token]
+    );
+
     return rows[0];
   } catch (e) {
     console.error('Session check error:', e);
