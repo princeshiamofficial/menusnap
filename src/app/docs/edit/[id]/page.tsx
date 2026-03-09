@@ -103,6 +103,7 @@ export default function MagicDocEdit() {
             initialContent={doc.content}
             onSave={handleSave}
             readOnly={false}
+            docId={id}
         />
     );
 }

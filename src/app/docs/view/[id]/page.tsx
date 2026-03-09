@@ -64,40 +64,6 @@ export default function MagicDocView() {
         };
 
         fetchDoc();
-
-        // Subscribe to real-time changes
-        const channel = supabase
-            .channel(`public:magic_docs:${id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'magic_docs',
-                    filter: `id=eq.${id}`
-                },
-                (payload) => {
-                    const newData = payload.new as any;
-                    // Only update if it's different to prevent loops
-                    setDoc(current => {
-                        if (current && (current.title !== newData.title || current.content !== newData.content)) {
-                            return {
-                                ...current,
-                                title: newData.title,
-                                content: newData.content,
-                                lastUpdated: newData.last_updated,
-                                createdAt: newData.created_at || current.createdAt
-                            };
-                        }
-                        return current;
-                    });
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
     }, [id]);
 
     if (loading) {
@@ -150,6 +116,7 @@ export default function MagicDocView() {
             initialContent={doc.content}
             readOnly={true}
             hideHeader={true}
+            docId={id}
             showWatermark={true}
             customPaperHeader={customHeader}
         />
