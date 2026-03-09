@@ -66,10 +66,30 @@ export default function GoogleDocsApp({
   useEffect(() => {
     if (!docId) return
     
-    const baseWsUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234'
-    const socketInstance = io(baseWsUrl)
+    // Determine the socket URL
+    let socketUrl = process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234';
     
-    const user = { name: getGuestName(), color: getRandomColor() }
+    // If we are in production and the URL is still local, or if we want to use the current domain
+    if (typeof window !== 'undefined') {
+        const isHttps = window.location.protocol === 'https:';
+        
+        // If the URL is just a port or localhost, and we're on a real domain, 
+        // it's often better to connect to the domain itself and let the reverse proxy handle it
+        if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_COLLAB_WS_URL) {
+            // Default to same domain, same protocol (wss if https)
+            socketUrl = isHttps ? `wss://${window.location.host}` : `ws://${window.location.host}`;
+        } else if (isHttps && socketUrl.startsWith('http:')) {
+            // Auto upgrade to wss if page is https
+            socketUrl = socketUrl.replace('http:', 'https:').replace('ws:', 'wss:');
+        }
+    }
+
+    const socketInstance = io(socketUrl, {
+        path: '/socket.io',
+        transports: ['websocket', 'polling']
+    });
+    
+    const user = { name: getGuestName(), color: getRandomColor() };
     
     socketInstance.on('connect', () => {
         socketInstance.emit('join-room', { docId, user })
