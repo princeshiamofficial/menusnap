@@ -1,8 +1,7 @@
 
 "use client";
 
-import type { ReactNode } from 'react';
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Reorder } from "framer-motion";
