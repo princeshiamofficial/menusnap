@@ -19,7 +19,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -74,9 +73,6 @@ import {
 
 const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
 
-// Helper to get consistent gradient backgrounds
-const glassGradient = "bg-white/70 backdrop-blur-md border border-white/20";
-
 interface ApiAdminTemplate {
   id: string;
   name: string;
@@ -124,68 +120,85 @@ function AdminTemplateCard({
   const isDefaultImage = template.imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
 
   return (
-    <Card className="group overflow-hidden border-none bg-white shadow-sm hover:shadow-xl transition-all duration-500 rounded-[24px] flex flex-col h-full">
-      <CardHeader className="p-0">
-        <div className="aspect-[16/10] relative overflow-hidden">
+    <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full bg-card">
+      <CardHeader className="p-0 relative">
+        <div className="aspect-[4/3] relative group">
           <Image
             src={template.imageUrl} 
             alt={template.name}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            className="object-cover"
             data-ai-hint={isDefaultImage ? "placeholder abstract" : getImageHint(template.name)}
           />
-          {/* Overlay Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
-
           {template.isTopRated && (
-            <Badge className="absolute top-4 left-4 bg-amber-400/90 text-amber-950 backdrop-blur-md border-none font-bold py-1 px-3 rounded-full shadow-lg">
-              <Star className="h-3.5 w-3.5 mr-1.5 fill-current" />
-              Premium
+            <Badge variant="default" className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2 shadow-md">
+              <Star className="h-3 w-3 mr-1 fill-current" />
+              Top Rated
             </Badge>
           )}
+          <Badge
+            variant={template.isPublished ? "default" : "secondary"}
+            className={cn(
+              "absolute bottom-2 left-2 font-medium py-1 px-2.5 shadow-md text-xs",
+              template.isPublished ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-500 hover:bg-gray-600 text-white"
+            )}
+          >
+            {template.isPublished ? (
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+            ) : (
+              <XCircle className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            {template.isPublished ? "Published" : "Unpublished"}
+          </Badge>
 
-          <div className="absolute top-4 right-4 flex flex-col gap-2 translate-x-12 group-hover:translate-x-0 transition-transform duration-500">
-            <Button variant="secondary" size="icon" className="h-9 w-9 bg-white/20 backdrop-blur-xl border border-white/30 text-white hover:bg-white/40 rounded-xl" onClick={() => onEdit(template.id)} aria-label="Edit Template">
+          <div className="absolute top-2 right-2 flex flex-col sm:flex-row space-y-1.5 sm:space-y-0 sm:space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onSetTopRated(template.id)} aria-label="Toggle Top Rated">
+              <Star className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onTogglePublish(template.id)} aria-label="Toggle Publish Status">
+              <Globe2 className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onEdit(template.id)} aria-label="Edit Template">
               <FileEdit className="h-4 w-4" />
             </Button>
-            <Button variant="destructive" size="icon" className="h-9 w-9 bg-red-500/80 backdrop-blur-xl border border-red-400/30 text-white hover:bg-red-600 rounded-xl" onClick={() => onDelete(template.id, template.name)} aria-label="Delete Template">
+            <Button variant="destructive" size="icon" className="h-8 w-8 bg-red-600/70 text-white hover:bg-red-700/90 border-red-500/50" onClick={() => onDelete(template.id, template.name)} aria-label="Delete Template">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
-
-          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-            <Badge
-              variant="outline"
-              className={cn(
-                "font-semibold py-1 px-3 rounded-full backdrop-blur-xl border-none text-white",
-                template.isPublished ? "bg-emerald-500/80" : "bg-slate-500/80"
-              )}
-            >
-              {template.isPublished ? "Live" : "Draft"}
-            </Badge>
-            
-            <div className="flex gap-2">
-               <Button variant="secondary" size="icon" className="h-9 w-9 bg-white/20 backdrop-blur-xl border border-white/30 text-white hover:bg-white/40 rounded-xl" onClick={() => onTogglePublish(template.id)} aria-label="Toggle Publish">
-                <Globe2 className="h-4 w-4" />
-               </Button>
-            </div>
-          </div>
+           <Button
+            variant="ghost"
+            size="icon"
+            className="absolute bottom-2 right-2 h-8 w-8 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+            aria-label="View template details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="p-6 flex-grow">
-        <div className="flex items-center gap-2 mb-2">
-           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-           <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">{template.tags?.[0] || 'Uncategorized'}</span>
+      <CardContent className="p-4 flex-grow">
+        <h3 className="text-lg font-semibold mb-1 text-foreground truncate" title={template.name}>{template.name}</h3>
+        <p className="text-sm text-muted-foreground mb-3 leading-relaxed min-h-[40px] line-clamp-2" title={template.description}>{template.description}</p>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {template.tags.slice(0, 3).map((tag) => (
+            <Badge key={tag} variant="secondary" className="font-normal text-xs bg-muted text-muted-foreground">
+              {tag}
+            </Badge>
+          ))}
+          {template.tags.length > 3 && (
+            <Badge variant="secondary" className="font-normal text-xs bg-muted text-muted-foreground">
+              +{template.tags.length - 3} more
+            </Badge>
+          )}
         </div>
-        <h3 className="text-xl font-bold mb-2 text-slate-900 leading-tight group-hover:text-primary transition-colors">{template.name}</h3>
-        <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">{template.description}</p>
       </CardContent>
-      <CardFooter className="p-6 pt-0 flex justify-between items-center text-[11px] font-bold uppercase tracking-wider text-slate-400">
-        <div className="flex items-center gap-2">
-           <Badge variant="outline" className="border-slate-100 text-slate-400">{template.version || '1.0'}</Badge>
-        </div>
-        <span>ID: {template.id.split('-')[0]}</span>
+      <CardFooter className="p-4 border-t bg-muted/30 text-xs text-muted-foreground flex justify-between items-center">
+        <span>
+          Created: {formatDate(template.createdAt)}
+        </span>
+        <span>
+          {template.version ? `v${template.version}` : 'v1.0'}
+        </span>
       </CardFooter>
     </Card>
   );
@@ -391,31 +404,18 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-      <div className="p-8 pb-4">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex-shrink-0 w-16 h-16 bg-[#fff1f2] rounded-2xl flex items-center justify-center">
-            <Layers className="h-8 w-8 text-[#e11d48]" />
-          </div>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+      <ScrollArea className="flex-1 w-full">
+        <div className="space-y-4 p-6">
           <div>
-            <DialogTitle className="text-2xl font-bold text-[#0f172a] leading-none mb-1">Add Template Info</DialogTitle>
-            <DialogDescription className="text-[#64748b] text-sm">
-              Fill out the details to create a new template.
-            </DialogDescription>
-          </div>
-        </div>
-      </div>
-      <ScrollArea className="flex-grow">
-        <div className="space-y-8 p-8 pt-0">
-          <div className="space-y-2">
-            <Label htmlFor="templateName-add" className="text-[#0f172a] font-semibold text-base">Template Name*</Label>
-            <Input id="templateName-add" {...form.register("templateName")} placeholder="Template name" className="h-14 rounded-2xl border-[#f1f5f9] bg-white px-4 text-slate-900" />
+            <Label htmlFor="templateName-add">Template Name*</Label>
+            <Input id="templateName-add" {...form.register("templateName")} placeholder="Enter template name" />
             {form.formState.errors.templateName && <p className="text-sm text-destructive mt-1">{form.formState.errors.templateName.message}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description-add" className="text-[#0f172a] font-semibold text-base">Description*</Label>
-            <Textarea id="description-add" {...form.register("description")} placeholder="Template description" rows={4} className="rounded-2xl border-[#f1f5f9] bg-white px-4 py-3 text-slate-900 resize-none" />
+          <div>
+            <Label htmlFor="description-add">Description*</Label>
+            <Textarea id="description-add" {...form.register("description")} placeholder="Enter template description" rows={4} />
             {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
           </div>
 
@@ -455,8 +455,9 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
             />
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message as string}</p>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="tags-add" className="text-[#0f172a] font-semibold text-base">Tag*</Label>
+          
+          <div>
+            <Label htmlFor="tags-add">Tag*</Label>
             <Controller
               control={control}
               name="tag"
@@ -498,15 +499,18 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
         </div>
       </ScrollArea>
-      <div className="p-8 pb-10">
+      <DialogFooter className="p-6 pt-4 border-t">
+        <DialogClose asChild>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+        </DialogClose>
         <Button 
           type="submit" 
           disabled={form.formState.isSubmitting} 
-          className="w-full h-14 bg-[#e11d48] hover:bg-[#be123c] text-white text-lg font-bold rounded-2xl shadow-lg shadow-pink-200"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {form.formState.isSubmitting ? "Adding..." : "Add Template"}
+          {form.formState.isSubmitting ? "Adding..." : <><Save className="mr-2 h-4 w-4" /> Add Template</>}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
@@ -682,31 +686,18 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-      <div className="p-8 pb-4">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex-shrink-0 w-16 h-16 bg-[#fff1f2] rounded-2xl flex items-center justify-center">
-            <FileEdit className="h-8 w-8 text-[#e11d48]" />
-          </div>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+      <ScrollArea className="flex-1 w-full">
+        <div className="space-y-4 p-6">
           <div>
-            <DialogTitle className="text-2xl font-bold text-[#0f172a] leading-none mb-1">Edit Template</DialogTitle>
-            <DialogDescription className="text-[#64748b] text-sm">
-              Update the details for this template version.
-            </DialogDescription>
-          </div>
-        </div>
-      </div>
-      <ScrollArea className="flex-grow">
-        <div className="space-y-8 p-8 pt-0">
-          <div className="space-y-2">
-            <Label htmlFor={`templateName-edit-${templateData.id}`} className="text-[#0f172a] font-semibold text-base">Template Name*</Label>
-            <Input id={`templateName-edit-${templateData.id}`} {...form.register("templateName")} placeholder="Template name" className="h-14 rounded-2xl border-[#f1f5f9] bg-white px-4 text-slate-900" />
+            <Label htmlFor={`templateName-edit-${templateData.id}`}>Template Name*</Label>
+            <Input id={`templateName-edit-${templateData.id}`} {...form.register("templateName")} placeholder="Enter template name" />
             {form.formState.errors.templateName && <p className="text-sm text-destructive mt-1">{form.formState.errors.templateName.message}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`description-edit-${templateData.id}`} className="text-[#0f172a] font-semibold text-base">Description*</Label>
-            <Textarea id={`description-edit-${templateData.id}`} {...form.register("description")} placeholder="Template description" rows={4} className="rounded-2xl border-[#f1f5f9] bg-white px-4 py-3 text-slate-900 resize-none" />
+          <div>
+            <Label htmlFor={`description-edit-${templateData.id}`}>Description*</Label>
+            <Textarea id={`description-edit-${templateData.id}`} {...form.register("description")} placeholder="Enter template description" rows={4} />
             {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
           </div>
 
@@ -746,8 +737,9 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
             />
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message as string}</p>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="tags-edit" className="text-[#0f172a] font-semibold text-base">Tag*</Label>
+          
+          <div>
+            <Label htmlFor="tags-edit">Tag*</Label>
             <Controller
               control={control}
               name="tag"
@@ -789,15 +781,18 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
         </div>
       </ScrollArea>
-      <div className="p-8 pb-10">
+      <DialogFooter className="p-6 pt-4 border-t">
+        <DialogClose asChild>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+        </DialogClose>
         <Button 
           type="submit" 
           disabled={form.formState.isSubmitting} 
-          className="w-full h-14 bg-[#e11d48] hover:bg-[#be123c] text-white text-lg font-bold rounded-2xl shadow-lg shadow-pink-200"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          {form.formState.isSubmitting ? "Saving..." : "Save Changes"}
+          {form.formState.isSubmitting ? "Saving..." : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
         </Button>
-      </div>
+      </DialogFooter>
     </form>
   );
 }
@@ -1036,73 +1031,65 @@ export default function ManageTemplatesPage(): ReactNode {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-8 lg:p-12 space-y-10">
-      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3 mb-1">
-             <div className="p-2 bg-primary/10 rounded-lg">
-                <Layers className="h-5 w-5 text-primary" />
-             </div>
-             <span className="text-sm font-bold uppercase tracking-widest text-primary/60">Admin Dashboard</span>
-          </div>
-          <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight flex items-center gap-4">
-            Manage Templates
-            <Badge className="bg-emerald-500/10 text-emerald-600 border-none px-4 py-1.5 text-sm font-bold rounded-full">
-               {allTemplates.length} Available
-            </Badge>
-          </h1>
-          <p className="text-slate-500 max-w-2xl text-lg">Create, edit, and curate your menu templates with our high-performance admin tools.</p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-          <div className="relative flex-grow lg:w-80 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-            <Input
-              type="search"
-              placeholder="Filter templates..."
-              className="pl-12 h-14 bg-white border-none shadow-sm rounded-2xl text-lg focus:ring-4 focus:ring-primary/10 transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button 
-            variant="default" 
-            onClick={() => setIsAddTemplateDialogOpen(true)} 
-            className="h-14 px-8 bg-slate-900 hover:bg-slate-800 text-white text-lg font-bold rounded-2xl shadow-xl shadow-slate-200 transition-all active:scale-95"
-          >
-            <Plus className="h-6 w-6 mr-2" />
-            Add Template
-          </Button>
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-3xl font-bold text-foreground flex items-center">
+          <Layers className="h-8 w-8 mr-3 text-primary" />
+          Templates
+        </h1>
+        <div className="relative w-full sm:w-auto sm:max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search templates..."
+            className="pl-10 w-full text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </header>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4 p-2 bg-white/50 backdrop-blur-md border border-white rounded-[28px]">
-          <div className="flex flex-wrap gap-2 p-1 w-full sm:w-auto">
-              {['all', 'restaurant', 'parlour', 'unpublished'].map((filter) => (
-                  <Button 
-                    key={filter}
-                    variant={activeFilter === filter ? 'default' : 'ghost'} 
-                    size="lg"
-                    className={cn(
-                        "rounded-[20px] px-6 font-bold h-12 capitalize transition-all",
-                        activeFilter === filter ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-slate-500 hover:bg-slate-100"
-                    )}
-                    onClick={() => setActiveFilter(filter as any)}
-                  >
-                    {filter === 'all' ? 'All Templates' : 
-                     filter === 'unpublished' ? 'Drafts' : filter}
-                  </Button>
-              ))}
+      <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">All Templates</h2>
+            {!isLoading && !error && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {`${stats.available} templates available • ${stats.published} published`}
+              </p>
+            )}
+            {isLoading && (
+                <Skeleton className="h-4 w-48 mt-1.5" />
+            )}
+            {!isLoading && error && (
+                 <p className="text-sm text-muted-foreground mt-1">Could not load stats.</p>
+            )}
           </div>
-          <div className="hidden sm:block ml-auto mr-4">
-              <Button variant="ghost" size="icon" onClick={handleRefresh} className="h-12 w-12 text-slate-400 hover:text-primary rounded-2xl">
-                  <RefreshCw className={cn("h-6 w-6", isLoading && "animate-spin")} />
-              </Button>
+          <div className="flex items-center gap-2 mt-3 sm:mt-0">
+            <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Template
+            </Button>
           </div>
-      </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-2 items-center">
+            <span className="text-sm font-medium text-muted-foreground mr-2">Filters:</span>
+            <Button variant={activeFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('all')}>All</Button>
+            <Button variant={activeFilter === 'unpublished' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('unpublished')}>Unpublished</Button>
+            <Button variant={activeFilter === 'restaurant' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('restaurant')}>Restaurant</Button>
+            <Button variant={activeFilter === 'parlour' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('parlour')}>Parlour</Button>
+        </div>
+      </section>
 
       <Dialog open={isAddTemplateDialogOpen} onOpenChange={setIsAddTemplateDialogOpen}>
-        <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)] p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
+        <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <DialogTitle className="text-2xl">Add New Template</DialogTitle>
+          </DialogHeader>
           <AddTemplateForm onSuccess={handleAddTemplateSuccess} onOpenChange={setIsAddTemplateDialogOpen} />
         </DialogContent>
       </Dialog>
@@ -1112,7 +1099,12 @@ export default function ManageTemplatesPage(): ReactNode {
             setIsEditTemplateDialogOpen(open);
             if (!open) setEditingTemplateData(null);
         }}>
-            <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)] p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
+            <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col h-[90vh] p-0 overflow-hidden">
+              <DialogHeader className="p-6 pb-4 border-b">
+                <DialogTitle className="text-2xl">
+                    Edit Template {editingTemplateData.version ? `(v${editingTemplateData.version})` : ''}
+                </DialogTitle>
+              </DialogHeader>
               <EditTemplateForm 
                   templateData={editingTemplateData} 
                   onSuccess={handleEditTemplateSuccess} 
@@ -1169,26 +1161,20 @@ export default function ManageTemplatesPage(): ReactNode {
             </Button>
           </div>
         ) : filteredTemplates.length === 0 ? (
-            <div className="p-20 bg-white rounded-[40px] shadow-sm border border-slate-100 flex flex-col items-center text-center space-y-6">
-              <div className="p-8 bg-slate-50 rounded-[32px]">
-                <Layers className="h-20 w-20 text-slate-200 stroke-[1.5] animate-pulse" />
-              </div>
-              <div className="space-y-2">
-                  <h2 className="text-3xl font-black text-slate-900">No Templates Found</h2>
-                  <p className="text-slate-500 max-w-sm text-lg mx-auto">
-                    {searchTerm || activeFilter !== 'all' 
-                      ? "We couldn't find any templates matching those filters. Try adjusting your search." 
-                      : "Start building your directory by adding your first stunning template today."}
-                  </p>
-              </div>
+            <div className="text-center py-10 bg-card rounded-lg shadow border border-border">
+              <Layers className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground text-lg font-medium">
+                {searchTerm || activeFilter !== 'all' ? "No templates match your search or filter." : "No templates found."}
+              </p>
               { !searchTerm && activeFilter === 'all' && (
-                <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="h-14 px-10 bg-primary hover:bg-primary/90 text-white text-lg font-black rounded-2xl shadow-xl shadow-primary/20">
-                  Create Template
+                <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="mt-6 bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Your First Template
                 </Button>
               )}
             </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredTemplates.map((template) => (
               <AdminTemplateCard
                 key={template.id}
