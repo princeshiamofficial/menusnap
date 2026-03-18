@@ -3,7 +3,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Settings, ChevronRight, ClipboardList, LayoutList, ShoppingCart, LogOut, Layers, Package, FolderOpen } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Settings, 
+  ChevronRight, 
+  ClipboardList, 
+  LayoutList, 
+  ShoppingCart, 
+  LogOut, 
+  Layers, 
+  Package, 
+  FolderOpen 
+} from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -14,13 +26,14 @@ import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 
 const adminNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
-  { href: '/m-admin', label: 'Admin Dashboard', icon: LayoutDashboard },
-  { href: '/m-admin/manage-orders', label: 'Manage Orders', icon: ShoppingCart, hasChevron: true },
-  { href: '/m-admin/manage-categories', label: 'Manage Categories', icon: LayoutList, hasChevron: true },
-  { href: '/m-admin/manage-magictab', label: 'Manage MagicTab', icon: ClipboardList, hasChevron: true },
-  { href: '/m-admin/manage-templates', label: 'Manage Templates', icon: Layers, hasChevron: true },
+  { href: '/m-admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/m-admin/contacts', label: 'Contacts', icon: Users, hasChevron: true },
+  { href: '/m-admin/manage-orders', label: 'Orders', icon: ShoppingCart, hasChevron: true },
+  { href: '/m-admin/manage-categories', label: 'Categories', icon: LayoutList, hasChevron: true },
+  { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList, hasChevron: true },
+  { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/m-admin/magic-docs', label: 'Magic Docs', icon: FolderOpen, hasChevron: true },
-  { href: '/m-admin/settings', label: 'Admin Settings', icon: Settings, hasChevron: true },
+  { href: '/m-admin/settings', label: 'Settings', icon: Settings, hasChevron: true },
 ];
 
 export function AdminSidebarNav() {

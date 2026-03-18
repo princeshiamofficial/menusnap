@@ -5,19 +5,22 @@ import type { ReactNode } from 'react';
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
+import { checkWhatsAppAvailability } from '@/app/actions/whatsapp';
+import { saveClientLogin } from '@/app/actions/clients';
 
 const CLIENT_STORAGE_KEY = 'colorHutClientUser';
 
 export interface ClientUser {
   businessName: string;
   type: 'restaurant' | 'parlour';
+  whatsappNumber?: string;
 }
 
 export interface ClientAuthContextType {
   clientUser: ClientUser | null;
   isClientLoggedIn: boolean;
   clientLoading: boolean;
-  login: (businessName: string, type: 'restaurant' | 'parlour') => void;
+  login: (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -43,12 +46,65 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback((businessName: string, type: 'restaurant' | 'parlour') => {
+  const login = useCallback(async (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string) => {
     setClientLoading(true);
-    // Mock authentication: In a real app, this would be an API call.
-    // We'll accept any business name for now as a demo.
+    
+    // 1. WhatsApp Presence Check using Green API (with Bypass & Cache)
+    if (whatsappNumber) {
+        // Simple Bypass Cache check
+        const cacheKey = `wa_valid_${whatsappNumber.replace(/\D/g, '')}`;
+        const cachedResult = localStorage.getItem(cacheKey);
+        
+        if (cachedResult !== 'true') { // If not already validated in this browser
+            try {
+                const check = await checkWhatsAppAvailability(whatsappNumber);
+                
+                // CRITICAL BYPASS: Only block if API explicitly says "exists: false"
+                // If success is false (rate limit, API down, config error), we BYPASS and let them in.
+                if (check.success) {
+                    if (check.exists === false) {
+                        toast({
+                            title: "Status Check Failed",
+                            description: "This mobile number does not have an active WhatsApp account.",
+                            variant: "destructive",
+                        });
+                        setClientLoading(false);
+                        return false;
+                    } else if (check.exists === true) {
+                        // Cache successful validation to avoid redundant API calls/rate limits
+                        localStorage.setItem(cacheKey, 'true');
+                    }
+                } else {
+                    console.warn("WhatsApp validation bypassed due to API error/rate limit:", check.error);
+                }
+            } catch (err) {
+                console.error("WhatsApp status check failed (Bypassing):", err);
+            }
+        }
+    }
+
+    // 2. Database Sync: Save client login details
+    if (whatsappNumber) {
+        try {
+            const dbResult = await saveClientLogin(businessName.trim(), type, whatsappNumber.trim());
+            if (!dbResult.success) {
+                console.error("Failed to sync client to DB:", dbResult.error);
+                // We'll proceed with frontend login anyway to avoid blocking the user
+            } else {
+                console.log(`Client synced to DB successfully (${dbResult.action})`);
+            }
+        } catch (dbErr) {
+            console.error("Database sync error:", dbErr);
+        }
+    }
+
+    // 3. Mock authentication
     if (businessName.trim() && (type === 'restaurant' || type === 'parlour')) {
-      const userToStore = { businessName: businessName.trim(), type };
+      const userToStore: ClientUser = { 
+        businessName: businessName.trim(), 
+        type,
+        whatsappNumber: whatsappNumber?.trim()
+      };
       localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
       setClientUser(userToStore);
       toast({
@@ -60,18 +116,20 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       const welcomeSound = new Audio('https://colorhutbd.xyz/audio/welcome.mp3');
       welcomeSound.play().catch(error => {
         console.error("Welcome sound playback failed:", error);
-        // We don't need to bother the user if the sound fails to play.
       });
 
       router.push('/dashboard');
+      setClientLoading(false);
+      return true;
     } else {
       toast({
         title: "Login Failed",
         description: "Please provide a valid business name and type.",
         variant: "destructive",
       });
+      setClientLoading(false);
+      return false;
     }
-    setClientLoading(false);
   }, [router, toast]);
 
   const logout = useCallback(() => {

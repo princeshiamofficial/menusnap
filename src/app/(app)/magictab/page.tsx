@@ -14,6 +14,7 @@ import {
   Edit,
   X,
   Plus,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetClose,
+} from "@/components/ui/sheet";
 import { MenuPreviewDialog, type MenuItem, type SubMenuItem, type Category as MenuCategory } from '@/components/menu/menu-preview-dialog';
 import { CategoryList } from '@/components/menu/category-list';
 import { useToast } from "@/hooks/use-toast";
@@ -155,115 +161,217 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
     }
   }, [isOpen, initialData, form]);
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col h-[75vh] max-h-[750px] p-0 gap-0">
-        <DialogHeader className={cn(
-          "p-6 pb-4 border-b transition-shadow",
-          scrolled && "shadow-md"
-        )}>
-          <DialogTitle className="text-xl">{initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'MagicTab Item'}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <ScrollArea className="flex-grow p-6" onScroll={handleScroll}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="item-name">Item Name</Label>
-                <Input id="item-name" {...form.register("name")} placeholder="e.g., Classic Burger" />
+  // Detect mobile for bottom sheet behaviour
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  /* ── Shared inner form markup ──────────────────────────────────── */
+  const formInner = (
+    <>
+      {/* Header — icon + title + subtitle */}
+      <div className={cn(
+        "relative px-6 pt-6 pb-5 transition-shadow bg-background",
+        scrolled && "shadow-md"
+      )}>
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
+            <UtensilsCrossed className="h-6 w-6 text-orange-500" />
+          </div>
+          <div className="flex-1 min-w-0 pt-0.5">
+            <DialogTitle className="text-lg font-bold leading-tight text-foreground">
+              {initialData ? 'Edit' : 'Add'} {categoryName ? `${decodeHtmlEntities(categoryName)} Item` : 'MagicTab Item'}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+              {initialData ? 'Update the details for this item.' : 'Fill in the details to add a new item.'}
+            </DialogDescription>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
+        <ScrollArea className="flex-grow" onScroll={handleScroll}>
+          <div className="px-6 pb-2 space-y-5">
+
+            {/* Item Name & Base Price — side by side */}
+            <div className="flex gap-3 items-start">
+              <div className="flex-[2] space-y-1.5">
+                <Label htmlFor="item-name" className="text-sm font-semibold text-foreground">Item Name</Label>
+                <Input
+                  id="item-name"
+                  {...form.register("name")}
+                  placeholder="e.g., Classic Burger"
+                  className="rounded-full border-border/70 h-11 px-4 focus-visible:ring-orange-400 focus-visible:border-orange-400"
+                />
                 {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
               </div>
-              <div>
-                <Label htmlFor="item-price">Base Price (৳)</Label>
-                <Input id="item-price" type="number" {...form.register("price")} placeholder="0" step="0.01" />
+              <div className="flex-[1] space-y-1.5">
+                <Label htmlFor="item-price" className="text-sm font-semibold text-foreground">Base Price (৳)</Label>
+                <Input
+                  id="item-price"
+                  type="number"
+                  {...form.register("price")}
+                  placeholder="0"
+                  step="0.01"
+                  className="rounded-full border-border/70 h-11 px-4 focus-visible:ring-orange-400 focus-visible:border-orange-400"
+                />
                 {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
               </div>
-              <div>
-                <Label htmlFor="item-description">Description</Label>
-                <Textarea id="item-description" {...form.register("description")} placeholder="Describe the item" />
-                {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
-              </div>
-              <div className="pt-4">
-                <Label className="font-semibold">Variations / Sizes</Label>
-                <div className="mt-2 flex items-start gap-2">
-                  <div className="flex-grow space-y-1">
-                    <Label htmlFor="new-subitem-name" className="sr-only">Variation Name</Label>
-                    <Input
-                      id="new-subitem-name"
-                      placeholder="Variation name (e.g., Small)"
-                      value={newSubItemName}
-                      onChange={(e) => setNewSubItemName(e.target.value)}
-                    />
-                  </div>
-                  <div className="w-40 space-y-1">
-                    <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
-                    <Input
-                      id="new-subitem-price"
-                      type="number"
-                      placeholder="Price (optional)"
-                      value={newSubItemPrice}
-                      onChange={(e) => setNewSubItemPrice(e.target.value)}
-                      step="0.01"
-                    />
-                  </div>
-                  <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick} className="mt-0 h-10 w-10 shrink-0" aria-label="Add variation">
-                    <Plus className="h-5 w-5" />
-                  </Button>
-                </div>
-                {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
-                {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
-                  <div key={index}>
-                    {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
-                    {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
-                  </div>
-                ))}
-              </div>
-
-
-              {fields.length > 0 && (
-                <div className="mt-4 space-y-3">
-                  <Label>Added Variations: {fields.length}</Label>
-                  <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto">
-                    {fields.map((field, index) => {
-                      const currentPrice = form.watch(`subItems.${index}.price`);
-                      return (
-                        <div key={field.id} className="flex items-center justify-between p-2 rounded-md bg-card shadow-sm">
-                          <div className="flex items-center gap-2 flex-grow">
-                            <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
-                            {typeof currentPrice === 'number' && (
-                              <>
-                                <span className="text-xs text-muted-foreground">-</span>
-                                <span className="text-sm font-medium text-foreground whitespace-nowrap">
-                                  ৳{currentPrice.toLocaleString()}
-                                </span>
-                              </>
-                            )}
-                            {currentPrice === undefined && (
-                              <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
-                            )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => remove(index)}
-                            className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
-                            aria-label={`Remove ${form.watch(`subItems.${index}.name`)} variation`}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
-          </ScrollArea>
-          <DialogFooter className="p-6 pt-4 border-t mt-auto">
-            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Save Changes'}</Button>
-          </DialogFooter>
-        </form>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label htmlFor="item-description" className="text-sm font-semibold text-foreground">Description</Label>
+              <Textarea
+                id="item-description"
+                {...form.register("description")}
+                placeholder="Describe the item"
+                className="rounded-2xl border-border/70 px-4 pt-3 focus-visible:ring-orange-400 focus-visible:border-orange-400 resize-none min-h-[80px]"
+              />
+              {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
+            </div>
+
+            {/* Variations Section */}
+            <div className="space-y-2 pt-1">
+              <Label className="text-sm font-semibold text-foreground">Variations / Sizes</Label>
+              <div className="flex items-start gap-2">
+                <div className="flex-grow">
+                  <Label htmlFor="new-subitem-name" className="sr-only">Variation Name</Label>
+                  <Input
+                    id="new-subitem-name"
+                    placeholder="Variation name (e.g., Small)"
+                    value={newSubItemName}
+                    onChange={(e) => setNewSubItemName(e.target.value)}
+                    className="rounded-full border-border/70 h-10 px-4 focus-visible:ring-orange-400 focus-visible:border-orange-400"
+                  />
+                </div>
+                <div className="w-36">
+                  <Label htmlFor="new-subitem-price" className="sr-only">Variation Price</Label>
+                  <Input
+                    id="new-subitem-price"
+                    type="number"
+                    placeholder="Price (opt.)"
+                    value={newSubItemPrice}
+                    onChange={(e) => setNewSubItemPrice(e.target.value)}
+                    step="0.01"
+                    className="rounded-full border-border/70 h-10 px-4 focus-visible:ring-orange-400 focus-visible:border-orange-400"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={handleAddSubItemClick}
+                  className="h-10 w-10 shrink-0 rounded-full bg-orange-500 hover:bg-orange-600 text-white p-0"
+                  aria-label="Add variation"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {form.formState.errors.subItems?.root?.message && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
+              {Array.isArray(form.formState.errors.subItems) && form.formState.errors.subItems.map((error, index) => (
+                <div key={index}>
+                  {error?.name && <p className="text-sm text-destructive mt-1">Variation {index + 1} Name: {error.name.message}</p>}
+                  {error?.price && <p className="text-sm text-destructive mt-1">Variation {index + 1} Price: {error.price.message}</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* Added Variations List */}
+            {fields.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-foreground">Added Variations: {fields.length}</Label>
+                <div className="space-y-2 rounded-2xl border border-border bg-muted/30 p-3 max-h-44 overflow-y-auto">
+                  {fields.map((field, index) => {
+                    const currentPrice = form.watch(`subItems.${index}.price`);
+                    return (
+                      <div key={field.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-card shadow-sm border border-border/50">
+                        <div className="flex items-center gap-2 flex-grow min-w-0">
+                          <span className="text-sm text-foreground truncate">{form.watch(`subItems.${index}.name`)}</span>
+                          {typeof currentPrice === 'number' && (
+                            <>
+                              <span className="text-xs text-muted-foreground">·</span>
+                              <span className="text-sm font-medium text-orange-500 whitespace-nowrap">
+                                ৳{currentPrice.toLocaleString()}
+                              </span>
+                            </>
+                          )}
+                          {currentPrice === undefined && (
+                            <span className="text-xs text-muted-foreground italic ml-1">(No price)</span>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0 rounded-full"
+                          aria-label={`Remove ${form.watch(`subItems.${index}.name`)} variation`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+          </div>
+        </ScrollArea>
+
+        {/* Footer — side by side Cancel & Save buttons */}
+        <div className="px-6 pb-6 pt-4 flex gap-3 bg-background">
+          {isMobile ? (
+            <SheetClose asChild>
+              <Button type="button" variant="outline" className="flex-1 h-11 rounded-full text-muted-foreground">
+                Cancel
+              </Button>
+            </SheetClose>
+          ) : (
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="flex-1 h-11 rounded-full text-muted-foreground">
+                Cancel
+              </Button>
+            </DialogClose>
+          )}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 h-11 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+          >
+            {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Item')}
+          </Button>
+        </div>
+      </form>
+    </>
+  );
+
+  /* ── Mobile: bottom Sheet ─────────────────────────────────────── */
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent
+          side="bottom"
+          className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col max-h-[92vh] [&>button]:hidden"
+        >
+          {/* Drag handle */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+          </div>
+          {formInner}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  /* ── Desktop: centered Dialog ─────────────────────────────────── */
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh] p-0 gap-0 rounded-2xl overflow-hidden border-0 shadow-2xl">
+        {formInner}
       </DialogContent>
     </Dialog>
   );
@@ -364,6 +472,14 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting, initialDat
     mode: 'onChange',
   });
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       form.reset({
@@ -377,33 +493,88 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting, initialDat
   const dialogDescription = initialData ? "Update the details for this category." : "Create a new category to organize your MagicTab items.";
   const submitButtonText = initialData ? (isSubmitting ? 'Saving...' : 'Save Changes') : (isSubmitting ? 'Adding...' : 'Add Category');
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md flex flex-col max-h-[calc(100vh-80px)]">
-        <DialogHeader>
-          <DialogTitle>{dialogTitle}</DialogTitle>
-          <DialogDescription>{dialogDescription}</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
-          <ScrollArea className="flex-grow min-h-0 p-4">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="category-name">Category Name</Label>
-                <Input id="category-name" {...form.register("name")} placeholder="e.g., Appetizers" />
-                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="category-icon">Icon (Emoji or short text)</Label>
-                <Input id="category-icon" {...form.register("icon")} placeholder="e.g., 🍔" />
+  const formInner = (
+    <>
+      {/* Header */}
+      <div className="relative px-6 pt-6 pb-5 bg-background">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
+            <span className="text-2xl">{initialData?.icon || "📁"}</span>
+          </div>
+          <div className="flex-1 min-w-0 pt-0.5">
+            <DialogTitle className="text-lg font-bold leading-tight text-foreground">{dialogTitle}</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-0.5">{dialogDescription}</DialogDescription>
+          </div>
+        </div>
+      </div>
+
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
+        <ScrollArea className="flex-grow">
+          <div className="px-6 pb-2 space-y-5">
+            <div className="flex gap-3 items-start">
+              <div className="w-28 space-y-1.5">
+                <Label htmlFor="category-icon" className="text-sm font-semibold text-foreground">Icon</Label>
+                <Input
+                  id="category-icon"
+                  {...form.register("icon")}
+                  placeholder="e.g., 🍔"
+                  className="rounded-full border-border/70 h-11 px-4 text-center text-lg focus-visible:ring-orange-400 focus-visible:border-orange-400"
+                />
                 {form.formState.errors.icon && <p className="text-sm text-destructive mt-1">{form.formState.errors.icon.message}</p>}
               </div>
+              <div className="flex-1 space-y-1.5">
+                <Label htmlFor="category-name" className="text-sm font-semibold text-foreground">Category Name</Label>
+                <Input
+                  id="category-name"
+                  {...form.register("name")}
+                  placeholder="e.g., Appetizers"
+                  className="rounded-full border-border/70 h-11 px-4 focus-visible:ring-orange-400 focus-visible:border-orange-400"
+                />
+                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
+              </div>
             </div>
-          </ScrollArea>
-          <DialogFooter className="pt-4 border-t mt-auto">
-            <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-            <Button type="submit" disabled={isSubmitting}>{submitButtonText}</Button>
-          </DialogFooter>
-        </form>
+          </div>
+        </ScrollArea>
+
+        <div className="px-6 pb-6 pt-4 flex gap-3 bg-background">
+          {isMobile ? (
+            <SheetClose asChild>
+              <Button type="button" variant="outline" className="flex-1 h-11 rounded-full text-muted-foreground">Cancel</Button>
+            </SheetClose>
+          ) : (
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="flex-1 h-11 rounded-full text-muted-foreground">Cancel</Button>
+            </DialogClose>
+          )}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 h-11 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+          >
+            {submitButtonText}
+          </Button>
+        </div>
+      </form>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={isOpen} onOpenChange={onOpenChange}>
+        <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col max-h-[80vh] [&>button]:hidden">
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+          </div>
+          {formInner}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh] p-0 gap-0 rounded-2xl overflow-hidden border-0 shadow-2xl">
+        {formInner}
       </DialogContent>
     </Dialog>
   );
@@ -975,7 +1146,7 @@ export default function MagicTabPage() {
 
       <div className="flex flex-col md:flex-row h-[calc(100vh-theme(spacing.16)-1px)] overflow-hidden">
 
-        <div className="hidden md:block">
+        <div className="hidden md:block h-full">
           <CategoryList
             categories={apiCategories}
             onCategoryChange={setActiveCategoryId}

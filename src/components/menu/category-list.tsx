@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { ReactNode } from 'react';
@@ -6,8 +5,11 @@ import React, { useMemo, useState, useEffect } from 'react';
 import {
   Edit,
   PlusCircle,
+  Search,
+  X,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
@@ -43,6 +45,7 @@ function CategoryListComponent({
 }: CategoryListProps): ReactNode {
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [catSearch, setCatSearch] = useState('');
 
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -73,22 +76,50 @@ function CategoryListComponent({
     onCategoryChange(categoryId);
   };
 
-  const sortedCategories = useMemo(() => {
-    return [...categories].sort((a,b) => a.name.localeCompare(b.name));
-  }, [categories]);
+  const filteredCategories = useMemo(() => {
+    const sorted = [...categories].sort((a,b) => a.name.localeCompare(b.name));
+    if (!catSearch.trim()) return sorted;
+    
+    const term = catSearch.toLowerCase();
+    return sorted.filter(c => 
+      c.name.toLowerCase().includes(term) || 
+      (c.icon && c.icon.includes(term))
+    );
+  }, [categories, catSearch]);
 
   return (
-    <aside className="w-full md:w-72 bg-card border-b md:border-b-0 md:border-r border-border flex flex-col shrink-0">
-      <div className="p-4 border-b border-border hidden md:flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
-        <Button variant="ghost" size="icon" onClick={onAddCategory} className="h-8 w-8" aria-label="Add New Category">
-          <PlusCircle className="h-5 w-5" />
-        </Button>
+    <aside className="w-full md:w-72 md:h-full bg-card border-b md:border-b-0 md:border-r border-border flex flex-col shrink-0">
+      <div className="p-4 border-b border-border hidden md:flex flex-col gap-3">
+        <div className="flex justify-between items-center w-full">
+          <h2 className="text-lg font-semibold text-foreground">All Categories</h2>
+          <Button variant="ghost" size="icon" onClick={onAddCategory} className="h-8 w-8" aria-label="Add New Category">
+            <PlusCircle className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="relative group">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Input 
+            placeholder="Filter categories..." 
+            className="h-8 pl-8 pr-8 text-xs bg-muted/50 focus-visible:ring-primary border-none"
+            value={catSearch}
+            onChange={(e) => setCatSearch(e.target.value)}
+          />
+          {catSearch && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+              onClick={() => setCatSearch('')}
+            >
+              <X className="h-3.2 w-3.2 text-muted-foreground" />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div 
         ref={containerRef}
-        className="flex-1 flex md:block overflow-x-auto md:overflow-x-hidden md:overflow-y-auto no-scrollbar scroll-smooth h-14 md:h-auto"
+        className="flex-1 flex md:block overflow-x-auto md:overflow-x-hidden md:overflow-y-auto no-scrollbar scroll-smooth h-14 md:h-full md:min-h-0"
       >
         {loading && (
           <div className="flex md:block p-2.5 space-x-2 md:space-x-0 md:space-y-2.5 min-w-full items-center">
@@ -100,11 +131,13 @@ function CategoryListComponent({
         
         {error && <p className="p-4 text-sm text-destructive whitespace-nowrap">Error: {error}</p>}
         
-        {!loading && !error && sortedCategories.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground whitespace-nowrap">No categories found.</p>
+        {!loading && !error && filteredCategories.length === 0 && (
+          <p className="p-4 text-sm text-muted-foreground whitespace-nowrap">
+            {catSearch ? "No matches found." : "No categories found."}
+          </p>
         )}
         
-        {!loading && !error && sortedCategories.length > 0 && (
+        {!loading && !error && filteredCategories.length > 0 && (
           <div className="flex md:block p-2.5 transition-all md:p-3 space-x-2 md:space-x-0 md:space-y-2.5 min-w-full items-center">
             {/* Mobile Header Button for Adding Category */}
             <Button 
@@ -117,7 +150,7 @@ function CategoryListComponent({
               <PlusCircle className="h-4 w-4" />
             </Button>
 
-            {sortedCategories.map(category => (
+            {filteredCategories.map(category => (
               <div 
                 key={category.id} 
                 data-category-id={category.id}

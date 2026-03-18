@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { parsePhoneNumberFromString } from 'libphonenumber-js'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -34,3 +35,22 @@ export const decodeHtmlEntities = (text: string | null | undefined): string => {
   
   return workText;
 };
+
+export function isValidWhatsApp(number: string): boolean {
+  if (!number) return false;
+  
+  // Clean the number from spaces/dashes
+  const cleaned = number.replace(/\D/g, '');
+  
+  // Truly friendly local validation: 
+  // If it's a standard 11-digit BD number starting with 01, trust it for the UI phase
+  if (cleaned.length === 11 && cleaned.startsWith('01')) {
+    return true;
+  }
+
+  // Fallback to library for international formats (+880, etc.)
+  const phoneNumber = parsePhoneNumberFromString(number, 'BD');
+  if (!phoneNumber) return false;
+
+  return phoneNumber.isValid() && (phoneNumber.getType() === 'MOBILE' || phoneNumber.getType() === 'FIXED_LINE_OR_MOBILE');
+}

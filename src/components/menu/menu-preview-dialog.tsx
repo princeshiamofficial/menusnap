@@ -15,6 +15,10 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -83,8 +87,16 @@ export function MenuPreviewDialog({
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const derivedDisplayedCategories = useMemo(() => {
     const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
@@ -116,6 +128,27 @@ export function MenuPreviewDialog({
     return grouped;
   }, [selectedItems]);
 
+  // Per-category ordered item lists (for drag-to-reorder within each category)
+  const [orderedItemsByCategory, setOrderedItemsByCategory] = useState<Record<string, MenuItem[]>>({});
+
+  useEffect(() => {
+    setOrderedItemsByCategory(prev => {
+      const next: Record<string, MenuItem[]> = {};
+      const grouped = itemsGroupedByCategory;
+      for (const catId of Object.keys(grouped)) {
+        const incoming = grouped[catId];
+        const existing = prev[catId] || [];
+        // Keep existing order, add new items at the end, remove missing ones
+        const existingIds = new Set(existing.map(i => i.id));
+        const incomingIds = new Set(incoming.map(i => i.id));
+        const reordered = existing.filter(i => incomingIds.has(i.id));
+        const added = incoming.filter(i => !existingIds.has(i.id));
+        next[catId] = [...reordered, ...added];
+      }
+      return next;
+    });
+  }, [itemsGroupedByCategory]);
+
   const categoriesToDisplayInMainPanel = useMemo(() => {
     if (activeCategoryId) {
       return orderedDialogCategories.filter(cat => cat.id === activeCategoryId);
@@ -146,7 +179,7 @@ export function MenuPreviewDialog({
     }
 
     const reorderedItemsPayload = orderedDialogCategories.flatMap(category => {
-      const itemsInCategory = itemsGroupedByCategory[category.id] || [];
+      const itemsInCategory = orderedItemsByCategory[category.id] || itemsGroupedByCategory[category.id] || [];
       return itemsInCategory.map(item => ({
         id: String(item.id),
         name: item.name,
@@ -238,147 +271,173 @@ export function MenuPreviewDialog({
   }, [isOpen, activeCategoryId, derivedDisplayedCategories, orderedDialogCategories]);
 
 
-  return (
+  const dialogInner = (
     <>
-      <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle className="text-xl">Menu Preview</DialogTitle>
-            <DialogDescription>
-              Review your selected MagicTab items before finalizing.
-            </DialogDescription>
-            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-              <X className="h-5 w-5" />
-              <span className="sr-only">Close</span>
-            </DialogClose>
-          </DialogHeader>
+      <DialogHeader className="px-6 py-4 border-b">
+        <DialogTitle className="text-xl">Menu Preview</DialogTitle>
+        <DialogDescription>
+          Review your selected MagicTab items before finalizing.
+        </DialogDescription>
+        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <X className="h-5 w-5" />
+          <span className="sr-only">Close</span>
+        </DialogClose>
+      </DialogHeader>
 
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar */}
-            <div className={cn(
-              "border-r bg-muted/40 transition-all duration-300 ease-in-out",
-              isSidebarCollapsed ? "w-12" : "w-64"
-            )}>
-              <div className="flex items-center justify-between p-2 h-14 border-b">
-                {!isSidebarCollapsed && <span className="font-medium text-sm px-2">Categories</span>}
-                <Button variant="ghost" size="icon" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="h-8 w-8">
-                  <ChevronLeft className={cn("h-4 w-4 transition-transform", isSidebarCollapsed && "rotate-180")} />
-                </Button>
-              </div>
-              <ScrollArea className={cn("h-[calc(100%-56px)]", isSidebarCollapsed ? "p-1" : "p-2")}>
-                {orderedDialogCategories.length > 0 && (
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar */}
+        <div className={cn(
+          "border-r bg-muted/40 transition-all duration-300 ease-in-out",
+          isSidebarCollapsed ? "w-12" : "w-64"
+        )}>
+          <div className="flex items-center justify-between p-2 h-14 border-b">
+            {!isSidebarCollapsed && <span className="font-medium text-sm px-2">Categories</span>}
+            <Button variant="ghost" size="icon" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="h-8 w-8">
+              <ChevronLeft className={cn("h-4 w-4 transition-transform", isSidebarCollapsed && "rotate-180")} />
+            </Button>
+          </div>
+          <ScrollArea className={cn("h-[calc(100%-56px)]", isSidebarCollapsed ? "p-1" : "p-2")}>
+            {orderedDialogCategories.length > 0 && (
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start text-sm mb-1 h-9",
+                  !activeCategoryId ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
+                  isSidebarCollapsed ? "justify-center px-0" : "px-2"
+                )}
+                onClick={() => setActiveCategoryId(null)}
+                title="All Items"
+              >
+                <FileText className="h-4 w-4 shrink-0" />
+                {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
+              </Button>
+            )}
+            <Reorder.Group axis="y" values={orderedDialogCategories} onReorder={setOrderedDialogCategories} className="space-y-1">
+              {orderedDialogCategories.map(category => (
+                <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start text-sm mb-1 h-9",
-                      !activeCategoryId ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
+                      "w-full justify-start text-sm mb-0 h-9 flex items-center",
+                      activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
                       isSidebarCollapsed ? "justify-center px-0" : "px-2"
                     )}
-                    onClick={() => setActiveCategoryId(null)}
-                    title="All Items"
+                    onClick={() => setActiveCategoryId(category.id)}
+                    title={decodeHtmlEntities(category.name)}
                   >
-                    <FileText className="h-4 w-4 shrink-0" />
-                    {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
+                    <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
+                    {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{decodeHtmlEntities(category.name)}</span>}
+                    {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0" />}
                   </Button>
-                )}
-                <Reorder.Group axis="y" values={orderedDialogCategories} onReorder={setOrderedDialogCategories} className="space-y-1">
-                  {orderedDialogCategories.map(category => (
-                    <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-start text-sm mb-0 h-9 flex items-center",
-                          activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
-                          isSidebarCollapsed ? "justify-center px-0" : "px-2"
+                </Reorder.Item>
+              ))}
+            </Reorder.Group>
+            {orderedDialogCategories.length === 0 && !isSidebarCollapsed && (
+              <p className="text-xs text-muted-foreground p-2 text-center">No categories with selected items.</p>
+            )}
+          </ScrollArea>
+        </div>
+
+        {/* Right Content Panel */}
+        <ScrollArea className="flex-1 p-6 bg-background">
+          {categoriesToDisplayInMainPanel.map(category => {
+            const items = orderedItemsByCategory[category.id] || itemsGroupedByCategory[category.id] || [];
+            if (items.length === 0) return null;
+
+            return (
+              <div key={category.id} className="mb-8">
+                <div className="flex items-center mb-4">
+                  <span className="text-xl mr-2 text-primary">{category.icon}</span>
+                  <h3 className="text-lg font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h3>
+                  <Badge variant="secondary" className="ml-2 text-xs">{items.length}</Badge>
+                </div>
+                <Reorder.Group
+                  axis="y"
+                  values={items}
+                  onReorder={(newOrder) =>
+                    setOrderedItemsByCategory(prev => ({ ...prev, [category.id]: newOrder }))
+                  }
+                  className="space-y-3"
+                >
+                  {items.map((item) => (
+                    <Reorder.Item key={item.id} value={item} className="flex items-center p-3 border rounded-lg bg-card shadow-sm cursor-grab active:cursor-grabbing active:shadow-lg active:scale-[1.01] transition-shadow">
+                      {/* Drag handle */}
+                      <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0 mr-2" />
+                      <Image
+                        src={STATIC_ITEM_IMAGE_URL}
+                        alt={decodeHtmlEntities(item.name)}
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
+                        data-ai-hint="item illustration"
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>
                         )}
-                        onClick={() => setActiveCategoryId(category.id)}
-                        title={decodeHtmlEntities(category.name)}
-                      >
-                        <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
-                        {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{decodeHtmlEntities(category.name)}</span>}
-                        {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0" />}
-                      </Button>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
+                          onClick={() => onRemoveItem(item.id)}
+                        >
+                          <X className="h-3 w-3 mr-1" /> Remove
+                        </Button>
+                      </div>
                     </Reorder.Item>
                   ))}
                 </Reorder.Group>
-                {orderedDialogCategories.length === 0 && !isSidebarCollapsed && (
-                  <p className="text-xs text-muted-foreground p-2 text-center">No categories with selected items.</p>
-                )}
-              </ScrollArea>
+              </div>
+            );
+          })}
+          {selectedItems.length === 0 && (
+            <div className="text-center text-muted-foreground py-10">
+              <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
+              <p>No items selected for preview.</p>
+              <p className="text-xs mt-1">Go back to select some items from the MagicTab.</p>
             </div>
+          )}
+        </ScrollArea>
+      </div>
 
-            {/* Right Content Panel */}
-            <ScrollArea className="flex-1 p-6 bg-background">
-              {categoriesToDisplayInMainPanel.map(category => {
-                const items = itemsGroupedByCategory[category.id] || [];
-                if (items.length === 0) return null;
+      <DialogFooter className="px-6 py-4 border-t mt-auto">
+        <Button
+          variant="secondary"
+          className={cn(
+            "bg-foreground text-background hover:bg-foreground/90",
+            selectedItems.length > 0 && "animate-glow"
+          )}
+          onClick={() => setIsCustomerFormOpen(true)}
+          disabled={selectedItems.length === 0}
+        >
+          <ShoppingCart className="h-4 w-4 mr-2" /> Share with Color Hut
+        </Button>
+      </DialogFooter>
+    </>
+  );
 
-                return (
-                  <div key={category.id} className="mb-8">
-                    <div className="flex items-center mb-4">
-                      <span className="text-xl mr-2 text-primary">{category.icon}</span>
-                      <h3 className="text-lg font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h3>
-                      <Badge variant="secondary" className="ml-2 text-xs">{items.length}</Badge>
-                    </div>
-                    <div className="space-y-3">
-                      {items.map((item, idx) => (
-                        <div key={`preview-item-${category.id}-${item.id}-${idx}`} className="flex items-center p-3 border rounded-lg bg-card shadow-sm">
-                          <Image
-                            src={STATIC_ITEM_IMAGE_URL}
-                            alt={decodeHtmlEntities(item.name)}
-                            width={48}
-                            height={48}
-                            className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
-                            data-ai-hint="item illustration"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
-                            {item.description && (
-                              <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
-                              onClick={() => onRemoveItem(item.id)}
-                            >
-                              <X className="h-3 w-3 mr-1" /> Remove
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              {selectedItems.length === 0 && (
-                <div className="text-center text-muted-foreground py-10">
-                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No items selected for preview.</p>
-                  <p className="text-xs mt-1">Go back to select some items from the MagicTab.</p>
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-
-          <DialogFooter className="px-6 py-4 border-t mt-auto">
-            <Button
-              variant="secondary"
-              className={cn(
-                "bg-foreground text-background hover:bg-foreground/90",
-                selectedItems.length > 0 && "animate-glow"
-              )}
-              onClick={() => setIsCustomerFormOpen(true)}
-              disabled={selectedItems.length === 0}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" /> Share with Color Hut
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  return (
+    <>
+      {isMobile ? (
+        <Sheet open={isOpen} onOpenChange={onOpenChange}>
+          <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col max-h-[95vh] [&>button]:hidden">
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+            {dialogInner}
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+            {dialogInner}
+          </DialogContent>
+        </Dialog>
+      )}
 
       <CustomerDetailsForm
         isOpen={isCustomerFormOpen}
