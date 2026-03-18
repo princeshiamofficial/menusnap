@@ -1,82 +1,68 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { getMetaPixelSettings } from '@/app/actions/meta-events';
-
-// Store the loaded state to prevent re-injection on navigation
-let pixelLoaded = false;
-
-// Helper function for the noscript tag
-const noscript = (pixelId: string) => {
-  const noscript = document.createElement('noscript');
-  const img = document.createElement('img');
-  img.height = 1;
-  img.width = 1;
-  img.style.display = 'none';
-  img.src = `https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1`;
-  noscript.appendChild(img);
-  document.head.appendChild(noscript);
-};
+import { getMetaPixelSettings, type MetaPixelSettings } from '@/app/actions/meta-events';
 
 export function MetaPixelScriptLoader() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [settings, setSettings] = useState<MetaPixelSettings | null>(null);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadPixel() {
-      if (pixelLoaded) {
-        // If the base script is already loaded, just send pageview events on navigation
-        if (window.fbq) {
-          window.fbq('track', 'PageView');
-        }
-        return;
-      }
-      
-      const settings = await getMetaPixelSettings();
-
-      if (active && settings.isEnabled && settings.pixelId) {
-        
-        // Mark as loaded so this block doesn't run again
-        pixelLoaded = true;
-
-        // Initialize the fbq function
-        window.fbq = window.fbq || function() {
-          (window.fbq.q = window.fbq.q || []).push(arguments);
-        };
-        if (!window.fbq.loaded) {
-          window.fbq.loaded = true;
-          window.fbq.version = '2.0';
-          window.fbq.queue = [];
-        }
-        
-        // Inject the script
-        const script = document.createElement('script');
-        script.async = true;
-        script.src = `https://connect.facebook.net/en_US/fbevents.js`;
-        script.onload = () => {
-          if (window.fbq) {
-            window.fbq('init', settings.pixelId);
-            window.fbq('track', 'PageView'); // Initial page view
-          }
-        };
-        document.head.appendChild(script);
-
-        // Add the noscript tag for browsers that don't support JavaScript
-        noscript(settings.pixelId);
+    async function fetchSettings() {
+      try {
+        const s = await getMetaPixelSettings();
+        setSettings(s);
+      } catch (err) {
+        console.error('Failed to load Meta Pixel settings', err);
       }
     }
+    fetchSettings();
+  }, []);
 
-    loadPixel();
+  // Track pageviews on route changes
+  useEffect(() => {
+    if (settings?.isEnabled && settings?.pixelId && window.fbq) {
+      window.fbq('track', 'PageView');
+    }
+  }, [pathname, searchParams, settings]);
 
-    return () => {
-      active = false;
-    };
-  }, [pathname, searchParams]);
+  if (!settings?.isEnabled || !settings?.pixelId) {
+    return null;
+  }
 
-  return null;
+  return (
+    <>
+      <Script
+        id="fb-pixel"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '${settings.pixelId}');
+            fbq('track', 'PageView');
+          `,
+        }}
+      />
+      <noscript>
+        <img
+          height="1"
+          width="1"
+          style={{ display: 'none' }}
+          src={`https://www.facebook.com/tr?id=${settings.pixelId}&ev=PageView&noscript=1`}
+          alt=""
+        />
+      </noscript>
+    </>
+  );
 }
