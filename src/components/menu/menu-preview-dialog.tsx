@@ -273,16 +273,23 @@ export function MenuPreviewDialog({
 
   const dialogInner = (
     <>
-      <DialogHeader className="px-6 py-4 border-b">
-        <DialogTitle className="text-xl">Menu Preview</DialogTitle>
-        <DialogDescription>
-          Review your selected MagicTab items before finalizing.
-        </DialogDescription>
-        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-          <X className="h-5 w-5" />
-          <span className="sr-only">Close</span>
-        </DialogClose>
-      </DialogHeader>
+      <div className="relative px-6 pt-6 pb-5 bg-background border-b">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
+            <ShoppingCart className="h-6 w-6 text-orange-500" />
+          </div>
+          <div className="flex-1 min-w-0 pt-0.5">
+            <DialogTitle className="text-lg font-bold leading-tight text-foreground">Menu Preview</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+              Review your selected MagicTab items before finalizing.
+            </DialogDescription>
+          </div>
+          <DialogClose className="rounded-sm opacity-70 transition-opacity hover:opacity-100 disabled:pointer-events-none">
+            <X className="h-5 w-5" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
+        </div>
+      </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
@@ -301,26 +308,26 @@ export function MenuPreviewDialog({
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start text-sm mb-1 h-9",
-                  !activeCategoryId ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
-                  isSidebarCollapsed ? "justify-center px-0" : "px-2"
+                  "w-full justify-start text-sm mb-1 h-9 rounded-full",
+                  !activeCategoryId ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-semibold" : "hover:bg-accent",
+                  isSidebarCollapsed ? "justify-center px-0" : "px-3"
                 )}
                 onClick={() => setActiveCategoryId(null)}
                 title="All Items"
               >
-                <FileText className="h-4 w-4 shrink-0" />
+                <FileText className={cn("h-4 w-4 shrink-0", !activeCategoryId ? "text-orange-600 dark:text-orange-400" : "")} />
                 {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
               </Button>
             )}
             <Reorder.Group axis="y" values={orderedDialogCategories} onReorder={setOrderedDialogCategories} className="space-y-1">
               {orderedDialogCategories.map(category => (
-                <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
+                <Reorder.Item key={category.id} value={category} className="bg-card rounded-full overflow-hidden">
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start text-sm mb-0 h-9 flex items-center",
-                      activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent",
-                      isSidebarCollapsed ? "justify-center px-0" : "px-2"
+                      "w-full justify-start text-sm mb-0 h-9 flex items-center rounded-none",
+                      activeCategoryId === category.id ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-semibold" : "hover:bg-accent",
+                      isSidebarCollapsed ? "justify-center px-0" : "px-3"
                     )}
                     onClick={() => setActiveCategoryId(category.id)}
                     title={decodeHtmlEntities(category.name)}
@@ -404,11 +411,10 @@ export function MenuPreviewDialog({
         </ScrollArea>
       </div>
 
-      <DialogFooter className="px-6 py-4 border-t mt-auto">
+      <DialogFooter className="px-6 py-4 border-t mt-auto bg-background/50">
         <Button
-          variant="secondary"
           className={cn(
-            "bg-foreground text-background hover:bg-foreground/90",
+            "w-full h-11 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200",
             selectedItems.length > 0 && "animate-glow"
           )}
           onClick={() => setIsCustomerFormOpen(true)}
