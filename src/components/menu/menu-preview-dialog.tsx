@@ -19,6 +19,7 @@ import {
   Sheet,
   SheetContent,
 } from "@/components/ui/sheet";
+import { useDragControls } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -321,22 +322,13 @@ export function MenuPreviewDialog({
             )}
             <Reorder.Group axis="y" values={orderedDialogCategories} onReorder={setOrderedDialogCategories} className="space-y-1">
               {orderedDialogCategories.map(category => (
-                <Reorder.Item key={category.id} value={category} className="bg-card rounded-full overflow-hidden">
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start text-sm mb-0 h-9 flex items-center rounded-none",
-                      activeCategoryId === category.id ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-semibold" : "hover:bg-accent",
-                      isSidebarCollapsed ? "justify-center px-0" : "px-3"
-                    )}
-                    onClick={() => setActiveCategoryId(category.id)}
-                    title={decodeHtmlEntities(category.name)}
-                  >
-                    <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
-                    {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{decodeHtmlEntities(category.name)}</span>}
-                    {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0" />}
-                  </Button>
-                </Reorder.Item>
+                <CategoryReorderItem
+                  key={category.id}
+                  category={category}
+                  isSidebarCollapsed={isSidebarCollapsed}
+                  isActive={activeCategoryId === category.id}
+                  onClick={() => setActiveCategoryId(category.id)}
+                />
               ))}
             </Reorder.Group>
             {orderedDialogCategories.length === 0 && !isSidebarCollapsed && (
@@ -367,35 +359,11 @@ export function MenuPreviewDialog({
                   className="space-y-3"
                 >
                   {items.map((item) => (
-                    <Reorder.Item key={item.id} value={item} className="flex items-center p-3 border rounded-lg bg-card shadow-sm cursor-grab active:cursor-grabbing active:shadow-lg active:scale-[1.01] transition-shadow">
-                      {/* Drag handle */}
-                      <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0 mr-2" />
-                      <Image
-                        src={STATIC_ITEM_IMAGE_URL}
-                        alt={decodeHtmlEntities(item.name)}
-                        width={48}
-                        height={48}
-                        className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
-                        data-ai-hint="item illustration"
-                      />
-                      <div className="flex-1">
-                        <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
-                          onClick={() => onRemoveItem(item.id)}
-                        >
-                          <X className="h-3 w-3 mr-1" /> Remove
-                        </Button>
-                      </div>
-                    </Reorder.Item>
+                    <MenuPreviewItemReorderItem
+                      key={item.id}
+                      item={item}
+                      onRemove={() => onRemoveItem(item.id)}
+                    />
                   ))}
                 </Reorder.Group>
               </div>
@@ -457,3 +425,129 @@ export function MenuPreviewDialog({
     </>
   );
 }
+
+/* ── Long Press Reorder Helpers ───────────────────────────────────── */
+
+interface CategoryReorderItemProps {
+  category: Category;
+  isSidebarCollapsed: boolean;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+function CategoryReorderItem({ category, isSidebarCollapsed, isActive, onClick }: CategoryReorderItemProps) {
+  const controls = useDragControls();
+  const timer = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handlePointerDown = (event: React.PointerEvent) => {
+    // Only handle touch/long-press on mobile, standard drag usually works on desktop
+    const isTouch = event.pointerType === 'touch';
+    if (isTouch) {
+      timer.current = setTimeout(() => {
+        controls.start(event);
+      }, 300); // 300ms long-tap threshold
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (timer.current) clearTimeout(timer.current);
+  };
+
+  return (
+    <Reorder.Item
+      value={category}
+      dragControls={controls}
+      dragListener={false} // Custom long-press listener
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      className={cn(
+        "bg-card rounded-full overflow-hidden transition-all",
+        "active:scale-105 active:shadow-md active:z-50"
+      )}
+    >
+      <Button
+        variant="ghost"
+        className={cn(
+          "w-full justify-start text-sm mb-0 h-9 flex items-center rounded-none",
+          isActive ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-semibold" : "hover:bg-accent",
+          isSidebarCollapsed ? "justify-center px-0" : "px-3"
+        )}
+        onClick={onClick}
+        title={decodeHtmlEntities(category.name)}
+      >
+        <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
+        {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{decodeHtmlEntities(category.name)}</span>}
+        {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0 bg-transparent active:bg-transparent" style={{ touchAction: 'none' }} />}
+      </Button>
+    </Reorder.Item>
+  );
+}
+
+interface MenuPreviewItemReorderItemProps {
+  item: MenuItem;
+  onRemove: () => void;
+}
+
+function MenuPreviewItemReorderItem({ item, onRemove }: MenuPreviewItemReorderItemProps) {
+  const controls = useDragControls();
+  const timer = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handlePointerDown = (event: React.PointerEvent) => {
+    const isTouch = event.pointerType === 'touch';
+    if (isTouch) {
+      timer.current = setTimeout(() => {
+        controls.start(event);
+      }, 500); // 500ms long-tap threshold
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (timer.current) clearTimeout(timer.current);
+  };
+
+  return (
+    <Reorder.Item
+      value={item}
+      dragControls={controls}
+      dragListener={false}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      className={cn(
+        "flex items-center p-3 border rounded-lg bg-card shadow-sm transition-all",
+        "active:scale-[1.02] active:shadow-lg active:z-50 border-orange-200/50"
+      )}
+    >
+      <div className="shrink-0 mr-2 p-1 cursor-grab" style={{ touchAction: 'none' }} onPointerDown={(e) => controls.start(e)}>
+        <GripVertical className="h-4 w-4 text-muted-foreground/40" />
+      </div>
+      <Image
+        src={STATIC_ITEM_IMAGE_URL}
+        alt={decodeHtmlEntities(item.name)}
+        width={48}
+        height={48}
+        className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
+        data-ai-hint="item illustration"
+      />
+      <div className="flex-1">
+        <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
+        {item.description && (
+          <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>
+        )}
+      </div>
+      <div className="text-right">
+        <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
+        <Button
+          variant="link"
+          size="sm"
+          className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
+          onClick={onRemove}
+        >
+          <X className="h-3 w-3 mr-1" /> Remove
+        </Button>
+      </div>
+    </Reorder.Item>
+  );
+}
+
