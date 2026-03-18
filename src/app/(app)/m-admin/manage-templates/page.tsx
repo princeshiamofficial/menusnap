@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -404,18 +405,31 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
-      <ScrollArea className="flex-grow min-h-0">
-        <div className="space-y-4 p-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+      <div className="p-8 pb-4">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="flex-shrink-0 w-16 h-16 bg-[#fff1f2] rounded-2xl flex items-center justify-center">
+            <Layers className="h-8 w-8 text-[#e11d48]" />
+          </div>
           <div>
-            <Label htmlFor="templateName-add">Template Name*</Label>
-            <Input id="templateName-add" {...form.register("templateName")} placeholder="Enter template name" />
+            <DialogTitle className="text-2xl font-bold text-[#0f172a] leading-none mb-1">Add Template Info</DialogTitle>
+            <DialogDescription className="text-[#64748b] text-sm">
+              Fill out the details to create a new template.
+            </DialogDescription>
+          </div>
+        </div>
+      </div>
+      <ScrollArea className="flex-grow">
+        <div className="space-y-8 p-8 pt-0">
+          <div className="space-y-2">
+            <Label htmlFor="templateName-add" className="text-[#0f172a] font-semibold text-base">Template Name*</Label>
+            <Input id="templateName-add" {...form.register("templateName")} placeholder="Template name" className="h-14 rounded-2xl border-[#f1f5f9] bg-white px-4 text-slate-900" />
             {form.formState.errors.templateName && <p className="text-sm text-destructive mt-1">{form.formState.errors.templateName.message}</p>}
           </div>
 
-          <div>
-            <Label htmlFor="description-add">Description*</Label>
-            <Textarea id="description-add" {...form.register("description")} placeholder="Enter template description" rows={4} />
+          <div className="space-y-2">
+            <Label htmlFor="description-add" className="text-[#0f172a] font-semibold text-base">Description*</Label>
+            <Textarea id="description-add" {...form.register("description")} placeholder="Template description" rows={4} className="rounded-2xl border-[#f1f5f9] bg-white px-4 py-3 text-slate-900 resize-none" />
             {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
           </div>
 
@@ -455,9 +469,8 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
             />
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message as string}</p>}
           </div>
-          
-          <div>
-            <Label htmlFor="tags-add">Tag*</Label>
+          <div className="space-y-2">
+            <Label htmlFor="tags-add" className="text-[#0f172a] font-semibold text-base">Tag*</Label>
             <Controller
               control={control}
               name="tag"
@@ -499,18 +512,15 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
           </div>
         </div>
       </ScrollArea>
-      <DialogFooter className="p-6 pt-4 border-t">
-        <DialogClose asChild>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-        </DialogClose>
+      <div className="p-8 pb-10">
         <Button 
           type="submit" 
           disabled={form.formState.isSubmitting} 
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="w-full h-14 bg-[#e11d48] hover:bg-[#be123c] text-white text-lg font-bold rounded-2xl shadow-lg shadow-pink-200"
         >
-          {form.formState.isSubmitting ? "Adding..." : <><Save className="mr-2 h-4 w-4" /> Add Template</>}
+          {form.formState.isSubmitting ? "Adding..." : "Add Template"}
         </Button>
-      </DialogFooter>
+      </div>
     </form>
   );
 }
@@ -686,18 +696,31 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
-      <ScrollArea className="flex-grow min-h-0">
-        <div className="space-y-4 p-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+      <div className="p-8 pb-4">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="flex-shrink-0 w-16 h-16 bg-[#fff1f2] rounded-2xl flex items-center justify-center">
+            <FileEdit className="h-8 w-8 text-[#e11d48]" />
+          </div>
           <div>
-            <Label htmlFor={`templateName-edit-${templateData.id}`}>Template Name*</Label>
-            <Input id={`templateName-edit-${templateData.id}`} {...form.register("templateName")} placeholder="Enter template name" />
+            <DialogTitle className="text-2xl font-bold text-[#0f172a] leading-none mb-1">Edit Template</DialogTitle>
+            <DialogDescription className="text-[#64748b] text-sm">
+              Update the details for this template version.
+            </DialogDescription>
+          </div>
+        </div>
+      </div>
+      <ScrollArea className="flex-grow">
+        <div className="space-y-8 p-8 pt-0">
+          <div className="space-y-2">
+            <Label htmlFor={`templateName-edit-${templateData.id}`} className="text-[#0f172a] font-semibold text-base">Template Name*</Label>
+            <Input id={`templateName-edit-${templateData.id}`} {...form.register("templateName")} placeholder="Template name" className="h-14 rounded-2xl border-[#f1f5f9] bg-white px-4 text-slate-900" />
             {form.formState.errors.templateName && <p className="text-sm text-destructive mt-1">{form.formState.errors.templateName.message}</p>}
           </div>
 
-          <div>
-            <Label htmlFor={`description-edit-${templateData.id}`}>Description*</Label>
-            <Textarea id={`description-edit-${templateData.id}`} {...form.register("description")} placeholder="Enter template description" rows={4} />
+          <div className="space-y-2">
+            <Label htmlFor={`description-edit-${templateData.id}`} className="text-[#0f172a] font-semibold text-base">Description*</Label>
+            <Textarea id={`description-edit-${templateData.id}`} {...form.register("description")} placeholder="Template description" rows={4} className="rounded-2xl border-[#f1f5f9] bg-white px-4 py-3 text-slate-900 resize-none" />
             {form.formState.errors.description && <p className="text-sm text-destructive mt-1">{form.formState.errors.description.message}</p>}
           </div>
 
@@ -737,9 +760,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
             />
             {form.formState.errors.imageFile && <p className="text-sm text-destructive mt-1">{form.formState.errors.imageFile.message as string}</p>}
           </div>
-          
-          <div>
-            <Label htmlFor="tags-edit">Tag*</Label>
+          <div className="space-y-2">
+            <Label htmlFor="tags-edit" className="text-[#0f172a] font-semibold text-base">Tag*</Label>
             <Controller
               control={control}
               name="tag"
@@ -781,18 +803,15 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
           </div>
         </div>
       </ScrollArea>
-      <DialogFooter className="p-6 pt-4 border-t">
-        <DialogClose asChild>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-        </DialogClose>
+      <div className="p-8 pb-10">
         <Button 
           type="submit" 
           disabled={form.formState.isSubmitting} 
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="w-full h-14 bg-[#e11d48] hover:bg-[#be123c] text-white text-lg font-bold rounded-2xl shadow-lg shadow-pink-200"
         >
-          {form.formState.isSubmitting ? "Saving..." : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
+          {form.formState.isSubmitting ? "Saving..." : "Save Changes"}
         </Button>
-      </DialogFooter>
+      </div>
     </form>
   );
 }
@@ -1086,10 +1105,7 @@ export default function ManageTemplatesPage(): ReactNode {
       </section>
 
       <Dialog open={isAddTemplateDialogOpen} onOpenChange={setIsAddTemplateDialogOpen}>
-        <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)] p-0">
-          <DialogHeader className="p-6 pb-4 border-b">
-            <DialogTitle className="text-2xl">Add New Template</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)] p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
           <AddTemplateForm onSuccess={handleAddTemplateSuccess} onOpenChange={setIsAddTemplateDialogOpen} />
         </DialogContent>
       </Dialog>
@@ -1099,12 +1115,7 @@ export default function ManageTemplatesPage(): ReactNode {
             setIsEditTemplateDialogOpen(open);
             if (!open) setEditingTemplateData(null);
         }}>
-            <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)] p-0">
-              <DialogHeader className="p-6 pb-4 border-b">
-                <DialogTitle className="text-2xl">
-                    Edit Template {editingTemplateData.version ? `(v${editingTemplateData.version})` : ''}
-                </DialogTitle>
-              </DialogHeader>
+            <DialogContent className="sm:max-w-xl md:max-w-2xl flex flex-col max-h-[calc(100vh-80px)] p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
               <EditTemplateForm 
                   templateData={editingTemplateData} 
                   onSuccess={handleEditTemplateSuccess} 
