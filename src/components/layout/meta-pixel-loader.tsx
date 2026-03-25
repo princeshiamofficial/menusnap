@@ -30,6 +30,11 @@ export function MetaPixelScriptLoader() {
     }
   }, [pathname, searchParams, settings]);
 
+  // Disable Meta Pixel on admin pages
+  if (pathname?.startsWith('/m-admin')) {
+    return null;
+  }
+
   if (!settings?.isEnabled || !settings?.pixelId) {
     return null;
   }
