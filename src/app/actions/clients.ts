@@ -14,6 +14,7 @@ async function ensureClientsTable() {
         business_name VARCHAR(255) NOT NULL,
         business_type VARCHAR(50) NOT NULL,
         whatsapp_number VARCHAR(20) NOT NULL,
+        note TEXT,
         last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_whatsapp (whatsapp_number)
@@ -59,19 +60,51 @@ export async function saveClientLogin(businessName: string, businessType: string
 }
 
 /**
- * Fetches all leads (clients) from the database.
+ * Fetches leads (clients) from the database with pagination.
  */
-export async function getLeads() {
+export async function getLeads(page: number = 1, limit: number = 20) {
   try {
     await ensureClientsTable();
+    const offset = (page - 1) * limit;
     
     const [rows]: any = await pool.execute(
-      'SELECT * FROM clients ORDER BY last_login DESC'
+      'SELECT * FROM clients ORDER BY last_login DESC LIMIT ? OFFSET ?',
+      [limit, offset]
     );
     
-    return { success: true, leads: rows };
+    // Get total count for pagination info
+    const [countRows]: any = await pool.execute('SELECT COUNT(*) as total FROM clients');
+    const total = countRows[0].total;
+    
+    return { 
+      success: true, 
+      leads: rows, 
+      total, 
+      hasMore: (offset + rows.length) < total 
+    };
   } catch (error) {
     console.error("Database Error fetching leads:", error);
-    return { success: false, error: "Failed to fetch leads", leads: [] };
+    return { success: false, error: "Failed to fetch leads", leads: [], total: 0, hasMore: false };
+  }
+}
+
+/**
+ * Updates the note for a specific client.
+ */
+export async function updateClientNote(clientId: number, note: string) {
+  try {
+    const [result]: any = await pool.execute(
+      'UPDATE clients SET note = ? WHERE id = ?',
+      [note, clientId]
+    );
+    
+    if (result.affectedRows > 0) {
+      return { success: true };
+    } else {
+      return { success: false, error: "Client not found or no changes made" };
+    }
+  } catch (error) {
+    console.error("Database Error updating client note:", error);
+    return { success: false, error: "Failed to update note" };
   }
 }
