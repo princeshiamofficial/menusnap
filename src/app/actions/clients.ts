@@ -4,10 +4,11 @@
 import pool from '@/lib/mysql';
 
 /**
- * Ensures the clients table exists in the MySQL database.
+ * Ensures the clients table exists and has the required columns.
  */
 async function ensureClientsTable() {
   try {
+    // 1. Create table if it doesn't exist
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS clients (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -18,10 +19,18 @@ async function ensureClientsTable() {
         last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_whatsapp (whatsapp_number)
-      )
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // 2. Check if the 'note' column exists (for existing tables)
+    const [columns]: any = await pool.execute("SHOW COLUMNS FROM clients LIKE 'note'");
+    if (columns.length === 0) {
+      console.log("Adding 'note' column to clients table...");
+      await pool.execute("ALTER TABLE clients ADD COLUMN note TEXT AFTER whatsapp_number");
+    }
   } catch (err) {
-    console.error("Failed to ensure clients table:", err);
+    console.error("Critical Database initialization error:", err);
+    throw err; // Propagate error so calling functions know initialization failed
   }
 }
 
@@ -93,18 +102,20 @@ export async function getLeads(page: number = 1, limit: number = 20) {
  */
 export async function updateClientNote(clientId: number, note: string) {
   try {
+    // Ensure table structure is correct (e.g. 'note' column exists)
+    await ensureClientsTable();
+
     const [result]: any = await pool.execute(
       'UPDATE clients SET note = ? WHERE id = ?',
       [note, clientId]
     );
     
-    if (result.affectedRows > 0) {
-      return { success: true };
-    } else {
-      return { success: false, error: "Client not found or no changes made" };
-    }
-  } catch (error) {
+    return { success: true };
+  } catch (error: any) {
     console.error("Database Error updating client note:", error);
-    return { success: false, error: "Failed to update note" };
+    return { 
+      success: false, 
+      error: error?.message || "Failed to update note" 
+    };
   }
 }
