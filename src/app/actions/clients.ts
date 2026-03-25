@@ -77,7 +77,7 @@ export async function getLeads(page: number = 1, limit: number = 20) {
     const offset = (page - 1) * limit;
     
     const [rows]: any = await pool.execute(
-      'SELECT * FROM clients ORDER BY last_login DESC LIMIT ? OFFSET ?',
+      'SELECT * FROM clients ORDER BY created_at DESC LIMIT ? OFFSET ?',
       [limit, offset]
     );
     
