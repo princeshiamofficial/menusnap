@@ -77,7 +77,10 @@ export async function getLeads(page: number = 1, limit: number = 20) {
     const offset = (page - 1) * limit;
     
     const [rows]: any = await pool.execute(
-      'SELECT * FROM clients ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      `SELECT id, business_name, business_type, whatsapp_number, note,
+       DATE_FORMAT(last_login, '%Y-%m-%dT%H:%i:%s.000Z') as last_login,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') as created_at
+       FROM clients ORDER BY created_at DESC LIMIT ? OFFSET ?`,
       [limit, offset]
     );
     

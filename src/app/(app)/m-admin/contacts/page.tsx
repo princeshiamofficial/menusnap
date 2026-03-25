@@ -184,12 +184,9 @@ export default function ContactsPage() {
 
   const formatDate = (dateString: string, includeTime = false) => {
     try {
-      // If it's already a date object, format it directly
-      // If it's a string, ensure it's treated as UTC (most DBs store in UTC)
-      const date = typeof dateString === 'string' 
-        ? new Date(dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z')
-        : new Date(dateString);
-        
+      if (!dateString) return "-";
+      // The server now provides ISO strings (with 'Z'), so new Date() or parseISO works perfectly
+      const date = new Date(dateString);
       return format(date, includeTime ? "MMM d, yyyy • h:mm a" : "MMM d, yyyy");
     } catch {
       return dateString;
