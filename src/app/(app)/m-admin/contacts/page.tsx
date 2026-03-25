@@ -184,7 +184,13 @@ export default function ContactsPage() {
 
   const formatDate = (dateString: string, includeTime = false) => {
     try {
-      return format(new Date(dateString), includeTime ? "MMM d, yyyy • h:mm a" : "MMM d, yyyy");
+      // If it's already a date object, format it directly
+      // If it's a string, ensure it's treated as UTC (most DBs store in UTC)
+      const date = typeof dateString === 'string' 
+        ? new Date(dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z')
+        : new Date(dateString);
+        
+      return format(date, includeTime ? "MMM d, yyyy • h:mm a" : "MMM d, yyyy");
     } catch {
       return dateString;
     }
