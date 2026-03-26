@@ -274,27 +274,8 @@ export default function MAdminDashboardPage() {
   }, [allApiOrders, selectedDateRange, isLoadingStats]);
 
 
-  if (adminLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-muted dark:bg-neutral-900 p-4">
-        <div className="w-full max-w-md space-y-4">
-          <Skeleton className="h-16 w-16 rounded-full mx-auto bg-card" />
-          <Skeleton className="h-8 w-48 mx-auto bg-card" />
-          <Skeleton className="h-6 w-64 mx-auto bg-card" />
-          <Skeleton className="h-10 w-full mt-4 bg-card" />
-          <Skeleton className="h-10 w-full bg-card" />
-        </div>
-      </div>
-    );
-  }
+  // No local auth checks needed anymore, handled by layout
 
-  if (!isAdminLoggedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
-        <AdminLoginForm />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 p-4 sm:p-6 md:p-8">

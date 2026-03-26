@@ -17,8 +17,18 @@ import {
   StickyNote,
   Tag,
   Loader2,
-  Globe
+  Globe,
+  ChevronDown,
+  CheckCircle2,
+  AlertCircle,
+  UserPlus,
+  Star,
+  XCircle,
+  HelpCircle,
+  Menu
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSidebar } from "@/components/ui/sidebar";
 import { format } from 'date-fns';
 import { 
   Table, 
@@ -34,9 +44,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
-import { getLeads, updateClientNote } from '@/app/actions/clients';
+import { getLeads, updateClientNote, updateClientStage, getClientHistory } from '@/app/actions/clients';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -50,10 +76,59 @@ interface Contact {
   business_name: string;
   business_type: string;
   whatsapp_number: string;
-  note: string | null;
+  latest_note: string | null;
+  stage: string;
   last_login: string;
   created_at: string;
 }
+
+const STAGES = [
+  { 
+    value: 'New Lead', 
+    label: 'New Lead', 
+    icon: UserPlus,
+    color: 'bg-slate-50 text-slate-600 border-slate-100',
+    dotColor: 'bg-slate-400',
+    hint: 'Initial contact received. What is the plan?',
+    placeholder: 'e.g., "Assigned to sales team", "Waiting for reply"'
+  },
+  { 
+    value: 'Contacted', 
+    label: 'Contacted', 
+    icon: MessageCircle,
+    color: 'bg-blue-50 text-blue-600 border-blue-100',
+    dotColor: 'bg-blue-500',
+    hint: 'How did the first conversation go via WhatsApp or call?',
+    placeholder: 'e.g., "Expressed interest in MenuBook template", "Asked for pricing details"'
+  },
+  { 
+    value: 'Interested', 
+    label: 'Interested', 
+    icon: Star,
+    color: 'bg-amber-50 text-amber-600 border-amber-100',
+    dotColor: 'bg-amber-500',
+    hint: 'What specifically are they interested in? Any specific features discussed?',
+    placeholder: 'e.g., "Wants custom branding and QR code support", "Loves the glassmorphism design"'
+  },
+  { 
+    value: 'Converted', 
+    label: 'Converted', 
+    icon: CheckCircle2,
+    color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+    dotColor: 'bg-emerald-500',
+    hint: 'Congratulations! What are the next steps for onboarding or delivery?',
+    placeholder: 'e.g., "Order confirmed, payment received", "Onboarding scheduled for next Monday"'
+  },
+  { 
+    value: 'Lost', 
+    label: 'Lost', 
+    icon: XCircle,
+    color: 'bg-rose-50 text-rose-600 border-rose-100',
+    dotColor: 'bg-rose-500',
+    hint: 'Why was the lead lost? This helps us improve our services.',
+    placeholder: 'e.g., "Found competitor cheaper", "Not ready to digitize yet", "No response after 3 follow-ups"'
+  },
+];
 
 export default function ContactsPage() {
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
@@ -66,7 +141,19 @@ export default function ContactsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [timezone, setTimezone] = useState<string>('');
+  
+  // Pending Stage Change State
+  const [pendingStage, setPendingStage] = useState<{ id: number; stage: string; currentNote: string } | null>(null);
+  const [stageNote, setStageNote] = useState('');
+  const [isUpdatingStage, setIsUpdatingStage] = useState(false);
+
+  // History State
+  const [historyClientId, setHistoryClientId] = useState<number | null>(null);
+  const [clientHistory, setClientHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
   const { toast } = useToast();
+  const { toggleSidebar, setOpenMobile } = useSidebar();
 
   useEffect(() => {
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -141,6 +228,60 @@ export default function ContactsPage() {
     fetchContacts(1, true);
   };
 
+  const handleStageUpdate = async (clientId: number, stage: string, note: string) => {
+    if (!note.trim()) {
+      toast({
+        title: "Note Required",
+        description: "Please provide a reason for changing the stage.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUpdatingStage(true);
+    try {
+      const result = await updateClientStage(clientId, stage, note);
+      if (result.success) {
+        setContacts(prev => prev.map(c => c.id === clientId ? { ...c, stage, latest_note: note } : c));
+        toast({
+          title: "Stage updated",
+          description: `Moved to ${stage}.`,
+        });
+        setPendingStage(null);
+        setStageNote('');
+      } else {
+        toast({
+          title: "Failed to update stage",
+          description: result.error || "Unknown error",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to update stage:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingStage(false);
+    }
+  };
+
+  const fetchHistory = async (clientId: number) => {
+    setLoadingHistory(true);
+    try {
+      const result = await getClientHistory(clientId);
+      if (result.success) {
+        setClientHistory(result.history || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleNoteUpdate = async (clientId: number, note: string) => {
     try {
       const result = await updateClientNote(clientId, note);
@@ -199,12 +340,12 @@ export default function ContactsPage() {
     window.open(`https://wa.me/${finalNumber}`, '_blank');
   };
 
-  if (adminLoading) {
-    return <div className="p-8 flex items-center justify-center h-[50vh]"><RefreshCw className="animate-spin mr-2 h-6 w-6 text-primary" /> Loading Admin...</div>;
+  if (loading && totalContacts === 0) {
+    return <div className="p-8 flex items-center justify-center h-[50vh]"><RefreshCw className="animate-spin mr-2 h-6 w-6 text-primary" /> Initializing Directory...</div>;
   }
 
   return (
-    <div className="p-6 sm:p-10 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="p-5 sm:p-8 w-full max-w-[1700px] mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1.5">
@@ -258,10 +399,11 @@ export default function ContactsPage() {
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[calc(100vh-280px)] min-h-[500px] w-full">
-              <Table>
+              {/* Desktop Table */}
+              <Table className="hidden md:table">
                 <TableHeader className="bg-slate-50/80 backdrop-blur-md sticky top-0 z-30 shadow-sm">
                   <TableRow className="hover:bg-transparent border-slate-100">
-                    <TableHead className="w-[60px] text-center font-bold text-[11px] uppercase tracking-widest text-slate-400 pl-8">SL</TableHead>
+                    <TableHead className="w-[60px] text-center font-bold text-[11px] uppercase tracking-widest text-slate-400 pl-6">SL</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 py-5">Client Name</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Category</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">WhatsApp</TableHead>
@@ -274,8 +416,9 @@ export default function ContactsPage() {
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">
                       Last Activity
                     </TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 w-64">Notes</TableHead>
-                    <TableHead className="text-right font-bold text-[11px] uppercase tracking-widest text-slate-400 pr-8">Contact</TableHead>
+                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 w-44">Stage</TableHead>
+                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 w-64">Updates</TableHead>
+                    <TableHead className="text-right font-bold text-[11px] uppercase tracking-widest text-slate-400 pr-6">Contact</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -288,8 +431,9 @@ export default function ContactsPage() {
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                        <TableCell><Skeleton className="h-8 w-full rounded-lg" /></TableCell>
-                        <TableCell className="text-right pr-8"><Skeleton className="h-10 w-28 ml-auto rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-36 rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-52" /></TableCell>
+                        <TableCell className="text-right pr-6"><Skeleton className="h-10 w-28 ml-auto rounded-full" /></TableCell>
                       </TableRow>
                     ))
                   ) : filteredContacts.length === 0 ? (
@@ -306,7 +450,7 @@ export default function ContactsPage() {
                   ) : (
                     filteredContacts.map((contact, index) => (
                       <TableRow key={contact.id} className="group border-slate-50 hover:bg-slate-50/50 transition-all duration-200">
-                        <TableCell className="text-center font-mono text-xs text-slate-300 group-hover:text-slate-500 pl-8 transition-colors">
+                        <TableCell className="text-center font-mono text-xs text-slate-300 group-hover:text-slate-500 pl-6 transition-colors">
                           {(filteredContacts.length - index).toString().padStart(2, '0')}
                         </TableCell>
                         <TableCell>
@@ -333,26 +477,57 @@ export default function ContactsPage() {
                           {formatDate(contact.last_login, true)}
                         </TableCell>
                         <TableCell>
-                          <div className="relative group/note max-w-xs">
-                            <Input 
-                              placeholder="Add a quick note..." 
-                              defaultValue={contact.note || ''}
-                              className="h-9 text-[13px] border-transparent bg-transparent hover:bg-white focus:bg-white hover:border-slate-200 focus:border-slate-300 focus:ring-0 transition-all font-medium rounded-xl placeholder:text-slate-300"
-                              onBlur={(e) => {
-                                if (e.target.value !== (contact.note || '')) {
-                                  handleNoteUpdate(contact.id, e.target.value);
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.currentTarget.blur();
-                                }
-                              }}
-                            />
-                            <StickyNote className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-200 opacity-0 group-hover/note:opacity-100 transition-opacity pointer-events-none" />
-                          </div>
+                          <Select 
+                            value={contact.stage || 'New Lead'} 
+                            onValueChange={(val) => {
+                              if (val !== (contact.stage || 'New Lead')) {
+                                setPendingStage({ id: contact.id, stage: val, currentNote: contact.note || '' });
+                                setStageNote('');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className={cn(
+                              "h-8 w-40 text-[11px] font-bold uppercase tracking-wider rounded-full border px-3 transition-all hover:shadow-md",
+                              STAGES.find(s => s.value === (contact.stage || 'New Lead'))?.color || STAGES[0].color
+                            )}>
+                              <div className="flex items-center gap-1.5">
+                                {React.createElement(STAGES.find(s => s.value === (contact.stage || 'New Lead'))?.icon || HelpCircle, { className: "h-3 w-3" })}
+                                <SelectValue placeholder="Select Stage" />
+                              </div>
+                            </SelectTrigger>
+                            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1">
+                              {STAGES.map((stage) => (
+                                <SelectItem 
+                                  key={stage.value} 
+                                  value={stage.value}
+                                  className="text-[12px] font-medium tracking-tight focus:bg-slate-50 rounded-xl py-2 px-3 my-0.5 group/item"
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <div className={cn("h-2 w-2 rounded-full", stage.dotColor)} />
+                                    <span className="text-slate-600 group-hover/item:text-slate-900 transition-colors">{stage.label}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
-                        <TableCell className="text-right pr-8">
+                        <TableCell className="max-w-[250px]">
+                            <div className="flex items-center gap-2.5 group/update cursor-pointer" 
+                              title="Click to view history"
+                              onClick={() => {
+                                setHistoryClientId(contact.id);
+                                fetchHistory(contact.id);
+                              }}
+                            >
+                                <div className="p-1.5 bg-slate-50 text-slate-400 rounded-lg group-hover/update:bg-primary/10 group-hover/update:text-primary group-hover/update:shadow-sm transition-all shrink-0">
+                                    <Clock className="h-3.5 w-3.5" />
+                                </div>
+                                <span className="text-[13px] text-slate-500 font-medium truncate block leading-relaxed">
+                                    {contact.latest_note || <span className="text-slate-300 italic font-normal text-xs">Waiting for first update...</span>}
+                                </span>
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -366,20 +541,287 @@ export default function ContactsPage() {
                       </TableRow>
                     ))
                   )}
-                  {hasMore && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="p-0 border-none">
-                        <div ref={observerTarget} className="h-10 flex items-center justify-center w-full">
-                          {loadingMore && <Loader2 className="h-5 w-5 text-slate-400 animate-spin" />}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
+
+              {/* Ultra-Modern Mobile CRM List */}
+              <div className="md:hidden space-y-4 p-4 pb-24 bg-slate-50/40 min-h-screen">
+                {loading ? (
+                    <div className="space-y-4">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100/50">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="flex items-center gap-4">
+                                        <Skeleton className="h-14 w-14 rounded-[1.25rem]" />
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-5 w-32 rounded-lg" />
+                                            <Skeleton className="h-4 w-20 rounded-lg" />
+                                        </div>
+                                    </div>
+                                    <Skeleton className="h-6 w-16 rounded-full" />
+                                </div>
+                                <Skeleton className="h-4 w-full rounded-lg" />
+                            </div>
+                        ))}
+                    </div>
+                ) : filteredContacts.length === 0 ? (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-center justify-center gap-4 py-32"
+                    >
+                        <div className="h-20 w-20 bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 flex items-center justify-center text-slate-200">
+                            <Search className="h-10 w-10" />
+                        </div>
+                        <div className="text-center space-y-1">
+                            <p className="text-slate-900 font-extrabold text-lg">No Results</p>
+                            <p className="text-slate-400 text-sm font-medium">Try adjusting your filters</p>
+                        </div>
+                    </motion.div>
+                ) : (
+                    <div className="space-y-3.5">
+                        {filteredContacts.map((contact, index) => {
+                            const stageInfo = STAGES.find(s => s.value === (contact.stage || 'New Lead')) || STAGES[0];
+                            const initials = contact.business_name.substring(0, 2).toUpperCase();
+                            
+                            return (
+                                <motion.div
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05, type: "spring", damping: 25, stiffness: 200 }}
+                                    key={contact.id}
+                                    className="group bg-white rounded-[2rem] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        {/* Premium Avatar */}
+                                        <div className={cn(
+                                            "h-14 w-14 rounded-[1.25rem] flex items-center justify-center text-sm font-black shadow-inner shrink-0 border border-white/40 overflow-hidden relative",
+                                            stageInfo.color.replace('bg-', 'bg-opacity-10 bg-').split(' ')[0], // Soft background
+                                            "bg-slate-50 text-slate-700"
+                                        )}>
+                                            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+                                            {initials}
+                                        </div>
+                                        
+                                        <div className="flex-1 min-w-0 pr-2">
+                                            <div className="flex items-center justify-between gap-2 mb-0.5">
+                                                <h3 className="font-black text-[17px] text-slate-900 leading-none truncate capitalize tracking-tight">
+                                                    {contact.business_name}
+                                                </h3>
+                                                <Select 
+                                                    value={contact.stage || 'New Lead'} 
+                                                    onValueChange={(val) => {
+                                                        if (val !== (contact.stage || 'New Lead')) {
+                                                            setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
+                                                            setStageNote('');
+                                                        }
+                                                    }}
+                                                >
+                                                    <SelectTrigger className={cn(
+                                                        "h-6 w-fit text-[9px] font-black uppercase tracking-[0.1em] rounded-full border-none px-3 bg-opacity-10 shadow-none transition-all focus:ring-0",
+                                                        stageInfo.color,
+                                                        stageInfo.color.replace('bg-', 'text-')
+                                                    )}>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="rounded-3xl border-slate-100 shadow-2xl p-2">
+                                                        {STAGES.map((stage) => (
+                                                            <SelectItem 
+                                                                key={stage.value} 
+                                                                value={stage.value}
+                                                                className="text-[12px] font-bold tracking-tight rounded-xl py-2.5 px-4 my-0.5 focus:bg-slate-50"
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={cn("h-2 w-2 rounded-full", STAGES.find(s => s.value === stage.value)?.dotColor)} />
+                                                                    {stage.label}
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{contact.business_type}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Footer: Note + WhatsApp */}
+                                    <div className="flex items-center gap-3 pt-3 border-t border-slate-50/50">
+                                        <div 
+                                            onClick={() => {
+                                                setHistoryClientId(contact.id);
+                                                fetchHistory(contact.id);
+                                            }}
+                                            className="flex-1 bg-slate-50/50 rounded-2xl px-4 py-2.5 flex items-center gap-3 active:bg-slate-100 transition-colors"
+                                        >
+                                            <div className="h-6 w-6 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100">
+                                                <Clock className="h-3 w-3 text-slate-400" />
+                                            </div>
+                                            <p className="text-[11px] text-slate-500 font-bold truncate tracking-tight lowercase first-letter:uppercase italic">
+                                                {contact.latest_note || 'No updates yet...'}
+                                            </p>
+                                        </div>
+
+                                        <motion.button
+                                            whileTap={{ scale: 0.9 }}
+                                            onClick={() => openWhatsApp(contact.whatsapp_number)}
+                                            className="h-10 w-10 rounded-2xl bg-[#f0fdf4] text-[#25d366] flex items-center justify-center border border-[#25d366]/20 shadow-sm"
+                                        >
+                                            <WhatsAppIcon className="h-5 w-5" />
+                                        </motion.button>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </div>
+                )}
+              </div>
+
+              {hasMore && (
+                <div ref={observerTarget} className="h-20 flex items-center justify-center w-full">
+                  {loadingMore && <Loader2 className="h-6 w-6 text-slate-400 animate-spin" />}
+                </div>
+              )}
             </ScrollArea>
           </CardContent>
         </Card>
+        
+        {/* Stage Change Note Dialog */}
+        <Dialog open={!!pendingStage} onOpenChange={(open) => !open && setPendingStage(null)}>
+          <DialogContent className="sm:max-w-md rounded-3xl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <StickyNote className="h-5 w-5 text-primary" />
+                Change Stage to {pendingStage?.stage}
+              </DialogTitle>
+              <DialogDescription className="font-medium text-slate-500">
+                {STAGES.find(s => s.value === pendingStage?.stage)?.hint}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Textarea
+                placeholder={STAGES.find(s => s.value === pendingStage?.stage)?.placeholder}
+                className="min-h-[120px] rounded-2xl border-slate-200 focus:ring-slate-900 focus:border-slate-900 font-medium resize-none shadow-sm"
+                value={stageNote}
+                onChange={(e) => setStageNote(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button 
+                variant="ghost" 
+                onClick={() => setPendingStage(null)} 
+                className="rounded-full font-bold text-slate-400 hover:text-slate-600"
+                disabled={isUpdatingStage}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => pendingStage && handleStageUpdate(pendingStage.id, pendingStage.stage, stageNote)}
+                className="rounded-full font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-xl shadow-slate-200 px-6"
+                disabled={isUpdatingStage || !stageNote.trim()}
+              >
+                {isUpdatingStage ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Confirm Change'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* History Dialog */}
+        <Dialog open={!!historyClientId} onOpenChange={(open) => !open && setHistoryClientId(null)}>
+          <DialogContent className="sm:max-w-lg rounded-3xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
+            <DialogHeader className="p-6 pb-2">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Interaction History
+              </DialogTitle>
+              <DialogDescription className="font-medium text-slate-500">
+                Tracking all status changes and updates for {contacts.find(c => c.id === historyClientId)?.business_name}.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <ScrollArea className="flex-1 px-6 py-4">
+              {loadingHistory ? (
+                <div className="flex flex-col gap-4 py-4">
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                  ))}
+                </div>
+              ) : clientHistory.length === 0 ? (
+                <div className="text-center py-12 space-y-3">
+                  <div className="p-3 bg-slate-50 rounded-full w-fit mx-auto text-slate-300">
+                    <StickyNote className="h-6 w-6" />
+                  </div>
+                  <p className="text-slate-400 font-medium text-sm">No history found for this client.</p>
+                </div>
+              ) : (
+                <div className="space-y-6 pb-4">
+                  {clientHistory.map((item, idx) => {
+                    const stageInfo = STAGES.find(s => s.value === item.stage) || STAGES[0];
+                    const Icon = stageInfo.icon || HelpCircle;
+                    
+                    return (
+                      <div key={item.id} className="relative flex gap-4 group">
+                        {/* Timeline Line */}
+                        {idx !== clientHistory.length - 1 && (
+                          <div className="absolute left-[21px] top-10 bottom-[-24px] w-[1px] bg-slate-100 group-last:hidden" />
+                        )}
+                        
+                        <div className={cn(
+                          "h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm border z-10",
+                          stageInfo.color
+                        )}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        
+                        <div className="flex-1 space-y-1 pb-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-sm text-slate-900 tracking-tight">{item.stage}</h4>
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest tabular-nums">
+                              {formatDate(item.created_at, true)}
+                            </span>
+                          </div>
+                          <div className="py-1">
+                            <p className="text-[13px] text-slate-500 font-medium leading-relaxed">
+                              {item.note}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mobile Sidebar Motion Trigger */}
+        <div className="md:hidden fixed bottom-6 left-6 z-50">
+            <motion.button
+                initial={{ scale: 0, rotate: -180, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                onClick={() => toggleSidebar()}
+                className="h-14 w-14 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl shadow-slate-400 group border-4 border-white"
+            >
+                <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                >
+                    <Menu className="h-6 w-6 group-hover:scale-110 transition-transform" />
+                </motion.div>
+            </motion.button>
+        </div>
     </div>
   );
 }

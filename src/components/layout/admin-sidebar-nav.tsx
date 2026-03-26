@@ -43,17 +43,21 @@ export function AdminSidebarNav() {
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       <div className={cn(
-        "flex items-center justify-between border-b border-sidebar-border",
-        "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:py-3 group-data-[collapsible=icon]:px-2.5",
-        "group-data-[state=expanded]:p-4"
+        "flex flex-col items-center justify-center border-b border-sidebar-border py-8 px-4 relative min-h-[100px]",
+        "group-data-[collapsible=icon]:h-[60px] group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:min-h-0"
       )}>
-        <div className="flex flex-col items-start gap-1 group-data-[collapsible=icon]:hidden">
-          <h1 className="text-xl font-bold">
+        <div className="flex flex-col items-center group-data-[collapsible=icon]:hidden transition-all duration-300">
+          <h1 className="text-lg font-black tracking-[0.15em] flex items-center justify-center gap-1.5 leading-none">
             <span className="text-sidebar-primary">ADMIN</span>
             <span className="text-sidebar-foreground">PANEL</span>
           </h1>
+          <div className="h-0.5 w-6 bg-sidebar-primary/30 rounded-full mt-3" />
         </div>
-        <SidebarTrigger className="text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent" />
+        
+        {/* Sidebar Trigger - Positioned Absolutely to keep text centered */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 group-data-[state=collapsed]:static group-data-[state=collapsed]:translate-y-0">
+          <SidebarTrigger className="text-sidebar-foreground/40 hover:text-sidebar-primary transition-all duration-300" />
+        </div>
       </div>
       <nav className="flex-1 p-2 overflow-y-auto">
         {adminNavItems.length > 0 ? (
