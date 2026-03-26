@@ -160,3 +160,18 @@
     animation: spin 3s linear infinite;
   }
 }
+
+@media (max-width: 768px) {
+  html, body, #__next, body > div {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    position: relative;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  * {
+    box-sizing: border-box !important;
+  }
+}
