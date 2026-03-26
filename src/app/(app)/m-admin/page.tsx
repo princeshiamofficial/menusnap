@@ -9,6 +9,7 @@ import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from "@/lib/utils";
 import {
   Hand,
   CalendarDays,
@@ -19,8 +20,10 @@ import {
   Sparkles,
   LayoutList,
   FolderHeart,
-  AlertTriangle
+  AlertTriangle,
+  Menu
 } from "lucide-react";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   Select,
   SelectContent,
@@ -50,20 +53,31 @@ interface StatCardAdminProps {
   value: string;
   icon: React.ElementType;
   iconBgClass: string;
-  iconTextClass: string;
 }
 
-function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }: StatCardAdminProps): ReactNode {
+function StatCardAdmin({ title, value, icon: Icon, iconBgClass }: StatCardAdminProps): ReactNode {
+  // Extract base color from bg-xxx-500
+  const parts = iconBgClass.split('-');
+  const baseColor = parts[1]; // e.g. "orange" or "emerald"
+  const tintClass = `bg-${baseColor}-100`;
+  const iconColorClass = `text-${baseColor}-600`;
+
   return (
-    <Card className={`rounded-md border-0 text-white ${iconBgClass}`}>
-      <CardContent className="p-4 sm:p-5 relative overflow-hidden flex flex-col justify-between min-h-[120px]">
-        <div className="flex justify-between items-start w-full relative z-10">
-          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider opacity-90">{title}</h3>
-          <Icon className="h-5 w-5 sm:h-6 sm:w-6 opacity-80" />
+    <Card className="rounded-xl border-0 bg-white shadow-[0_2px_15px_rgba(0,0,0,0.04)] transition-all hover:shadow-md duration-300 overflow-hidden">
+      <CardContent className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+        <div className={cn(
+          "h-10 w-10 sm:h-12 sm:w-14 rounded-full flex items-center justify-center shrink-0",
+          tintClass
+        )}>
+          <Icon className={cn("h-5 w-5 sm:h-6 sm:w-6", iconColorClass)} />
         </div>
-        <div className="mt-4 relative z-10 flex flex-col">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-1">{value}</h2>
-          <p className="text-xs sm:text-sm opacity-90">{title === 'Total Templates' ? 'Available layouts' : 'Overall count'}</p>
+        <div className="flex flex-col min-w-0">
+          <p className="text-[10px] sm:text-[12px] font-medium text-slate-400 mb-0.5 truncate leading-tight">
+            {title}
+          </p>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight leading-none truncate">
+            {value}
+          </h2>
         </div>
       </CardContent>
     </Card>
@@ -71,12 +85,12 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass, iconTextClass }:
 }
 
 const adminStatConfigs: (Omit<StatCardAdminProps, 'value'> & { id: string })[] = [
-  { id: "totalOrders", title: "Total Orders", icon: ShoppingCart, iconBgClass: "bg-orange-500", iconTextClass: "text-white" },
-  { id: "totalTemplates", title: "Total Templates", icon: Layers, iconBgClass: "bg-teal-600", iconTextClass: "text-white" },
-  { id: "totalRestaurantItems", title: "Total Restaurant Items", icon: UtensilsCrossed, iconBgClass: "bg-amber-600", iconTextClass: "text-white" },
-  { id: "totalParlourItems", title: "Total Parlour Items", icon: Sparkles, iconBgClass: "bg-indigo-500", iconTextClass: "text-white" },
-  { id: "totalRestaurantCategories", title: "Total Restaurant Categories", icon: LayoutList, iconBgClass: "bg-emerald-500", iconTextClass: "text-white" },
-  { id: "totalParlourCategories", title: "Total Parlour Categories", icon: FolderHeart, iconBgClass: "bg-rose-500", iconTextClass: "text-white" },
+  { id: "totalOrders", title: "Total Orders", icon: ShoppingCart, iconBgClass: "bg-orange-500" },
+  { id: "totalTemplates", title: "Total Templates", icon: Layers, iconBgClass: "bg-teal-600" },
+  { id: "totalRestaurantItems", title: "Total Restaurant Items", icon: UtensilsCrossed, iconBgClass: "bg-amber-600" },
+  { id: "totalParlourItems", title: "Total Parlour Items", icon: Sparkles, iconBgClass: "bg-indigo-500" },
+  { id: "totalRestaurantCategories", title: "Total Restaurant Categories", icon: LayoutList, iconBgClass: "bg-emerald-500" },
+  { id: "totalParlourCategories", title: "Total Parlour Categories", icon: FolderHeart, iconBgClass: "bg-rose-500" },
 ];
 
 interface ChartDataItem {
@@ -120,6 +134,8 @@ export default function MAdminDashboardPage() {
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
 
   const [selectedDateRange] = useState<string>('30days');
+
+  const { setOpenMobile } = useSidebar();
 
   useEffect(() => {
     async function fetchAllAdminStats() {
@@ -291,16 +307,15 @@ export default function MAdminDashboardPage() {
 
 
       {isLoadingStats && !statsData.totalOrders ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
           {adminStatConfigs.map((statConfig) => (
-            <Card key={statConfig.id} className={`rounded-md border-0 ${statConfig.iconBgClass}`}>
-              <CardContent className="p-4 sm:p-5 h-[120px] flex flex-col justify-between">
-                <div className="flex justify-between items-start w-full">
-                  <Skeleton className="h-4 w-1/2 bg-white/30" />
-                  <Skeleton className="h-6 w-6 rounded-full bg-white/30" />
+            <Card key={statConfig.id} className="rounded-xl border-0 bg-white shadow-sm overflow-hidden min-h-[70px]">
+              <CardContent className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+                <Skeleton className="h-10 w-10 sm:h-14 sm:w-14 rounded-full shrink-0" />
+                <div className="flex-1 space-y-1 sm:space-y-2 min-w-0">
+                  <Skeleton className="h-2 sm:h-3 w-3/4" />
+                  <Skeleton className="h-5 sm:h-6 w-1/2" />
                 </div>
-                <Skeleton className="h-8 w-1/4 mt-4 bg-white/40" />
-                <Skeleton className="h-3 w-1/3 mt-2 bg-white/20" />
               </CardContent>
             </Card>
           ))}
@@ -312,7 +327,7 @@ export default function MAdminDashboardPage() {
           <p className="text-muted-foreground max-w-md">{statsError}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
           {adminStatConfigs.map((statConfig) => (
             <StatCardAdmin
               key={statConfig.id}
@@ -320,7 +335,6 @@ export default function MAdminDashboardPage() {
               value={String(statsData[statConfig.id] ?? '0')}
               icon={statConfig.icon}
               iconBgClass={statConfig.iconBgClass}
-              iconTextClass={statConfig.iconTextClass}
             />
           ))}
         </div>
@@ -378,6 +392,22 @@ export default function MAdminDashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Floating Mobile Sidebar Trigger - Premium FAB */}
+      <div className="fixed bottom-6 right-6 md:hidden z-50">
+        <button
+          onClick={() => setOpenMobile(true)}
+          className="h-14 w-14 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl shadow-slate-400 group border-4 border-white transition-all active:scale-95 hover:scale-105"
+          tabIndex={0}
+          style={{ 
+            opacity: 1, 
+            transform: 'scale(1.1)' 
+          }}
+        >
+          <div style={{ transform: 'rotate(-3.60888deg)' }}>
+            <Menu className="h-6 w-6 group-hover:scale-110 transition-transform" />
+          </div>
+        </button>
+      </div>
     </div>
   );
 }
