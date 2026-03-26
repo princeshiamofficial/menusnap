@@ -342,62 +342,60 @@ export default function ContactsPage() {
 
   if (loading && totalContacts === 0) {
     return <div className="p-8 flex items-center justify-center h-[50vh]"><RefreshCw className="animate-spin mr-2 h-6 w-6 text-primary" /> Initializing Directory...</div>;
-  }
-
-  return (
+  }  return (
     <div className="flex flex-col min-h-screen bg-slate-50/50 min-w-0 w-full max-w-full overflow-x-hidden">
-      <div className="p-3 sm:p-6 md:p-8 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden">
+      <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1.5 min-w-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
+        <div className="space-y-1.5 min-w-0 max-w-full">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 flex flex-nowrap items-center gap-2.5 sm:gap-3">
             <div className="p-2 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 shrink-0">
               <Users className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <span className="truncate">Contacts</span>
           </h1>
-          <p className="text-slate-500 font-medium ml-1">
+          <p className="text-slate-500 font-medium text-sm sm:text-base leading-relaxed break-words max-w-[90vw] sm:max-w-none">
             Manage your customer base and track interactions.
           </p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 sm:gap-4 sm:mr-2">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1 md:flex-none">
                 {timezone && (
-                    <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 shadow-inner">
+                    <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 shadow-inner shrink-0">
                         <Globe className="h-3 w-3" />
                         Viewing in {timezone}
                     </div>
                 )}
-                <div className="flex items-center px-4 py-2 bg-slate-900 text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-slate-200">
+                <div className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-slate-200 flex-1 md:flex-none whitespace-nowrap">
                     {totalContacts} Total
                 </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="gap-2 rounded-full h-9 sm:h-10 px-4 sm:px-5 border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all font-semibold text-xs sm:text-sm">
-                <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="gap-2 rounded-full h-10 px-4 sm:px-5 border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all font-semibold text-xs sm:text-sm flex-1 md:flex-none whitespace-nowrap">
+                <RefreshCw className={cn("h-4 w-4 shrink-0", loading && "animate-spin")} />
                 Sync Data
             </Button>
         </div>
       </div>
 
-      <Card className="border-slate-200/60 shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-white">
-          <CardHeader className="border-b border-slate-100 px-5 sm:px-8 py-5 sm:py-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6">
-              <div className="flex flex-col gap-0.5">
-                <CardTitle className="text-xl font-bold text-slate-800">Customer Directory</CardTitle>
-                <CardDescription className="text-slate-400 font-medium">Real-time client synchronization with WhatsApp validation.</CardDescription>
-              </div>
-              <div className="relative w-full sm:w-72 group">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-slate-900 transition-colors" />
-                <Input 
-                  placeholder="Search clients..." 
-                  className="pl-10 h-11 bg-slate-50/50 border-slate-200 rounded-2xl focus-visible:ring-slate-900 focus-visible:ring-offset-0 transition-all placeholder:text-slate-400 font-medium"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+      <Card className="border-slate-200/60 shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-white w-full max-w-full">
+        <CardHeader className="px-5 sm:px-6 py-6 border-b border-slate-50">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 sm:gap-6 w-full">
+            <div className="flex flex-col gap-0.5 max-w-full">
+              <CardTitle className="text-xl font-bold text-slate-800">Customer Directory</CardTitle>
+              <CardDescription className="text-slate-400 font-medium break-words text-sm sm:text-base">Real-time client synchronization with WhatsApp validation.</CardDescription>
             </div>
-          </CardHeader>
+            <div className="relative w-full lg:w-72 group shrink-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-slate-900 transition-colors" />
+              <Input 
+                placeholder="Search clients..." 
+                className="pl-10 h-11 w-full bg-slate-50/50 border-slate-200 rounded-2xl focus-visible:ring-slate-900 focus-visible:ring-offset-0 transition-all placeholder:text-slate-400 font-medium"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+        </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[calc(100vh-280px)] min-h-[500px] w-full">
               {/* Desktop Table */}
