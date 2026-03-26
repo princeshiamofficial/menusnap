@@ -345,15 +345,15 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 w-full max-w-[1700px] mx-auto space-y-8 animate-in fade-in duration-500 overflow-x-hidden">
+    <div className="p-3 sm:p-6 md:p-8 w-full max-w-full mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500 overflow-x-hidden box-border">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
-            <div className="p-2 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200">
-              <Users className="h-6 w-6" />
+        <div className="space-y-1.5 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 flex flex-nowrap items-center gap-2.5 sm:gap-3">
+            <div className="p-2 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 shrink-0">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
-            Contacts
+            <span className="truncate">Contacts</span>
           </h1>
           <p className="text-slate-500 font-medium ml-1">
             Manage your customer base and track interactions.
@@ -593,10 +593,10 @@ export default function ContactsPage() {
                                     key={contact.id}
                                     className="group bg-white rounded-[2rem] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all active:scale-[0.98]"
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
                                         {/* Premium Avatar */}
                                         <div className={cn(
-                                            "h-14 w-14 rounded-[1.25rem] flex items-center justify-center text-sm font-black shadow-inner shrink-0 border border-white/40 overflow-hidden relative",
+                                            "h-12 w-12 sm:h-14 sm:w-14 rounded-[1.25rem] flex items-center justify-center text-xs sm:text-sm font-black shadow-inner shrink-0 border border-white/40 overflow-hidden relative",
                                             stageInfo.color.replace('bg-', 'bg-opacity-10 bg-').split(' ')[0], // Soft background
                                             "bg-slate-50 text-slate-700"
                                         )}>
@@ -652,12 +652,12 @@ export default function ContactsPage() {
                                                 setHistoryClientId(contact.id);
                                                 fetchHistory(contact.id);
                                             }}
-                                            className="flex-1 bg-slate-50/50 rounded-2xl px-4 py-2.5 flex items-center gap-3 active:bg-slate-100 transition-colors"
+                                            className="flex-1 bg-slate-50/50 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-3 active:bg-slate-100 transition-colors overflow-hidden"
                                         >
-                                            <div className="h-6 w-6 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100">
-                                                <Clock className="h-3 w-3 text-slate-400" />
+                                            <div className="h-5 w-5 sm:h-6 sm:w-6 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100">
+                                                <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-slate-400" />
                                             </div>
-                                            <p className="text-[11px] text-slate-500 font-bold truncate tracking-tight lowercase first-letter:uppercase italic">
+                                            <p className="text-[10px] sm:text-[11px] text-slate-500 font-bold truncate tracking-tight lowercase first-letter:uppercase italic">
                                                 {contact.latest_note || 'No updates yet...'}
                                             </p>
                                         </div>
