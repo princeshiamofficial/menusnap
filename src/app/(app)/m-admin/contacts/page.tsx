@@ -345,8 +345,8 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50/50 min-w-0 overflow-x-hidden">
-      <div className="p-3 sm:p-6 md:p-8 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full">
+    <div className="flex flex-col min-h-screen bg-slate-50/50 min-w-0 w-full max-w-full overflow-x-hidden">
+      <div className="p-3 sm:p-6 md:p-8 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1.5 min-w-0">
