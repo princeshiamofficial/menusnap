@@ -345,7 +345,8 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="p-3 sm:p-6 md:p-8 w-full max-w-full mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500 overflow-x-hidden box-border">
+    <div className="flex flex-col min-h-screen bg-slate-50/50 min-w-0 overflow-x-hidden">
+      <div className="p-3 sm:p-6 md:p-8 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1.5 min-w-0">
@@ -481,7 +482,7 @@ export default function ContactsPage() {
                             value={contact.stage || 'New Lead'} 
                             onValueChange={(val) => {
                               if (val !== (contact.stage || 'New Lead')) {
-                                setPendingStage({ id: contact.id, stage: val, currentNote: contact.note || '' });
+                                setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
                                 setStageNote('');
                               }
                             }}
@@ -818,6 +819,7 @@ export default function ContactsPage() {
                 </div>
             </button>
         </div>
+      </div>
     </div>
   );
 }

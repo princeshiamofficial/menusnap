@@ -38,9 +38,9 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r border-sidebar-border shadow-md bg-sidebar">
         <AdminSidebarNav />
       </Sidebar>
-      <SidebarInset className="bg-background">
-        <ScrollArea className="h-screen">
-          <main className="flex-1 flex flex-col">
+      <SidebarInset className="bg-background min-w-0 overflow-x-hidden">
+        <ScrollArea className="h-screen w-full">
+          <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
             {children}
           </main>
         </ScrollArea>
