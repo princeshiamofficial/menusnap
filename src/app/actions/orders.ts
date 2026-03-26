@@ -66,12 +66,11 @@ export async function getOrdersFromMySql() {
 
       return {
         ...order,
-        orderDate: order.utcOrderDate || order.orderDate,
+        orderDate: order.utcOrderDate || (order.orderDate instanceof Date ? order.orderDate.toISOString() : order.orderDate),
         customerData,
         templateData,
-        // Map to friendlier names for UI consistency
-        customer: customerData,
-        template: templateData,
+        customer: typeof order.customerData === 'string' ? JSON.parse(order.customerData) : (order.customerData || {}),
+        template: typeof order.templateData === 'string' ? JSON.parse(order.templateData) : (order.templateData || {}),
         items
       };
     });

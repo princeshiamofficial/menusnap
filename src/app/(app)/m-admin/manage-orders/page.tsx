@@ -183,12 +183,9 @@ const OrderTableRow = memo(({
   const router = useRouter();
 
   return (
-    <motion.tr
+    <tr
       key={order.id}
       className="border-b transition-all duration-200 hover:bg-primary/5 cursor-default group/row"
-      initial={{ opacity: 0, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, delay: Math.min(index * 0.01, 0.1) }} // Cap delay
     >
       <TableCell className="text-center font-mono font-medium text-muted-foreground/60 transition-colors group-hover/row:text-primary">
         {totalCount - index}
@@ -215,27 +212,30 @@ const OrderTableRow = memo(({
         <StatusBadge status={order.status || 'Pending'} />
       </TableCell>
       <TableCell className="text-right p-2 sm:p-4">
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onView(order)}>
+            <DropdownMenuItem onSelect={() => setTimeout(() => onView(order), 100)}>
               <Eye className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onCopy(order)}>
+            <DropdownMenuItem onSelect={() => setTimeout(() => onCopy(order), 100)}>
               <Copy className="h-4 w-4 mr-2" /> Copy Docs
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onDelete(order)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+            <DropdownMenuItem 
+              onSelect={() => setTimeout(() => onDelete(order), 100)} 
+              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+            >
               <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
-    </motion.tr>
+    </tr>
   );
 });
 OrderTableRow.displayName = "OrderTableRow";
@@ -267,25 +267,26 @@ function StatusBadge({ status }: { status: string }) {
 function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpdateOrder }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; allCategories: Category[]; onUpdateOrder: (updated: ApiOrder) => void; }) {
   const router = useRouter();
 
-  if (!order) return null;
-
   const formatDate = (input: string | Date, includeTime: boolean = true): string => {
     try {
       if (!input) return "N/A";
       
-      // If it's a string, attempt to interpret it as UTC if it doesn't have a timezone already
-      const dateStr = typeof input === 'string' ? (input.endsWith('Z') || input.includes('+') ? input : `${input}Z`) : input;
-      const date = typeof dateStr === 'string' ? parseISO(dateStr) : dateStr;
-      
-      if (!isValidDate(date)) {
-        const fallbackDate = new Date(dateStr);
-        if (isValidDate(fallbackDate)) {
-           return includeTime ? format(fallbackDate, "MMM d, yyyy, h:mm a") : format(fallbackDate, "MMM d, yyyy");
+      let date: Date;
+      if (input instanceof Date) {
+        date = input;
+      } else {
+        // Handle common formats including MySQL output and strings
+        const cleaned = typeof input === 'string' ? (input.includes('T') || input.includes('Z') ? input : input.replace(' ', 'T') + 'Z') : input;
+        date = parseISO(cleaned as string);
+        if (!isValidDate(date)) {
+          date = new Date(input);
         }
-        return "Invalid Date";
       }
+      
+      if (!isValidDate(date)) return "Invalid Date";
       return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
-    } catch {
+    } catch (err) {
+      console.error("formatDate error:", err);
       return "Invalid Date";
     }
   };
@@ -293,147 +294,155 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl w-[95vw] sm:w-full h-[95vh] sm:h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="text-xl">Docs Details</DialogTitle>
-          <DialogDescription>
-            Docs ID: <span className="font-medium text-primary">{order.orderId}</span> placed on {formatDate(order.orderDate)}
-          </DialogDescription>
-          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-5 w-5" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
-        </DialogHeader>
-        <ScrollArea className="flex-1 overflow-y-auto bg-muted/30 p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="shadow-sm border border-border/50 bg-card/10 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center gap-2 space-y-0 py-3 border-b border-border/20">
-                <User className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Personal Profile</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4 text-sm font-medium">
-                <div className="flex items-start group">
-                  <User className="h-4 w-4 mr-3 mt-1 text-muted-foreground/40 shrink-0 group-hover:text-primary transition-colors" />
-                  <div>
-                    <EditableField
-                      value={order.customerName}
-                      onSave={(val: string) => onUpdateOrder({ ...order, customerName: val, customer: { ...order.customer, name: val } } as ApiOrder)}
-                      placeholder="Customer Name"
-                      className="font-medium text-foreground"
-                    />
-                    <p className="text-xs text-muted-foreground">Full Name</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <Mail className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-foreground">{decodeHtmlEntities(order.customerEmail) || "N/A"}</p>
-                    <p className="text-xs text-muted-foreground">Email Address</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <Phone className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-foreground">{decodeHtmlEntities(order.customerPhone) || "N/A"}</p>
-                    <p className="text-xs text-muted-foreground">Phone Number</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-sm border border-border/50 bg-card/10 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center gap-2 space-y-0 py-3 border-b border-border/20">
-                <Building2 className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Business Profile</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4 text-sm font-medium">
-                <div className="flex items-start group">
-                  <Building2 className="h-4 w-4 mr-3 mt-1 text-muted-foreground/40 shrink-0 group-hover:text-primary transition-colors" />
-                  <div>
-                    <EditableField
-                      value={order.businessName}
-                      onSave={(val: string) => onUpdateOrder({ ...order, businessName: val, customer: { ...order.customer, restaurant: val } } as ApiOrder)}
-                      placeholder="Business Name"
-                      className="font-medium text-foreground"
-                    />
-                    <p className="text-xs text-muted-foreground">Business Name</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <Briefcase className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-foreground">{decodeHtmlEntities(order.businessRole) || "N/A"}</p>
-                    <p className="text-xs text-muted-foreground">Role</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <MapPin className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-foreground">{decodeHtmlEntities(order.customerAddress) || "N/A"}</p>
-                    <p className="text-xs text-muted-foreground">Address</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {!order ? (
+          <div className="flex items-center justify-center h-full">
+            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground/50" />
+          </div>
+        ) : (
+          <>
+            <DialogHeader className="px-6 py-4 border-b">
+              <DialogTitle className="text-xl">Docs Details</DialogTitle>
+              <DialogDescription>
+                Docs ID: <span className="font-medium text-primary">{order.orderId}</span> placed on {formatDate(order.orderDate)}
+              </DialogDescription>
+              <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+              </DialogClose>
+            </DialogHeader>
+            <ScrollArea className="flex-1 overflow-y-auto bg-muted/30 p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-sm border border-border/50 bg-card/10 backdrop-blur-sm">
+                  <CardHeader className="flex flex-row items-center gap-2 space-y-0 py-3 border-b border-border/20">
+                    <User className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Personal Profile</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-4 text-sm font-medium">
+                    <div className="flex items-start group">
+                      <User className="h-4 w-4 mr-3 mt-1 text-muted-foreground/40 shrink-0 group-hover:text-primary transition-colors" />
+                      <div>
+                        <EditableField
+                          value={order.customerName}
+                          onSave={(val: string) => onUpdateOrder({ ...order, customerName: val, customer: { ...order.customer, name: val } } as ApiOrder)}
+                          placeholder="Customer Name"
+                          className="font-medium text-foreground"
+                        />
+                        <p className="text-xs text-muted-foreground">Full Name</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <Mail className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-foreground">{decodeHtmlEntities(order.customerEmail) || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Email Address</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <Phone className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-foreground">{decodeHtmlEntities(order.customerPhone) || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Phone Number</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="shadow-sm border border-border/50 bg-card/10 backdrop-blur-sm">
+                  <CardHeader className="flex flex-row items-center gap-2 space-y-0 py-3 border-b border-border/20">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Business Profile</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-4 text-sm font-medium">
+                    <div className="flex items-start group">
+                      <Building2 className="h-4 w-4 mr-3 mt-1 text-muted-foreground/40 shrink-0 group-hover:text-primary transition-colors" />
+                      <div>
+                        <EditableField
+                          value={order.businessName}
+                          onSave={(val: string) => onUpdateOrder({ ...order, businessName: val, customer: { ...order.customer, restaurant: val } } as ApiOrder)}
+                          placeholder="Business Name"
+                          className="font-medium text-foreground"
+                        />
+                        <p className="text-xs text-muted-foreground">Business Name</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <Briefcase className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-foreground">{decodeHtmlEntities(order.businessRole) || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Role</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start">
+                      <MapPin className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground shrink-0" />
+                      <div>
+                        <p className="text-foreground">{decodeHtmlEntities(order.customerAddress) || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Address</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            <Card className="shadow-sm lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="text-lg">Template Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-muted rounded-md border">
-                    <FileTextIcon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{decodeHtmlEntities(order.templateName) || 'N/A'}</p>
-                    <p className="text-xs text-muted-foreground leading-snug">{decodeHtmlEntities(order.templateDescription) || 'No description provided.'}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Template Preview:</p>
-                  <div className="aspect-[4/3] bg-muted rounded-md border overflow-hidden relative">
-                    {order.templateImageUrl ? (
-                      <Image
-                        src={order.templateImageUrl}
-                        alt={decodeHtmlEntities(order.templateName) || 'Template preview'}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        className="object-cover"
-                        data-ai-hint={order.templateName ? order.templateName.toLowerCase().split(' ').slice(0, 2).join(' ') : "menu design"}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
-                        No Preview Available
+                <Card className="shadow-sm lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Template Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-muted rounded-md border">
+                        <FileTextIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">{decodeHtmlEntities(order.templateName) || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground leading-snug">{decodeHtmlEntities(order.templateDescription) || 'No description provided.'}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Template Preview:</p>
+                      <div className="aspect-[4/3] bg-muted rounded-md border overflow-hidden relative">
+                        {order.templateImageUrl ? (
+                          <Image
+                            src={order.templateImageUrl}
+                            alt={decodeHtmlEntities(order.templateName) || 'Template preview'}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover"
+                            data-ai-hint={order.templateName ? order.templateName.toLowerCase().split(' ').slice(0, 2).join(' ') : "menu design"}
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
+                            No Preview Available
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {order.templateTags && order.templateTags.length > 0 && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1.5">Tags:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {order.templateTags.map(tag => (
+                            <Badge key={tag} variant="secondary" className="text-xs bg-muted text-muted-foreground font-normal">{tag}</Badge>
+                          ))}
+                        </div>
                       </div>
                     )}
-                  </div>
-                </div>
-                {order.templateTags && order.templateTags.length > 0 && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1.5">Tags:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {order.templateTags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="text-xs bg-muted text-muted-foreground font-normal">{tag}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </ScrollArea>
-        <DialogFooter className="px-4 sm:px-6 py-4 border-t mt-auto bg-background flex flex-col sm:flex-row gap-3 sm:justify-between">
-          <Button
-            variant="secondary"
-            onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
-            className="w-full sm:w-auto"
-          >
-            <Edit3 className="mr-2 h-4 w-4" />
-            View & Edit Items
-          </Button>
-          <DialogClose asChild>
-            <Button variant="outline" className="w-full sm:w-auto">Close</Button>
-          </DialogClose>
-        </DialogFooter>
+                  </CardContent>
+                </Card>
+              </div>
+            </ScrollArea>
+            <DialogFooter className="px-4 sm:px-6 py-4 border-t mt-auto bg-background flex flex-col sm:flex-row gap-3 sm:justify-between">
+              <Button
+                variant="secondary"
+                onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
+                className="w-full sm:w-auto"
+              >
+                <Edit3 className="mr-2 h-4 w-4" />
+                View & Edit Items
+              </Button>
+              <DialogClose asChild>
+                <Button variant="outline" className="w-full sm:w-auto">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -488,6 +497,9 @@ export default function ManageOrdersPage(): React.ReactNode {
         orderId: String(order.orderId || order.orderid || order.id || ""),
         orderDate: (order.orderDate || order.orderdate || ""),
         templateName: order.template?.name,
+        templateImageUrl: order.template?.imageUrl || order.template?.image_url || order.template?.image,
+        templateDescription: order.template?.description || order.template?.desc,
+        templateTags: order.template?.tags || [],
         customerName: order.customer?.name,
         customerEmail: order.customer?.email,
         customerPhone: order.customer?.phone,
@@ -543,7 +555,7 @@ export default function ManageOrdersPage(): React.ReactNode {
     setCurrentPage(1);
   }, [fetchOrders]);
 
-  const handleUpdateOrder = async (updatedOrder: ApiOrder) => {
+  const handleUpdateOrder = useCallback(async (updatedOrder: ApiOrder) => {
     try {
       // Update local state first for immediate feedback
       setAllOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
@@ -562,19 +574,19 @@ export default function ManageOrdersPage(): React.ReactNode {
       toast({ title: "Update Failed", description: e.message, variant: "destructive" });
       await fetchOrders(); // Rollback
     }
-  };
+  }, [selectedOrderForDetails, fetchOrders, toast]);
 
-  const handleViewDetails = (order: ApiOrder) => {
+  const handleViewDetails = useCallback((order: ApiOrder) => {
     setSelectedOrderForDetails(order);
     setIsDetailsDialogOpen(true);
-  };
+  }, []);
 
-  const handleDeleteOrder = (order: ApiOrder) => {
+  const handleDeleteOrder = useCallback((order: ApiOrder) => {
     setOrderToDeleteInfo({ id: order.id, orderId: order.orderId });
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleCopyDocs = async (originalOrder: ApiOrder) => {
+  const handleCopyDocs = useCallback(async (originalOrder: ApiOrder) => {
     const random3Digit = Math.floor(100 + Math.random() * 900);
     const date = new Date();
     const day = String(date.getDate()).padStart(2, '0');
@@ -640,7 +652,8 @@ export default function ManageOrdersPage(): React.ReactNode {
         title: "Docs Copied",
         description: `Docs #${originalOrder.orderId} has been copied as #${newOrderId} in local database.`,
       });
-      await fetchOrders();
+      // Small delay to let the menu close smoothly
+      setTimeout(() => fetchOrders(), 300);
     } catch (error: any) {
       toast({
         title: "Local Copy Failed",
@@ -648,9 +661,9 @@ export default function ManageOrdersPage(): React.ReactNode {
         variant: "destructive",
       });
     }
-  };
+  }, [allCategories, fetchOrders, toast]);
 
-  const confirmDeleteOrder = async () => {
+  const confirmDeleteOrder = useCallback(async () => {
     if (!orderToDeleteInfo) return;
     try {
       const result = await deleteOrderFromMySql(orderToDeleteInfo.id);
@@ -663,18 +676,22 @@ export default function ManageOrdersPage(): React.ReactNode {
         title: "Deleted",
         description: "Order removed from local database.",
       });
-      await fetchOrders();
+      
+      // Close dialog first, then refresh
+      setIsDeleteDialogOpen(false);
+      setOrderToDeleteInfo(null);
+      
+      setTimeout(() => fetchOrders(), 300);
     } catch (e: any) {
       toast({
         title: "Delete Failed",
         description: e.message,
         variant: "destructive"
       });
-    } finally {
       setIsDeleteDialogOpen(false);
       setOrderToDeleteInfo(null);
     }
-  };
+  }, [orderToDeleteInfo, fetchOrders, toast]);
 
   const filteredAndSortedOrders = useMemo(() => {
     let orders = allOrders.filter(order => {
@@ -900,7 +917,7 @@ export default function ManageOrdersPage(): React.ReactNode {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="relative z-10">
-                  <AnimatePresence mode="popLayout">
+                  <>
                     {formattedOrders.map((order, index) => (
                       <OrderTableRow 
                         key={order.id}
@@ -912,7 +929,7 @@ export default function ManageOrdersPage(): React.ReactNode {
                         onDelete={handleDeleteOrder}
                       />
                     ))}
-                  </AnimatePresence>
+                  </>
                   {hasMore && (
                     <tr ref={sentinelRef} className="h-10">
                       <TableCell colSpan={7} className="text-center py-4">
@@ -940,6 +957,7 @@ export default function ManageOrdersPage(): React.ReactNode {
         </div>
       </section>
       <OrderDetailsDialog
+        key={selectedOrderForDetails?.id || 'none'}
         order={selectedOrderForDetails}
         isOpen={isDetailsDialogOpen}
         onOpenChange={setIsDetailsDialogOpen}
