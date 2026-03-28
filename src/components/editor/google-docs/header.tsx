@@ -129,22 +129,31 @@ export default function Header({
                 {/* Share button with dropdown */}
                 <div className="flex items-center gap-3">
                     {/* Presence Icons - Only shown on edit pages */}
-                    {!readOnly && onlineUsers.length > 0 && (
-                        <div className="flex -space-x-2 mr-2">
+                        <div className="flex -space-x-3 mr-4">
                             {onlineUsers.map((u, i) => (
                                 <motion.div
                                     key={i}
                                     initial={{ scale: 0, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
-                                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-sm ring-1 ring-gray-100"
-                                    style={{ backgroundColor: u.color }}
+                                    className="relative group pr-1"
                                     title={u.name}
                                 >
-                                    {u.name.charAt(0).toUpperCase()}
+                                    <div 
+                                        className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 border-white overflow-hidden shadow-md transition-transform duration-200 hover:scale-110 hover:z-10 cursor-pointer"
+                                        style={{ backgroundColor: `${u.color}22` }} // Light background from color
+                                    >
+                                        <img 
+                                            src={`https://api.dicebear.com/7.x/lorelei/svg?seed=${u.name}&backgroundColor=${u.color.replace('#', '')}&backgroundType_gradientLinear&backgroundRotation=20`} 
+                                            alt={u.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-[100]">
+                                        {u.name}
+                                    </div>
                                 </motion.div>
                             ))}
                         </div>
-                    )}
 
                     <div className="relative" ref={dropdownRef}>
                         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
