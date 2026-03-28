@@ -589,26 +589,11 @@ export default function ManageMagicTabPage(): ReactNode {
     }
   };
 
-  if (adminLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading Admin Area...</p>
-      </div>
-    );
-  }
-
-  if (!isAdminLoggedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
-        <AdminLoginForm />
-      </div>
-    );
-  }
-
-
   return (
-    <div className="flex h-[calc(100vh-theme(spacing.16)-1px)] bg-muted/30">
-      <aside className="w-72 bg-card border-r border-border flex flex-col">
+    <div className="min-h-full bg-background/30 p-4 sm:p-6 lg:p-10 w-full overflow-x-hidden relative">
+      <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8 w-full mt-10">
+        <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-theme(spacing.40))] bg-card border border-border rounded-xl shadow-lg overflow-hidden">
+      <aside className="w-full lg:w-72 bg-card border-b lg:border-r border-border flex flex-col shrink-0">
         <div className="p-4 border-b border-border">
           <Button
             variant="ghost"
@@ -623,7 +608,7 @@ export default function ManageMagicTabPage(): ReactNode {
           </Button>
           <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Categories</h3>
         </div>
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 max-h-48 lg:max-h-none">
           {loadingCategories && (
             <div className="p-2 space-y-2.5">
               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}
@@ -659,8 +644,8 @@ export default function ManageMagicTabPage(): ReactNode {
         </ScrollArea>
       </aside>
 
-      <main className="flex-1 flex flex-col bg-background overflow-hidden">
-        <div className="py-3 px-6 border-b border-border bg-card flex items-center justify-between gap-2">
+      <main className="flex-1 flex flex-col bg-background min-h-0">
+        <div className="py-3 px-4 sm:px-6 border-b border-border bg-card flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="relative flex-grow max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -881,6 +866,8 @@ export default function ManageMagicTabPage(): ReactNode {
         </AlertDialogContent>
       </AlertDialog>
 
+      </div>
+      </div>
     </div>
   );
 }

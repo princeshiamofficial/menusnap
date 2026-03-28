@@ -24,8 +24,7 @@ import {
   UserPlus,
   Star,
   XCircle,
-  HelpCircle,
-  Menu
+  HelpCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -153,7 +152,7 @@ export default function ContactsPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const { toast } = useToast();
-  const { toggleSidebar, setOpenMobile } = useSidebar();
+  const { toggleSidebar } = useSidebar();
 
   useEffect(() => {
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -728,7 +727,7 @@ export default function ContactsPage() {
               </DialogDescription>
             </DialogHeader>
             
-            <ScrollArea className="flex-1 px-6 py-4">
+            <ScrollArea className="h-[450px] px-6 py-4">
               {loadingHistory ? (
                 <div className="flex flex-col gap-4 py-4">
                   {[1, 2, 3].map(i => (
@@ -784,21 +783,6 @@ export default function ContactsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Mobile Sidebar Trigger - Premium FAB */}
-        <div className="fixed bottom-6 right-6 md:hidden z-50">
-            <button
-                onClick={() => setOpenMobile(true)}
-                className="h-14 w-14 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl shadow-slate-400 group border-4 border-white transition-all active:scale-95 hover:scale-105"
-                style={{ 
-                    opacity: 1, 
-                    transform: 'scale(1.1)' 
-                }}
-            >
-                <div style={{ transform: 'rotate(-3.60888deg)' }}>
-                    <Menu className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                </div>
-            </button>
-        </div>
       </div>
     </div>
   );

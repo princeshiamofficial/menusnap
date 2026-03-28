@@ -1014,24 +1014,9 @@ export default function ManageTemplatesPage(): ReactNode {
     };
   }, [allTemplates]);
 
-  if (adminLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading Admin Area...</p>
-      </div>
-    );
-  }
-
-  if (!isAdminLoggedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
-        <AdminLoginForm />
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="min-h-full bg-background/30 p-4 sm:p-6 lg:p-10 w-full overflow-x-hidden relative">
+      <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8 w-full mt-10">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold text-foreground flex items-center">
           <Layers className="h-8 w-8 mr-3 text-primary" />
@@ -1188,6 +1173,7 @@ export default function ManageTemplatesPage(): ReactNode {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }

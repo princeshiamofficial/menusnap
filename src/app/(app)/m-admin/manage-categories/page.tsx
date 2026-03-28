@@ -547,25 +547,9 @@ export default function ManageCategoriesPage(): ReactNode {
     }
   };
 
-  if (adminLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading Admin Area...</p>
-      </div>
-    );
-  }
-
-  if (!isAdminLoggedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
-        <AdminLoginForm />
-      </div>
-    );
-  }
-
-
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6 h-full flex flex-col">
+    <div className="min-h-full bg-background/30 p-4 sm:p-6 lg:p-10 w-full overflow-x-hidden relative">
+      <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8 w-full mt-10">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center">
@@ -696,8 +680,8 @@ export default function ManageCategoriesPage(): ReactNode {
               {searchTerm && <p>Try adjusting your search or filters.</p>}
             </div>
           ) : (
-            <ScrollArea className="w-full h-full">
-              <Table>
+            <div className="overflow-x-auto no-scrollbar">
+              <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[50px] hidden sm:table-cell"></TableHead>
@@ -757,7 +741,7 @@ export default function ManageCategoriesPage(): ReactNode {
                   ))}
                 </TableBody>
               </Table>
-            </ScrollArea>
+            </div>
           )}
         </div>
         <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
@@ -848,6 +832,7 @@ export default function ManageCategoriesPage(): ReactNode {
         </AlertDialogContent>
       </AlertDialog>
 
+      </div>
     </div>
   );
 }

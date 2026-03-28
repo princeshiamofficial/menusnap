@@ -808,25 +808,9 @@ export default function ManageOrdersPage(): React.ReactNode {
     </motion.tr>
   ));
 
-  if (adminLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <p>Loading Admin Area...</p>
-      </div>
-    );
-  }
-
-  if (!isAdminLoggedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8">
-        <AdminLoginForm />
-      </div>
-    );
-  }
-
-
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-8 relative">
+    <div className="min-h-full bg-background/30 p-3 sm:p-6 lg:p-10 w-full overflow-x-hidden relative">
+      <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8 w-full">
       {/* Background Decorative Blurs */}
       <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/10 rounded-full blur-3xl -z-10 animate-pulse" />
       <div className="absolute bottom-0 -right-4 w-72 h-72 bg-secondary/10 rounded-full blur-3xl -z-10 animate-pulse" />
@@ -861,10 +845,10 @@ export default function ManageOrdersPage(): React.ReactNode {
           </div>
         </div>
 
-        <div className="flex-grow min-h-0 relative">
+        <div className="flex-grow min-h-0 relative overflow-x-auto no-scrollbar">
           {isLoading && allOrders.length === 0 ? (
-            <div className="p-6">
-              <Table>
+            <div className="p-0 sm:p-6 min-w-[800px]">
+              <Table className="min-w-[800px]">
                 <TableHeader>
                   <TableRow className="border-none hover:bg-transparent">
                     <TableHead className="w-[60px] text-center font-bold">SL</TableHead>
@@ -904,7 +888,7 @@ export default function ManageOrdersPage(): React.ReactNode {
               {searchTerm && <p>Try adjusting your search or filters.</p>}
             </motion.div>
           ) : (
-            <Table wrapperClassName="w-full h-[65vh] 2xl:h-[75vh]" className="relative">
+            <Table wrapperClassName="w-full h-[65vh] 2xl:h-[75vh]" className="relative min-w-[800px]">
                 <TableHeader className="sticky top-0 bg-muted border-b z-20 shadow-sm">
                   <TableRow className="bg-muted hover:bg-muted [&>th]:bg-transparent">
                     <TableHead className="w-12 sm:w-16 text-center font-bold px-2 sm:px-4">SL</TableHead>
@@ -984,6 +968,7 @@ export default function ManageOrdersPage(): React.ReactNode {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+        </div>
+      </div>
   );
 }

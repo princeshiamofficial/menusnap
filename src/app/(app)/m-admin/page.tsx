@@ -125,7 +125,7 @@ const dateRangeLabels: Record<string, string> = dateRangeFilterOptions.reduce((a
 
 
 export default function MAdminDashboardPage() {
-  const { isAdminLoggedIn, adminLoading, adminLogout } = useAdminAuth();
+  const { adminLoading } = useAdminAuth();
   const [statsData, setStatsData] = useState<Record<string, number | string>>({});
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -139,7 +139,7 @@ export default function MAdminDashboardPage() {
 
   useEffect(() => {
     async function fetchAllAdminStats() {
-      if (!isAdminLoggedIn || adminLoading) {
+      if (adminLoading) {
         setIsLoadingStats(false);
         setChartData([]);
         setAllApiOrders([]);
@@ -205,7 +205,7 @@ export default function MAdminDashboardPage() {
     }
     fetchAllAdminStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdminLoggedIn, adminLoading]);
+  }, [adminLoading]);
 
 
   useEffect(() => {
@@ -294,7 +294,7 @@ export default function MAdminDashboardPage() {
 
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 md:p-8">
+    <div className="space-y-6 pt-16 p-4 sm:p-6 md:p-8 w-full overflow-x-hidden">
       <div className="rounded-lg bg-gradient-to-r from-slate-900 via-amber-700 to-primary p-6 shadow-lg text-white">
         <h2 className="text-3xl font-bold flex items-center">
           Welcome Admin <Hand className="ml-2 h-8 w-8 text-yellow-400" />
@@ -392,22 +392,6 @@ export default function MAdminDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Floating Mobile Sidebar Trigger - Premium FAB */}
-      <div className="fixed bottom-6 right-6 md:hidden z-50">
-        <button
-          onClick={() => setOpenMobile(true)}
-          className="h-14 w-14 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xl shadow-slate-400 group border-4 border-white transition-all active:scale-95 hover:scale-105"
-          tabIndex={0}
-          style={{ 
-            opacity: 1, 
-            transform: 'scale(1.1)' 
-          }}
-        >
-          <div style={{ transform: 'rotate(-3.60888deg)' }}>
-            <Menu className="h-6 w-6 group-hover:scale-110 transition-transform" />
-          </div>
-        </button>
-      </div>
     </div>
   );
 }
