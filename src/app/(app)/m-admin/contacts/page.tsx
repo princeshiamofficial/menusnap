@@ -26,7 +26,9 @@ import {
   XCircle,
   HelpCircle,
   Trash2,
-  Trash
+  Trash,
+  DoorOpen,
+  ShieldAlert
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -140,6 +142,24 @@ const STAGES = [
     hint: 'Why was the lead lost? This helps us improve our services.',
     placeholder: 'e.g., "Found competitor cheaper", "Not ready to digitize yet", "No response after 3 follow-ups"'
   },
+  { 
+    value: 'Exiting', 
+    label: 'Exiting', 
+    icon: DoorOpen,
+    color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+    dotColor: 'bg-indigo-500',
+    hint: 'Why is the client leaving or terminating their service?',
+    placeholder: 'e.g., "Season ended", "Switching to different provider"'
+  },
+  { 
+    value: 'Fake', 
+    label: 'Fake', 
+    icon: ShieldAlert,
+    color: 'bg-slate-100 text-slate-500 border-slate-200',
+    dotColor: 'bg-slate-600',
+    hint: 'Mark as bot, spam, or invalid contact.',
+    placeholder: 'e.g., "Test entry", "Bot spam", "Invalid number"'
+  },
 ];
 
 
@@ -155,6 +175,7 @@ export default function ContactsPage() {
   const [totalContacts, setTotalContacts] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [filterStage, setFilterStage] = useState<string>('All');
   const [timezone, setTimezone] = useState<string>('');
   
   // Pending Stage Change State
@@ -368,16 +389,21 @@ export default function ContactsPage() {
 
   const filteredContacts = useMemo(() => {
     return contacts
-      .filter(contact => 
-        contact.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        contact.whatsapp_number.includes(searchTerm)
-      )
+      .filter(contact => {
+        const matchesSearch = contact.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          contact.whatsapp_number.includes(searchTerm);
+        
+        const currentStage = contact.stage || 'New Lead';
+        const matchesStage = filterStage === 'All' || currentStage === filterStage;
+        
+        return matchesSearch && matchesStage;
+      })
       .sort((a, b) => {
         const dateA = new Date(a.created_at).getTime();
         const dateB = new Date(b.created_at).getTime();
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
       });
-  }, [contacts, searchTerm, sortOrder]);
+  }, [contacts, searchTerm, sortOrder, filterStage]);
 
   const formatDate = (dateString: string, includeTime = false) => {
     try {
@@ -441,14 +467,47 @@ export default function ContactsPage() {
               <CardTitle className="text-xl font-bold text-slate-800 truncate">Customer Directory</CardTitle>
               <CardDescription className="text-slate-400 font-medium break-words text-sm sm:text-base">Real-time client synchronization with WhatsApp validation.</CardDescription>
             </div>
-            <div className="relative w-full lg:w-72 group shrink-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-slate-900 transition-colors" />
-              <Input 
-                placeholder="Search clients..." 
-                className="pl-10 h-11 w-full bg-slate-50/50 border-slate-200 rounded-2xl focus-visible:ring-slate-900 focus-visible:ring-offset-0 transition-all placeholder:text-slate-400 font-medium"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+              {/* Stage Filter */}
+              <Select value={filterStage} onValueChange={setFilterStage}>
+                <SelectTrigger className="w-full sm:w-44 h-11 rounded-2xl bg-slate-50/50 border-slate-200 focus:ring-0 focus:border-slate-300 transition-all font-bold text-[10px] uppercase tracking-widest text-slate-500 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-3.5 w-3.5" />
+                    <SelectValue placeholder="All Stages" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1 min-w-[200px]">
+                  <SelectItem value="All" className="text-[12px] font-bold tracking-tight rounded-xl py-2 px-3 focus:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full bg-slate-200" />
+                      All Stages
+                    </div>
+                  </SelectItem>
+                  {STAGES.map((stage) => (
+                    <SelectItem 
+                      key={stage.value} 
+                      value={stage.value}
+                      className="text-[12px] font-bold tracking-tight rounded-xl py-2 px-3 focus:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={cn("h-2 w-2 rounded-full", stage.dotColor)} />
+                        {stage.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Search Input */}
+              <div className="relative w-full lg:w-72 group shrink-0">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-slate-900 transition-colors" />
+                <Input 
+                  placeholder="Search clients..." 
+                  className="pl-10 h-11 w-full bg-slate-50/50 border-slate-200 rounded-2xl focus-visible:ring-slate-900 focus-visible:ring-offset-0 transition-all placeholder:text-slate-400 font-medium"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
