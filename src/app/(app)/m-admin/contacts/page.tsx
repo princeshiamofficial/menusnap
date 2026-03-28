@@ -24,7 +24,9 @@ import {
   UserPlus,
   Star,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  Trash2,
+  Trash
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -53,15 +55,26 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
-import { getLeads, updateClientNote, updateClientStage, getClientHistory } from '@/app/actions/clients';
+import { getLeads, updateClientNote, updateClientStage, getClientHistory, deleteClient } from '@/app/actions/clients';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -129,7 +142,34 @@ const STAGES = [
   },
 ];
 
+// Custom Hook for Long Press
+function useLongPress(callback: () => void, ms = 600) {
+  const [startLongPress, setStartLongPress] = useState(false);
+
+  useEffect(() => {
+    let timerId: any;
+    if (startLongPress) {
+      timerId = setTimeout(callback, ms);
+    } else {
+      clearTimeout(timerId);
+    }
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [startLongPress, callback, ms]);
+
+  return {
+    onMouseDown: () => setStartLongPress(true),
+    onMouseUp: () => setStartLongPress(false),
+    onMouseLeave: () => setStartLongPress(false),
+    onTouchStart: () => setStartLongPress(true),
+    onTouchEnd: () => setStartLongPress(false),
+  };
+}
+
 export default function ContactsPage() {
+
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,6 +190,11 @@ export default function ContactsPage() {
   const [historyClientId, setHistoryClientId] = useState<number | null>(null);
   const [clientHistory, setClientHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Delete State
+  const [deleteClientId, setDeleteClientId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
 
   const { toast } = useToast();
   const { toggleSidebar } = useSidebar();
@@ -306,6 +351,40 @@ export default function ContactsPage() {
       });
     }
   };
+  
+  const handleDeleteContact = async () => {
+    if (!deleteClientId) return;
+    
+    setIsDeleting(true);
+    try {
+      const result = await deleteClient(deleteClientId);
+      if (result.success) {
+        setContacts(prev => prev.filter(c => c.id !== deleteClientId));
+        setTotalContacts(prev => prev - 1);
+        toast({
+          title: "Contact deleted",
+          description: "The record has been permanently removed.",
+        });
+        setDeleteClientId(null);
+      } else {
+        toast({
+          title: "Delete failed",
+          description: result.error || "Unknown error",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to delete contact:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
 
 
@@ -447,96 +526,22 @@ export default function ContactsPage() {
                     </TableRow>
                   ) : (
                     filteredContacts.map((contact, index) => (
-                      <TableRow key={contact.id} className="group border-slate-50 hover:bg-slate-50/50 transition-all duration-200">
-                        <TableCell className="text-center font-mono text-xs text-slate-300 group-hover:text-slate-500 pl-6 transition-colors">
-                          {(filteredContacts.length - index).toString().padStart(2, '0')}
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-bold text-slate-700 text-sm tracking-tight capitalize">{contact.business_name}</span>
-                        </TableCell>
-                        <TableCell>
-                            <Badge variant="secondary" className="px-3 py-0.5 text-[10px] uppercase font-extrabold bg-slate-100 text-slate-500 border-none rounded-full whitespace-nowrap group-hover:bg-slate-200 transition-colors">
-                                {contact.business_type}
-                            </Badge>
-                        </TableCell>
-                        <TableCell>
-                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                                <WhatsAppIcon className="h-3.5 w-3.5 text-[#25D366]" />
-                                <span className="tabular-nums">{contact.whatsapp_number}</span>
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-[13px] text-slate-400 font-medium whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                                <Calendar className="h-3.5 w-3.5 text-slate-300" />
-                                {formatDate(contact.created_at)}
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-[12px] text-slate-400 font-medium whitespace-nowrap">
-                          {formatDate(contact.last_login, true)}
-                        </TableCell>
-                        <TableCell>
-                          <Select 
-                            value={contact.stage || 'New Lead'} 
-                            onValueChange={(val) => {
-                              if (val !== (contact.stage || 'New Lead')) {
-                                setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
-                                setStageNote('');
-                              }
-                            }}
-                          >
-                            <SelectTrigger className={cn(
-                              "h-8 w-40 text-[11px] font-bold uppercase tracking-wider rounded-full border px-3 transition-all hover:shadow-md",
-                              STAGES.find(s => s.value === (contact.stage || 'New Lead'))?.color || STAGES[0].color
-                            )}>
-                              <div className="flex items-center gap-1.5">
-                                {React.createElement(STAGES.find(s => s.value === (contact.stage || 'New Lead'))?.icon || HelpCircle, { className: "h-3 w-3" })}
-                                <SelectValue placeholder="Select Stage" />
-                              </div>
-                            </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1">
-                              {STAGES.map((stage) => (
-                                <SelectItem 
-                                  key={stage.value} 
-                                  value={stage.value}
-                                  className="text-[12px] font-medium tracking-tight focus:bg-slate-50 rounded-xl py-2 px-3 my-0.5 group/item"
-                                >
-                                  <div className="flex items-center gap-2.5">
-                                    <div className={cn("h-2 w-2 rounded-full", stage.dotColor)} />
-                                    <span className="text-slate-600 group-hover/item:text-slate-900 transition-colors">{stage.label}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="max-w-[250px]">
-                            <div className="flex items-center gap-2.5 group/update cursor-pointer" 
-                              title="Click to view history"
-                              onClick={() => {
-                                setHistoryClientId(contact.id);
-                                fetchHistory(contact.id);
-                              }}
-                            >
-                                <div className="p-1.5 bg-slate-50 text-slate-400 rounded-lg group-hover/update:bg-primary/10 group-hover/update:text-primary group-hover/update:shadow-sm transition-all shrink-0">
-                                    <Clock className="h-3.5 w-3.5" />
-                                </div>
-                                <span className="text-[13px] text-slate-500 font-medium truncate block leading-relaxed">
-                                    {contact.latest_note || <span className="text-slate-300 italic font-normal text-xs">Waiting for first update...</span>}
-                                </span>
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-right pr-6">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-10 px-5 rounded-full text-xs font-bold bg-[#25D366] text-white hover:bg-[#20ba5a] hover:text-white shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2 ml-auto"
-                            onClick={() => openWhatsApp(contact.whatsapp_number)}
-                          >
-                            <WhatsAppIcon className="h-4 w-4 flex-shrink-0" />
-                            <span>WhatsApp</span>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                      <ContactRow 
+                        key={contact.id} 
+                        contact={contact} 
+                        index={filteredContacts.length - index}
+                        onStageChange={(val: string) => {
+                          setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
+                          setStageNote('');
+                        }}
+                        onViewHistory={() => {
+                          setHistoryClientId(contact.id);
+                          fetchHistory(contact.id);
+                        }}
+                        onLongPress={() => setDeleteClientId(contact.id)}
+                        onWhatsAppClick={() => openWhatsApp(contact.whatsapp_number)}
+                        formatDate={formatDate}
+                      />
                     ))
                   )}
                 </TableBody>
@@ -577,83 +582,23 @@ export default function ContactsPage() {
                     </motion.div>
                 ) : (
                     <div className="space-y-3.5">
-                        {filteredContacts.map((contact, index) => {
-                            const stageInfo = STAGES.find(s => s.value === (contact.stage || 'New Lead')) || STAGES[0];
-                            const initials = contact.business_name.substring(0, 2).toUpperCase();
-                            return (
-                                <motion.div
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05, type: "spring", damping: 25, stiffness: 200 }}
-                                    key={contact.id}
-                                    className="group bg-white rounded-[2rem] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all active:scale-[0.98]"
-                                >
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
-                                        <div className={cn(
-                                            "h-12 w-12 sm:h-14 sm:w-14 rounded-[1.25rem] flex items-center justify-center text-xs sm:text-sm font-black shadow-inner shrink-0 border border-white/40 overflow-hidden relative",
-                                            stageInfo.color.replace('bg-', 'bg-opacity-10 bg-').split(' ')[0],
-                                            "bg-slate-50 text-slate-700"
-                                        )}>
-                                            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
-                                            {initials}
-                                        </div>
-                                        <div className="flex-1 min-w-0 pr-2">
-                                            <div className="flex items-center justify-between gap-2 mb-0.5">
-                                                <h3 className="font-black text-[17px] text-slate-900 leading-none truncate capitalize tracking-tight">
-                                                    {contact.business_name}
-                                                </h3>
-                                                <Select 
-                                                    value={contact.stage || 'New Lead'} 
-                                                    onValueChange={(val) => {
-                                                        if (val !== (contact.stage || 'New Lead')) {
-                                                            setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
-                                                            setStageNote('');
-                                                        }
-                                                    }}
-                                                >
-                                                    <SelectTrigger className={cn(
-                                                        "h-6 w-fit text-[9px] font-black uppercase tracking-[0.1em] rounded-full border-none px-3 bg-opacity-10 shadow-none transition-all focus:ring-0",
-                                                        stageInfo.color,
-                                                        stageInfo.color.replace('bg-', 'text-')
-                                                    )}>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-3xl border-slate-100 shadow-2xl p-2">
-                                                        {STAGES.map((stage) => (
-                                                            <SelectItem 
-                                                                key={stage.value} 
-                                                                value={stage.value}
-                                                                className="text-[12px] font-bold tracking-tight rounded-xl py-2.5 px-4 my-0.5 focus:bg-slate-50"
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className={cn("h-2 w-2 rounded-full", STAGES.find(s => s.value === stage.value)?.dotColor)} />
-                                                                    {stage.label}
-                                                                </div>
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{contact.business_type}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 pt-3 border-t border-slate-50/50">
-                                        <div onClick={() => { setHistoryClientId(contact.id); fetchHistory(contact.id); }} className="flex-1 bg-slate-50/50 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-3 active:bg-slate-100 transition-colors overflow-hidden">
-                                            <div className="h-5 w-5 sm:h-6 sm:w-6 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100">
-                                                <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-slate-400" />
-                                            </div>
-                                            <p className="text-[10px] sm:text-[11px] text-slate-500 font-bold truncate tracking-tight lowercase first-letter:uppercase italic">
-                                                {contact.latest_note || 'No updates yet...'}
-                                            </p>
-                                        </div>
-                                        <motion.button whileTap={{ scale: 0.9 }} onClick={() => openWhatsApp(contact.whatsapp_number)} className="h-10 w-10 rounded-2xl bg-[#f0fdf4] text-[#25d366] flex items-center justify-center border border-[#25d366]/20 shadow-sm">
-                                            <WhatsAppIcon className="h-5 w-5" />
-                                        </motion.button>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
+                        {filteredContacts.map((contact, index) => (
+                          <MobileContactCard 
+                            key={contact.id} 
+                            contact={contact} 
+                            index={index}
+                            onStageChange={(val: string) => {
+                              setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
+                              setStageNote('');
+                            }}
+                            onViewHistory={() => {
+                              setHistoryClientId(contact.id);
+                              fetchHistory(contact.id);
+                            }}
+                            onLongPress={() => setDeleteClientId(contact.id)}
+                            onWhatsAppClick={() => openWhatsApp(contact.whatsapp_number)}
+                          />
+                        ))}
                     </div>
                 )}
               </div>
@@ -783,8 +728,214 @@ export default function ContactsPage() {
           </DialogContent>
         </Dialog>
 
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteClientId} onOpenChange={(open) => !open && setDeleteClientId(null)}>
+          <AlertDialogContent className="rounded-3xl border-slate-200 shadow-2xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl font-bold flex items-center gap-3 text-slate-900">
+                <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                Verify Account Deletion
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-500 font-medium py-2">
+                This will permanently delete <span className="font-bold text-slate-900 capitalize">{contacts.find(c => c.id === deleteClientId)?.business_name}</span> and all associated historical logs. This action cannot be reversed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-3 sm:gap-0">
+              <AlertDialogCancel className="rounded-full font-bold border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                Keep Account
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteContact}
+                className="rounded-full font-bold bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-200 px-6 transition-all border-none"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Forever'
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
       </div>
     </div>
+  );
+}
+
+// Sub-components for better organization and performance
+function ContactRow({ contact, index, onStageChange, onViewHistory, onLongPress, onWhatsAppClick, formatDate }: any) {
+  const longPressProps = useLongPress(onLongPress);
+  
+  return (
+    <TableRow 
+      {...longPressProps}
+      className="group border-slate-50 hover:bg-rose-50/30 transition-all duration-200 cursor-context-menu select-none active:bg-rose-50/50"
+    >
+      <TableCell className="text-center font-mono text-xs text-slate-300 group-hover:text-slate-400 pl-6 transition-colors">
+        {index.toString().padStart(2, '0')}
+      </TableCell>
+      <TableCell>
+        <span className="font-bold text-slate-700 text-sm tracking-tight capitalize">{contact.business_name}</span>
+      </TableCell>
+      <TableCell>
+          <Badge variant="secondary" className="px-3 py-0.5 text-[10px] uppercase font-extrabold bg-slate-100 text-slate-500 border-none rounded-full whitespace-nowrap group-hover:bg-slate-200 transition-colors">
+              {contact.business_type}
+          </Badge>
+      </TableCell>
+      <TableCell>
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+              <WhatsAppIcon className="h-3.5 w-3.5 text-[#25D366]" />
+              <span className="tabular-nums">{contact.whatsapp_number}</span>
+          </div>
+      </TableCell>
+      <TableCell className="text-[13px] text-slate-400 font-medium whitespace-nowrap">
+          <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-slate-300" />
+              {formatDate(contact.created_at)}
+          </div>
+      </TableCell>
+      <TableCell className="text-[12px] text-slate-400 font-medium whitespace-nowrap">
+        {formatDate(contact.last_login, true)}
+      </TableCell>
+      <TableCell>
+        <Select 
+          value={contact.stage || 'New Lead'} 
+          onValueChange={onStageChange}
+        >
+          <SelectTrigger className={cn(
+            "h-8 w-40 text-[11px] font-bold uppercase tracking-wider rounded-full border px-3 transition-all hover:shadow-md",
+            STAGES.find(s => s.value === (contact.stage || 'New Lead'))?.color || STAGES[0].color
+          )}>
+            <div className="flex items-center gap-1.5">
+              {React.createElement(STAGES.find(s => s.value === (contact.stage || 'New Lead'))?.icon || HelpCircle, { className: "h-3 w-3" })}
+              <SelectValue placeholder="Select Stage" />
+            </div>
+          </SelectTrigger>
+          <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1">
+            {STAGES.map((stage) => (
+              <SelectItem 
+                key={stage.value} 
+                value={stage.value}
+                className="text-[12px] font-medium tracking-tight focus:bg-slate-50 rounded-xl py-2 px-3 my-0.5 group/item"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={cn("h-2 w-2 rounded-full", stage.dotColor)} />
+                  <span className="text-slate-600 group-hover/item:text-slate-900 transition-colors">{stage.label}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell className="max-w-[250px]">
+          <div className="flex items-center gap-2.5 group/update cursor-pointer" 
+            title="Click to view history"
+            onClick={onViewHistory}
+          >
+              <div className="p-1.5 bg-slate-50 text-slate-400 rounded-lg group-hover/update:bg-primary/10 group-hover/update:text-primary group-hover/update:shadow-sm transition-all shrink-0">
+                  <Clock className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-[13px] text-slate-500 font-medium truncate block leading-relaxed">
+                  {contact.latest_note || <span className="text-slate-300 italic font-normal text-xs">Waiting for first update...</span>}
+              </span>
+          </div>
+      </TableCell>
+      <TableCell className="text-right pr-6">
+        <div className="flex items-center justify-end gap-2 shrink-0">
+           <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-10 w-10 sm:w-auto sm:px-5 rounded-full text-xs font-bold bg-[#25D366] text-white hover:bg-[#20ba5a] hover:text-white shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2"
+            onClick={onWhatsAppClick}
+          >
+            <WhatsAppIcon className="h-4 w-4 flex-shrink-0" />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function MobileContactCard({ contact, index, onStageChange, onViewHistory, onLongPress, onWhatsAppClick }: any) {
+  const longPressProps = useLongPress(onLongPress);
+  const stageInfo = STAGES.find(s => s.value === (contact.stage || 'New Lead')) || STAGES[0];
+  const initials = contact.business_name.substring(0, 2).toUpperCase();
+
+  return (
+    <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ delay: index * 0.05, type: "spring", damping: 25, stiffness: 200 }}
+        className="group bg-white rounded-[2rem] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all active:scale-[0.98] select-none"
+        {...longPressProps}
+    >
+        <div className="flex items-center gap-3 sm:gap-4 mb-4">
+            <div className={cn(
+                "h-12 w-12 sm:h-14 sm:w-14 rounded-[1.25rem] flex items-center justify-center text-xs sm:text-sm font-black shadow-inner shrink-0 border border-white/40 overflow-hidden relative",
+                stageInfo.color.replace('bg-', 'bg-opacity-10 bg-').split(' ')[0],
+                "bg-slate-50 text-slate-700"
+            )}>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+                {initials}
+            </div>
+            <div className="flex-1 min-w-0 pr-2">
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <h3 className="font-black text-[17px] text-slate-900 leading-none truncate capitalize tracking-tight">
+                        {contact.business_name}
+                    </h3>
+                    <Select 
+                        value={contact.stage || 'New Lead'} 
+                        onValueChange={onStageChange}
+                    >
+                        <SelectTrigger className={cn(
+                            "h-6 w-fit text-[9px] font-black uppercase tracking-[0.1em] rounded-full border-none px-3 bg-opacity-10 shadow-none transition-all focus:ring-0",
+                            stageInfo.color,
+                            stageInfo.color.replace('bg-', 'text-')
+                        )}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-3xl border-slate-100 shadow-2xl p-2">
+                            {STAGES.map((stage) => (
+                                <SelectItem 
+                                    key={stage.value} 
+                                    value={stage.value}
+                                    className="text-[12px] font-bold tracking-tight rounded-xl py-2.5 px-4 my-0.5 focus:bg-slate-50"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("h-2 w-2 rounded-full", STAGES.find(s => s.value === stage.value)?.dotColor)} />
+                                        {stage.label}
+                                    </div>
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{contact.business_type}</p>
+            </div>
+        </div>
+        <div className="flex items-center gap-3 pt-3 border-t border-slate-50/50">
+            <div onClick={onViewHistory} className="flex-1 bg-slate-50/50 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center gap-2 sm:gap-3 active:bg-slate-100 transition-colors overflow-hidden">
+                <div className="h-5 w-5 sm:h-6 sm:w-6 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100">
+                    <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-slate-400" />
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-bold truncate tracking-tight lowercase first-letter:uppercase italic">
+                    {contact.latest_note || 'No updates yet...'}
+                </p>
+            </div>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={onWhatsAppClick} className="h-10 w-10 rounded-2xl bg-[#f0fdf4] text-[#25d366] flex items-center justify-center border border-[#25d366]/20 shadow-sm">
+                <WhatsAppIcon className="h-5 w-5" />
+            </motion.button>
+        </div>
+    </motion.div>
   );
 }
 

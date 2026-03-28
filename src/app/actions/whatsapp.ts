@@ -1,14 +1,21 @@
 
 "use server";
 
+import { getWhatsAppSettings } from "./whatsapp-settings";
+
 export async function checkWhatsAppAvailability(phoneNumber: string) {
-  const instanceId = process.env.GREEN_API_INSTANCE_ID;
-  const apiToken = process.env.GREEN_API_TOKEN;
+  const settings = await getWhatsAppSettings();
+  const { instanceId, apiToken, isEnabled, host = 'api.greenapi.com' } = settings;
+
+  if (!isEnabled) {
+     return { success: false, error: "WhatsApp integration is currently disabled." };
+  }
 
   if (!instanceId || !apiToken) {
-    console.error("Green API credentials are missing in .env.local");
+    console.error("Green API credentials are missing in settings.");
     return { success: false, error: "Configuration Error" };
   }
+
 
   // Clean the number and ensure it has the country code
   let cleanNumber = phoneNumber.replace(/\D/g, '');
@@ -17,8 +24,9 @@ export async function checkWhatsAppAvailability(phoneNumber: string) {
   }
 
   try {
-    const url = `https://7107.api.greenapi.com/waInstance${instanceId}/checkWhatsapp/${apiToken}`;
+    const url = `https://${host}/waInstance${instanceId}/checkWhatsapp/${apiToken}`;
     const response = await fetch(url, {
+
       method: "POST",
       headers: {
         "Content-Type": "application/json",

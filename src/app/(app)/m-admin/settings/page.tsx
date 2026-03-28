@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook } from 'lucide-react';
+import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook, MessageSquare } from 'lucide-react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { useEffect } from 'react';
 import { getMetaPixelSettings, saveMetaPixelSettings, type MetaPixelSettings } from '@/app/actions/meta-events';
+import { getWhatsAppSettings, saveWhatsAppSettings, type WhatsAppSettings } from '@/app/actions/whatsapp-settings';
+
 
 // Zod schemas for validation
 const emailFormSchema = z.object({
@@ -39,9 +41,18 @@ const metaPixelFormSchema = z.object({
   testEventCode: z.string().optional(),
 });
 
+const whatsAppSettingsFormSchema = z.object({
+  isEnabled: z.boolean(),
+  instanceId: z.string().optional(),
+  apiToken: z.string().optional(),
+  host: z.string().optional(),
+});
+
 type EmailFormValues = z.infer<typeof emailFormSchema>;
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 type MetaPixelFormValues = z.infer<typeof metaPixelFormSchema>;
+type WhatsAppSettingsFormValues = z.infer<typeof whatsAppSettingsFormSchema>;
+
 
 function ChangeEmailForm(): ReactNode {
   const { adminUser, updateAdminEmail } = useAdminAuth();
@@ -248,7 +259,97 @@ function MetaPixelSettingsForm(): ReactNode {
   );
 }
 
+function GreenAPISettingsForm(): ReactNode {
+  const { toast } = useToast();
+  const form = useForm<WhatsAppSettingsFormValues>({
+    resolver: zodResolver(whatsAppSettingsFormSchema),
+    defaultValues: {
+      isEnabled: false,
+      instanceId: "",
+      apiToken: "",
+      host: "api.greenapi.com",
+    },
+  });
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const settings = await getWhatsAppSettings();
+        form.reset(settings);
+      } catch (error: any) {
+        toast({
+          title: "Error Loading Settings",
+          description: "Could not load Green API settings.",
+          variant: "destructive",
+        });
+      }
+    }
+    loadSettings();
+  }, [form, toast]);
+
+  const { isSubmitting } = form.formState;
+
+  async function onSubmit(data: WhatsAppSettingsFormValues) {
+    try {
+      await saveWhatsAppSettings(data);
+      toast({
+        title: "Success",
+        description: "Green API settings have been saved.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error Saving Settings",
+        description: error.message || "Could not save Green API settings.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  return (
+    <Card className="lg:col-span-2">
+      <CardHeader>
+        <CardTitle className="flex items-center"><MessageSquare className="mr-2 h-5 w-5" /> Green API (WhatsApp)</CardTitle>
+        <CardDescription>Manage your Green API credentials for WhatsApp notifications.</CardDescription>
+      </CardHeader>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <CardContent className="space-y-6">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="waIsEnabled"
+              checked={form.watch("isEnabled")}
+              onCheckedChange={(checked) => form.setValue("isEnabled", checked)}
+            />
+            <Label htmlFor="waIsEnabled" className="cursor-pointer">Enable WhatsApp Integration</Label>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="instanceId">Instance ID</Label>
+              <Input id="instanceId" {...form.register("instanceId")} placeholder="Enter your Instance ID" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="host">API Host</Label>
+              <Input id="host" {...form.register("host")} placeholder="e.g. api.greenapi.com or 7103.api.greenapi.com" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="apiToken">API Token Instance</Label>
+            <Input id="apiToken" type="password" {...form.register("apiToken")} placeholder="Enter your API Token Instance" />
+            <p className="text-xs text-muted-foreground">Your token is stored securely and will not be displayed again.</p>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button type="submit" disabled={isSubmitting}>
+            <Save className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Saving..." : "Save Settings"}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}
+
 export default function AdminSettingsPage(): ReactNode {
+
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
 
   return (
@@ -263,10 +364,12 @@ export default function AdminSettingsPage(): ReactNode {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <GreenAPISettingsForm />
             <MetaPixelSettingsForm />
             <ChangeEmailForm />
             <ChangePasswordForm />
         </div>
+
          <div className="mt-8 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-md flex items-start text-yellow-700 dark:text-yellow-400 dark:bg-yellow-700/10 dark:border-yellow-600/30">
           <AlertTriangle className="h-5 w-5 mr-3 mt-0.5 shrink-0 text-yellow-600 dark:text-yellow-500" />
           <p className="text-sm">

@@ -45,4 +45,7 @@ next-env.d.ts
 firebase-config.js
 service-account.json
 database-debug.log
-storage-debug.log
+# JSON settings files
+.meta-pixel-settings.json
+.whatsapp-settings.json
+

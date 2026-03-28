@@ -187,3 +187,21 @@ export async function updateClientNote(clientId: number, note: string) {
     };
   }
 }
+
+/**
+ * Deletes a client and their associated history from the database.
+ */
+export async function deleteClient(clientId: number) {
+  try {
+    await ensureClientsTable();
+    
+    // Note: client_notes has ON DELETE CASCADE, so they will be deleted automatically.
+    await pool.execute('DELETE FROM clients WHERE id = ?', [clientId]);
+    
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error deleting client:", error);
+    return { success: false, error: error?.message || "Failed to delete client" };
+  }
+}
+
