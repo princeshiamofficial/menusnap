@@ -142,31 +142,7 @@ const STAGES = [
   },
 ];
 
-// Custom Hook for Long Press
-function useLongPress(callback: () => void, ms = 5000) {
-  const [startLongPress, setStartLongPress] = useState(false);
 
-  useEffect(() => {
-    let timerId: any;
-    if (startLongPress) {
-      timerId = setTimeout(callback, ms);
-    } else {
-      clearTimeout(timerId);
-    }
-
-    return () => {
-      clearTimeout(timerId);
-    };
-  }, [startLongPress, callback, ms]);
-
-  return {
-    onMouseDown: () => setStartLongPress(true),
-    onMouseUp: () => setStartLongPress(false),
-    onMouseLeave: () => setStartLongPress(false),
-    onTouchStart: () => setStartLongPress(true),
-    onTouchEnd: () => setStartLongPress(false),
-  };
-}
 
 export default function ContactsPage() {
 
@@ -352,18 +328,20 @@ export default function ContactsPage() {
     }
   };
   
-  const handleDeleteContact = async () => {
-    if (!deleteClientId) return;
+  const handleDeleteContact = async (clientId?: number) => {
+    const targetId = clientId || deleteClientId;
+    if (!targetId) return;
     
     setIsDeleting(true);
     try {
-      const result = await deleteClient(deleteClientId);
+      const result = await deleteClient(targetId);
       if (result.success) {
-        setContacts(prev => prev.filter(c => c.id !== deleteClientId));
+        setContacts(prev => prev.filter(c => c.id !== targetId));
         setTotalContacts(prev => prev - 1);
         toast({
           title: "Contact deleted",
-          description: "The record has been permanently removed.",
+          description: clientId ? "Removed instantly via your settings." : "The record has been permanently removed.",
+          variant: "success",
         });
         setDeleteClientId(null);
       } else {
@@ -538,7 +516,9 @@ export default function ContactsPage() {
                           setHistoryClientId(contact.id);
                           fetchHistory(contact.id);
                         }}
-                        onLongPress={() => setDeleteClientId(contact.id)}
+                        onDeleteTrigger={() => {
+                          setDeleteClientId(contact.id);
+                        }}
                         onWhatsAppClick={() => openWhatsApp(contact.whatsapp_number)}
                         formatDate={formatDate}
                       />
@@ -595,7 +575,9 @@ export default function ContactsPage() {
                               setHistoryClientId(contact.id);
                               fetchHistory(contact.id);
                             }}
-                            onLongPress={() => setDeleteClientId(contact.id)}
+                            onDeleteTrigger={() => {
+                              setDeleteClientId(contact.id);
+                            }}
                             onWhatsAppClick={() => openWhatsApp(contact.whatsapp_number)}
                           />
                         ))}
@@ -747,7 +729,7 @@ export default function ContactsPage() {
                 Keep Account
               </AlertDialogCancel>
               <AlertDialogAction 
-                onClick={handleDeleteContact}
+                onClick={() => handleDeleteContact()}
                 className="rounded-full font-bold bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-200 px-6 transition-all border-none"
                 disabled={isDeleting}
               >
@@ -770,12 +752,10 @@ export default function ContactsPage() {
 }
 
 // Sub-components for better organization and performance
-function ContactRow({ contact, index, onStageChange, onViewHistory, onLongPress, onWhatsAppClick, formatDate }: any) {
-  const longPressProps = useLongPress(onLongPress);
-  
+function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
   return (
     <TableRow 
-      {...longPressProps}
+      onDoubleClick={onDeleteTrigger}
       className="group border-slate-50 hover:bg-rose-50/30 transition-all duration-200 cursor-context-menu select-none active:bg-rose-50/50"
     >
       <TableCell className="text-center font-mono text-xs text-slate-300 group-hover:text-slate-400 pl-6 transition-colors">
@@ -877,8 +857,7 @@ function ContactRow({ contact, index, onStageChange, onViewHistory, onLongPress,
   );
 }
 
-function MobileContactCard({ contact, index, onStageChange, onViewHistory, onLongPress, onWhatsAppClick }: any) {
-  const longPressProps = useLongPress(onLongPress);
+function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick }: any) {
   const stageInfo = STAGES.find(s => s.value === (contact.stage || 'New Lead')) || STAGES[0];
   const initials = contact.business_name.substring(0, 2).toUpperCase();
 
@@ -889,7 +868,7 @@ function MobileContactCard({ contact, index, onStageChange, onViewHistory, onLon
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ delay: index * 0.05, type: "spring", damping: 25, stiffness: 200 }}
         className="group bg-white rounded-[2rem] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all active:scale-[0.98] select-none"
-        {...longPressProps}
+        onDoubleClick={onDeleteTrigger}
     >
         <div className="flex items-center gap-3 sm:gap-4 mb-4">
             <div className={cn(
