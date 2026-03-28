@@ -60,6 +60,7 @@ export default function GoogleDocsApp({
   const [isFindReplaceDialogOpen, setIsFindReplaceDialogOpen] = useState(false)
   const [margins, setMargins] = useState({ left: 56, right: 56, indent: 0, tabStops: [] as any[] })
   const [socket, setSocket] = useState<Socket | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState<any[]>([])
 
   // Socket initialization
@@ -67,14 +68,11 @@ export default function GoogleDocsApp({
     if (!docId) return
     
     // Determine the socket URL
-    // In production, we connect to the same domain (root) and let the /socket path handle the proxy
     const isProd = process.env.NODE_ENV === 'production';
     const socketUrl = isProd 
         ? window.location.origin 
         : (process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'http://localhost:1234');
 
-    // For CyberPanel/LiteSpeed, we allow polling as a fallback 
-    // but keep websocket as the primary goal.
     const socketInstance = io(socketUrl, {
         path: '/socket.io',
         transports: ['polling', 'websocket'], 
@@ -89,7 +87,16 @@ export default function GoogleDocsApp({
     const user = { name: getGuestName(), color: getRandomColor() };
     
     socketInstance.on('connect', () => {
+        setIsConnected(true)
         socketInstance.emit('join-room', { docId, user })
+    })
+
+    socketInstance.on('disconnect', () => {
+        setIsConnected(false)
+    })
+
+    socketInstance.on('connect_error', () => {
+        setIsConnected(false)
     })
 
     socketInstance.on('users-update', (users: any[]) => {
@@ -163,6 +170,7 @@ export default function GoogleDocsApp({
             readOnly={readOnly}
             docId={docId}
             onlineUsers={onlineUsers}
+            isConnected={isConnected}
           />
           {!readOnly && (
             <div className="flex flex-col">

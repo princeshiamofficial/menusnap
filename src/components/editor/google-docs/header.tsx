@@ -12,9 +12,18 @@ interface HeaderProps {
     readOnly?: boolean
     docId?: string
     onlineUsers?: any[]
+    isConnected?: boolean
 }
 
-export default function Header({ title, onTitleChange, isSaving, readOnly = false, docId, onlineUsers = [] }: HeaderProps) {
+export default function Header({ 
+    title, 
+    onTitleChange, 
+    isSaving, 
+    readOnly = false, 
+    docId, 
+    onlineUsers = [],
+    isConnected = false
+}: HeaderProps) {
     const [isStarred, setIsStarred] = useState(false)
     const [showShareMenu, setShowShareMenu] = useState(false)
     const [copiedType, setCopiedType] = useState<'editor' | 'viewer' | null>(null)
@@ -62,8 +71,11 @@ export default function Header({ title, onTitleChange, isSaving, readOnly = fals
                         whileTap={{ scale: 0.95 }}
                         className="p-1 cursor-pointer hover:bg-gray-100 rounded-full transition-colors shrink-0"
                     >
-                        <div className="bg-[#4285f4] p-1 sm:p-1.5 rounded-sm shadow-sm">
+                        <div className="bg-[#4285f4] p-1 sm:p-1.5 rounded-sm shadow-sm relative">
                             <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                            {!readOnly && (
+                                <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${isConnected ? 'bg-green-500 shadow-[0_0_4px_#22c55e]' : 'bg-red-500 shadow-[0_0_4px_#ef4444]'}`}></div>
+                            )}
                         </div>
                     </motion.div>
 
@@ -89,15 +101,26 @@ export default function Header({ title, onTitleChange, isSaving, readOnly = fals
                                 />
                             </motion.div>
                             <AnimatePresence mode="wait">
-                                <motion.span
-                                    key={isSaving ? 'saving' : (readOnly ? 'readonly' : 'saved')}
-                                    initial={{ opacity: 0, x: -5 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 5 }}
-                                    className={`text-[9px] sm:text-[11px] ml-1 sm:ml-4 font-normal whitespace-nowrap ${readOnly ? 'text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100' : 'text-gray-500'}`}
-                                >
-                                    {isSaving ? 'Saving...' : (readOnly ? 'View only' : 'Document saved')}
-                                </motion.span>
+                                <div className="flex items-center gap-2 ml-1 sm:ml-4 overflow-hidden">
+                                    <motion.span
+                                        key={isSaving ? 'saving' : (readOnly ? 'readonly' : 'saved')}
+                                        initial={{ opacity: 0, x: -5 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 5 }}
+                                        className={`text-[9px] sm:text-[11px] font-normal whitespace-nowrap ${readOnly ? 'text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100' : 'text-gray-500'}`}
+                                    >
+                                        {isSaving ? 'Saving...' : (readOnly ? 'View only' : 'Document saved')}
+                                    </motion.span>
+                                    {!readOnly && (
+                                        <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            className={`text-[9px] sm:text-[10px] hidden sm:inline px-1.5 py-0.5 rounded-sm border ${isConnected ? 'text-green-600 bg-green-50 border-green-100' : 'text-red-500 bg-red-50 border-red-100'}`}
+                                        >
+                                            {isConnected ? 'Live' : 'Offline'}
+                                        </motion.span>
+                                    )}
+                                </div>
                             </AnimatePresence>
                         </div>
                     </div>
