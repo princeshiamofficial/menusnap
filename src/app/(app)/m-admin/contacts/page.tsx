@@ -143,7 +143,7 @@ const STAGES = [
 ];
 
 // Custom Hook for Long Press
-function useLongPress(callback: () => void, ms = 600) {
+function useLongPress(callback: () => void, ms = 5000) {
   const [startLongPress, setStartLongPress] = useState(false);
 
   useEffect(() => {

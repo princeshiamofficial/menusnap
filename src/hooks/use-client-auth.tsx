@@ -110,6 +110,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Login Successful",
         description: `Welcome, ${businessName}!`,
+        variant: "success",
       });
 
       // Play welcome sound
@@ -139,6 +140,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     toast({
       title: "Logged Out",
       description: "You have been successfully logged out.",
+      variant: "success",
     });
   }, [router, toast]);
 

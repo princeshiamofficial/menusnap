@@ -59,7 +59,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         // Re-fetch session to populate adminUser
         const session = await getAdminSessionAction();
         setAdminUser(session);
-        toast({ title: "Login Successful", description: "Welcome, Admin!" });
+        toast({ title: "Login Successful", description: "Welcome, Admin!", variant: "success" });
       } else {
         toast({ title: "Login Failed", description: result.error || "Invalid credentials.", variant: "destructive" });
       }
