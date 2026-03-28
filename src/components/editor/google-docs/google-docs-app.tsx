@@ -147,7 +147,7 @@ export default function GoogleDocsApp({
 
   return (
     <div
-      className="flex flex-col bg-[#f8f9fa] min-h-screen"
+      className="flex flex-col bg-[#f8f9fa] h-screen overflow-hidden shadow-inner"
       style={{
         '--editor-left-margin': `${margins.left}px`,
         '--editor-right-margin': `${margins.right}px`,
@@ -155,7 +155,7 @@ export default function GoogleDocsApp({
       } as React.CSSProperties}
     >
       {!hideHeader && (
-        <div className="sticky top-0 z-[60] flex flex-col">
+        <div className="flex flex-col bg-white border-b border-[#dadce0] shadow-sm z-[60] shrink-0">
           <Header
             title={title}
             onTitleChange={handleTitleChange}
@@ -165,16 +165,16 @@ export default function GoogleDocsApp({
             onlineUsers={onlineUsers}
           />
           {!readOnly && (
-            <>
+            <div className="flex flex-col">
               <Toolbar editor={editor} title={title} />
               <Ruler onMarginsChange={setMargins} />
-            </>
+            </div>
           )}
         </div>
       )}
 
-      <main className="flex-1">
-        <div className="flex justify-center py-10 px-4">
+      <main className="flex-1 overflow-y-auto scroll-smooth no-scrollbar">
+        <div className="flex justify-center py-6 px-2 sm:py-10 sm:px-4">
           <EditorComponent
             content={content}
             onChange={setContent}
