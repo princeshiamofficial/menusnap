@@ -43,7 +43,7 @@ export default function WhatsAppDashboard() {
     const [settings, setSettings] = useState<WhatsAppSettings>({
         isEnabled: false,
         isGreetingEnabled: false,
-        greetingMessage: ""
+        greetingMessages: []
     });
     const [isSaving, setIsSaving] = useState(false);
     const [templates, setTemplates] = useState<any[]>([]);

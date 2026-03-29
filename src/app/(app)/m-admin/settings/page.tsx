@@ -278,20 +278,19 @@ function MetaPixelSettingsForm(): ReactNode {
 
 function WhatsAppSettingsForm(): ReactNode {
   const { toast } = useToast();
+  const [existingSettings, setExistingSettings] = useState<WhatsAppSettings>({ isEnabled: false, isGreetingEnabled: false, greetingMessages: [] });
   const form = useForm<WhatsAppSettingsFormValues>({
     resolver: zodResolver(whatsAppSettingsFormSchema),
-    defaultValues: {
-      isEnabled: false,
-    },
+    defaultValues: { isEnabled: false },
   });
 
   useEffect(() => {
     async function loadSettings() {
       try {
         const settings = await getWhatsAppSettings();
-        form.reset(settings);
-      } catch (error: any) {
-      }
+        setExistingSettings(settings);
+        form.reset({ isEnabled: settings.isEnabled });
+      } catch (error: any) {}
     }
     loadSettings();
   }, [form]);
@@ -300,7 +299,11 @@ function WhatsAppSettingsForm(): ReactNode {
 
   async function onSubmit(data: WhatsAppSettingsFormValues) {
     try {
-      await saveWhatsAppSettings(data);
+      // Merge with existing settings to preserve isGreetingEnabled & greetingMessages
+      await saveWhatsAppSettings({
+        ...existingSettings,
+        isEnabled: data.isEnabled,
+      });
       toast({
         title: "Success",
         description: "Integration settings saved.",
