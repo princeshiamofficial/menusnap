@@ -14,13 +14,11 @@ export interface GreetingItem {
 async function ensureGreetingsTable() {
     try {
         await pool.query(`
-            CREATE TABLE IF NOT EXISTS greetings (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                content TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
+
+        // Force convert the table to utf8mb4 if it already exists
+        await pool.execute(`ALTER TABLE greetings CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     } catch (error) {
         console.error("Failed to ensure greetings table:", error);
         throw error;
@@ -52,9 +50,9 @@ export async function addGreeting(title: string, content: string): Promise<{ suc
             [title, content]
         );
         return { success: true, data: { id: result.insertId, title, content } };
-    } catch (error) {
-        console.error("Error adding greeting:", error);
-        return { success: false, error: "Failed to add greeting message." };
+    } catch (error: any) {
+        console.error("Failed to add greeting:", error);
+        return { success: false, error: error.message || "Database error" };
     }
 }
 
