@@ -2,7 +2,7 @@
 
 import { getWhatsAppSettings } from "./whatsapp-settings";
 
-const BRIDGE_URL = 'http://localhost:9005';
+const BRIDGE_URL = 'http://127.0.0.1:9005';
 
 /**
  * Normalizes phone number to have 88 country code if missing (Bangladesh fallback)
@@ -58,7 +58,7 @@ export async function sendWhatsAppMessage(phoneNumber: string, message: string) 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phoneNumber: cleanNumber, message }),
-            signal: AbortSignal.timeout(15000),
+            signal: AbortSignal.timeout(30000),
         });
         
         if (!response.ok) return { success: false, error: "Bridge failed to deliver message" };

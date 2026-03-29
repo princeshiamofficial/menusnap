@@ -84,6 +84,12 @@ let lastQr = null;
 let userInfoCache = null;
 
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import pathModule from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = pathModule.dirname(__filename);
+const SETTINGS_FILE = pathModule.join(__dirname, '.whatsapp-settings.json');
 
 async function startWhatsApp() {
     console.log('📦 Initializing WhatsApp Engine...');
@@ -188,22 +194,28 @@ async function startWhatsApp() {
         if (m.type !== 'notify') return;
         
         try {
-            const settingsFile = '.whatsapp-settings.json';
+            const settingsFile = SETTINGS_FILE;
             if (fs.existsSync(settingsFile)) {
                 const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
                 
-                if (settings.isGreetingEnabled && settings.greetingMessage) {
-                    for (const msg of m.messages) {
-                        if (!msg.key.fromMe && !msg.key.remoteJid.includes('@g.us')) {
-                            const sender = msg.key.remoteJid;
-                            
-                            // Basic check to see if we've already replied in this session
-                            // In a real app, you'd track this in a DB
-                            // Log new message without showing sender ID
-                            console.log(`📩 New message received. Sending auto-greeting...`);
-                            
-                            await sock.sendMessage(sender, { text: settings.greetingMessage });
-                            console.log('✅ Greeting sent.');
+                if (settings.isGreetingEnabled) {
+                    // Support both array (greetingMessages) and legacy string (greetingMessage)
+                    const messages = settings.greetingMessages?.length > 0
+                        ? settings.greetingMessages
+                        : settings.greetingMessage
+                            ? [settings.greetingMessage]
+                            : [];
+
+                    if (messages.length > 0) {
+                        for (const msg of m.messages) {
+                            if (!msg.key.fromMe && !msg.key.remoteJid.includes('@g.us')) {
+                                const sender = msg.key.remoteJid;
+                                // Pick a random greeting
+                                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+                                console.log(`📩 New message received. Sending auto-greeting...`);
+                                await sock.sendMessage(sender, { text: randomMsg });
+                                console.log('✅ Greeting sent.');
+                            }
                         }
                     }
                 }

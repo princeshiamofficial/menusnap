@@ -10,7 +10,7 @@ import path from 'path';
 export interface WhatsAppSettings {
   isEnabled: boolean;
   isGreetingEnabled: boolean;
-  greetingMessage: string;
+  greetingMessages: string[];
 }
 
 const SETTINGS_FILE_PATH = path.join(process.cwd(), '.whatsapp-settings.json');
@@ -27,14 +27,14 @@ export async function getWhatsAppSettings(): Promise<WhatsAppSettings> {
       return { 
         isEnabled: false,
         isGreetingEnabled: false,
-        greetingMessage: "Hello! Welcome to our business. How can we help you today?"
+        greetingMessages: []
       };
     }
     console.error('Error reading WhatsApp settings:', error);
     return { 
       isEnabled: false,
       isGreetingEnabled: false,
-      greetingMessage: "" 
+      greetingMessages: []
     };
   }
 }
