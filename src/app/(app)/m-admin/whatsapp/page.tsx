@@ -17,11 +17,16 @@ export default function WhatsAppDashboard() {
 
     useEffect(() => {
         if (!socketRef.current) {
-            const bridgeUrl = `https://${window.location.hostname}`;
-            console.log('🔌 Connecting to Bridge (Secure Proxy):', bridgeUrl);
+            // Dynamic Connection Logic
+            const isProd = window.location.protocol === 'https:';
+            const bridgeUrl = isProd 
+                ? `https://${window.location.hostname}` 
+                : `http://${window.location.hostname}:9005`;
 
+            console.log(`🔌 Connecting to Bridge (${isProd ? 'Production Proxy' : 'Local Direct'}):`, bridgeUrl);
+ 
             socketRef.current = io(bridgeUrl, {
-                path: '/whatsapp-bridge/socket.io',
+                path: '/whatsapp-bridge/socket.io', // Consistent path for both dev and prod
                 reconnection: true,
                 reconnectionAttempts: Infinity,
                 timeout: 20000,
