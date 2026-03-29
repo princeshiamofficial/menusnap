@@ -56,5 +56,6 @@ MenuBldr is a modern web application for managing digital menus, orders, and cli
 - **Context Awareness**: Always check the `src/app/actions` directory before creating new database logic to see if similar functions already exist.
 - **Styling**: When creating or modifying UI, lean towards a minimal, professional SaaS aesthetic (dark modes, subtle borders, glassmorphism).
 - **Responsiveness**: Always verify that new UI components don't cause horizontal overflow on mobile devices.
-- **Banglish Summary**: Provide a short summary of the completed task in **Banglish** (using English/Latin characters only, NO Bengali script) at the end of each turn.
+- **Communication Language**: All responses must be in **English only**. Bengali script (বাংলা অক্ষর) is **STRICTLY FORBIDDEN**. 
+- **Banglish Summary**: At the very end of each turn, provide a brief summary of the completed task in **Banglish** (Bengali words written with English/Latin characters only, NO Bengali script).
 

@@ -8,7 +8,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook, MessageSquare, Trash2, ShieldCheck, Zap } from 'lucide-react';
+import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook, MessageCircle, Trash2, ShieldCheck, Zap, Laptop, Globe as GlobeIcon, QrCode } from 'lucide-react';
+import Link from 'next/link';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -45,9 +46,6 @@ const metaPixelFormSchema = z.object({
 
 const whatsAppSettingsFormSchema = z.object({
   isEnabled: z.boolean(),
-  instanceId: z.string().optional(),
-  apiToken: z.string().optional(),
-  host: z.string().optional(),
 });
 
 type EmailFormValues = z.infer<typeof emailFormSchema>;
@@ -278,15 +276,12 @@ function MetaPixelSettingsForm(): ReactNode {
   );
 }
 
-function GreenAPISettingsForm(): ReactNode {
+function WhatsAppSettingsForm(): ReactNode {
   const { toast } = useToast();
   const form = useForm<WhatsAppSettingsFormValues>({
     resolver: zodResolver(whatsAppSettingsFormSchema),
     defaultValues: {
       isEnabled: false,
-      instanceId: "",
-      apiToken: "",
-      host: "api.greenapi.com",
     },
   });
 
@@ -317,15 +312,15 @@ function GreenAPISettingsForm(): ReactNode {
 
   return (
     <Card className="lg:col-span-2 rounded-[2.5rem] border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden bg-white/70 backdrop-blur-xl">
-      <CardHeader className="pb-4">
+      <CardHeader className="pb-4 border-b border-slate-50">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
-                    <MessageSquare className="h-5 w-5" />
+                    <MessageCircle className="h-5 w-5" />
                 </div>
                 <div>
-                    <CardTitle className="text-xl font-black tracking-tight">WhatsApp CRM</CardTitle>
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">GreenAPI Integration</CardDescription>
+                    <CardTitle className="text-xl font-black tracking-tight uppercase">WhatsApp Engine</CardTitle>
+                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Local Integration • Private Bridge</CardDescription>
                 </div>
             </div>
             <div className="flex items-center gap-3 bg-slate-50/50 px-4 py-2 rounded-2xl border border-slate-100">
@@ -340,29 +335,45 @@ function GreenAPISettingsForm(): ReactNode {
         </div>
       </CardHeader>
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <CardContent className="space-y-6 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1.5">
-              <Label htmlFor="instanceId" className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">Instance ID</Label>
-              <Input id="instanceId" {...form.register("instanceId")} placeholder="0000000000" className="h-12 rounded-2xl border-slate-100 focus:ring-0 focus:border-emerald-500/50 bg-white/50" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="host" className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">API Host</Label>
-              <Input id="host" {...form.register("host")} placeholder="api.greenapi.com" className="h-12 rounded-2xl border-slate-100 focus:ring-0 focus:border-emerald-500/50 bg-white/50" />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="apiToken" className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">API Token Instance</Label>
-            <Input id="apiToken" type="password" {...form.register("apiToken")} placeholder="Enter Secret Token" className="h-12 rounded-2xl border-slate-100 focus:ring-0 focus:border-emerald-500/50 bg-white/50" />
-            <div className="flex items-center gap-2 ml-1 mt-3 p-3 bg-amber-50/50 rounded-2xl border border-amber-100/50">
-                <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Ensure your instance is authorized on GreenAPI</p>
-            </div>
-          </div>
+        <CardContent className="space-y-8 pt-6">
+            <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-8 bg-emerald-50/50 rounded-3xl border border-emerald-100 flex flex-col items-center text-center gap-5"
+            >
+                <div className="p-4 bg-white rounded-2xl shadow-sm border border-emerald-100">
+                    <MessageCircle className="h-8 w-8 text-emerald-500" />
+                </div>
+                <div className="space-y-2">
+                    <h1 className="text-lg font-black text-slate-900 tracking-tight uppercase">Private WhatsApp Infrastructure</h1>
+                    <p className="text-xs text-slate-500 font-medium max-w-[400px] leading-relaxed">
+                        The integration now uses a self-hosted engine. This allows for unlimited messaging without third-party API costs. 
+                        You must manage your connection session from the dedicated bridge dashboard.
+                    </p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 w-full max-w-sm mt-2">
+                    <div className="bg-white/80 p-3 rounded-2xl border border-emerald-100 flex flex-col items-center">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Protocol</span>
+                        <span className="text-xs font-black text-emerald-600">Baileys</span>
+                    </div>
+                    <div className="bg-white/80 p-3 rounded-2xl border border-emerald-100 flex flex-col items-center">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pricing</span>
+                        <span className="text-xs font-black text-emerald-600">Free</span>
+                    </div>
+                </div>
+
+                <Link 
+                    href="/m-admin/whatsapp" 
+                    className="h-11 px-8 rounded-2xl bg-slate-900 text-white text-xs font-bold flex items-center justify-center hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200"
+                >
+                    Open Bridge Dashboard
+                </Link>
+            </motion.div>
         </CardContent>
         <CardFooter className="pb-8 pt-4">
           <Button type="submit" disabled={isSubmitting} className="w-full h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-100 text-sm font-bold transition-all active:scale-[0.98]">
-            {isSubmitting ? "Connecting..." : "Save Connection Details"}
+            {isSubmitting ? "Syncing..." : "Apply Integration Settings"}
           </Button>
         </CardFooter>
       </form>
@@ -391,7 +402,7 @@ export default function AdminSettingsPage(): ReactNode {
         >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="space-y-10">
-                    <GreenAPISettingsForm />
+                    <WhatsAppSettingsForm />
                     <MetaPixelSettingsForm />
                 </motion.div>
 

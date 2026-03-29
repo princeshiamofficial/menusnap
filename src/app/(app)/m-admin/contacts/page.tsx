@@ -21,7 +21,10 @@ import {
   ChevronDown,
   CheckCircle2,
   AlertCircle,
-  UserPlus,
+  UserPlus, 
+  MessageSquare,
+  Zap,
+  Heart,
   Star,
   XCircle,
   HelpCircle,
@@ -98,7 +101,7 @@ interface Contact {
 
 const STAGES = [
   { 
-    value: 'New Lead', 
+    value: 'new-lead', 
     label: 'New Lead', 
     icon: UserPlus,
     color: 'bg-slate-50 text-slate-600 border-slate-100',
@@ -107,7 +110,7 @@ const STAGES = [
     placeholder: 'e.g., "Assigned to sales team", "Waiting for reply"'
   },
   { 
-    value: 'Contacted', 
+    value: 'contacted', 
     label: 'Contacted', 
     icon: MessageCircle,
     color: 'bg-blue-50 text-blue-600 border-blue-100',
@@ -116,34 +119,34 @@ const STAGES = [
     placeholder: 'e.g., "Expressed interest in MenuBook template", "Asked for pricing details"'
   },
   { 
-    value: 'Interested', 
+    value: 'interested', 
     label: 'Interested', 
     icon: Star,
     color: 'bg-amber-50 text-amber-600 border-amber-100',
     dotColor: 'bg-amber-500',
-    hint: 'What specifically are they interested in? Any specific features discussed?',
-    placeholder: 'e.g., "Wants custom branding and QR code support", "Loves the glassmorphism design"'
+    hint: 'Client is ready to pay or finalize the order.',
+    placeholder: 'e.g., "Invoice sent", "Contract being reviewed"'
   },
   { 
-    value: 'Converted', 
-    label: 'Converted', 
-    icon: CheckCircle2,
-    color: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    dotColor: 'bg-emerald-500',
-    hint: 'Congratulations! What are the next steps for onboarding or delivery?',
-    placeholder: 'e.g., "Order confirmed, payment received", "Onboarding scheduled for next Monday"'
-  },
-  { 
-    value: 'Lost', 
-    label: 'Lost', 
-    icon: XCircle,
+    value: 'donated', 
+    label: 'Donated', 
+    icon: Heart,
     color: 'bg-rose-50 text-rose-600 border-rose-100',
     dotColor: 'bg-rose-500',
-    hint: 'Why was the lead lost? This helps us improve our services.',
-    placeholder: 'e.g., "Found competitor cheaper", "Not ready to digitize yet", "No response after 3 follow-ups"'
+    hint: 'The client has completed a transaction or contribution.',
+    placeholder: 'e.g., "Payment received", "Success story"'
   },
   { 
-    value: 'Exiting', 
+    value: 'not-interested', 
+    label: 'Not Interested', 
+    icon: XCircle,
+    color: 'bg-gray-50 text-gray-500 border-gray-100',
+    dotColor: 'bg-gray-400',
+    hint: 'The client moved on or found another solution.',
+    placeholder: 'e.g., "Too expensive", "Using competitor"'
+  },
+  { 
+    value: 'exiting', 
     label: 'Exiting', 
     icon: DoorOpen,
     color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
@@ -152,7 +155,7 @@ const STAGES = [
     placeholder: 'e.g., "Season ended", "Switching to different provider"'
   },
   { 
-    value: 'Fake', 
+    value: 'fake', 
     label: 'Fake', 
     icon: ShieldAlert,
     color: 'bg-slate-100 text-slate-500 border-slate-200',
@@ -208,10 +211,20 @@ export default function ContactsPage() {
     try {
       const result = await getLeads(pageNum, 20); 
       if (result.success) {
+          const leads = (result.leads as Contact[]).map(lead => {
+            let stageVal = (lead.stage || 'new-lead').trim();
+            // Final defensive fix for legacy names
+            if (stageVal === 'New Lead' || stageVal === 'Lead') stageVal = 'new-lead';
+            return {
+              ...lead,
+              stage: stageVal
+            };
+          });
+        
         if (pageNum === 1) {
-          setContacts(result.leads as Contact[]);
+          setContacts(leads);
         } else {
-          setContacts(prev => [...prev, ...(result.leads as Contact[])]);
+          setContacts(prev => [...prev, ...leads]);
         }
         setHasMore(result.hasMore);
         setTotalContacts(result.total);
@@ -388,22 +401,33 @@ export default function ContactsPage() {
 
 
   const filteredContacts = useMemo(() => {
-    return contacts
+    // 1. Prepare normalized filter values
+    const searchStr = (searchTerm || "").trim().toLowerCase();
+    const filterVal = (filterStage || "All"); // Slug-based filter
+
+    return (contacts || [])
       .filter(contact => {
-        const matchesSearch = contact.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          contact.whatsapp_number.includes(searchTerm);
+        // Defensive check for contact existence
+        if (!contact) return false;
+
+        // Search Match (Check Business Name and WhatsApp Number)
+        const name = (contact.business_name || "").toLowerCase();
+        const phone = (contact.whatsapp_number || "");
+        const matchesSearch = !searchStr || name.includes(searchStr) || phone.includes(searchStr);
+        if (!matchesSearch) return false;
+
+        // Stage Match (Using slugs)
+        if (filterVal === 'All') return true;
         
-        const currentStage = contact.stage || 'New Lead';
-        const matchesStage = filterStage === 'All' || currentStage === filterStage;
-        
-        return matchesSearch && matchesStage;
+        const cStage = contact.stage || 'new-lead';
+        return cStage.toLowerCase().trim() === filterVal.toLowerCase().trim();
       })
       .sort((a, b) => {
-        const dateA = new Date(a.created_at).getTime();
-        const dateB = new Date(b.created_at).getTime();
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
       });
-  }, [contacts, searchTerm, sortOrder, filterStage]);
+  }, [contacts, searchTerm, filterStage, sortOrder]);
 
   const formatDate = (dateString: string, includeTime = false) => {
     try {
@@ -812,6 +836,8 @@ export default function ContactsPage() {
 
 // Sub-components for better organization and performance
 function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
+  const currentStageInfo = STAGES.find(s => s.value === contact.stage) || STAGES[0];
+
   return (
     <TableRow 
       onDoubleClick={onDeleteTrigger}
@@ -845,26 +871,25 @@ function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrig
       </TableCell>
       <TableCell>
         <Select 
-          value={contact.stage || 'New Lead'} 
+          value={contact.stage} 
           onValueChange={onStageChange}
         >
           <SelectTrigger 
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             className={cn(
-            "h-8 w-40 text-[11px] font-bold uppercase tracking-wider rounded-full border px-3 transition-all hover:shadow-md",
-            STAGES.find(s => s.value === (contact.stage || 'New Lead'))?.color || STAGES[0].color
+            "h-8 w-40 text-[11px] font-bold uppercase tracking-wider rounded-full border px-3 transition-all hover:shadow-md flex items-center gap-1.5",
+            currentStageInfo.color
           )}>
-            <div className="flex items-center gap-1.5">
-              {React.createElement(STAGES.find(s => s.value === (contact.stage || 'New Lead'))?.icon || HelpCircle, { className: "h-3 w-3" })}
-              <SelectValue placeholder="Select Stage" />
-            </div>
+            {React.createElement(currentStageInfo.icon, { className: "h-3.5 w-3.5 shrink-0" })}
+            <span className="truncate">{currentStageInfo.label}</span>
           </SelectTrigger>
           <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1">
             {STAGES.map((stage) => (
               <SelectItem 
                 key={stage.value} 
                 value={stage.value}
+                textValue={stage.label}
                 className="text-[12px] font-medium tracking-tight focus:bg-slate-50 rounded-xl py-2 px-3 my-0.5 group/item"
               >
                 <div className="flex items-center gap-2.5">
@@ -917,7 +942,7 @@ function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrig
 }
 
 function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick }: any) {
-  const stageInfo = STAGES.find(s => s.value === (contact.stage || 'New Lead')) || STAGES[0];
+  const stageInfo = STAGES.find(s => s.value === contact.stage) || STAGES[0];
   const initials = contact.business_name.substring(0, 2).toUpperCase();
 
   return (
@@ -944,24 +969,25 @@ function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDel
                         {contact.business_name}
                     </h3>
                     <Select 
-                        value={contact.stage || 'New Lead'} 
+                        value={contact.stage} 
                         onValueChange={onStageChange}
                     >
                         <SelectTrigger 
                             onMouseDown={(e) => e.stopPropagation()}
                             onTouchStart={(e) => e.stopPropagation()}
                             className={cn(
-                            "h-6 w-fit text-[9px] font-black uppercase tracking-[0.1em] rounded-full border-none px-3 bg-opacity-10 shadow-none transition-all focus:ring-0",
-                            stageInfo.color,
-                            stageInfo.color.replace('bg-', 'text-')
+                            "h-6 w-fit text-[9px] font-black uppercase tracking-[0.1em] rounded-full border px-3 bg-opacity-10 shadow-none transition-all focus:ring-0 flex items-center gap-1.5",
+                            stageInfo.color
                         )}>
-                            <SelectValue />
+                            {React.createElement(stageInfo.icon, { className: "h-3 w-3 shrink-0" })}
+                            <span>{stageInfo.label}</span>
                         </SelectTrigger>
                         <SelectContent className="rounded-3xl border-slate-100 shadow-2xl p-2">
                             {STAGES.map((stage) => (
                                 <SelectItem 
                                     key={stage.value} 
                                     value={stage.value}
+                                    textValue={stage.label}
                                     className="text-[12px] font-bold tracking-tight rounded-xl py-2.5 px-4 my-0.5 focus:bg-slate-50"
                                 >
                                     <div className="flex items-center gap-3">

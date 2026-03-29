@@ -16,7 +16,7 @@ async function ensureClientsTable() {
         business_type VARCHAR(50) NOT NULL,
         whatsapp_number VARCHAR(20) NOT NULL,
         note TEXT,
-        stage VARCHAR(50) DEFAULT 'New Lead',
+        stage VARCHAR(50) DEFAULT 'new-lead',
         last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_whatsapp (whatsapp_number)
@@ -34,7 +34,7 @@ async function ensureClientsTable() {
     const [stageColumns]: any = await pool.execute("SHOW COLUMNS FROM clients LIKE 'stage'");
     if (stageColumns.length === 0) {
       console.log("Adding 'stage' column to clients table...");
-      await pool.execute("ALTER TABLE clients ADD COLUMN stage VARCHAR(50) DEFAULT 'New Lead' AFTER note");
+      await pool.execute("ALTER TABLE clients ADD COLUMN stage VARCHAR(50) DEFAULT 'new-lead' AFTER note");
     }
 
     // 4. Create client_notes table for history
@@ -110,9 +110,28 @@ export async function getLeads(page: number = 1, limit: number = 20) {
     const [countRows]: any = await pool.execute('SELECT COUNT(*) as total FROM clients');
     const total = countRows[0].total;
     
+    const leads = rows.map((lead: any) => {
+      let stage = (lead.stage || '').trim();
+      if (!stage || stage === '' || stage === 'null' || stage === 'undefined') {
+        stage = 'new-lead';
+      }
+      // Update legacy names to slugs
+      if (stage === 'New Lead' || stage === 'Lead') stage = 'new-lead';
+      if (stage === 'Contacted') stage = 'contacted';
+      if (stage === 'Interested') stage = 'interested';
+      if (stage === 'Following Up') stage = 'following-up';
+      if (stage === 'Converting') stage = 'converting';
+      if (stage === 'Donated') stage = 'donated';
+      if (stage === 'Not Interested') stage = 'not-interested';
+      if (stage === 'Exiting') stage = 'exiting';
+      if (stage === 'Fake') stage = 'fake';
+      
+      return { ...lead, stage };
+    });
+    
     return { 
       success: true, 
-      leads: rows, 
+      leads, 
       total, 
       hasMore: (offset + rows.length) < total 
     };

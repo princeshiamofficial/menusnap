@@ -14,7 +14,8 @@ import {
   LogOut, 
   Layers, 
   Package, 
-  FolderOpen 
+  FolderOpen,
+  MessageSquare
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -33,6 +34,7 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/m-admin/magic-docs', label: 'Magic Docs', icon: FolderOpen, hasChevron: true },
+  { href: '/m-admin/whatsapp', label: 'WhatsApp Engine', icon: MessageSquare, hasChevron: true },
   { href: '/m-admin/settings', label: 'Settings', icon: Settings, hasChevron: true },
 ];
 
