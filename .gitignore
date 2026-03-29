@@ -49,3 +49,6 @@ database-debug.log
 .meta-pixel-settings.json
 .whatsapp-settings.json
 
+# WhatsApp session data
+auth_info_baileys/
+
