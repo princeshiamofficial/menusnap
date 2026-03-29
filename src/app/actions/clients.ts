@@ -88,25 +88,17 @@ export async function saveClientLogin(businessName: string, businessType: string
       // --- SEND GREETING MESSAGE ---
       try {
         const settings = await getWhatsAppSettings();
-        // Only send if WhatsApp integration and Greetings are globally enabled
-        if (settings.isEnabled && settings.isGreetingEnabled) {
+        if (settings.isEnabled) {
           const res = await getGreetings();
           if (res.success && res.data && res.data.length > 0) {
-            // Pick a random greeting from the list
             const randomIndex = Math.floor(Math.random() * res.data.length);
             let message = res.data[randomIndex].content;
-            
-            // Replace [Business Name] placeholder
             message = message.replace(/\[Business Name\]/g, businessName);
-            
-            // Send the message
             await sendWhatsAppMessage(whatsappNumber, message);
-
           }
         }
       } catch (greetingError) {
         console.error("Failed to send automatic greeting:", greetingError);
-        // We don't fail the login if the greeting fails
       }
       // -----------------------------
 

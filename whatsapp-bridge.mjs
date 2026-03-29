@@ -11,8 +11,34 @@ import { Server } from 'socket.io';
 import pino from 'pino';
 import { Boom } from '@hapi/boom';
 import qrcode from 'qrcode';
+const mysql = require('mysql2/promise');
 
-const PORT = 9005; // Different from collab server
+const PORT = 9005;
+
+// MySQL connection for reading settings & greetings
+const db = mysql.createPool({
+    host: process.env.MYSQL_HOST || '127.0.0.1',
+    user: process.env.MYSQL_USER || 'root',
+    password: process.env.MYSQL_PASSWORD || '',
+    database: process.env.MYSQL_DATABASE || 'menubldr',
+    waitForConnections: true,
+    connectionLimit: 5,
+});
+
+async function getGreetingFromDB() {
+    try {
+        // Check if WhatsApp is enabled
+        const [settings] = await db.query('SELECT is_enabled FROM whatsapp_settings WHERE id = 1 LIMIT 1');
+        if (!settings || !settings[0] || !settings[0].is_enabled) return null;
+
+        // Get a random greeting
+        const [rows] = await db.query('SELECT content FROM greetings ORDER BY RAND() LIMIT 1');
+        if (rows && rows[0]) return rows[0].content;
+        return null;
+    } catch (err) {
+        return null;
+    }
+}
 const httpServer = createServer((req, res) => {
     // Basic REST endpoint for sending messages from Server Actions
     if (req.url === '/send-message' && req.method === 'POST') {
@@ -192,31 +218,15 @@ async function startWhatsApp() {
 
     sock.ev.on('messages.upsert', async m => {
         if (m.type !== 'notify') return;
-        
         try {
-            const settingsFile = SETTINGS_FILE;
-            if (fs.existsSync(settingsFile)) {
-                const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
-                
-                if (settings.isGreetingEnabled) {
-                    // Support both array (greetingMessages) and legacy string (greetingMessage)
-                    const messages = settings.greetingMessages?.length > 0
-                        ? settings.greetingMessages
-                        : settings.greetingMessage
-                            ? [settings.greetingMessage]
-                            : [];
-
-                    if (messages.length > 0) {
-                        for (const msg of m.messages) {
-                            if (!msg.key.fromMe && !msg.key.remoteJid.includes('@g.us')) {
-                                const sender = msg.key.remoteJid;
-                                // Pick a random greeting
-                                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-                                console.log(`📩 New message received. Sending auto-greeting...`);
-                                await sock.sendMessage(sender, { text: randomMsg });
-                                console.log('✅ Greeting sent.');
-                            }
-                        }
+            const greetingMsg = await getGreetingFromDB();
+            if (greetingMsg) {
+                for (const msg of m.messages) {
+                    if (!msg.key.fromMe && !msg.key.remoteJid.includes('@g.us')) {
+                        const sender = msg.key.remoteJid;
+                        console.log(`📩 New message received. Sending auto-greeting...`);
+                        await sock.sendMessage(sender, { text: greetingMsg });
+                        console.log('✅ Greeting sent.');
                     }
                 }
             }
