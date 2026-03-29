@@ -17,10 +17,11 @@ export default function WhatsAppDashboard() {
 
     useEffect(() => {
         if (!socketRef.current) {
-            const bridgeUrl = `http://${window.location.hostname}:9005`;
-            console.log('🔌 Connecting to Bridge:', bridgeUrl);
+            const bridgeUrl = `https://${window.location.hostname}`;
+            console.log('🔌 Connecting to Bridge (Secure Proxy):', bridgeUrl);
 
             socketRef.current = io(bridgeUrl, {
+                path: '/whatsapp-bridge/socket.io',
                 reconnection: true,
                 reconnectionAttempts: Infinity,
                 timeout: 20000,
