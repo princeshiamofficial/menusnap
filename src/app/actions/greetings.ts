@@ -1,19 +1,20 @@
+
 "use server";
 
-import pool from "@/lib/mysql";
-
-export interface GreetingItem {
-    id: number;
-    title: string;
-    content: string;
-}
+import pool from '@/lib/mysql';
 
 /**
- * Ensures the greetings table exists in the database.
+ * Ensures the greetings table exists.
  */
 async function ensureGreetingsTable() {
     try {
         await pool.query(`
+            CREATE TABLE IF NOT EXISTS greetings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                content TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
 
@@ -26,27 +27,27 @@ async function ensureGreetingsTable() {
 }
 
 /**
- * Fetches all greeting messages from the database.
+ * Fetches all greetings from the database.
  */
-export async function getGreetings(): Promise<{ success: boolean; data?: GreetingItem[]; error?: string }> {
+export async function getGreetings() {
     try {
         await ensureGreetingsTable();
-        const [rows] = await pool.query("SELECT * FROM greetings ORDER BY created_at DESC");
-        return { success: true, data: rows as GreetingItem[] };
+        const [rows]: any = await pool.query('SELECT * FROM greetings ORDER BY created_at DESC');
+        return { success: true, data: rows };
     } catch (error) {
         console.error("Error fetching greetings:", error);
-        return { success: false, error: "Failed to fetch greeting messages." };
+        return { success: false, error: "Failed to fetch greetings." };
     }
 }
 
 /**
- * Adds a new greeting message.
+ * Adds a new greeting to the database.
  */
-export async function addGreeting(title: string, content: string): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function addGreeting(title: string, content: string) {
     try {
         await ensureGreetingsTable();
         const [result]: any = await pool.query(
-            "INSERT INTO greetings (title, content) VALUES (?, ?)",
+            'INSERT INTO greetings (title, content) VALUES (?, ?)',
             [title, content]
         );
         return { success: true, data: { id: result.insertId, title, content } };
@@ -57,31 +58,32 @@ export async function addGreeting(title: string, content: string): Promise<{ suc
 }
 
 /**
- * Updates an existing greeting message.
+ * Updates an existing greeting in the database.
  */
-export async function updateGreeting(id: number, title: string, content: string): Promise<{ success: boolean; error?: string }> {
+export async function updateGreeting(id: number, title: string, content: string) {
     try {
         await ensureGreetingsTable();
         await pool.query(
-            "UPDATE greetings SET title = ?, content = ? WHERE id = ?",
+            'UPDATE greetings SET title = ?, content = ? WHERE id = ?',
             [title, content, id]
         );
-        return { success: true };
+        return { success: true, data: { id, title, content } };
     } catch (error) {
         console.error("Error updating greeting:", error);
-        return { success: false, error: "Failed to update greeting message." };
+        return { success: false, error: "Failed to update greeting." };
     }
 }
 
 /**
- * Deletes a greeting message.
+ * Deletes a greeting from the database.
  */
-export async function deleteGreeting(id: number): Promise<{ success: boolean; error?: string }> {
+export async function deleteGreeting(id: number) {
     try {
-        await pool.query("DELETE FROM greetings WHERE id = ?", [id]);
+        await ensureGreetingsTable();
+        await pool.query('DELETE FROM greetings WHERE id = ?', [id]);
         return { success: true };
     } catch (error) {
         console.error("Error deleting greeting:", error);
-        return { success: false, error: "Failed to delete greeting message." };
+        return { success: false, error: "Failed to delete greeting." };
     }
 }
