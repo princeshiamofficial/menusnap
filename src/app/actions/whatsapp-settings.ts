@@ -9,6 +9,8 @@ import path from 'path';
  */
 export interface WhatsAppSettings {
   isEnabled: boolean;
+  isGreetingEnabled: boolean;
+  greetingMessage: string;
 }
 
 const SETTINGS_FILE_PATH = path.join(process.cwd(), '.whatsapp-settings.json');
@@ -22,10 +24,18 @@ export async function getWhatsAppSettings(): Promise<WhatsAppSettings> {
     return JSON.parse(fileContent);
   } catch (error: any) {
     if (error.code === 'ENOENT') {
-      return { isEnabled: false };
+      return { 
+        isEnabled: false,
+        isGreetingEnabled: false,
+        greetingMessage: "Hello! Welcome to our business. How can we help you today?"
+      };
     }
     console.error('Error reading WhatsApp settings:', error);
-    return { isEnabled: false };
+    return { 
+      isEnabled: false,
+      isGreetingEnabled: false,
+      greetingMessage: "" 
+    };
   }
 }
 

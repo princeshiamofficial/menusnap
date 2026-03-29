@@ -47,15 +47,16 @@ const httpServer = createServer((req, res) => {
                     return res.end(JSON.stringify({ success: false, error: `WhatsApp not connected (Status: ${connectionStatus})` }));
                 }
 
-                console.log(`🔍 Checking availability for: ${phoneNumber}`);
+                // Log availability check without showing full number
+                console.log(`🔍 Checking availability for a number...`);
                 const [result] = await sock.onWhatsApp(phoneNumber);
                 const exists = !!(result && result.exists);
                 
-                console.log(`✅ Result for ${phoneNumber}: ${exists ? 'EXISTS' : 'NOT FOUND'}`);
+                console.log(`✅ Availability check result: ${exists ? 'EXISTS' : 'NOT FOUND'}`);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true, exists }));
             } catch (err) {
-                console.error(`❌ Check failed for ${phoneNumber}:`, err.message);
+                console.error(`❌ Check failed for a number:`, err.message);
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: err.message }));
             }
@@ -184,7 +185,32 @@ async function startWhatsApp() {
     });
 
     sock.ev.on('messages.upsert', async m => {
-        // Handle incoming messages if needed later
+        if (m.type !== 'notify') return;
+        
+        try {
+            const settingsFile = '.whatsapp-settings.json';
+            if (fs.existsSync(settingsFile)) {
+                const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
+                
+                if (settings.isGreetingEnabled && settings.greetingMessage) {
+                    for (const msg of m.messages) {
+                        if (!msg.key.fromMe && !msg.key.remoteJid.includes('@g.us')) {
+                            const sender = msg.key.remoteJid;
+                            
+                            // Basic check to see if we've already replied in this session
+                            // In a real app, you'd track this in a DB
+                            // Log new message without showing sender ID
+                            console.log(`📩 New message received. Sending auto-greeting...`);
+                            
+                            await sock.sendMessage(sender, { text: settings.greetingMessage });
+                            console.log('✅ Greeting sent.');
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('❌ Error in auto-reply logic:', err.message);
+        }
     });
 }
 

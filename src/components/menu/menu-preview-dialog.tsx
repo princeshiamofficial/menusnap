@@ -214,10 +214,10 @@ export function MenuPreviewDialog({
     };
 
     try {
-      console.log("Submitting order payload locally to MySQL:", orderPayload);
+
       
       const result = await submitOrderToMySql(orderPayload);
-      console.log("MySQL Persistence result:", result);
+
       
       if (!result.success) {
         toast({

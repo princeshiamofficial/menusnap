@@ -2,6 +2,9 @@
 "use server";
 
 import pool from '@/lib/mysql';
+import { sendWhatsAppMessage } from './whatsapp';
+import { getWhatsAppSettings } from './whatsapp-settings';
+import { getGreetings } from './greetings';
 
 /**
  * Ensures the clients table exists and has the required columns.
@@ -81,6 +84,32 @@ export async function saveClientLogin(businessName: string, businessType: string
         'INSERT INTO clients (business_name, business_type, whatsapp_number) VALUES (?, ?, ?)',
         [businessName, businessType, whatsappNumber]
       );
+
+      // --- SEND GREETING MESSAGE ---
+      try {
+        const settings = await getWhatsAppSettings();
+        // Only send if WhatsApp integration and Greetings are globally enabled
+        if (settings.isEnabled && settings.isGreetingEnabled) {
+          const res = await getGreetings();
+          if (res.success && res.data && res.data.length > 0) {
+            // Pick a random greeting from the list
+            const randomIndex = Math.floor(Math.random() * res.data.length);
+            let message = res.data[randomIndex].content;
+            
+            // Replace [Business Name] placeholder
+            message = message.replace(/\[Business Name\]/g, businessName);
+            
+            // Send the message
+            await sendWhatsAppMessage(whatsappNumber, message);
+
+          }
+        }
+      } catch (greetingError) {
+        console.error("Failed to send automatic greeting:", greetingError);
+        // We don't fail the login if the greeting fails
+      }
+      // -----------------------------
+
       return { success: true, clientId: result.insertId, action: 'created' };
     }
   } catch (error) {
