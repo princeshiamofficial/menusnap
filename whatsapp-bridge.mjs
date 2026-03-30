@@ -47,8 +47,11 @@ async function getGreetingFromDB() {
     }
 }
 const httpServer = createServer((req, res) => {
+    // Debug logging for all incoming requests (useful for Proxy validation)
+    console.log(`🌐 [Bridge] Incoming: ${req.method} ${req.url}`);
+    
     // Basic REST endpoint for sending messages from Server Actions
-    if (req.url === '/send-message' && req.method === 'POST') {
+    if ((req.url === '/send-message' || req.url === '/whatsapp-bridge/send-message') && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk; });
         req.on('end', async () => {
@@ -69,7 +72,7 @@ const httpServer = createServer((req, res) => {
                 res.end(JSON.stringify({ success: false, error: err.message }));
             }
         });
-    } else if (req.url === '/check-number' && req.method === 'POST') {
+    } else if ((req.url === '/check-number' || req.url === '/whatsapp-bridge/check-number') && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk; });
         req.on('end', async () => {
@@ -94,9 +97,9 @@ const httpServer = createServer((req, res) => {
                 res.end(JSON.stringify({ success: false, error: err.message }));
             }
         });
-    } else if (req.url === '/' && req.method === 'GET') {
+    } else if ((req.url === '/' || req.url === '/whatsapp-bridge' || req.url === '/whatsapp-bridge/') && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('WhatsApp Bridge is running');
+        res.end('WhatsApp Bridge is running (Prefix Active)');
     } else {
         res.writeHead(404);
         res.end();
@@ -104,7 +107,7 @@ const httpServer = createServer((req, res) => {
 });
 
 const io = new Server(httpServer, {
-    path: "/socket.io/",
+    path: "/whatsapp-bridge/socket.io",
     cors: { origin: "*", methods: ["GET", "POST"] },
     pingTimeout: 60000,
     pingInterval: 25000,

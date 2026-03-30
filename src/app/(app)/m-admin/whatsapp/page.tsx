@@ -599,45 +599,12 @@ export default function WhatsAppDashboard() {
                                             </p>
                                             <p className="text-[10px] font-bold text-slate-400/80 leading-relaxed">
                                                 {bridgeError 
-                                                    ? `Error: ${bridgeError}. If on CyberPanel, ensure Proxy Rewrite is configured.` 
+                                                    ? `Error: ${bridgeError}. Please contact support or check bridge logs.` 
                                                     : "Starting background engine for WhatsApp automation..."}
                                             </p>
                                         </div>
                                         
-                                        {!isBridgeOnline && (
-                                            <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="outline" size="sm" className="h-8 rounded-xl bg-white border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">
-                                                        CyberPanel Guide
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="rounded-[2rem] border-slate-100 shadow-2xl p-8 max-w-md">
-                                                    <DialogHeader>
-                                                        <DialogTitle className="text-xl font-black tracking-tight">Production Setup Guide</DialogTitle>
-                                                        <DialogDescription className="text-sm font-bold text-slate-400 uppercase tracking-widest">Resolving Bridge Connection Issues</DialogDescription>
-                                                    </DialogHeader>
-                                                    <div className="space-y-6 pt-4">
-                                                        <div className="space-y-2">
-                                                            <p className="text-xs font-black text-slate-700 uppercase tracking-wide">1. Start Bridge via PM2</p>
-                                                            <div className="bg-slate-900 rounded-xl p-3 font-mono text-[11px] text-emerald-400">
-                                                                pm2 start whatsapp-bridge.mjs --name mBldrBridge
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <p className="text-xs font-black text-slate-700 uppercase tracking-wide">2. Firewall Access</p>
-                                                            <p className="text-xs text-slate-500 font-medium leading-relaxed">Open port <span className="font-bold text-slate-700">9005</span> in your CyberPanel Firewall (CSF/Firewalld).</p>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <p className="text-xs font-black text-slate-700 uppercase tracking-wide">3. OLS Proxy Rewrite</p>
-                                                            <p className="text-xs text-slate-500 font-medium mb-2">Add this to your domain's <span className="font-bold">vHost Rewrite Rules</span> in CyberPanel:</p>
-                                                            <div className="bg-slate-900 rounded-xl p-3 font-mono text-[10px] text-indigo-300 leading-relaxed whitespace-pre">
-{`REWRITERULE ^whatsapp-bridge/(.*)$ http://127.0.0.1:9005/whatsapp-bridge/$1 [P,L]`}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </DialogContent>
-                                            </Dialog>
-                                        )}
+
                                     </motion.div>
                                 )}
                             </AnimatePresence>
