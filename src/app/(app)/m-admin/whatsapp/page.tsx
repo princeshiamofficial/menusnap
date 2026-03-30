@@ -64,6 +64,9 @@ export default function WhatsAppDashboard() {
         item.content.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    const [isBridgeOnline, setIsBridgeOnline] = useState(false);
+    const [bridgeError, setBridgeError] = useState<string | null>(null);
+
     const socketRef = useRef<any>(null);
 
     const loadGreetings = useCallback(async () => {
@@ -86,53 +89,49 @@ export default function WhatsAppDashboard() {
         });
 
         if (!socketRef.current) {
-            // Dynamic Connection Logic
             const isProd = window.location.protocol === 'https:';
             const bridgeUrl = isProd 
                 ? `https://${window.location.hostname}` 
                 : `http://127.0.0.1:9005`;
 
-            console.log(`🔌 Connecting to Bridge (${isProd ? 'Production Proxy' : 'Local Direct'}):`, bridgeUrl);
+            console.log(`🔌 Attempting to connect to WhatsApp Bridge:`, bridgeUrl);
  
-            socketRef.current = io(bridgeUrl, {
+            const socket = io(bridgeUrl, {
                 path: '/whatsapp-bridge/socket.io',
-                transports: ['websocket'], // Force websocket
+                transports: ['websocket', 'polling'], 
                 reconnection: true,
-                reconnectionAttempts: Infinity,
-                timeout: 20000,
+                timeout: 10000,
+                reconnectionAttempts: 10
             });
 
-            const socket = socketRef.current;
-
             socket.on('connect', () => {
-                console.log('✅ Connected to Bridge. Socket ID:', socket.id);
-                // No need to setStatus here, the bridge will emit 'status' event immediately
+                console.log('✅ Bridge Connected!');
+                setIsBridgeOnline(true);
+                setBridgeError(null);
             });
 
             socket.on('connect_error', (err: any) => {
-                console.error('❌ Bridge Connection Error:', err);
+                console.error('❌ Bridge Connection Error:', err.message);
+                setIsBridgeOnline(false);
+                setBridgeError(err.message);
                 setStatus('error');
             });
 
-            socket.on('status', (s: string) => {
-                console.log('📊 Bridge Status:', s);
-                setStatus(s);
-            });
-
-            socket.on('qr', (q: string) => {
-                console.log('⚡ QR Received');
-                setQr(q);
-                setStatus('awaiting_qr');
+            socket.on('status', (newStatus: string) => {
+                console.log('📡 Bridge Status Update:', newStatus);
+                setStatus(newStatus);
             });
 
             socket.on('user-info', (info: any) => {
                 console.log('👤 Profile info received');
                 setUserInfo(info);
+                setStatus('connected');
             });
 
-            socket.on('disconnect', (reason: string) => {
-                console.warn('🔌 Bridge Disconnected:', reason);
-                setStatus('disconnected');
+            socket.on('qr', (qrCode) => {
+                console.log('⚡ QR Received');
+                setQr(qrCode);
+                setStatus('qr');
             });
 
             socket.on('pairing-code', (code: string) => {
@@ -142,9 +141,18 @@ export default function WhatsAppDashboard() {
             });
 
             socket.on('error', (err: string) => {
+                console.error('❌ Socket App Error:', err);
                 toast({ variant: "destructive", title: "Bridge Error", description: err });
                 setIsPairingLoading(false);
             });
+
+            socket.on('disconnect', (reason: string) => {
+                console.warn('🔌 Bridge Disconnected:', reason);
+                setIsBridgeOnline(false);
+                setStatus('disconnected');
+            });
+
+            socketRef.current = socket;
         }
 
         return () => {
@@ -154,7 +162,7 @@ export default function WhatsAppDashboard() {
                 socketRef.current = null;
             }
         };
-    }, []);
+    }, [loadGreetings, toast]);
 
     const [isSyncing, setIsSyncing] = useState(false);
 
@@ -163,7 +171,6 @@ export default function WhatsAppDashboard() {
         setIsSyncing(true);
         socketRef.current.emit('sync-user-info');
         console.log('🔄 Sync requested...');
-        // Reset animation after a few seconds
         setTimeout(() => setIsSyncing(false), 2000);
     };
 
@@ -580,10 +587,57 @@ export default function WhatsAppDashboard() {
                                         key="loading"
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        className="flex flex-col items-center gap-3 text-slate-300"
+                                        className="flex flex-col items-center gap-4 text-slate-300 max-w-[280px] text-center"
                                     >
-                                        <RefreshCw className="h-12 w-12 animate-spin-slow" />
-                                        <p className="font-bold text-xs uppercase tracking-widest">Waiting for bridge...</p>
+                                        <div className="relative">
+                                            <RefreshCw className={cn("h-12 w-12", isBridgeOnline ? "animate-spin-slow text-emerald-400" : "text-amber-400")} />
+                                            {status === 'error' && <AlertCircle className="absolute -top-1 -right-1 h-5 w-5 text-rose-500 bg-white rounded-full" />}
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-xs uppercase tracking-widest text-slate-500 mb-1">
+                                                {status === 'error' ? "Bridge Offline" : "Awaiting Connection"}
+                                            </p>
+                                            <p className="text-[10px] font-bold text-slate-400/80 leading-relaxed">
+                                                {bridgeError 
+                                                    ? `Error: ${bridgeError}. If on CyberPanel, ensure Proxy Rewrite is configured.` 
+                                                    : "Starting background engine for WhatsApp automation..."}
+                                            </p>
+                                        </div>
+                                        
+                                        {!isBridgeOnline && (
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="outline" size="sm" className="h-8 rounded-xl bg-white border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">
+                                                        CyberPanel Guide
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="rounded-[2rem] border-slate-100 shadow-2xl p-8 max-w-md">
+                                                    <DialogHeader>
+                                                        <DialogTitle className="text-xl font-black tracking-tight">Production Setup Guide</DialogTitle>
+                                                        <DialogDescription className="text-sm font-bold text-slate-400 uppercase tracking-widest">Resolving Bridge Connection Issues</DialogDescription>
+                                                    </DialogHeader>
+                                                    <div className="space-y-6 pt-4">
+                                                        <div className="space-y-2">
+                                                            <p className="text-xs font-black text-slate-700 uppercase tracking-wide">1. Start Bridge via PM2</p>
+                                                            <div className="bg-slate-900 rounded-xl p-3 font-mono text-[11px] text-emerald-400">
+                                                                pm2 start whatsapp-bridge.mjs --name mBldrBridge
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <p className="text-xs font-black text-slate-700 uppercase tracking-wide">2. Firewall Access</p>
+                                                            <p className="text-xs text-slate-500 font-medium leading-relaxed">Open port <span className="font-bold text-slate-700">9005</span> in your CyberPanel Firewall (CSF/Firewalld).</p>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <p className="text-xs font-black text-slate-700 uppercase tracking-wide">3. OLS Proxy Rewrite</p>
+                                                            <p className="text-xs text-slate-500 font-medium mb-2">Add this to your domain's <span className="font-bold">vHost Rewrite Rules</span> in CyberPanel:</p>
+                                                            <div className="bg-slate-900 rounded-xl p-3 font-mono text-[10px] text-indigo-300 leading-relaxed whitespace-pre">
+{`REWRITERULE ^whatsapp-bridge/(.*)$ http://127.0.0.1:9005/whatsapp-bridge/$1 [P,L]`}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </DialogContent>
+                                            </Dialog>
+                                        )}
                                     </motion.div>
                                 )}
                             </AnimatePresence>
