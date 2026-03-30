@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building, Utensils, Sparkles, LogIn, AlertCircle } from 'lucide-react';
+import { Building, Utensils, Sparkles, LogIn, AlertCircle, MapPin } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { isValidWhatsApp } from '@/lib/utils';
 
@@ -24,12 +25,32 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const BD_ADDRESS_DATA: Record<string, string[]> = {
+  "Dhaka": ["Dhaka", "Gazipur", "Narayanganj", "Tangail", "Faridpur", "Gopalganj", "Kishoreganj", "Madaripur", "Manikganj", "Munshiganj", "Narsingdi", "Rajbari", "Shariatpur"],
+  "Chattogram": ["Chattogram", "Cox's Bazar", "Noakhali", "Feni", "Chandpur", "Brahmanbaria", "Lakshmipur", "Rangamati", "Khagrachhari", "Bandarban"],
+  "Rajshahi": ["Rajshahi", "Bogura", "Pabna", "Sirajganj", "Naogaon", "Natore", "Joypurhat", "Chapainawabganj"],
+  "Khulna": ["Khulna", "Jashore", "Satkhira", "Kushtia", "Bagerhat", "Jhenaidah", "Chuadanga", "Magura", "Narail", "Meherpur"],
+  "Barishal": ["Barishal", "Patuakhali", "Bhola", "Pirojpur", "Barguna", "Jhalokathi"],
+  "Sylhet": ["Sylhet", "Moulvibazar", "Habiganj", "Sunamganj"],
+  "Rangpur": ["Rangpur", "Dinajpur", "Gaibandha", "Kurigram", "Nilphamari", "Panchagarh", "Thakurgaon", "Lalmonirhat"],
+  "Mymensingh": ["Mymensingh", "Jamalpur", "Netrokona", "Sherpur"]
+};
+
 export default function LoginPage() {
   const [businessName, setBusinessName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [type, setType] = useState<'restaurant' | 'parlour' | ''>('');
-  const { login, clientLoading } = useClientAuth();
+  const [division, setDivision] = useState<string>('');
+  const [district, setDistrict] = useState<string>('');
+  const { login, clientLoading, isClientLoggedIn } = useClientAuth();
   const { setTheme } = useTheme();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isClientLoggedIn) {
+      router.push('/dashboard');
+    }
+  }, [isClientLoggedIn, router]);
 
   const handleTypeChange = (value: 'restaurant' | 'parlour') => {
     setType(value);
@@ -38,11 +59,11 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (businessName && type && whatsapp) {
+    if (businessName && type && whatsapp && division && district) {
       if (!isValidWhatsApp(whatsapp)) {
         return;
       }
-      login(businessName, type, whatsapp);
+      login(businessName, type, whatsapp, division, district);
     }
   };
   
@@ -106,6 +127,42 @@ export default function LoginPage() {
                 required
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="division" className="flex items-center text-[#1a2b4b] font-bold text-sm">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Division
+                </Label>
+                <Select onValueChange={(val) => { setDivision(val); setDistrict(''); }} required value={division}>
+                  <SelectTrigger id="division" className="h-12 border-gray-200 rounded-xl focus:ring-orange-500">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(BD_ADDRESS_DATA).map(div => (
+                      <SelectItem key={div} value={div}>{div}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="district" className="flex items-center text-[#1a2b4b] font-bold text-sm">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  District
+                </Label>
+                <Select onValueChange={setDistrict} required value={district} disabled={!division}>
+                  <SelectTrigger id="district" className="h-12 border-gray-200 rounded-xl focus:ring-orange-500">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {division && BD_ADDRESS_DATA[division].map(dist => (
+                      <SelectItem key={dist} value={dist}>{dist}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-1">
               <Label htmlFor="whatsapp" className="flex items-center text-[#1a2b4b] font-bold text-sm">
                   <WhatsAppIcon className="h-4 w-4 mr-2" />
@@ -130,7 +187,7 @@ export default function LoginPage() {
             <Button 
                 type="submit" 
                 className="w-full text-lg h-14 rounded-xl bg-[#f97316] hover:bg-[#ea580c] text-white font-bold transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" 
-                disabled={clientLoading || !businessName || !type || !whatsapp || isWhatsAppInvalid}
+                disabled={clientLoading || !businessName || !type || !whatsapp || !division || !district || isWhatsAppInvalid}
             >
                 {clientLoading ? (
                   <span className="flex items-center">

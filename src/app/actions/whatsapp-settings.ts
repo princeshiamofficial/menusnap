@@ -5,12 +5,14 @@ import pool from '@/lib/mysql';
 export interface WhatsAppSettings {
   isEnabled: boolean;
   isGreetingEnabled: boolean;
+  isAbilityCheckEnabled: boolean;
   greetingMessages: string[];
 }
 
 const DEFAULT_SETTINGS: WhatsAppSettings = {
   isEnabled: false,
   isGreetingEnabled: false,
+  isAbilityCheckEnabled: true,
   greetingMessages: [],
 };
 
@@ -20,14 +22,23 @@ async function ensureSettingsTable() {
       id INT PRIMARY KEY DEFAULT 1,
       is_enabled TINYINT(1) DEFAULT 0,
       is_greeting_enabled TINYINT(1) DEFAULT 0,
+      is_ability_check_enabled TINYINT(1) DEFAULT 1,
       greeting_messages JSON DEFAULT ('[]'),
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  // Migration for existing tables
+  try {
+    await pool.execute('ALTER TABLE whatsapp_settings ADD COLUMN is_ability_check_enabled TINYINT(1) DEFAULT 1 AFTER is_greeting_enabled');
+  } catch (err) {
+    // Column might already exist
+  }
+
   // Insert default row if not exists
   await pool.execute(`
-    INSERT IGNORE INTO whatsapp_settings (id, is_enabled, is_greeting_enabled, greeting_messages)
-    VALUES (1, 0, 0, '[]')
+    INSERT IGNORE INTO whatsapp_settings (id, is_enabled, is_greeting_enabled, is_ability_check_enabled, greeting_messages)
+    VALUES (1, 0, 0, 1, '[]')
   `);
 }
 
@@ -51,6 +62,7 @@ export async function getWhatsAppSettings(): Promise<WhatsAppSettings> {
     return {
       isEnabled: !!row.is_enabled,
       isGreetingEnabled: !!row.is_greeting_enabled,
+      isAbilityCheckEnabled: !!row.is_ability_check_enabled,
       greetingMessages,
     };
   } catch (error) {
@@ -66,15 +78,17 @@ export async function saveWhatsAppSettings(settings: WhatsAppSettings): Promise<
   try {
     await ensureSettingsTable();
     await pool.execute(`
-      INSERT INTO whatsapp_settings (id, is_enabled, is_greeting_enabled, greeting_messages)
-      VALUES (1, ?, ?, ?)
+      INSERT INTO whatsapp_settings (id, is_enabled, is_greeting_enabled, is_ability_check_enabled, greeting_messages)
+      VALUES (1, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         is_enabled = VALUES(is_enabled),
         is_greeting_enabled = VALUES(is_greeting_enabled),
+        is_ability_check_enabled = VALUES(is_ability_check_enabled),
         greeting_messages = VALUES(greeting_messages)
     `, [
       settings.isEnabled ? 1 : 0,
       settings.isGreetingEnabled ? 1 : 0,
+      settings.isAbilityCheckEnabled ? 1 : 0,
       JSON.stringify(settings.greetingMessages || []),
     ]);
   } catch (error: any) {

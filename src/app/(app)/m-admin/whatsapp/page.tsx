@@ -21,7 +21,7 @@ import {
     CheckCircle, ChevronRight, Home, LayoutDashboard, Layers, 
     Plus, Search, EllipsisVertical, CirclePlus, 
     ArrowLeft, Bold, Italic, Link as LinkIcon, List as ListIcon, 
-    Quote, Code, ChevronDown, Edit3, Trash2 
+    Quote, Code, ChevronDown, Edit3, Trash2, Zap
 } from 'lucide-react';
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -54,6 +54,10 @@ export default function WhatsAppDashboard() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [newGreeting, setNewGreeting] = useState({ title: "", content: "" });
     const [greetingsList, setGreetingsList] = useState<GreetingItem[]>([]);
+    const [pairingPhoneNumber, setPairingPhoneNumber] = useState("");
+    const [pairingCode, setPairingCode] = useState<string | null>(null);
+    const [isPairingLoading, setIsPairingLoading] = useState(false);
+    const [isDisconnecting, setIsDisconnecting] = useState(false);
 
     const filteredGreetings = greetingsList.filter(item => 
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -86,12 +90,13 @@ export default function WhatsAppDashboard() {
             const isProd = window.location.protocol === 'https:';
             const bridgeUrl = isProd 
                 ? `https://${window.location.hostname}` 
-                : `http://${window.location.hostname}:9005`;
+                : `http://127.0.0.1:9005`;
 
             console.log(`🔌 Connecting to Bridge (${isProd ? 'Production Proxy' : 'Local Direct'}):`, bridgeUrl);
  
             socketRef.current = io(bridgeUrl, {
-                path: '/whatsapp-bridge/socket.io', // Consistent path for both dev and prod
+                path: '/whatsapp-bridge/socket.io',
+                transports: ['websocket'], // Force websocket
                 reconnection: true,
                 reconnectionAttempts: Infinity,
                 timeout: 20000,
@@ -129,6 +134,17 @@ export default function WhatsAppDashboard() {
                 console.warn('🔌 Bridge Disconnected:', reason);
                 setStatus('disconnected');
             });
+
+            socket.on('pairing-code', (code: string) => {
+                console.log('📱 Pairing code received:', code);
+                setPairingCode(code);
+                setIsPairingLoading(false);
+            });
+
+            socket.on('error', (err: string) => {
+                toast({ variant: "destructive", title: "Bridge Error", description: err });
+                setIsPairingLoading(false);
+            });
         }
 
         return () => {
@@ -149,6 +165,32 @@ export default function WhatsAppDashboard() {
         console.log('🔄 Sync requested...');
         // Reset animation after a few seconds
         setTimeout(() => setIsSyncing(false), 2000);
+    };
+
+    const handleRequestPairingCode = () => {
+        if (!pairingPhoneNumber) {
+            toast({ variant: "destructive", title: "Error", description: "Phone number is required." });
+            return;
+        }
+        if (!socketRef.current) return;
+        
+        setIsPairingLoading(true);
+        setPairingCode(null);
+        socketRef.current.emit('request-pairing-code', pairingPhoneNumber);
+    };
+
+    const handleLogout = () => {
+        if (!socketRef.current) return;
+        setIsDisconnecting(true);
+        socketRef.current.emit('logout');
+        
+        toast({ title: "Logging out...", description: "Clearing session and resetting bridge engine." });
+        
+        setTimeout(() => {
+            setIsDisconnecting(false);
+            setUserInfo(null);
+            setPairingCode(null);
+        }, 5000);
     };
 
     const handleSaveGreeting = async () => {
@@ -259,7 +301,7 @@ export default function WhatsAppDashboard() {
                                 <DialogTrigger asChild>
                                     <button className={cn(
                                         "inline-flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full px-4 py-1.5 text-[10px] uppercase font-black tracking-widest border-0 ring-1",
-                                        status === 'ready' || status === 'authenticated' 
+                                        status === 'connected' || status === 'ready' || status === 'authenticated' 
                                             ? "bg-emerald-50 text-emerald-600 ring-emerald-500/20 hover:bg-emerald-100" 
                                             : "bg-rose-50 text-rose-600 ring-rose-500/20 hover:bg-rose-100"
                                     )}>
@@ -280,7 +322,7 @@ export default function WhatsAppDashboard() {
                                                 <div className="flex flex-col space-y-1.5 text-center sm:text-left p-8 pb-4">
                                                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                                                         <DialogTitle className="tracking-tight text-3xl font-black text-gray-800 dark:text-gray-100">
-                                                            Greeting's
+                                                            Greetings
                                                         </DialogTitle>
                                                         <div className="flex w-full sm:w-auto items-center gap-3">
                                                             <div className="relative flex-grow sm:w-72">
@@ -445,26 +487,11 @@ export default function WhatsAppDashboard() {
             </div>
 
             <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-20 relative z-10">
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4 mb-12">
-                    <div>
-                        <div className="h-1 w-12 bg-emerald-500 rounded-full mb-6" />
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none mb-3">
-                            WhatsApp <span className="text-emerald-500 uppercase italic">Engine</span>
-                        </h1>
-                        <p className="text-slate-500 font-bold ml-1 uppercase tracking-widest text-[10px]">Private & Secure Local Integration</p>
-                    </div>
-                    
-                    <Badge className={cn(
-                        "rounded-full px-5 py-2.5 text-xs font-black uppercase tracking-widest border shadow-sm",
-                        status === 'connected' ? "bg-emerald-50 text-emerald-600 border-emerald-100" : 
-                        status === 'awaiting_qr' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                        "bg-slate-50 text-slate-400 border-slate-100"
-                    )}>
-                        {status === 'connected' ? `ONLINE • ${userInfo?.name || 'Active'}` : status.replace('_', ' ')}
-                    </Badge>
-                </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-4">
+                <div className={cn(
+                    "grid grid-cols-1 gap-8 px-4",
+                    status === 'connected' ? "md:grid-cols-2" : "max-w-2xl mx-auto"
+                )}>
                     <Card className="rounded-[2.5rem] border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden bg-white/70 backdrop-blur-xl">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -477,14 +504,24 @@ export default function WhatsAppDashboard() {
                                 </div>
                             </div>
                             {status === 'connected' && (
-                                <button 
-                                    onClick={handleSync}
-                                    disabled={isSyncing}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-500/10 disabled:opacity-50 group"
-                                >
-                                    <RefreshCw className={`h-3 w-3 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
-                                    {isSyncing ? 'Syncing...' : 'Sync Profile'}
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={handleSync}
+                                        disabled={isSyncing}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-500/10 disabled:opacity-50 group"
+                                    >
+                                        <RefreshCw className={`h-3 w-3 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
+                                        {isSyncing ? 'Syncing...' : 'Sync Profile'}
+                                    </button>
+                                    <button 
+                                        onClick={handleLogout}
+                                        disabled={isDisconnecting}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all border border-rose-500/10 disabled:opacity-50"
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                        {isDisconnecting ? 'Resetting...' : 'Disconnect'}
+                                    </button>
+                                </div>
                             )}
                         </CardHeader>
                         <CardContent className="flex flex-col items-center justify-center py-12 gap-8">
@@ -550,6 +587,48 @@ export default function WhatsAppDashboard() {
                                     </motion.div>
                                 )}
                             </AnimatePresence>
+
+                            {!userInfo && (
+                                <div className="w-full max-w-sm mt-8 pt-8 border-t border-slate-100/50">
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col gap-1.5 px-1">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Manual Login via Phone</Label>
+                                            <div className="relative flex items-center gap-2 mt-1">
+                                                <div className="relative flex-1 group">
+                                                    <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                                                    <Input 
+                                                        placeholder="88017XXXXXXXX" 
+                                                        className="h-11 pl-10 rounded-xl bg-slate-50 border-slate-100 focus-visible:ring-emerald-500/10 text-sm font-bold tracking-wider"
+                                                        value={pairingPhoneNumber}
+                                                        onChange={(e) => setPairingPhoneNumber(e.target.value)}
+                                                    />
+                                                </div>
+                                                <Button 
+                                                    onClick={handleRequestPairingCode}
+                                                    disabled={isPairingLoading}
+                                                    className="h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[10px] tracking-widest px-6 shadow-lg shadow-emerald-500/20"
+                                                >
+                                                    {isPairingLoading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : "Get Code"}
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        <AnimatePresence>
+                                            {pairingCode && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex flex-col items-center justify-center gap-2"
+                                                >
+                                                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Your Pairing Code</span>
+                                                    <span className="text-3xl font-black text-emerald-700 tracking-[0.2em]">{pairingCode}</span>
+                                                    <span className="text-[10px] font-bold text-emerald-600/60 text-center max-w-[200px]">Enter this code on your phone's "Link Device" screen</span>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -563,6 +642,67 @@ export default function WhatsAppDashboard() {
                                     animate={{ opacity: 1, x: 0 }}
                                     className="space-y-6"
                                 >
+
+                                    {/* Configuration Card */}
+                                    <Card className="rounded-[2.5rem] border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] bg-white/70 backdrop-blur-xl">
+                                        <CardHeader className="pb-4">
+                                            <CardTitle className="text-lg font-black tracking-tight flex items-center gap-2">
+                                                <Zap className="h-4 w-4 text-emerald-500" />
+                                                Live Config
+                                            </CardTitle>
+                                            <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Real-time automation engine</CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Auto Greetings</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase">Send welcome message to new users</span>
+                                                </div>
+                                                <Switch 
+                                                    checked={settings?.isGreetingEnabled}
+                                                    onCheckedChange={async (isEnabled) => {
+                                                        const updated = { ...settings!, isGreetingEnabled: isEnabled };
+                                                        setSettings(updated);
+                                                        await saveWhatsAppSettings(updated);
+                                                        toast({ title: isEnabled ? "Greetings Activated" : "Greetings Deactivated" });
+                                                    }}
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Ability Check</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase">Master switch for Client validation</span>
+                                                </div>
+                                                <Switch 
+                                                    checked={settings?.isAbilityCheckEnabled}
+                                                    onCheckedChange={async (isEnabled) => {
+                                                        const updated = { ...settings!, isAbilityCheckEnabled: isEnabled };
+                                                        setSettings(updated);
+                                                        await saveWhatsAppSettings(updated);
+                                                        toast({ title: isEnabled ? "Ability Check Enabled" : "Ability Check Disabled" });
+                                                    }}
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Master Engine</span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase">Turn off entire integration</span>
+                                                </div>
+                                                <Switch 
+                                                    checked={settings?.isEnabled}
+                                                    onCheckedChange={async (isEnabled) => {
+                                                        const updated = { ...settings!, isEnabled: isEnabled };
+                                                        setSettings(updated);
+                                                        await saveWhatsAppSettings(updated);
+                                                        toast({ title: isEnabled ? "Engine Enabled" : "Engine Disabled" });
+                                                    }}
+                                                />
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
                                     <Card className="rounded-[2.5rem] border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] bg-white/70 backdrop-blur-xl">
                                         <CardHeader>
                                             <CardTitle className="text-lg font-black tracking-tight flex items-center gap-2">
@@ -608,43 +748,19 @@ export default function WhatsAppDashboard() {
                                 </motion.div>
                             ) : (
                                 <motion.div
-                                    key="steps"
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    className="space-y-6"
+                                    key="no-connected-info"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="p-8 text-center"
                                 >
-                                    <Card className="rounded-[2.5rem] border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] bg-white/70 backdrop-blur-xl">
-                                        <CardHeader>
-                                            <CardTitle className="text-lg font-black tracking-tight">How it works</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-6">
-                                            <div className="flex gap-4">
-                                                <div className="h-10 w-10 shrink-0 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center font-black">1</div>
-                                                <div>
-                                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tighter">Initialize Bridge</h4>
-                                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">Our local Node.js bridge initializes a WhatsApp WebSocket directly from your server.</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <div className="h-10 w-10 shrink-0 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center font-black">2</div>
-                                                <div>
-                                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tighter">Direct Tunneling</h4>
-                                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">Instead of GreenAPI, messages are now tunneled via your own bridge—completely bypassing third-party limits.</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <div className="h-10 w-10 shrink-0 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center font-black">3</div>
-                                                <div>
-                                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tighter">Unlimited Messaging</h4>
-                                                    <p className="text-xs text-slate-500 font-medium leading-relaxed font-bold">You can send unlimited messages across unlimited chats for FREE.</p>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                    <div className="h-20 w-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                        <Smartphone className="h-8 w-8 text-slate-200" />
+                                    </div>
+                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Waiting for Connection</h3>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Connect your WhatsApp to unlock more settings</p>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-
                     </div>
                 </div>
             </div>

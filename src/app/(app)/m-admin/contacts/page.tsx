@@ -93,6 +93,8 @@ interface Contact {
   business_name: string;
   business_type: string;
   whatsapp_number: string;
+  division?: string;
+  district?: string;
   latest_note: string | null;
   stage: string;
   last_login: string;
@@ -545,6 +547,7 @@ export default function ContactsPage() {
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 py-5">Client Name</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Category</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">WhatsApp</TableHead>
+                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Address</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}>
                       <div className="flex items-center gap-1.5">
                         Joined
@@ -860,6 +863,12 @@ function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrig
               <span className="tabular-nums">{contact.whatsapp_number}</span>
           </div>
       </TableCell>
+      <TableCell>
+          <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-500 uppercase tracking-tight">
+              <Globe className="h-3.5 w-3.5 text-slate-300" />
+              {contact.district && contact.division ? `${contact.district}, ${contact.division}` : '-'}
+          </div>
+      </TableCell>
       <TableCell className="text-[13px] text-slate-400 font-medium whitespace-nowrap">
           <div className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5 text-slate-300" />
@@ -999,7 +1008,18 @@ function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDel
                         </SelectContent>
                     </Select>
                 </div>
-                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{contact.business_type}</p>
+                <div className="flex items-center gap-2">
+                    <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{contact.business_type}</p>
+                    {(contact.district || contact.division) && (
+                        <>
+                            <span className="text-slate-200 text-[10px]">•</span>
+                            <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                                <Globe className="h-2.5 w-2.5" />
+                                {contact.district || contact.division}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
         <div className="flex items-center gap-3 pt-3 border-t border-slate-50/50">

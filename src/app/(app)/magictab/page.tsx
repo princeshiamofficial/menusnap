@@ -1032,10 +1032,14 @@ export default function MagicTabPage() {
     });
 
     if (isSelected) {
-      const audio = new Audio('https://colorhutbd.xyz/audio/item-select.mp3');
-      audio.play().catch(error => {
-        console.error("Item selection sound playback failed:", error);
-      });
+      try {
+        const audio = new Audio('https://colorhutbd.xyz/audio/item-select.mp3');
+        audio.play().catch(() => {
+          /* Silence playback errors */
+        });
+      } catch (e) {
+        /* Silence creation errors */
+      }
 
       const cardElement = itemCardRefs.current.get(itemId);
       const buttonElement = previewButtonRef.current;

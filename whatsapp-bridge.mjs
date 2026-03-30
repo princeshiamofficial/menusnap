@@ -27,15 +27,21 @@ const db = mysql.createPool({
 
 async function getGreetingFromDB() {
     try {
-        // Check if WhatsApp is enabled
-        const [settings] = await db.query('SELECT is_enabled FROM whatsapp_settings WHERE id = 1 LIMIT 1');
-        if (!settings || !settings[0] || !settings[0].is_enabled) return null;
+        // Check if WhatsApp and Greeting are enabled
+        const [rows] = await db.query('SELECT is_enabled, is_greeting_enabled FROM whatsapp_settings WHERE id = 1 LIMIT 1');
+        if (!rows || !rows[0]) return null;
+        
+        const settings = rows[0];
+        console.log(`🔍 [Bridge] Settings fetched: is_enabled=${settings.is_enabled}, is_greeting_enabled=${settings.is_greeting_enabled}`);
+
+        if (!settings.is_enabled || !settings.is_greeting_enabled) return null;
 
         // Get a random greeting
-        const [rows] = await db.query('SELECT content FROM greetings ORDER BY RAND() LIMIT 1');
-        if (rows && rows[0]) return rows[0].content;
+        const [greetings] = await db.query('SELECT content FROM greetings ORDER BY RAND() LIMIT 1');
+        if (greetings && greetings[0]) return greetings[0].content;
         return null;
     } catch (err) {
+        console.error('❌ [Bridge] Database error:', err.message);
         return null;
     }
 }
@@ -135,7 +141,7 @@ async function startWhatsApp() {
         auth: state,
         printQRInTerminal: true,
         logger: pino({ level: 'silent' }),
-        browser: ['MenuBldr Bridge', 'Desktop', '1.0.0']
+        browser: ['Ubuntu', 'Chrome', '20.0.04']
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -224,11 +230,14 @@ async function startWhatsApp() {
                 for (const msg of m.messages) {
                     if (!msg.key.fromMe && !msg.key.remoteJid.includes('@g.us')) {
                         const sender = msg.key.remoteJid;
-                        console.log(`📩 New message received. Sending auto-greeting...`);
+                        console.log(`📩 New message from ${sender}. Sending auto-greeting...`);
                         await sock.sendMessage(sender, { text: greetingMsg });
                         console.log('✅ Greeting sent.');
                     }
                 }
+            } else {
+                // Log why it wasn't sent
+                // console.log('⏹️ Auto-greeting skipped (Disabled or no message)');
             }
         } catch (err) {
             console.error('❌ Error in auto-reply logic:', err.message);
@@ -260,6 +269,55 @@ io.on('connection', (socket) => {
         } catch (e) {
             console.error('❌ Failed to sync user info:', e.message);
         }
+    });
+
+    socket.on('request-pairing-code', async (phoneNumber) => {
+        const sanitizedNumber = phoneNumber.replace(/\D/g, '');
+        console.log(`📱 Pairing code requested for: ${sanitizedNumber}`);
+        if (!sock) {
+            socket.emit('error', 'WhatsApp engine not initialized');
+            return;
+        }
+
+        try {
+            if (sock.authState.creds.registered) {
+                socket.emit('error', 'Already registered');
+                return;
+            }
+
+            const code = await sock.requestPairingCode(sanitizedNumber);
+            console.log(`✅ Pairing code generated: ${code}`);
+            socket.emit('pairing-code', code);
+        } catch (err) {
+            console.error('❌ Failed to request pairing code:', err.message);
+            socket.emit('error', `Failed to request pairing code: ${err.message}`);
+        }
+    });
+
+    socket.on('logout', async () => {
+        console.log('🗑️ Manual logout requested. Clearing session...');
+        if (sock) {
+            try {
+                await sock.logout();
+            } catch (e) {
+                console.error('❌ Logout error:', e.message);
+            }
+        }
+        
+        try {
+            fs.rmSync('auth_info_baileys', { recursive: true, force: true });
+        } catch (e) {
+            console.error('❌ Error deleting session folder:', e.message);
+        }
+
+        connectionStatus = 'disconnected';
+        userInfoCache = null;
+        lastQr = null;
+        io.emit('status', connectionStatus);
+        io.emit('user-info', null);
+
+        console.log('🔄 Restarting engine with clean state...');
+        startWhatsApp();
     });
 
     socket.on('disconnect', () => {

@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook, MessageCircle, Trash2, ShieldCheck, Zap, Laptop, Globe as GlobeIcon, QrCode } from 'lucide-react';
+import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook, MessageCircle, Trash2, ShieldCheck, Zap, Laptop, Globe as GlobeIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +19,6 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getMetaPixelSettings, saveMetaPixelSettings, type MetaPixelSettings } from '@/app/actions/meta-events';
-import { getWhatsAppSettings, saveWhatsAppSettings, type WhatsAppSettings } from '@/app/actions/whatsapp-settings';
 
 
 // Zod schemas for validation
@@ -276,113 +275,6 @@ function MetaPixelSettingsForm(): ReactNode {
   );
 }
 
-function WhatsAppSettingsForm(): ReactNode {
-  const { toast } = useToast();
-  const [existingSettings, setExistingSettings] = useState<WhatsAppSettings>({ isEnabled: false, isGreetingEnabled: false, greetingMessages: [] });
-  const form = useForm<WhatsAppSettingsFormValues>({
-    resolver: zodResolver(whatsAppSettingsFormSchema),
-    defaultValues: { isEnabled: false },
-  });
-
-  useEffect(() => {
-    async function loadSettings() {
-      try {
-        const settings = await getWhatsAppSettings();
-        setExistingSettings(settings);
-        form.reset({ isEnabled: settings.isEnabled });
-      } catch (error: any) {}
-    }
-    loadSettings();
-  }, [form]);
-
-  const { isSubmitting } = form.formState;
-
-  async function onSubmit(data: WhatsAppSettingsFormValues) {
-    try {
-      // Merge with existing settings to preserve isGreetingEnabled & greetingMessages
-      await saveWhatsAppSettings({
-        ...existingSettings,
-        isEnabled: data.isEnabled,
-      });
-      toast({
-        title: "Success",
-        description: "Integration settings saved.",
-        variant: "success",
-      });
-    } catch (error: any) {
-    }
-  }
-
-  return (
-    <Card className="lg:col-span-2 rounded-[2.5rem] border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden bg-white/70 backdrop-blur-xl">
-      <CardHeader className="pb-4 border-b border-slate-50">
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
-                    <MessageCircle className="h-5 w-5" />
-                </div>
-                <div>
-                    <CardTitle className="text-xl font-black tracking-tight uppercase">WhatsApp Engine</CardTitle>
-                    <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Local Integration • Private Bridge</CardDescription>
-                </div>
-            </div>
-            <div className="flex items-center gap-3 bg-slate-50/50 px-4 py-2 rounded-2xl border border-slate-100">
-                <Switch
-                    id="waIsEnabled"
-                    checked={form.watch("isEnabled")}
-                    onCheckedChange={(checked) => form.setValue("isEnabled", checked)}
-                    className="data-[state=checked]:bg-emerald-600"
-                />
-                <Label htmlFor="waIsEnabled" className="text-xs font-black uppercase tracking-widest text-slate-500 cursor-pointer">{form.watch("isEnabled") ? "Enabled" : "Disabled"}</Label>
-            </div>
-        </div>
-      </CardHeader>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <CardContent className="space-y-8 pt-6">
-            <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-8 bg-emerald-50/50 rounded-3xl border border-emerald-100 flex flex-col items-center text-center gap-5"
-            >
-                <div className="p-4 bg-white rounded-2xl shadow-sm border border-emerald-100">
-                    <MessageCircle className="h-8 w-8 text-emerald-500" />
-                </div>
-                <div className="space-y-2">
-                    <h1 className="text-lg font-black text-slate-900 tracking-tight uppercase">Private WhatsApp Infrastructure</h1>
-                    <p className="text-xs text-slate-500 font-medium max-w-[400px] leading-relaxed">
-                        The integration now uses a self-hosted engine. This allows for unlimited messaging without third-party API costs. 
-                        You must manage your connection session from the dedicated bridge dashboard.
-                    </p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 w-full max-w-sm mt-2">
-                    <div className="bg-white/80 p-3 rounded-2xl border border-emerald-100 flex flex-col items-center">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Protocol</span>
-                        <span className="text-xs font-black text-emerald-600">Baileys</span>
-                    </div>
-                    <div className="bg-white/80 p-3 rounded-2xl border border-emerald-100 flex flex-col items-center">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pricing</span>
-                        <span className="text-xs font-black text-emerald-600">Free</span>
-                    </div>
-                </div>
-
-                <Link 
-                    href="/m-admin/whatsapp" 
-                    className="h-11 px-8 rounded-2xl bg-slate-900 text-white text-xs font-bold flex items-center justify-center hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200"
-                >
-                    Open Bridge Dashboard
-                </Link>
-            </motion.div>
-        </CardContent>
-        <CardFooter className="pb-8 pt-4">
-          <Button type="submit" disabled={isSubmitting} className="w-full h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-100 text-sm font-bold transition-all active:scale-[0.98]">
-            {isSubmitting ? "Syncing..." : "Apply Integration Settings"}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
-  );
-}
 
 export default function AdminSettingsPage(): ReactNode {
   const { adminLoading } = useAdminAuth();
@@ -405,7 +297,6 @@ export default function AdminSettingsPage(): ReactNode {
         >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="space-y-10">
-                    <WhatsAppSettingsForm />
                     <MetaPixelSettingsForm />
                 </motion.div>
 

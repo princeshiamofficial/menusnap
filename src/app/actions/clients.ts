@@ -40,6 +40,16 @@ async function ensureClientsTable() {
       await pool.execute("ALTER TABLE clients ADD COLUMN stage VARCHAR(50) DEFAULT 'new-lead' AFTER note");
     }
 
+    // 4. Check for division and district columns
+    const [divisionCol]: any = await pool.execute("SHOW COLUMNS FROM clients LIKE 'division'");
+    if (divisionCol.length === 0) {
+      await pool.execute("ALTER TABLE clients ADD COLUMN division VARCHAR(100) AFTER business_type");
+    }
+    const [districtCol]: any = await pool.execute("SHOW COLUMNS FROM clients LIKE 'district'");
+    if (districtCol.length === 0) {
+      await pool.execute("ALTER TABLE clients ADD COLUMN district VARCHAR(100) AFTER division");
+    }
+
     // 4. Create client_notes table for history
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS client_notes (
@@ -61,7 +71,7 @@ async function ensureClientsTable() {
 /**
  * Saves or updates a client record in the database upon login.
  */
-export async function saveClientLogin(businessName: string, businessType: string, whatsappNumber: string) {
+export async function saveClientLogin(businessName: string, businessType: string, whatsappNumber: string, division?: string, district?: string) {
   try {
     await ensureClientsTable();
 
@@ -74,21 +84,21 @@ export async function saveClientLogin(businessName: string, businessType: string
     if (rows.length > 0) {
       // Update existing client last login and name/type if changed
       await pool.execute(
-        'UPDATE clients SET business_name = ?, business_type = ?, last_login = CURRENT_TIMESTAMP WHERE id = ?',
-        [businessName, businessType, rows[0].id]
+        'UPDATE clients SET business_name = ?, business_type = ?, division = ?, district = ?, last_login = CURRENT_TIMESTAMP WHERE id = ?',
+        [businessName, businessType, division || null, district || null, rows[0].id]
       );
       return { success: true, clientId: rows[0].id, action: 'updated' };
     } else {
       // Insert new client
       const [result]: any = await pool.execute(
-        'INSERT INTO clients (business_name, business_type, whatsapp_number) VALUES (?, ?, ?)',
-        [businessName, businessType, whatsappNumber]
+        'INSERT INTO clients (business_name, business_type, whatsapp_number, division, district) VALUES (?, ?, ?, ?, ?)',
+        [businessName, businessType, whatsappNumber, division || null, district || null]
       );
 
       // --- SEND GREETING MESSAGE ---
       try {
         const settings = await getWhatsAppSettings();
-        if (settings.isEnabled) {
+        if (settings.isEnabled && settings.isGreetingEnabled) {
           const res = await getGreetings();
           if (res.success && res.data && res.data.length > 0) {
             const randomIndex = Math.floor(Math.random() * res.data.length);
@@ -119,7 +129,7 @@ export async function getLeads(page: number = 1, limit: number = 20) {
     const offset = (page - 1) * limit;
     
     const [rows]: any = await pool.execute(
-      `SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.stage,
+      `SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.stage, c.division, c.district,
        (SELECT note FROM client_notes WHERE client_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_note,
        DATE_FORMAT(c.last_login, '%Y-%m-%dT%H:%i:%s.000Z') as last_login,
        DATE_FORMAT(c.created_at, '%Y-%m-%dT%H:%i:%s.000Z') as created_at
@@ -242,6 +252,30 @@ export async function deleteClient(clientId: number) {
   } catch (error: any) {
     console.error("Database Error deleting client:", error);
     return { success: false, error: error?.message || "Failed to delete client" };
+  }
+}
+
+/**
+ * Fetches leads growth trend grouped by month.
+ */
+export async function getLeadsTrend() {
+  try {
+    await ensureClientsTable();
+    const [rows]: any = await pool.execute(`
+      SELECT 
+        DATE_FORMAT(created_at, '%b') as name,
+        COUNT(*) as leads
+      FROM clients 
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+      GROUP BY DATE_FORMAT(created_at, '%m'), DATE_FORMAT(created_at, '%b')
+      ORDER BY MIN(created_at) ASC
+    `);
+    
+    // Ensure all 12 months are represented if necessary, or just return what we have
+    return { success: true, data: rows };
+  } catch (error) {
+    console.error("Database Error fetching leads trend:", error);
+    return { success: false, data: [] };
   }
 }
 

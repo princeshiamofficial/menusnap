@@ -14,13 +14,15 @@ export interface ClientUser {
   businessName: string;
   type: 'restaurant' | 'parlour';
   whatsappNumber?: string;
+  division?: string;
+  district?: string;
 }
 
 export interface ClientAuthContextType {
   clientUser: ClientUser | null;
   isClientLoggedIn: boolean;
   clientLoading: boolean;
-  login: (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string) => Promise<boolean>;
+  login: (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -46,7 +48,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string) => {
+  const login = useCallback(async (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string) => {
     setClientLoading(true);
     
     // 1. WhatsApp Presence Check using Green API (with Bypass & Cache)
@@ -86,7 +88,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     // 2. Database Sync: Save client login details
     if (whatsappNumber) {
         try {
-            const dbResult = await saveClientLogin(businessName.trim(), type, whatsappNumber.trim());
+            const dbResult = await saveClientLogin(businessName.trim(), type, whatsappNumber.trim(), division, district);
             if (!dbResult.success) {
                 console.error("Failed to sync client to DB:", dbResult.error);
                 // We'll proceed with frontend login anyway to avoid blocking the user
@@ -103,7 +105,9 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       const userToStore: ClientUser = { 
         businessName: businessName.trim(), 
         type,
-        whatsappNumber: whatsappNumber?.trim()
+        whatsappNumber: whatsappNumber?.trim(),
+        division,
+        district
       };
       localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
       setClientUser(userToStore);
@@ -113,11 +117,15 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         variant: "success",
       });
 
-      // Play welcome sound
-      const welcomeSound = new Audio('https://colorhutbd.xyz/audio/welcome.mp3');
-      welcomeSound.play().catch(error => {
-        console.error("Welcome sound playback failed:", error);
-      });
+      // Play welcome sound (handled gracefully if source is unavailable)
+      try {
+        const welcomeSound = new Audio('https://colorhutbd.xyz/audio/welcome.mp3');
+        welcomeSound.play().catch(() => {
+          /* Silence playback errors */
+        });
+      } catch (e) {
+        /* Silence creation errors */
+      }
 
       router.push('/dashboard');
       setClientLoading(false);
