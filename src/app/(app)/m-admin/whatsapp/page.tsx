@@ -92,7 +92,7 @@ export default function WhatsAppDashboard() {
         if (!socketRef.current) {
             const isProd = window.location.protocol === 'https:';
             const bridgeUrl = isProd 
-                ? `https://${window.location.hostname}` 
+                ? window.location.origin 
                 : `http://127.0.0.1:9005`;
 
             console.log(`🔌 Attempting to connect to WhatsApp Bridge:`, bridgeUrl);
