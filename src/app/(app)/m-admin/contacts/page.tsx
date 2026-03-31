@@ -88,6 +88,11 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const toTitleCase = (str: string) => {
+  if (!str) return "";
+  return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
 interface Contact {
   id: number;
   business_name: string;
@@ -864,9 +869,9 @@ function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrig
           </div>
       </TableCell>
       <TableCell>
-          <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-500 uppercase tracking-tight">
+          <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-500 tracking-tight">
               <Globe className="h-3.5 w-3.5 text-slate-300" />
-              {contact.district && contact.division ? `${contact.district}, ${contact.division}` : '-'}
+              {contact.district && contact.division ? `${toTitleCase(contact.district)}, ${toTitleCase(contact.division)}` : '-'}
           </div>
       </TableCell>
       <TableCell className="text-[13px] text-slate-400 font-medium whitespace-nowrap">
@@ -1013,9 +1018,9 @@ function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDel
                     {(contact.district || contact.division) && (
                         <>
                             <span className="text-slate-200 text-[10px]">•</span>
-                            <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                            <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold tracking-widest">
                                 <Globe className="h-2.5 w-2.5" />
-                                {contact.district || contact.division}
+                                {toTitleCase(contact.district || contact.division || '')}
                             </div>
                         </>
                     )}
