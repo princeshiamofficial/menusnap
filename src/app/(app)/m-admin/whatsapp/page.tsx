@@ -99,9 +99,10 @@ export default function WhatsAppDashboard() {
  
             const socket = io(bridgeUrl, {
                 path: isProd ? '/whatsapp-bridge/socket.io' : '/socket.io',
-                transports: ['websocket', 'polling'], 
+                transports: ['websocket'], // FORCE WEBSOCKET ONLY
+                upgrade: false,
                 reconnection: true,
-                timeout: 10000,
+                timeout: 20000,
                 reconnectionAttempts: 10
             });
 

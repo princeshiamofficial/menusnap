@@ -109,6 +109,7 @@ const httpServer = createServer((req, res) => {
 const io = new Server(httpServer, {
     path: "/socket.io",
     cors: { origin: "*", methods: ["GET", "POST"] },
+    transports: ['websocket'], // ONLY WEBSOCKET
     pingTimeout: 60000,
     pingInterval: 25000,
     allowEIO3: true
