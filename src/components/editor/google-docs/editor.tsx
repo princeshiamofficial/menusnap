@@ -373,9 +373,30 @@ function GoogleDocsEditorInner({
                         new Plugin({
                             props: {
                                 clipboardTextSerializer: (slice) => {
-                                    // This ensures that when copying, we use a single newline between paragraphs
-                                    // instead of the double newline (\n\n) that ProseMirror/Tiptap often defaults to.
-                                    return slice.content.textBetween(0, slice.content.size, '\n')
+                                    const serialize = (node: any): string => {
+                                        if (node.type.name === 'tabNode') return '\t'
+                                        if (node.type.name === 'hardBreak') return '\n'
+                                        if (node.isText) return node.text || ''
+                                        
+                                        let childText = ''
+                                        node.content.forEach((child: any, _: any, index: number) => {
+                                            if (node.type.name === 'bulletList' && child.type.name === 'listItem') {
+                                                childText += '• ' + serialize(child)
+                                            } else if (node.type.name === 'orderedList' && child.type.name === 'listItem') {
+                                                childText += `${index + 1}. ` + serialize(child)
+                                            } else {
+                                                childText += serialize(child)
+                                            }
+                                        })
+                                        
+                                        return node.isBlock ? childText + '\n' : childText
+                                    }
+                                    
+                                    let result = ''
+                                    slice.content.forEach(node => {
+                                        result += serialize(node)
+                                    })
+                                    return result.trimEnd().replace(/\u200b/g, '')
                                 }
                             }
                         })
