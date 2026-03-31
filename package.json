@@ -6,7 +6,6 @@
     "dev": "next dev -p 9002",
     "collab:server": "node collab-server.mjs",
     "socket:server": "node socket-server.mjs",
-    "whatsapp:bridge": "node whatsapp-bridge.mjs",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "migrate:db": "node migrate_db.js",

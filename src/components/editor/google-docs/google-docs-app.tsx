@@ -250,7 +250,7 @@ export default function GoogleDocsApp({
           padding-right: var(--editor-right-margin, 56px);
           font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           font-size: 11pt;
-          line-height: 1.6;
+          line-height: 1.5;
           color: #202124;
           transition: all 0.2s ease;
           white-space: pre-wrap;
@@ -291,7 +291,7 @@ export default function GoogleDocsApp({
 
         .ProseMirror p {
           text-indent: var(--editor-first-line-indent, 0px);
-          margin-bottom: 0.5rem;
+          margin-bottom: 0;
         }
 
         .ProseMirror h1 { font-size: 24pt; font-weight: bold; margin-bottom: 24px; transition: color 0.2s; }

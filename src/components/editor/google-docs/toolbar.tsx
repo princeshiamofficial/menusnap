@@ -6,7 +6,7 @@ import {
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
     Link as LinkIcon, Image as ImageIcon, Code, Highlighter,
     ChevronDown, Minus, Plus, Quote, CheckSquare, RemoveFormatting, Download,
-    Baseline, CaseSensitive, Palette
+    Baseline, CaseSensitive, Palette, ArrowUpDown as LineHeightIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -61,6 +61,13 @@ const TEXT_CASES = [
     { label: 'Kebab Case', value: 'kebab' },        // hello-world
     { label: 'Constant Case', value: 'constant' },  // HELLO_WORLD
     { label: 'Dot Case', value: 'dot' },            // hello.world
+]
+
+const LINE_HEIGHTS = [
+    { label: 'Single', value: '1.0' },
+    { label: '1.15', value: '1.15' },
+    { label: '1.5', value: '1.5' },
+    { label: 'Double', value: '2.0' },
 ]
 
 export default function Toolbar({ editor, title }: ToolbarProps) {
@@ -376,6 +383,32 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                     active={editor.isActive({ textAlign: 'justify' })}
                     icon={<AlignJustify className="w-4 h-4" />}
                 />
+
+                {/* Line Spacing */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md hover:bg-white border border-transparent hover:border-[#dadce0] hover:shadow-sm">
+                                <LineHeightIcon className="w-4 h-4 text-gray-600" />
+                            </Button>
+                        </motion.div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        align="start"
+                        sideOffset={8}
+                        className="p-1 min-w-[120px] animate-in slide-in-from-top-2 duration-200 z-[100] shadow-xl border border-[#dadce0] bg-white"
+                    >
+                        {LINE_HEIGHTS.map(lh => (
+                            <DropdownMenuItem
+                                key={lh.value}
+                                onClick={() => (editor.commands as any).setLineHeight(lh.value)}
+                                className="p-2 text-xs font-medium rounded-sm cursor-pointer hover:bg-[#f1f3f4] transition-colors"
+                            >
+                                {lh.label}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
 
             <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />

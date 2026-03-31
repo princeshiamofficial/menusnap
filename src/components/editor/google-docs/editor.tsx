@@ -68,6 +68,9 @@ export const TabNode = Node.create({
     renderHTML({ HTMLAttributes }) {
         return ['span', mergeAttributes(HTMLAttributes, { 'data-type': 'tab' }), '\t']
     },
+    renderText() {
+        return '\t'
+    },
 })
 
 export const FontSize = Extension.create({
@@ -114,11 +117,52 @@ export const FontSize = Extension.create({
         }
     },
 })
+
+export const LineHeight = Extension.create({
+    name: 'lineHeight',
+    addOptions() {
+        return {
+            types: ['paragraph', 'heading', 'listItem'],
+            defaultLineHeight: 'normal',
+        }
+    },
+    addGlobalAttributes() {
+        return [
+            {
+                types: this.options.types,
+                attributes: {
+                    lineHeight: {
+                        default: null,
+                        parseHTML: element => element.style.lineHeight,
+                        renderHTML: attributes => {
+                            if (!attributes.lineHeight) return {}
+                            return { style: `line-height: ${attributes.lineHeight}` }
+                        },
+                    },
+                },
+            },
+        ]
+    },
+    addCommands() {
+        return {
+            setLineHeight: (lineHeight: string) => ({ commands }) => {
+                return this.options.types.every((type: string) => commands.updateAttributes(type, { lineHeight }))
+            },
+            unsetLineHeight: () => ({ commands }) => {
+                return this.options.types.every((type: string) => commands.updateAttributes(type, { lineHeight: null }))
+            },
+        }
+    },
+})
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
         fontSize: {
             setFontSize: (size: string) => ReturnType
             unsetFontSize: () => ReturnType
+        },
+        lineHeight: {
+            setLineHeight: (height: string) => ReturnType
+            unsetLineHeight: () => ReturnType
         },
         searchReplace: {
             setSearchTerm: (term: string) => ReturnType
@@ -225,7 +269,7 @@ function GoogleDocsEditorInner({
             Table.configure({ resizable: true }),
             TableRow, TableHeader, TableCell,
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
-            TextStyle, FontFamily, FontSize, Color,
+            TextStyle, FontFamily, FontSize, Color, LineHeight,
             Highlight.configure({ multicolor: true }),
             TaskList, 
             TaskItem.configure({ nested: true }),
