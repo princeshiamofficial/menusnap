@@ -107,7 +107,7 @@ const httpServer = createServer((req, res) => {
 });
 
 const io = new Server(httpServer, {
-    path: "/socket.io",
+    path: "/whatsapp-bridge/socket.io",
     cors: { origin: "*", methods: ["GET", "POST"] },
     transports: ['websocket'], // ONLY WEBSOCKET
     pingTimeout: 60000,
