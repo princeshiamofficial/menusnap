@@ -43,6 +43,7 @@ export default function WhatsAppDashboard() {
     const [settings, setSettings] = useState<WhatsAppSettings>({
         isEnabled: false,
         isGreetingEnabled: false,
+        isAbilityCheckEnabled: true,
         greetingMessages: []
     });
     const [isSaving, setIsSaving] = useState(false);
@@ -97,7 +98,7 @@ export default function WhatsAppDashboard() {
             console.log(`🔌 Attempting to connect to WhatsApp Bridge:`, bridgeUrl);
  
             const socket = io(bridgeUrl, {
-                path: '/whatsapp-bridge/socket.io',
+                path: isProd ? '/whatsapp-bridge/socket.io' : '/socket.io',
                 transports: ['websocket', 'polling'], 
                 reconnection: true,
                 timeout: 10000,

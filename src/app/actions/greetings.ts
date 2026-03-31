@@ -3,6 +3,12 @@
 
 import pool from '@/lib/mysql';
 
+export interface GreetingItem {
+    id: number;
+    title: string;
+    content: string;
+}
+
 /**
  * Ensures the greetings table exists.
  */
