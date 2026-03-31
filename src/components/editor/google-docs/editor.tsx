@@ -366,6 +366,22 @@ function GoogleDocsEditorInner({
                     ]
                 }
             }),
+            Extension.create({
+                name: 'clipboardCustomizer',
+                addProseMirrorPlugins() {
+                    return [
+                        new Plugin({
+                            props: {
+                                clipboardTextSerializer: (slice) => {
+                                    // This ensures that when copying, we use a single newline between paragraphs
+                                    // instead of the double newline (\n\n) that ProseMirror/Tiptap often defaults to.
+                                    return slice.content.textBetween(0, slice.content.size, '\n')
+                                }
+                            }
+                        })
+                    ]
+                }
+            }),
         ],
         content: content,
         onUpdate: ({ editor }) => {
