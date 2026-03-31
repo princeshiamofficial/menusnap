@@ -86,14 +86,16 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
 
     // 2. Database Sync: Save client login details
+    let loginAction: 'created' | 'updated' = 'created';
     if (whatsappNumber) {
         try {
             const dbResult = await saveClientLogin(businessName.trim(), type, whatsappNumber.trim(), division, district);
-            if (!dbResult.success) {
+            if (dbResult.success && dbResult.action) {
+                loginAction = dbResult.action as 'created' | 'updated';
+                console.log(`Client synced to DB successfully (${dbResult.action})`);
+            } else if (!dbResult.success) {
                 console.error("Failed to sync client to DB:", dbResult.error);
                 // We'll proceed with frontend login anyway to avoid blocking the user
-            } else {
-                console.log(`Client synced to DB successfully (${dbResult.action})`);
             }
         } catch (dbErr) {
             console.error("Database sync error:", dbErr);
@@ -119,7 +121,8 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
 
       // Play welcome sound (handled gracefully if source is unavailable)
       try {
-        const welcomeSound = new Audio('https://colorhutbd.xyz/audio/welcome.mp3');
+        const soundPath = loginAction === 'updated' ? '/audio/welcome_back.mp3' : '/audio/welcome.mp3';
+        const welcomeSound = new Audio(soundPath);
         welcomeSound.play().catch(() => {
           /* Silence playback errors */
         });
