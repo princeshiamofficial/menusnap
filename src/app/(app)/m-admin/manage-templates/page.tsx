@@ -124,15 +124,24 @@ function AdminTemplateCard({
       <CardHeader className="p-0 relative">
         <div className="aspect-[4/3] relative group">
           <Image
+            src={template.imageUrl}
+            alt=""
+            fill
+            className="object-cover blur-xl opacity-95"
+            priority={false}
+            aria-hidden="true"
+          />
+          <Image
             src={template.imageUrl} 
             alt={template.name}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover"
+            className="object-contain relative z-10 drop-shadow-xl"
             data-ai-hint={isDefaultImage ? "placeholder abstract" : getImageHint(template.name)}
           />
+          <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.1)] pointer-events-none z-20" />
           {template.isTopRated && (
-            <Badge variant="default" className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2 shadow-md">
+            <Badge variant="default" className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 border-yellow-500 font-semibold py-1 px-2 shadow-md z-30">
               <Star className="h-3 w-3 mr-1 fill-current" />
               Top Rated
             </Badge>
@@ -140,7 +149,7 @@ function AdminTemplateCard({
           <Badge
             variant={template.isPublished ? "default" : "secondary"}
             className={cn(
-              "absolute bottom-2 left-2 font-medium py-1 px-2.5 shadow-md text-xs",
+              "absolute bottom-2 left-2 font-medium py-1 px-2.5 shadow-md text-xs z-30",
               template.isPublished ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-500 hover:bg-gray-600 text-white"
             )}
           >
@@ -152,7 +161,7 @@ function AdminTemplateCard({
             {template.isPublished ? "Published" : "Unpublished"}
           </Badge>
 
-          <div className="absolute top-2 right-2 flex flex-col sm:flex-row space-y-1.5 sm:space-y-0 sm:space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="absolute top-2 right-2 flex flex-col sm:flex-row space-y-1.5 sm:space-y-0 sm:space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-40">
             <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onSetTopRated(template.id)} aria-label="Toggle Top Rated">
               <Star className="h-4 w-4" />
             </Button>
@@ -169,7 +178,7 @@ function AdminTemplateCard({
            <Button
             variant="ghost"
             size="icon"
-            className="absolute bottom-2 right-2 h-8 w-8 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md"
+            className="absolute bottom-2 right-2 h-8 w-8 bg-black/40 text-white hover:bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md z-30"
             aria-label="View template details"
           >
             <Eye className="h-4 w-4" />

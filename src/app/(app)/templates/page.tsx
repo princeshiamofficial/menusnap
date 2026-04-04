@@ -5,13 +5,13 @@ import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Layers, Search, Star, Maximize, AlertTriangle, X } from "lucide-react"; 
+import { Star, Maximize, AlertTriangle, X } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
@@ -108,23 +108,32 @@ function TemplateCard({
           <div className="aspect-[4/3] relative group">
             <Image
               src={actualImageUrl}
+              alt=""
+              fill
+              className="object-cover blur-xl opacity-95"
+              priority={false}
+              aria-hidden="true"
+            />
+            <Image
+              src={actualImageUrl}
               alt={decodeHtmlEntities(title)}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              className="object-contain relative z-10 transition-all duration-500 group-hover:scale-105 drop-shadow-xl group-hover:drop-shadow-2xl"
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.15)] pointer-events-none z-20 group-hover:shadow-[inset_0_0_60px_rgba(0,0,0,0.2)] transition-shadow duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />
             {isTopRated && (
-              <Badge className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 border-yellow-500 font-bold py-0.5 px-1.5 shadow-lg border-none scale-75 md:scale-100 origin-top-left">
+              <Badge className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 border-yellow-500 font-bold py-0.5 px-1.5 shadow-lg border-none scale-75 md:scale-100 origin-top-left z-30">
                 <Star className="h-3 w-3 mr-1 fill-current text-yellow-900" />
-                TOP
+                TOP RATED
               </Badge>
             )}
             <Button
               variant="secondary"
               size="icon"
-              className="absolute bottom-2 right-2 h-7 w-7 md:h-9 md:w-9 bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-full shadow-lg"
+              className="absolute bottom-2 right-2 h-7 w-7 md:h-9 md:w-9 bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-full shadow-lg z-30"
               aria-label="Maximize template preview"
               onClick={() => onPreview(actualImageUrl)}
             >
@@ -132,9 +141,16 @@ function TemplateCard({
             </Button>
           </div>
         </CardHeader>
-        {/* Content removed for a cleaner, big-image look */}
-        <CardFooter className="p-2 md:p-4 border-t border-border/50 bg-muted/20">
-          {isSelectionAllowed && (
+        <CardContent className="px-4 py-4 md:py-5 flex-grow bg-card transition-colors duration-300">
+          <CardTitle className="text-lg md:text-xl font-bold tracking-tight mb-1.5 md:mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-1">
+            {decodeHtmlEntities(title)}
+          </CardTitle>
+          <CardDescription className="text-xs md:text-sm text-muted-foreground line-clamp-2 leading-relaxed min-h-[40px]">
+            {decodeHtmlEntities(description)}
+          </CardDescription>
+        </CardContent>
+        {isSelectionAllowed && (
+          <CardFooter className="p-2 md:p-4 border-t border-border/50 bg-muted/20">
             <Button
               variant="default"
               className="w-full h-8 md:h-11 text-[10px] md:text-sm font-semibold shadow-sm transition-all active:scale-[0.98] rounded-lg md:rounded-xl"
@@ -142,8 +158,8 @@ function TemplateCard({
             >
               Select
             </Button>
-          )}
-        </CardFooter>
+          </CardFooter>
+        )}
       </Card>
     </motion.div>
   );
@@ -159,14 +175,9 @@ function TemplateSkeletonCard(): ReactNode {
         <Skeleton className="h-6 w-3/4 mb-2" />
         <Skeleton className="h-4 w-full mb-1" />
         <Skeleton className="h-4 w-5/6 mb-3" />
-        <div className="flex flex-wrap gap-2">
-          <Skeleton className="h-5 w-16 rounded-full" />
-          <Skeleton className="h-5 w-20 rounded-full" />
-        </div>
+
       </CardContent>
-      <CardFooter className="p-4 border-t mt-auto">
-        <Skeleton className="h-10 w-full" />
-      </CardFooter>
+
     </Card>
   );
 }
@@ -176,7 +187,7 @@ export default function TemplatesPage(): ReactNode {
   const [templates, setTemplates] = useState<ApiTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState('');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [templateToConfirm, setTemplateToConfirm] = useState<ApiTemplate | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -332,13 +343,7 @@ export default function TemplatesPage(): ReactNode {
     });
   }, [templates, searchTerm, clientUser]);
 
-  const pageTitle = clientUser?.type 
-    ? `${clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)} Templates` 
-    : "All Templates";
-  
-  const pageDescription = clientUser?.type
-    ? `Choose a template that best represents your ${clientUser.type}.`
-    : `Choose a template that best represents your brand. Perfect for various businesses and services.`
+
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -362,35 +367,9 @@ export default function TemplatesPage(): ReactNode {
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-10">
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/50 px-3 md:px-8 py-4 md:py-6">
-        <div className="max-w-7xl mx-auto w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                 <Layers className="h-6 w-6 md:h-7 md:w-7 text-primary" />
-              </div>
-              <h1 className="text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-                {pageTitle}
-              </h1>
-            </div>
-            <p className="text-muted-foreground mt-1 text-xs md:text-sm lg:text-base max-w-lg">
-              {pageDescription}
-            </p>
-          </div>
-          <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search templates..."
-              className="pl-9 h-10 w-full sm:w-64 md:w-72 text-sm bg-muted/40 border-none rounded-full focus-visible:ring-primary/20"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-      </header>
 
-      <main className="px-0 md:px-8 py-3 md:py-8 max-w-7xl mx-auto w-full">
+
+      <main className="w-full py-0">
         {isLoading || clientLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-6">
             {Array.from({ length: 8 }).map((_, index) => (

@@ -399,14 +399,25 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
                       <p className="text-sm text-muted-foreground mb-2">Template Preview:</p>
                       <div className="aspect-[4/3] bg-muted rounded-md border overflow-hidden relative">
                         {order.templateImageUrl ? (
-                          <Image
-                            src={order.templateImageUrl}
-                            alt={decodeHtmlEntities(order.templateName) || 'Template preview'}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover"
-                            data-ai-hint={order.templateName ? order.templateName.toLowerCase().split(' ').slice(0, 2).join(' ') : "menu design"}
-                          />
+                          <>
+                            <Image
+                              src={order.templateImageUrl}
+                              alt=""
+                              fill
+                              className="object-cover blur-xl opacity-95"
+                              priority={false}
+                              aria-hidden="true"
+                            />
+                            <Image
+                              src={order.templateImageUrl}
+                              alt={decodeHtmlEntities(order.templateName) || 'Template preview'}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 50vw"
+                              className="object-contain relative z-10 drop-shadow-lg"
+                              data-ai-hint={order.templateName ? order.templateName.toLowerCase().split(' ').slice(0, 2).join(' ') : "menu design"}
+                            />
+                            <div className="absolute inset-0 shadow-[inset_0_0_30px_rgba(0,0,0,0.1)] pointer-events-none z-20" />
+                          </>
                         ) : (
                           <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
                             No Preview Available

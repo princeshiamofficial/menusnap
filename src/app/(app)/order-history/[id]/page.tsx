@@ -397,13 +397,22 @@ export default function ClientOrderDetailsPage() {
                             <Card className="overflow-hidden shadow-sm">
                                 <div className="flex flex-col md:flex-row">
                                     <div className="md:w-1/3 relative aspect-[4/3] bg-muted">
+                                        <Image
+                                            src={order.templateImageUrl}
+                                            alt=""
+                                            fill
+                                            className="object-cover blur-xl opacity-95"
+                                            priority={false}
+                                            aria-hidden="true"
+                                        />
                                         <Image 
                                             src={order.templateImageUrl}
                                             alt={decodeHtmlEntities(order.templateName) || 'Template Image'}
                                             fill
-                                            className="object-cover"
+                                            className="object-contain relative z-10 drop-shadow-lg"
                                             sizes="(max-width: 768px) 100vw, 33vw"
                                         />
+                                        <div className="absolute inset-0 shadow-[inset_0_0_30px_rgba(0,0,0,0.1)] pointer-events-none z-20" />
                                     </div>
                                     <div className="flex-1 p-6">
                                         <h3 className="text-lg font-bold text-foreground">{decodeHtmlEntities(order.templateName)}</h3>
