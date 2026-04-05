@@ -126,7 +126,7 @@ function MobileImageSlider() {
       desc: "Share your menu directly with customers"
     }
   ];
-  
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent(prev => (prev + 1) % images.length);
@@ -142,7 +142,7 @@ function MobileImageSlider() {
           <Image key={`preload-${i}`} src={img.src} alt="" width={1} height={1} priority />
         ))}
       </div>
-      
+
       <AnimatePresence initial={false}>
         <motion.div
           key={current}
@@ -150,7 +150,7 @@ function MobileImageSlider() {
           initial={{ x: '100%', opacity: 0, scale: 1.1 }}
           animate={{ x: 0, opacity: 1, scale: 1 }}
           exit={{ x: '-100%', opacity: 0, scale: 0.9 }}
-          transition={{ 
+          transition={{
             duration: 1.2,
             ease: [0.25, 0.1, 0.25, 1], // Custom slow ease-in-out
             opacity: { duration: 0.8 }
@@ -164,21 +164,21 @@ function MobileImageSlider() {
             className="object-cover scale-105"
             priority={current === 0}
           />
-          
+
         </motion.div>
       </AnimatePresence>
-      
+
       {/* Premium Pagination Dots */}
       <div className="absolute top-4 right-6 flex flex-col gap-2 z-30">
         {images.map((_, i) => (
-          <motion.div 
-            key={i} 
+          <motion.div
+            key={i}
             onClick={() => setCurrent(i)}
-            animate={{ 
+            animate={{
               height: i === current ? 24 : 8,
               backgroundColor: i === current ? "rgba(255,165,0,0.9)" : "rgba(255,255,255,0.3)"
             }}
-            className="w-1.5 rounded-full transition-all duration-500 cursor-pointer" 
+            className="w-1.5 rounded-full transition-all duration-500 cursor-pointer"
           />
         ))}
       </div>
@@ -201,26 +201,26 @@ function MobileActionGrid() {
       badgeColor: "bg-orange-100 text-orange-700"
     },
     {
-      title: "Templates",
-      description: "Browse 50+ pro menu designs",
-      badge: "UPDATED",
+      title: "Team Tracker",
+      description: "Manage your team's workflow",
+      badge: "PRO",
       href: "/templates",
       icon: Layers,
       color: "text-blue-500/20",
       badgeColor: "bg-blue-100 text-blue-700"
     },
     {
-      title: "Drafts",
-      description: "Work on your saved menu drafts",
-      badge: "SYNCED",
+      title: "Designs",
+      description: "Curate your custom menu designs",
+      badge: "DRAFTING",
       href: "/draft",
       icon: FileEdit,
       color: "text-purple-500/20",
       badgeColor: "bg-purple-100 text-purple-700"
     },
     {
-      title: "History",
-      description: "Sales tracker & analytics",
+      title: "Free Design",
+      description: "Claim your complimentary services",
       href: "/order-history",
       isWidget: true
     },
@@ -228,43 +228,61 @@ function MobileActionGrid() {
 
   return (
     <div className="md:hidden mt-6">
-      <div className="grid grid-cols-2 gap-1">
+      <div className="grid grid-cols-2 gap-1.5">
         {actions.map((action, i) => (
           <Link key={action.href} href={action.href} className="block group">
-            <motion.div 
-               whileTap={{ scale: 0.96 }}
-               className={cn(
-                 "relative border rounded-3xl flex flex-col items-start justify-between aspect-square transition-all duration-300 bg-card border-border/50 p-4 shadow-sm active:shadow-inner overflow-hidden",
-                 action.isWidget && "bg-transparent border-none p-0 overflow-visible shadow-none"
-               )}
+            <motion.div
+              whileTap={{ scale: 0.96 }}
+              className={cn(
+                "relative border rounded-3xl flex flex-col items-start justify-between aspect-[1.15/1] transition-all duration-300 bg-card border-border/50 p-4 shadow-sm active:shadow-inner overflow-hidden",
+                action.isWidget && "bg-transparent border-none p-0 overflow-visible shadow-none"
+              )}
             >
-               {action.isWidget ? (
+              {action.isWidget ? (
                 <div className="flex flex-col gap-2 w-full h-full">
-                  <div className="flex-[0.6] bg-card border border-border/50 rounded-2xl p-3 flex flex-col items-start justify-center shadow-sm relative overflow-hidden">
-                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Orders</span>
-                    <span className="text-xl font-black text-green-600 leading-none">45+</span>
-                    <TrendingUp className="h-10 w-10 text-green-500/10 absolute -right-2 top-4" />
-                  </div>
-                  <div className="flex-1 flex flex-row gap-2 w-full">
-                    <div className="flex-1 bg-card border border-border/50 rounded-2xl p-2 flex flex-col items-center justify-center shadow-sm">
-                      <span className="text-[9px] font-black text-muted-foreground tracking-tighter uppercase mb-0.5">Paid</span>
-                      <span className="text-xs font-black text-green-600 truncate">৳10k</span>
+                  <div className="flex-[0.6] bg-card border border-border/50 rounded-2xl p-3 flex flex-row items-center justify-between shadow-sm relative overflow-hidden group">
+                    <div className="flex flex-col z-10 max-w-[60%]">
+                      <span className="text-sm font-black text-foreground leading-tight tracking-tight">Free Design</span>
+                      <p className="text-[9px] font-medium text-muted-foreground leading-tight mt-0.5 line-clamp-1">Limited time pro offers</p>
                     </div>
-                    <div className="flex-1 bg-card border border-border/50 rounded-2xl p-2 flex flex-col items-center justify-center shadow-sm">
-                      <span className="text-[9px] font-black text-muted-foreground tracking-tighter uppercase mb-0.5">Due</span>
-                      <span className="text-xs font-black text-orange-600 truncate">৳2.5k</span>
+                    <div className="relative h-11 w-11 shrink-0 transition-transform group-hover:scale-110 duration-500">
+                      <Image
+                        src="/total_orders_3d_icon.png"
+                        alt="Total Orders"
+                        fill
+                        className="object-contain"
+                        priority
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-row gap-1.5 w-full">
+                    <div className="flex-1 bg-white border border-border/50 rounded-2xl p-3 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
+                      <div className="flex flex-row items-center gap-1 text-foreground/90 font-black text-sm z-10 whitespace-nowrap">
+                        e-Book
+                      </div>
+                      <div className="absolute -right-1 -bottom-1 h-10 w-10 opacity-80 transition-transform group-hover:scale-110 duration-500">
+                        <Image src="/ebook_3d_icon.png" alt="e-Book" fill className="object-contain" />
+                      </div>
+                    </div>
+                    <div className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-3 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
+                      <div className="flex flex-row items-center gap-1 text-red-600 font-black text-sm z-10 whitespace-nowrap">
+                        All <ChevronDown className="h-3 w-3" />
+                      </div>
+                      <div className="absolute -right-1 -bottom-1 h-10 w-10 opacity-80 transition-transform group-hover:scale-110 duration-500">
+                        <Image src="/analytics_all_3d_icon.png" alt="All" fill className="object-contain" />
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : (
                 <>
                   <div className="z-10">
-                    <h3 className="text-xl font-black text-foreground leading-tight">{action.title}</h3>
+                    <h3 className="text-lg font-black text-foreground leading-tight">{action.title}</h3>
                     <p className="text-[10px] font-medium text-muted-foreground leading-tight mt-1 max-w-[85%]">
                       {action.description}
                     </p>
                   </div>
-                  
+
                   {action.icon && <action.icon className={cn("h-16 w-16 absolute -right-3 top-14 rotate-12 transition-transform group-hover:scale-110", action.color)} />}
 
                   <div className={cn(
@@ -286,7 +304,7 @@ function MobileActionGrid() {
 
 function MobileDashboardHeader({ businessName, type }: { businessName?: string | null, type?: string | null }) {
   const avatarUrl = type?.toLowerCase() === 'restaurant' ? '/restaurant-avatar.png' : '/parlor-avatar.png';
-  
+
   return (
     <header className="md:hidden sticky top-3 z-[60] h-14 w-[calc(100%-2rem)] mx-auto bg-background border border-border/40 shadow-lg shadow-black/5 rounded-2xl flex items-center justify-between px-5 transition-all">
       <div className="relative h-8 w-28 bg-black rounded-xl p-1 px-3 border border-white/10 flex items-center justify-center">
@@ -303,7 +321,7 @@ function MobileDashboardHeader({ businessName, type }: { businessName?: string |
       </div>
       <div className="flex items-center gap-2">
         <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-primary/20 shadow-md transition-transform active:scale-95 relative">
-          <Image 
+          <Image
             src={avatarUrl}
             alt="User Avatar"
             fill
@@ -398,87 +416,87 @@ export default function DashboardPage() {
           <MobileImageSlider />
           <MobileActionGrid />
         </div>
-      {/* Welcome Popup */}
-      <Dialog open={showWelcomePopup} onOpenChange={(open) => { if (!open) handleCloseWelcomePopup(); }}>
-        <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-sm w-full" style={{ boxShadow: 'none' }}>
-          <DialogTitle className="sr-only">Welcome to Dashboard</DialogTitle>
-          <div className="relative">
-            <button
-              onClick={handleCloseWelcomePopup}
-              className="absolute top-2 right-2 z-50 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
-              aria-label="Close welcome popup"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <Image
-              src="/dashboard-welcome-popup.png"
-              alt="Welcome to Dashboard"
-              width={600}
-              height={800}
-              className="rounded-2xl w-full h-auto"
-              priority
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-
-      <div
-        className={cn(
-          "transform transition-all duration-700 ease-out px-4 md:px-10",
-          isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-        )}
-        style={{ transitionDelay: isMounted ? '150ms' : '0ms' }}
-      >
-        <div className="flex items-center mb-4">
-          <Star className="h-6 w-6 text-primary mr-2" />
-          <h2 className="text-2xl font-semibold text-foreground">Top-Rated Templates</h2>
-        </div>
-        <p className="text-muted-foreground mb-6">
-          Our most popular professionally designed templates for your {clientUser?.type || 'business'}.
-        </p>
-
-        {showTemplateSkeletons ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <TemplateSkeletonCard key={index} />
-            ))}
-          </div>
-        ) : templatesError ? (
-          <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
-            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-            <h2 className="text-xl font-semibold text-destructive mb-2">Oops! Something went wrong.</h2>
-            <p className="text-muted-foreground max-w-md">{templatesError}</p>
-          </div>
-        ) : topRatedTemplates.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {topRatedTemplates.map(template => (
-              <TemplateCard
-                key={template.id}
-                imageUrl={template.imageUrl}
-                imageHint={getImageHint(template.name)}
-                title={template.name}
-                description={template.description}
-                tags={template.tags || []}
-                isTopRated={template.isTopRated}
+        {/* Welcome Popup */}
+        <Dialog open={showWelcomePopup} onOpenChange={(open) => { if (!open) handleCloseWelcomePopup(); }}>
+          <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-sm w-full" style={{ boxShadow: 'none' }}>
+            <DialogTitle className="sr-only">Welcome to Dashboard</DialogTitle>
+            <div className="relative">
+              <button
+                onClick={handleCloseWelcomePopup}
+                className="absolute top-2 right-2 z-50 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                aria-label="Close welcome popup"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <Image
+                src="/dashboard-welcome-popup.png"
+                alt="Welcome to Dashboard"
+                width={600}
+                height={800}
+                className="rounded-2xl w-full h-auto"
+                priority
               />
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-center py-4">No top-rated templates available for your business type at the moment.</p>
-        )}
-      </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-      <div
-        className={`text-center mt-12 px-4 md:px-10 transform transition-all duration-700 ease-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-          }`}
-        style={{ transitionDelay: isMounted ? '300ms' : '0ms' }}
-      >
-        <Button asChild size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
-          <Link href="/templates">View All Templates</Link>
-        </Button>
+
+        <div
+          className={cn(
+            "transform transition-all duration-700 ease-out px-4 md:px-10",
+            isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+          )}
+          style={{ transitionDelay: isMounted ? '150ms' : '0ms' }}
+        >
+          <div className="flex items-center mb-4">
+            <Star className="h-6 w-6 text-primary mr-2" />
+            <h2 className="text-2xl font-semibold text-foreground">Top-Rated Templates</h2>
+          </div>
+          <p className="text-muted-foreground mb-6">
+            Our most popular professionally designed templates for your {clientUser?.type || 'business'}.
+          </p>
+
+          {showTemplateSkeletons ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <TemplateSkeletonCard key={index} />
+              ))}
+            </div>
+          ) : templatesError ? (
+            <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
+              <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+              <h2 className="text-xl font-semibold text-destructive mb-2">Oops! Something went wrong.</h2>
+              <p className="text-muted-foreground max-w-md">{templatesError}</p>
+            </div>
+          ) : topRatedTemplates.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {topRatedTemplates.map(template => (
+                <TemplateCard
+                  key={template.id}
+                  imageUrl={template.imageUrl}
+                  imageHint={getImageHint(template.name)}
+                  title={template.name}
+                  description={template.description}
+                  tags={template.tags || []}
+                  isTopRated={template.isTopRated}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">No top-rated templates available for your business type at the moment.</p>
+          )}
+        </div>
+
+        <div
+          className={`text-center mt-12 px-4 md:px-10 transform transition-all duration-700 ease-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+            }`}
+          style={{ transitionDelay: isMounted ? '300ms' : '0ms' }}
+        >
+          <Button asChild size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+            <Link href="/templates">View All Templates</Link>
+          </Button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
