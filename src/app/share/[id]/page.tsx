@@ -270,7 +270,7 @@ export default function SharePage() {
             </header>
             <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-2xl rounded-lg bg-watermark print:shadow-none print:border-none print:rounded-none overflow-hidden">
                  <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start border-b pb-8 mb-4 border-border gap-6">
-                    <div className="bg-black p-4 rounded-lg w-full sm:w-auto flex justify-center">
+                    <div className="bg-black rounded-lg w-full sm:w-auto flex justify-center shadow-[inset_0_0_20px_rgba(255,255,255,0.1)]">
                         <Image
                             src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
                             alt="Color Hut Logo"

@@ -78,10 +78,10 @@ const SectionTitle = ({ children }: { children: React.ReactNode }) => (
 
 const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string | null }) => (
     <div className="flex items-start">
-        <Icon className="h-4 w-4 mr-3 mt-1 text-muted-foreground shrink-0" />
-        <div>
-            <p className="font-medium text-foreground">{decodeHtmlEntities(value) || "N/A"}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
+        <Icon className="h-4 w-4 mr-2 sm:mr-3 mt-1 text-muted-foreground shrink-0" />
+        <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground break-words sm:truncate">{decodeHtmlEntities(value) || "N/A"}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-tight">{label}</p>
         </div>
     </div>
 );
@@ -291,11 +291,12 @@ export default function ClientOrderDetailsPage() {
 
     if (isLoading || clientLoading) {
         return (
-            <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+            <div className="space-y-6">
                  <header className="flex items-center justify-between mb-6">
-                    <Skeleton className="h-10 w-40" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
                 </header>
-                <main className="bg-card text-card-foreground p-6 sm:p-8 rounded-lg shadow-lg space-y-8">
+                <main className="bg-card text-card-foreground p-6 sm:p-8 rounded-none sm:rounded-lg shadow-none sm:shadow-lg space-y-8 -mx-6 sm:mx-0 border-x-0 sm:border">
                     <div className="flex justify-between items-start border-b pb-6 mb-6">
                         <div className="space-y-3">
                             <Skeleton className="h-8 w-48" />
@@ -349,18 +350,31 @@ export default function ClientOrderDetailsPage() {
     }
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-            <header className="flex items-center justify-between mb-2">
-                <Button variant="outline" onClick={() => router.push('/order-history')}>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Order History
+        <div className="space-y-6">
+            <header className="flex items-center justify-between gap-3 mb-6 px-1 sm:px-0">
+                <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => router.push('/order-history')}
+                    className="rounded-full border-primary/20 hover:bg-primary/5 text-primary shrink-0 h-10 w-10"
+                    title="Back to History"
+                >
+                    <ArrowLeft className="h-5 w-5" />
+                    <span className="sr-only">Back to History</span>
                 </Button>
-                <Button onClick={handleShare}>
-                    <Share2 className="mr-2 h-4 w-4" /> Share with partner
+
+                <Button 
+                    size="icon"
+                    onClick={handleShare} 
+                    className="rounded-full shadow-md shrink-0 h-10 w-10"
+                    title="Share Update"
+                >
+                    <Share2 className="h-5 w-5" />
+                    <span className="sr-only">Share Update</span>
                 </Button>
             </header>
 
-            <main className="bg-card text-card-foreground p-6 sm:p-8 rounded-lg shadow-lg">
+            <main className="bg-card text-card-foreground p-6 sm:p-10 rounded-none sm:rounded-2xl shadow-none sm:shadow-xl border-x-0 sm:border border-border/40 overflow-hidden -mx-6 sm:mx-0">
                  <div className="flex flex-col sm:flex-row justify-between items-start border-b pb-6 mb-6 border-border">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -417,13 +431,7 @@ export default function ClientOrderDetailsPage() {
                                     <div className="flex-1 p-6">
                                         <h3 className="text-lg font-bold text-foreground">{decodeHtmlEntities(order.templateName)}</h3>
                                         {order.templateDescription && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(order.templateDescription)}</p>}
-                                        {order.templateTags && order.templateTags.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mt-4">
-                                                {order.templateTags.map(tag => (
-                                                    <Badge key={tag} variant="secondary">{tag}</Badge>
-                                                ))}
-                                            </div>
-                                        )}
+
                                     </div>
                                 </div>
                             </Card>

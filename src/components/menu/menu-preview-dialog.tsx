@@ -111,8 +111,23 @@ export function MenuPreviewDialog({
     const derivedCategoryIds = new Set(derivedDisplayedCategories.map(c => c.id));
     const currentOrderedCategoryIds = new Set(orderedDialogCategories.map(c => c.id));
 
-    if (derivedCategoryIds.size !== currentOrderedCategoryIds.size || ![...derivedCategoryIds].every(id => currentOrderedCategoryIds.has(id))) {
+    // Check if the set of IDs has changed or if data within nodes has changed
+    const needsReset = derivedCategoryIds.size !== currentOrderedCategoryIds.size || 
+                      ![...derivedCategoryIds].every(id => currentOrderedCategoryIds.has(id));
+
+    if (needsReset) {
       setOrderedDialogCategories(derivedDisplayedCategories);
+    } else {
+      // Even if IDs are the same, some names/icons might have changed. Sync data but keep order.
+      setOrderedDialogCategories(currentOrder => {
+        const nextOrder = currentOrder.map(cat => 
+          derivedDisplayedCategories.find(d => d.id === cat.id) || cat
+        );
+        // Only trigger update if data actually changed
+        const isDifferent = nextOrder.some((cat, i) => cat !== currentOrder[i]);
+        if (!isDifferent) return currentOrder;
+        return nextOrder;
+      });
     }
   }, [derivedDisplayedCategories, orderedDialogCategories]);
 
@@ -141,7 +156,10 @@ export function MenuPreviewDialog({
         // Keep existing order, add new items at the end, remove missing ones
         const existingIds = new Set(existing.map(i => i.id));
         const incomingIds = new Set(incoming.map(i => i.id));
-        const reordered = existing.filter(i => incomingIds.has(i.id));
+        const reordered = existing
+          .filter(i => incomingIds.has(i.id))
+          .map(i => incoming.find(newI => newI.id === i.id) || i); // Use the fresh data object while keeping the old order
+
         const added = incoming.filter(i => !existingIds.has(i.id));
         next[catId] = [...reordered, ...added];
       }
@@ -308,7 +326,7 @@ export function MenuPreviewDialog({
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start text-sm mb-1 h-9 rounded-full",
+                  "w-full justify-start text-sm mb-1 h-9 rounded-lg",
                   !activeCategoryId ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-semibold" : "hover:bg-accent",
                   isSidebarCollapsed ? "justify-center px-0" : "px-3"
                 )}
@@ -406,7 +424,7 @@ export function MenuPreviewDialog({
         </Sheet>
       ) : (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-          <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+          <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 [&>button]:hidden">
             {dialogInner}
           </DialogContent>
         </Dialog>
@@ -439,12 +457,11 @@ function CategoryReorderItem({ category, isSidebarCollapsed, isActive, onClick }
   const timer = React.useRef<NodeJS.Timeout | null>(null);
 
   const handlePointerDown = (event: React.PointerEvent) => {
-    // Only handle touch/long-press on mobile, standard drag usually works on desktop
     const isTouch = event.pointerType === 'touch';
     if (isTouch) {
       timer.current = setTimeout(() => {
         controls.start(event);
-      }, 300); // 300ms long-tap threshold
+      }, 300);
     }
   };
 
@@ -456,29 +473,54 @@ function CategoryReorderItem({ category, isSidebarCollapsed, isActive, onClick }
     <Reorder.Item
       value={category}
       dragControls={controls}
-      dragListener={false} // Custom long-press listener
+      dragListener={false}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
+      whileDrag={{ 
+        scale: 1.02, 
+        backgroundColor: "var(--background)",
+        boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+        zIndex: 50 
+      }}
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -10 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       className={cn(
-        "bg-card rounded-full overflow-hidden transition-all",
-        "active:scale-105 active:shadow-md active:z-50"
+        "bg-card rounded-lg overflow-hidden transition-colors h-9 flex items-center mb-1 group cursor-default select-none relative",
+        isActive ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-semibold shadow-sm" : "hover:bg-accent"
       )}
     >
-      <Button
-        variant="ghost"
+      <div 
         className={cn(
-          "w-full justify-start text-sm mb-0 h-9 flex items-center rounded-none",
-          isActive ? "bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-semibold" : "hover:bg-accent",
-          isSidebarCollapsed ? "justify-center px-0" : "px-3"
+          "flex-1 h-full flex items-center min-w-0",
+          isSidebarCollapsed ? "justify-center" : "px-3"
         )}
         onClick={onClick}
-        title={decodeHtmlEntities(category.name)}
       >
-        <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
-        {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{decodeHtmlEntities(category.name)}</span>}
-        {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0 bg-transparent active:bg-transparent" style={{ touchAction: 'none' }} />}
-      </Button>
+        <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", !isSidebarCollapsed && "mr-2")}>
+          {category.icon}
+        </span>
+        {!isSidebarCollapsed && (
+          <span className="truncate flex-1 text-left text-sm">
+            {decodeHtmlEntities(category.name)}
+          </span>
+        )}
+      </div>
+      
+      {!isSidebarCollapsed && (
+        <div 
+          className="px-3 h-full flex items-center cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            controls.start(e);
+          }}
+          style={{ touchAction: 'none' }}
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      )}
     </Reorder.Item>
   );
 }
@@ -513,9 +555,15 @@ function MenuPreviewItemReorderItem({ item, onRemove }: MenuPreviewItemReorderIt
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
+      whileDrag={{ 
+        scale: 1.01, 
+        boxShadow: "0 10px 40px rgba(0,0,0,0.08)",
+        backgroundColor: "var(--background)",
+        zIndex: 50 
+      }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       className={cn(
-        "flex items-center p-3 border rounded-lg bg-card shadow-sm transition-all",
-        "active:scale-[1.02] active:shadow-lg active:z-50 border-orange-200/50"
+        "flex items-center p-3 border rounded-lg bg-card shadow-sm transition-all border-orange-200/50"
       )}
     >
       <div className="shrink-0 mr-2 p-1 cursor-grab" style={{ touchAction: 'none' }} onPointerDown={(e) => controls.start(e)}>

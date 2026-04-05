@@ -332,6 +332,12 @@ export default function GoogleDocsApp({
           color: #000;
         }
 
+        .multi-selection-highlight {
+          background-color: #c2dbff !important;
+          color: #000 !important;
+          border-radius: 2px;
+        }
+
         /* Force underline to show on tab/whitespace characters */
         .ProseMirror u,
         .ProseMirror [data-type="tab"] {

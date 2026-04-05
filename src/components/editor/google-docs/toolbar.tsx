@@ -105,13 +105,13 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
     const incrementFontSize = () => {
         const newSize = fontSize + 1
         setFontSize(newSize)
-        editor.chain().focus().setFontSize(`${newSize}pt`).run()
+        executeCommand('setFontSize', `${newSize}pt`)
     }
 
     const decrementFontSize = () => {
         const newSize = Math.max(1, fontSize - 1)
         setFontSize(newSize)
-        editor.chain().focus().setFontSize(`${newSize}pt`).run()
+        executeCommand('setFontSize', `${newSize}pt`)
     }
 
     const addImage = () => {
@@ -143,6 +143,11 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
         } catch (error) {
             console.error('Failed to export DOCX:', error)
         }
+    }
+
+    const executeCommand = (command: string, ...args: any[]) => {
+        if (!editor) return
+        (editor.commands as any).runCommandOnAllSelections(command, ...args)
     }
 
     return (
@@ -189,8 +194,8 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                         <DropdownMenuItem
                             key={h.value}
                             onClick={() => {
-                                if (h.value === 0) editor.chain().focus().setParagraph().run()
-                                else editor.chain().focus().toggleHeading({ level: h.value as any }).run()
+                                if (h.value === 0) executeCommand('setParagraph')
+                                else executeCommand('toggleHeading', { level: h.value as any })
                             }}
                             className={`p-2 rounded-sm cursor-pointer hover:bg-[#f1f3f4] ${h.value === 0 ? 'text-base' : `text-${h.value + 1}xl font-bold`}`}
                         >
@@ -216,7 +221,7 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                     {FONTS.map(f => (
                         <DropdownMenuItem
                             key={f.value}
-                            onClick={() => editor.chain().focus().setFontFamily(f.value).run()}
+                            onClick={() => executeCommand('setFontFamily', f.value)}
                             style={{ fontFamily: f.value }}
                             className="p-2 rounded-sm cursor-pointer hover:bg-[#f1f3f4]"
                         >
@@ -241,7 +246,7 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                     }}
                     onBlur={() => {
                         if (fontSize > 0) {
-                            editor.chain().focus().setFontSize(`${fontSize}pt`).run()
+                            executeCommand('setFontSize', `${fontSize}pt`)
                         } else {
                             // Reset to default or previous if invalid
                             setFontSize(11)
@@ -262,22 +267,22 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
             {/* Formatting Group */}
             <div className="flex items-center gap-0.5">
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    onClick={() => executeCommand('toggleBold')}
                     active={editor.isActive('bold')}
                     icon={<Bold className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    onClick={() => executeCommand('toggleItalic')}
                     active={editor.isActive('italic')}
                     icon={<Italic className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleUnderline().run()}
+                    onClick={() => executeCommand('toggleUnderline')}
                     active={editor.isActive('underline')}
                     icon={<Underline className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleHighlight().run()}
+                    onClick={() => executeCommand('toggleHighlight')}
                     active={editor.isActive('highlight')}
                     icon={<Highlighter className="w-4 h-4" />}
                 />
@@ -300,7 +305,7 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                         {COLORS.map(c => (
                             <DropdownMenuItem
                                 key={c.value}
-                                onClick={() => editor.chain().focus().setColor(c.value).run()}
+                                onClick={() => executeCommand('setColor', c.value)}
                                 className="p-0 flex items-center justify-center w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform border border-gray-100"
                                 style={{ backgroundColor: c.value }}
                                 title={c.label}
@@ -311,7 +316,10 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuItem
-                            onClick={() => editor.chain().focus().unsetColor().run()}
+                            onClick={() => {
+                                executeCommand('unsetColor')
+                                editor.chain().focus().run()
+                            }}
                             className="col-span-4 mt-1 p-1.5 text-[11px] font-medium text-center justify-center hover:bg-[#f1f3f4] rounded-md transition-colors border-t border-gray-100"
                         >
                             Reset color
@@ -336,7 +344,7 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                         {TEXT_CASES.map(tc => (
                             <DropdownMenuItem
                                 key={tc.value}
-                                onClick={() => (editor.commands as any).setTextCase(tc.value)}
+                                onClick={() => executeCommand('setTextCase', tc.value)}
                                 className="p-2 text-xs font-medium rounded-sm cursor-pointer hover:bg-[#f1f3f4] transition-colors"
                             >
                                 {tc.label}
@@ -364,22 +372,22 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
 
             <div className="flex items-center gap-0.5">
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                    onClick={() => executeCommand('setTextAlign', 'left')}
                     active={editor.isActive({ textAlign: 'left' })}
                     icon={<AlignLeft className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                    onClick={() => executeCommand('setTextAlign', 'center')}
                     active={editor.isActive({ textAlign: 'center' })}
                     icon={<AlignCenter className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().setTextAlign('right').run()}
+                    onClick={() => executeCommand('setTextAlign', 'right')}
                     active={editor.isActive({ textAlign: 'right' })}
                     icon={<AlignRight className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+                    onClick={() => executeCommand('setTextAlign', 'justify')}
                     active={editor.isActive({ textAlign: 'justify' })}
                     icon={<AlignJustify className="w-4 h-4" />}
                 />
@@ -401,7 +409,7 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                         {LINE_HEIGHTS.map(lh => (
                             <DropdownMenuItem
                                 key={lh.value}
-                                onClick={() => (editor.commands as any).setLineHeight(lh.value)}
+                                onClick={() => executeCommand('setLineHeight', lh.value)}
                                 className="p-2 text-xs font-medium rounded-sm cursor-pointer hover:bg-[#f1f3f4] transition-colors"
                             >
                                 {lh.label}
@@ -415,17 +423,17 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
 
             <div className="flex items-center gap-0.5">
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    onClick={() => executeCommand('toggleBulletList')}
                     active={editor.isActive('bulletList')}
                     icon={<List className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                    onClick={() => executeCommand('toggleOrderedList')}
                     active={editor.isActive('orderedList')}
                     icon={<ListOrdered className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleTaskList().run()}
+                    onClick={() => executeCommand('toggleTaskList')}
                     active={editor.isActive('taskList')}
                     icon={<CheckSquare className="w-4 h-4" />}
                 />
@@ -435,17 +443,20 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
 
             <div className="flex items-center gap-0.5">
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                    onClick={() => executeCommand('toggleBlockquote')}
                     active={editor.isActive('blockquote')}
                     icon={<Quote className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+                    onClick={() => executeCommand('toggleCodeBlock')}
                     active={editor.isActive('codeBlock')}
                     icon={<Code className="w-4 h-4" />}
                 />
                 <ToolbarButton
-                    onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+                    onClick={() => {
+                        executeCommand('unsetAllMarks')
+                        executeCommand('clearNodes')
+                    }}
                     icon={<RemoveFormatting className="w-4 h-4" />}
                 />
             </div>

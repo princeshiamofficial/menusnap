@@ -361,6 +361,7 @@ export default function ManageMagicTabPage(): ReactNode {
   const [filteredMenuItems, setFilteredMenuItems] = useState<MenuItemAdmin[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [catSearch, setCatSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -590,58 +591,126 @@ export default function ManageMagicTabPage(): ReactNode {
   };
 
   return (
-    <div className="min-h-full bg-background/30 p-4 sm:p-6 lg:p-10 w-full overflow-x-hidden relative">
-      <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8 w-full mt-10">
-        <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-theme(spacing.40))] bg-card border border-border rounded-xl shadow-lg overflow-hidden">
-      <aside className="w-full lg:w-72 bg-card border-b lg:border-r border-border flex flex-col shrink-0">
-        <div className="p-4 border-b border-border">
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full justify-start items-center text-md h-10 mb-2 font-semibold",
-              !selectedCategory ? 'bg-muted text-foreground' : 'text-foreground'
+    <div className="min-h-full bg-background/30 w-full overflow-x-hidden relative">
+      <div className="w-full h-full">
+        <div className="flex flex-col lg:flex-row h-screen bg-card border-none shadow-none overflow-hidden">
+      <aside className="w-full lg:w-72 bg-card border-b lg:border-b-0 lg:border-r border-border flex flex-col shrink-0">
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-border hidden lg:flex flex-col gap-3">
+          <div className="flex justify-between items-center w-full">
+            <h2 className="text-lg font-semibold text-foreground">Categories</h2>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={() => {
+                // Navigate to manage-categories or open a dialog if implemented
+                toast({ title: "Manage Categories", description: "Use the 'Manage Categories' page to add or edit categories." });
+              }}
+            >
+              <PlusCircle className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="relative group">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Input 
+              placeholder="Filter categories..." 
+              className="h-8 pl-8 pr-8 text-xs bg-muted/50 focus-visible:ring-primary border-none"
+              value={catSearch}
+              onChange={(e) => setCatSearch(e.target.value)}
+            />
+            {catSearch && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                onClick={() => setCatSearch('')}
+              >
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </Button>
             )}
-            onClick={() => setSelectedCategory(null)}
-          >
-            All Items
-            <Badge variant="secondary" className="ml-auto bg-muted text-muted-foreground">{totalAllItemsCount}</Badge>
-          </Button>
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Categories</h3>
+          </div>
         </div>
-        <ScrollArea className="flex-1 max-h-48 lg:max-h-none">
-          {loadingCategories && (
-            <div className="p-2 space-y-2.5">
-              {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}
+
+        {/* Categories List */}
+        <div className="flex-1 flex lg:block overflow-x-auto lg:overflow-x-hidden lg:overflow-y-auto no-scrollbar scroll-smooth h-14 lg:h-full lg:min-h-0">
+          <div className="flex lg:block p-2.5 lg:p-3 space-x-2 lg:space-x-0 lg:space-y-2.5 min-w-full items-center">
+            {/* All Items Button */}
+            <div className="shrink-0">
+              <Button
+                variant="ghost"
+                className={cn(
+                  "h-9 justify-start items-center text-sm border transition-all duration-200",
+                  "lg:w-full lg:rounded-md rounded-full px-4",
+                  !selectedCategory 
+                    ? 'bg-primary/10 font-semibold text-primary border-primary shadow-sm' 
+                    : 'bg-card text-muted-foreground border-border hover:bg-muted/50 hover:text-card-foreground'
+                )}
+                onClick={() => setSelectedCategory(null)}
+              >
+                <ListChecks className="mr-2 h-4 w-4 shrink-0" />
+                <span className="whitespace-nowrap">All Items</span>
+                <Badge variant="secondary" className={cn(
+                  "ml-auto text-[10px] h-4 px-1 font-normal",
+                  !selectedCategory ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                )}>{totalAllItemsCount}</Badge>
+              </Button>
             </div>
-          )}
-          {errorCategories && <p className="p-4 text-sm text-destructive">Error: {errorCategories}</p>}
-          {!loadingCategories && !errorCategories && orderedCategories.length === 0 && (
-            <p className="p-4 text-sm text-muted-foreground">No visible categories found for {menuType}.</p>
-          )}
-          {!loadingCategories && !errorCategories && orderedCategories.length > 0 && (
-            <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="p-2 space-y-1">
-              {orderedCategories.map(category => (
-                <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start items-center text-sm h-9 rounded-md",
-                      selectedCategory?.id === category.id
-                        ? 'bg-muted font-medium text-foreground'
-                        : 'text-muted-foreground hover:bg-muted/50 hover:text-card-foreground'
-                    )}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    <span className="mr-2 text-md">{category.icon}</span>
-                    <span className="flex-1 text-left truncate">{decodeHtmlEntities(category.name)}</span>
-                    <Badge variant="secondary" className="ml-2 bg-muted text-muted-foreground font-normal">{category.itemCount}</Badge>
-                    <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1" />
-                  </Button>
-                </Reorder.Item>
-              ))}
-            </Reorder.Group>
-          )}
-        </ScrollArea>
+
+            {loadingCategories && (
+              <div className="flex lg:block space-x-2 lg:space-x-0 lg:space-y-2 lg:px-0">
+                {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-9 w-24 lg:w-full rounded-full lg:rounded-md shrink-0" />)}
+              </div>
+            )}
+
+            {!loadingCategories && !errorCategories && (
+              <Reorder.Group 
+                axis={typeof window !== 'undefined' && window.innerWidth >= 1024 ? "y" : "x"} 
+                values={orderedCategories} 
+                onReorder={setOrderedCategories} 
+                className="flex lg:block space-x-2 lg:space-x-0 lg:space-y-2"
+              >
+                {orderedCategories
+                  .filter(cat => !catSearch || cat.name.toLowerCase().includes(catSearch.toLowerCase()))
+                  .map(category => (
+                    <Reorder.Item 
+                      key={category.id} 
+                      value={category} 
+                      className="shrink-0"
+                    >
+                      <div className={cn(
+                        'flex justify-start items-center text-sm h-9 border transition-all duration-200',
+                        'lg:w-full lg:rounded-md rounded-full px-1',
+                        selectedCategory?.id === category.id
+                          ? 'bg-primary/10 font-semibold text-primary border-primary shadow-sm'
+                          : 'bg-card text-muted-foreground border-border hover:bg-muted/50 hover:text-card-foreground'
+                      )}>
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "h-full justify-start items-center py-0 rounded-full lg:rounded-md flex-1",
+                            "px-3 lg:px-2",
+                            "lg:w-full"
+                          )}
+                          onClick={() => setSelectedCategory(category)}
+                        >
+                          <span className="mr-2 text-base shrink-0">{category.icon || "📁"}</span>
+                          <span className="whitespace-nowrap truncate">{decodeHtmlEntities(category.name)}</span>
+                          <Badge variant="secondary" className={cn(
+                            "ml-auto text-[10px] h-4 px-1 font-normal hidden lg:flex",
+                            selectedCategory?.id === category.id ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                          )}>{category.itemCount}</Badge>
+                        </Button>
+                        <div className="px-1 hidden lg:flex">
+                          <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 cursor-grab active:cursor-grabbing hover:text-muted-foreground/60 transition-colors" />
+                        </div>
+                      </div>
+                    </Reorder.Item>
+                  ))}
+              </Reorder.Group>
+            )}
+          </div>
+        </div>
       </aside>
 
       <main className="flex-1 flex flex-col bg-background min-h-0">

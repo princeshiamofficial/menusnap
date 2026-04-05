@@ -10,6 +10,7 @@ import { SpeedDialFAB } from '@/components/layout/SpeedDialFAB';
 import { BottomNavigation } from '@/components/layout/bottom-navigation';
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 function ClientAuthGuard({ children }: { children: ReactNode }) {
   const { isClientLoggedIn, clientLoading, clientUser } = useClientAuth();
@@ -69,7 +70,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </Sidebar>
         <SidebarInset className="bg-background">
           <ScrollArea className="h-screen pb-16 md:pb-0"> {/* Added pb-16 for mobile, md:pb-0 for larger screens */}
-            <main className="flex-1 p-6 sm:p-8 md:p-10">
+            <main className={cn(
+              "flex-1",
+              (pathname === "/dashboard" || pathname === "/dashboard/") ? "p-0" : "p-6 sm:p-8 md:p-10"
+            )}>
               {children}
             </main>
           </ScrollArea>

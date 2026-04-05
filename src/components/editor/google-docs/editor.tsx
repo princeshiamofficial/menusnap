@@ -171,6 +171,9 @@ declare module '@tiptap/core' {
         },
         textCase: {
             setTextCase: (type: 'uppercase' | 'lowercase' | 'title' | 'sentence' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant' | 'dot') => ReturnType
+        },
+        multiSelection: {
+            runCommandOnAllSelections: (commandName: string, ...args: any[]) => ReturnType
         }
     }
 }
@@ -179,12 +182,9 @@ export const TextCase = Extension.create({
     name: 'textCase',
                 addCommands() {
                     return {
-                        setTextCase: (type: 'uppercase' | 'lowercase' | 'title' | 'sentence' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant' | 'dot') => ({ editor, chain }: { editor: any, chain: any }) => {
-                            const { from, to } = editor.state.selection
+                        setTextCase: (type: 'uppercase' | 'lowercase' | 'title' | 'sentence' | 'camel' | 'pascal' | 'snake' | 'kebab' | 'constant' | 'dot') => ({ state, tr }) => {
+                            const { from, to } = state.selection
                             if (from === to) return false
-            
-                            const text = editor.state.doc.textBetween(from, to)
-                            let transformedText = text
             
                             const getWords = (str: string) => {
                                 return str
@@ -194,24 +194,119 @@ export const TextCase = Extension.create({
                                     .trim()
                                     .split(/\s+/)
                             }
-            
-                            switch (type) {
-                                case 'uppercase': transformedText = text.toUpperCase(); break
-                                case 'lowercase': transformedText = text.toLowerCase(); break
-                                case 'title': transformedText = getWords(text).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' '); break
-                                case 'sentence': transformedText = text.charAt(0).toUpperCase() + text.slice(1).toLowerCase(); break
-                                case 'camel': { const words = getWords(text); transformedText = words[0].toLowerCase() + words.slice(1).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(''); break }
-                                case 'pascal': transformedText = getWords(text).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(''); break
-                                case 'snake': transformedText = getWords(text).map(word => word.toLowerCase()).join('_'); break
-                                case 'kebab': transformedText = getWords(text).map(word => word.toLowerCase()).join('-'); break
-                                case 'constant': transformedText = getWords(text).map(word => word.toUpperCase()).join('_'); break
-                                case 'dot': transformedText = getWords(text).map(word => word.toLowerCase()).join('.'); break
+
+                            const transformText = (text: string) => {
+                                switch (type) {
+                                    case 'uppercase': return text.toUpperCase()
+                                    case 'lowercase': return text.toLowerCase()
+                                    case 'title': return getWords(text).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
+                                    case 'sentence': return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase()
+                                    case 'camel': { 
+                                        const words = getWords(text); 
+                                        return words[0].toLowerCase() + words.slice(1).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(''); 
+                                    }
+                                    case 'pascal': return getWords(text).map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join('');
+                                    case 'snake': return getWords(text).map(word => word.toLowerCase()).join('_');
+                                    case 'kebab': return getWords(text).map(word => word.toLowerCase()).join('-');
+                                    case 'constant': return getWords(text).map(word => word.toUpperCase()).join('_');
+                                    case 'dot': return getWords(text).map(word => word.toLowerCase()).join('.');
+                                    default: return text
+                                }
                             }
             
-                            return chain().insertContent(transformedText).setTextSelection({ from, to: from + transformedText.length }).run()
+                            const changes: { start: number, end: number, transformed: string }[] = []
+                            state.doc.nodesBetween(from, to, (node, pos) => {
+                                if (node.isText) {
+                                    const nodeStart = Math.max(from, pos)
+                                    const nodeEnd = Math.min(to, pos + node.nodeSize)
+                                    const text = node.text?.slice(nodeStart - pos, nodeEnd - pos) || ''
+                                    const transformed = transformText(text)
+                                    changes.push({ start: nodeStart, end: nodeEnd, transformed })
+                                }
+                            })
+                            
+                            // Apply transformations in REVERSE order to preserve position integrity
+                            for (let i = changes.length - 1; i >= 0; i--) {
+                                const { start, end, transformed } = changes[i]
+                                tr.insertText(transformed, start, end)
+                            }
+
+                            return true
                         },
                     }
                 }
+})
+
+
+export const MultiSelection = Extension.create({
+    name: 'multiSelection',
+    addStorage() {
+        return {
+            ranges: [] as { from: number, to: number }[],
+        }
+    },
+    addCommands() {
+        return {
+            runCommandOnAllSelections: (commandName: string, ...args: any[]) => ({ editor, chain }) => {
+                const ranges = [...this.storage.ranges]
+                // Include current selection if not already added
+                const { from, to } = editor.state.selection
+                if (from !== to && !ranges.some(r => r.from === from && r.to === to)) {
+                    ranges.push({ from, to })
+                }
+
+                if (ranges.length === 0) return (editor.chain().focus() as any)[commandName](...args).run()
+
+                let c = chain().focus()
+                ranges.forEach((range: { from: number, to: number }) => {
+                    c = (c.setTextSelection(range) as any)[commandName](...args)
+                })
+                
+                // Reset multi-selection after command if desired, or keep it? Google docs keeps it.
+                // We'll keep it for better UX.
+                return c.run()
+            }
+        }
+    },
+    addProseMirrorPlugins() {
+        return [
+            new Plugin({
+                props: {
+                    decorations: (state) => {
+                        const { ranges } = this.storage
+                        if (!ranges || ranges.length === 0) return DecorationSet.empty
+                        
+                        const decorations = ranges.map((range: { from: number, to: number }) => 
+                            Decoration.inline(range.from, range.to, { class: 'multi-selection-highlight' })
+                        )
+                        return DecorationSet.create(state.doc, decorations)
+                    },
+                    handleDOMEvents: {
+                        mousedown: (view, event) => {
+                            if (!event.ctrlKey && !event.metaKey) {
+                                this.storage.ranges = []
+                                view.dispatch(view.state.tr)
+                            }
+                            return false
+                        },
+                        mouseup: (view, event) => {
+                            if (event.ctrlKey || event.metaKey) {
+                                const { from, to } = view.state.selection
+                                if (from !== to) {
+                                    // Avoid duplicates
+                                    if (!this.storage.ranges.some((r: any) => r.from === from && r.to === to)) {
+                                        this.storage.ranges.push({ from, to })
+                                        view.dispatch(view.state.tr)
+                                    }
+                                }
+                            }
+                            return false
+                        }
+                    }
+                }
+            })
+        ]
+    }
 })
 
 
@@ -276,6 +371,7 @@ function GoogleDocsEditorInner({
             Placeholder.configure({ placeholder: 'Write something or type "/" for commands...' }),
             TabNode,
             TextCase,
+            MultiSelection,
             Extension.create({
                 name: 'tabKey',
                 priority: 1000,
