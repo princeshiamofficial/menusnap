@@ -14,7 +14,8 @@ import {
   LogOut, 
   Layers, 
   Package, 
-  FolderOpen
+  FolderOpen,
+  Zap
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -27,6 +28,7 @@ import { useAdminAuth } from '@/hooks/use-admin-auth';
 
 const adminNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/m-admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/m-admin/quick-manager', label: 'Quick Manager', icon: Zap, hasChevron: true },
   { href: '/m-admin/contacts', label: 'Contacts', icon: Users, hasChevron: true },
   { href: '/m-admin/manage-orders', label: 'Orders', icon: ShoppingCart, hasChevron: true },
   { href: '/m-admin/manage-categories', label: 'Categories', icon: LayoutList, hasChevron: true },

@@ -14,6 +14,7 @@ import { motion, animate, AnimatePresence } from "framer-motion";
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
+import { getDashboardSlides } from '@/app/actions/storefront';
 
 
 
@@ -107,38 +108,77 @@ const getImageHint = (name: string): string => {
   return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
 }
 
+
+
 function MobileImageSlider() {
   const [current, setCurrent] = useState(0);
-  const images = [
-    {
-      src: "/dashboard/slider1.png",
-      title: "Design Your Dream Menu",
-      desc: "Customize templates with your branding"
-    },
-    {
-      src: "/dashboard/slider2.png",
-      title: "Real-time Collaboration",
-      desc: "Edit together in real-time with your team"
-    },
-    {
-      src: "/dashboard/slider3.png",
-      title: "WhatsApp Integration",
-      desc: "Share your menu directly with customers"
-    }
-  ];
+  const [slides, setSlides] = useState<{src: string, title: string, desc: string}[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    async function loadSlides() {
+      try {
+        const result = await getDashboardSlides();
+        if (result.success && result.slides && result.slides.length > 0) {
+          // Map database rows to slider format
+          const mappedSlides = (result.slides as any[]).map((slide, index) => ({
+            src: slide.image_url,
+            title: index === 0 ? "Design Your Dream Menu" : 
+                   index === 1 ? "Real-time Collaboration" : 
+                   "WhatsApp Integration",
+            desc: index === 0 ? "Customize templates with your branding" :
+                  index === 1 ? "Edit together in real-time" :
+                  "Share your menu directly"
+          }));
+          setSlides(mappedSlides);
+        } else {
+          // Fallback to defaults if no slides in DB
+          setSlides([
+            {
+              src: "/dashboard/slider1.png",
+              title: "Design Your Dream Menu",
+              desc: "Customize templates with your branding"
+            },
+            {
+              src: "/dashboard/slider2.png",
+              title: "Real-time Collaboration",
+              desc: "Edit together in real-time with your team"
+            },
+            {
+              src: "/dashboard/slider3.png",
+              title: "WhatsApp Integration",
+              desc: "Share your menu directly with customers"
+            }
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard slides:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadSlides();
+  }, []);
+
+  useEffect(() => {
+    if (slides.length === 0) return;
     const timer = setInterval(() => {
-      setCurrent(prev => (prev + 1) % images.length);
+      setCurrent(prev => (prev + 1) % slides.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, [images.length]);
+  }, [slides.length]);
+
+  if (isLoading || slides.length === 0) {
+    return (
+      <div className="md:hidden w-full aspect-[3/1] relative rounded-3xl overflow-hidden bg-muted/20 animate-pulse" />
+    );
+  }
 
   return (
-    <div className="md:hidden w-full h-[120px] sm:h-[150px] relative rounded-3xl overflow-hidden shadow-2xl group ring-1 ring-white/20">
+    <div className="md:hidden w-full aspect-[3/1] relative rounded-[1.5rem] overflow-hidden shadow-2xl group ring-1 ring-white/10 bg-slate-100 dark:bg-slate-900/50">
       {/* Hidden preloader for all slider images */}
       <div className="hidden" aria-hidden="true">
-        {images.map((img, i) => (
+        {slides.map((img, i) => (
           <Image key={`preload-${i}`} src={img.src} alt="" width={1} height={1} priority />
         ))}
       </div>
@@ -147,38 +187,35 @@ function MobileImageSlider() {
         <motion.div
           key={current}
           className="absolute inset-0"
-          initial={{ x: '100%', opacity: 0, scale: 1.1 }}
-          animate={{ x: 0, opacity: 1, scale: 1 }}
-          exit={{ x: '-100%', opacity: 0, scale: 0.9 }}
+          initial={{ x: '100%', opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: '-100%', opacity: 0 }}
           transition={{
-            duration: 1.2,
-            ease: [0.25, 0.1, 0.25, 1], // Custom slow ease-in-out
-            opacity: { duration: 0.8 }
+            duration: 1,
+            ease: [0.25, 0.1, 0.25, 1],
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-black/20 to-transparent z-10" />
           <Image
-            src={images[current].src}
-            alt={images[current].title}
+            src={slides[current].src}
+            alt={slides[current].title}
             fill
-            className="object-cover scale-105"
+            className="object-contain"
             priority={current === 0}
           />
-
         </motion.div>
       </AnimatePresence>
 
-      {/* Premium Pagination Dots */}
-      <div className="absolute top-4 right-6 flex flex-col gap-2 z-30">
-        {images.map((_, i) => (
+      {/* Premium Pagination Dots (Moved to bottom left horizontal) */}
+      <div className="absolute bottom-4 left-6 flex flex-row gap-2 z-30">
+        {slides.map((_, i) => (
           <motion.div
             key={i}
             onClick={() => setCurrent(i)}
             animate={{
-              height: i === current ? 24 : 8,
+              width: i === current ? 24 : 8,
               backgroundColor: i === current ? "rgba(255,165,0,0.9)" : "rgba(255,255,255,0.3)"
             }}
-            className="w-1.5 rounded-full transition-all duration-500 cursor-pointer"
+            className="h-1.5 rounded-full transition-all duration-500 cursor-pointer"
           />
         ))}
       </div>
@@ -235,7 +272,7 @@ function MobileActionGrid() {
               whileTap={{ scale: 0.96 }}
               className={cn(
                 "relative border rounded-3xl flex flex-col items-start justify-between aspect-[1.15/1] transition-all duration-300 bg-card border-border/50 p-4 shadow-sm active:shadow-inner overflow-hidden",
-                action.isWidget && "bg-transparent border-none p-0 overflow-visible shadow-none"
+                action.isWidget && "bg-transparent border-none p-0 overflow-hidden shadow-none"
               )}
             >
               {action.isWidget ? (
@@ -341,6 +378,8 @@ export default function DashboardPage() {
   const [templatesError, setTemplatesError] = useState<string | null>(null);
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
   const { clientUser, clientLoading } = useClientAuth();
+  const [activeOfferTab, setActiveOfferTab] = useState("All");
+  const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100);
@@ -359,6 +398,42 @@ export default function DashboardPage() {
     sessionStorage.setItem('dashboard_welcome_seen', 'true');
     setShowWelcomePopup(false);
   };
+
+  // Auto Fullscreen Trigger (runs once on first tap/click - MOBILE ONLY)
+  useEffect(() => {
+    const triggerFullscreen = async () => {
+      // Check if it's mobile before requesting fullscreen
+      if (window.innerWidth >= 768) return;
+
+      try {
+        const doc = document.documentElement as any;
+        const body = document.body as any;
+        const requestFullscreen = 
+          doc.requestFullscreen || doc.webkitRequestFullscreen || doc.msRequestFullscreen || doc.mozRequestFullScreen ||
+          body.requestFullscreen || body.webkitRequestFullscreen || body.msRequestFullscreen || body.mozRequestFullScreen;
+
+        if (requestFullscreen && !document.fullscreenElement) {
+          const target = doc.requestFullscreen ? doc : body;
+          await requestFullscreen.call(target);
+        }
+      } catch (err) {
+        // Silently ignore if browser blocks it (security gesture policy)
+        console.warn("Fullscreen request failed (needs interaction):", err);
+      } finally {
+        // Remove listeners after first attempt
+        window.removeEventListener('click', triggerFullscreen);
+        window.removeEventListener('touchstart', triggerFullscreen);
+      }
+    };
+
+    window.addEventListener('click', triggerFullscreen, { once: true, capture: true });
+    window.addEventListener('touchstart', triggerFullscreen, { once: true, capture: true });
+
+    return () => {
+      window.removeEventListener('click', triggerFullscreen, { capture: true } as any);
+      window.removeEventListener('touchstart', triggerFullscreen, { capture: true } as any);
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchTopRatedTemplates() {
@@ -410,13 +485,173 @@ export default function DashboardPage() {
   const showTemplateSkeletons = isLoadingTemplates || clientLoading;
 
   return (
-    <div className="min-h-full flex flex-col">
-      <div className="flex-1 space-y-0 pb-8 transition-all pt-6">
-        <div className="px-4 md:px-10 space-y-3">
+    <div className="min-h-screen max-w-[100vw] overflow-x-hidden flex flex-col bg-background">
+      <div className="flex-1 space-y-0 pb-12 transition-all pt-4">
+        <div className="px-4 md:px-10 space-y-4 max-w-full overflow-hidden">
           <MobileImageSlider />
           <MobileActionGrid />
         </div>
-        {/* Welcome Popup */}
+
+        {/* Quick Actions Section (MOBILE ONLY) */}
+        <div className="md:hidden px-4 md:px-10 mt-10 mb-8 w-full max-w-full overflow-hidden">
+          <div className="flex items-center gap-3 mb-2 mt-3">
+            <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-foreground/20 to-transparent"></div>
+            <span className="text-[10px] font-bold text-muted-foreground tracking-[0.2em] uppercase opacity-70">Quick Actions</span>
+            <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-foreground/20 to-transparent"></div>
+          </div>
+          
+          <div className="w-full overflow-hidden">
+            <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-2 pb-4">
+            {/* Shop Card */}
+            <motion.div 
+              whileTap={{ scale: 0.97 }}
+              className="group relative min-w-[53vw] md:min-w-[240px] snap-center bg-white dark:bg-slate-900 border-2 border-red-500/20 rounded-[1rem] p-1.5 shadow-sm hover:shadow-md transition-all duration-300"
+            >
+              <div className="flex flex-col gap-0.5 overflow-hidden">
+                <div className="flex items-center gap-1">
+                  <span className="bg-red-600 text-[7px] font-black text-white px-1.5 py-0.5 rounded-md tracking-tighter uppercase">NEW</span>
+                  <span className="text-red-600 font-black text-[9px]">Shop</span>
+                </div>
+                <h3 className="text-[11px] font-black text-foreground flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  Explore products <ChevronDown className="h-2 w-2 -rotate-90" />
+                </h3>
+                <p className="text-[7.5px] text-muted-foreground font-medium truncate opacity-80">Toys, Stationery, Sports</p>
+              </div>
+              <div className="absolute -right-0.5 bottom-0.5 w-10 h-10 opacity-20 group-hover:opacity-60 transition-opacity duration-500">
+                 <TrendingUp className="w-full h-full text-red-500/10" />
+              </div>
+            </motion.div>
+
+            {/* PayLater Card */}
+            <motion.div 
+              whileTap={{ scale: 0.97 }}
+              className="group relative min-w-[53vw] md:min-w-[240px] snap-center bg-indigo-50 dark:bg-indigo-950/30 rounded-[1rem] p-1.5 shadow-sm hover:shadow-md transition-all duration-300 border border-indigo-100 dark:border-indigo-900/50"
+            >
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1">
+                  <div className="p-0.5 bg-white rounded-md shadow-sm">
+                    <History className="h-2 w-2 text-indigo-600" />
+                  </div>
+                  <span className="text-indigo-600 font-black text-[9px]">PayLater</span>
+                </div>
+                <h3 className="text-[11px] font-black text-foreground leading-none tracking-tight">
+                  Pay Smarter, Pay Later
+                </h3>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* MenuSnap Spotlight Section (MOBILE ONLY) */}
+      <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
+        <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">MenuSnap Spotlight</h2>
+        <div className="w-full overflow-hidden">
+          <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-3 pb-6">
+            {[
+              { title: "ORDER & SAVE", img: "/uploads/spotlight/order_save.png" },
+              { title: "AI MAGIC SETUP", img: "/uploads/spotlight/ai_magic.png" },
+              { title: "SECURE PAYMENTS", img: "/uploads/spotlight/secure_pay.png" },
+              { title: "EXCLUSIVE DEALS", img: "/uploads/spotlight/exclusive_deals.png" }
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                whileTap={{ scale: 0.95 }}
+                className="min-w-[105px] aspect-[3/5] snap-center relative rounded-[1.25rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10"
+              >
+                <Image 
+                  src={item.img} 
+                  alt={item.title}
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+                <div className="absolute bottom-4 left-0 right-0 px-2 text-center z-20">
+                  <p className="text-[10px] font-black text-white leading-tight tracking-[0.05em]">
+                    {item.title}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Exclusive Offers Section (MOBILE ONLY) */}
+      <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
+        <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">Exclusive Offers</h2>
+        
+        {/* Filter Chips */}
+        <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">
+          {["All", "Food", "MagicAI", "Updates"].map((chip) => (
+            <button
+              key={chip}
+              onClick={() => setActiveOfferTab(chip)}
+              className={cn(
+                "px-5 py-2 rounded-full text-xs font-black transition-all border shrink-0",
+                activeOfferTab === chip 
+                  ? "bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/20" 
+                  : "bg-white dark:bg-slate-900 text-muted-foreground border-slate-200 dark:border-slate-800"
+              )}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+
+        {/* Banners Scroller */}
+        <div className="w-full overflow-hidden">
+          <div 
+            onScroll={(e) => {
+              const target = e.target as HTMLDivElement;
+              const index = Math.round(target.scrollLeft / (target.offsetWidth * 0.85));
+              setCurrentOfferIndex(index);
+            }}
+            className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-2"
+          >
+            {[
+              { id: 1, type: "Food", img: "/uploads/offers/food_50.png" },
+              { id: 2, type: "MagicAI", img: "/uploads/offers/ai_25.png" }
+            ]
+            .filter(offer => activeOfferTab === "All" || offer.type === activeOfferTab)
+            .map((offer) => (
+              <motion.div
+                key={offer.id}
+                whileTap={{ scale: 0.98 }}
+                className="min-w-[85vw] aspect-[2.2/1] snap-center relative rounded-[1.25rem] overflow-hidden shadow-2xl"
+              >
+                <Image 
+                  src={offer.img} 
+                  alt="Special Offer"
+                  fill
+                  className="object-cover"
+                />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Working Dynamic Pagination Indicators */}
+          <div className="flex justify-center gap-1.5 mt-2">
+            {[1, 2]
+              .filter(() => activeOfferTab === "All") // Only show dots if both are there, or handle dynamic mapping
+              .concat(activeOfferTab !== "All" ? [1] : []) // Adjust based on filter
+              .slice(0, activeOfferTab === "All" ? 2 : 1) // Simple count for now
+              .map((_, idx) => (
+                <div 
+                  key={idx}
+                  className={cn(
+                    "transition-all duration-300 rounded-full",
+                    currentOfferIndex === idx 
+                      ? "w-4 h-1.5 bg-red-600" 
+                      : "w-1.5 h-1.5 bg-slate-300 dark:bg-slate-700"
+                  )}
+                />
+              ))}
+          </div>
+        </div>
+      </div>
+        
+      {/* Welcome Popup */}
         <Dialog open={showWelcomePopup} onOpenChange={(open) => { if (!open) handleCloseWelcomePopup(); }}>
           <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-sm w-full" style={{ boxShadow: 'none' }}>
             <DialogTitle className="sr-only">Welcome to Dashboard</DialogTitle>
@@ -444,9 +679,9 @@ export default function DashboardPage() {
         <div
           className={cn(
             "transform transition-all duration-700 ease-out px-4 md:px-10",
-            isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
+            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
           )}
-          style={{ transitionDelay: isMounted ? '150ms' : '0ms' }}
+          style={{ transitionDelay: isMounted ? "150ms" : "0ms" }}
         >
           <div className="flex items-center mb-4">
             <Star className="h-6 w-6 text-primary mr-2" />
@@ -488,9 +723,11 @@ export default function DashboardPage() {
         </div>
 
         <div
-          className={`text-center mt-12 px-4 md:px-10 transform transition-all duration-700 ease-out ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
-            }`}
-          style={{ transitionDelay: isMounted ? '300ms' : '0ms' }}
+          className={cn(
+            "text-center mt-12 px-4 md:px-10 transform transition-all duration-700 ease-out",
+            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+          )}
+          style={{ transitionDelay: isMounted ? "300ms" : "0ms" }}
         >
           <Button asChild size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
             <Link href="/templates">View All Templates</Link>

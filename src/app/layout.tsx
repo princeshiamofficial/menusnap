@@ -17,6 +17,16 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: 'MenuSnap',
   description: 'Manage your restaurant and beauty parlour menus',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'MenuSnap',
+  },
+  applicationName: 'MenuSnap',
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
@@ -24,6 +34,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#ffffff',
 };
 
 export default function RootLayout({
