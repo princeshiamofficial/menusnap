@@ -98,8 +98,8 @@ export async function addDashboardSlide(imageUrl: string) {
       // Save to filesystem with explicit permissions (readable by web server)
       await fs.writeFile(filePath, buffer, { mode: 0o644 });
       
-      // Store relative path in DB
-      finalImageUrl = `/uploads/slides/${fileName}`;
+      // Store the dynamic API path in DB to avoid Next.js static manifest issues in production
+      finalImageUrl = `/api/uploads/slides/${fileName}`;
     }
 
     const [result]: any = await pool.execute(
@@ -171,7 +171,8 @@ export async function addDashboardSpotlight(data: { title: string, imageUrl: str
       const buffer = Buffer.from(base64Data, 'base64');
       
       await fs.writeFile(filePath, buffer, { mode: 0o644 });
-      finalImageUrl = `/uploads/spotlights/${fileName}`;
+      // Use the dynamic path for Spotlights too
+      finalImageUrl = `/api/uploads/spotlights/${fileName}`;
     }
 
     const [result]: any = await pool.execute(
