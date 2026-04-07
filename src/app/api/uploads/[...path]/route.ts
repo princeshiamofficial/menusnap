@@ -9,27 +9,45 @@ import path from 'path';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    const filePathArray = params.path;
-    const fileName = filePathArray[filePathArray.length - 1];
-    const subDir = filePathArray.slice(0, filePathArray.length - 1).join('/');
+    // In Next.js 15+, params must be awaited
+    const { path: filePathArray } = await params;
     
-    // Construct the absolute path to the file in the public directory
-    const absolutePath = path.resolve(process.cwd(), 'public', 'uploads', subDir, fileName);
+    if (!filePathArray || filePathArray.length === 0) {
+      return new NextResponse("Invalid path", { status: 400 });
+    }
 
-    // Read the file from the filesystem
-    const fileBuffer = await fs.readFile(absolutePath);
+    const fileName = filePathArray[filePathArray.length - 1];
+    
+    // Construct absolute path. Try multiple common structures for production.
+    const root = process.cwd();
+    const possiblePaths = [
+      path.join(root, 'public', 'uploads', ...filePathArray),
+      // Standalone mode often has the app structure in .next/standalone
+      path.join(root, '.next', 'standalone', 'public', 'uploads', ...filePathArray)
+    ];
 
-    // Determine the content type based on the file extension
+    let absolutePath = possiblePaths[0];
+    let fileBuffer;
+
+    try {
+      fileBuffer = await fs.readFile(absolutePath);
+    } catch (e) {
+      // Try the next path if the first fails
+      absolutePath = possiblePaths[1];
+      fileBuffer = await fs.readFile(absolutePath);
+    }
+
+    // Determine content type
     const ext = path.extname(fileName).toLowerCase();
     const contentType = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :
                         ext === '.png' ? 'image/png' :
                         ext === '.webp' ? 'image/webp' :
                         ext === '.svg' ? 'image/svg+xml' : 'application/octet-stream';
 
-    // Return the file with appropriate headers
+    // Return the file
     return new NextResponse(fileBuffer as any, {
       headers: {
         'Content-Type': contentType,
