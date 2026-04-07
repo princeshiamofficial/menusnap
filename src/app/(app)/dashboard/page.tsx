@@ -1,20 +1,19 @@
-
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Star, AlertTriangle, X, ListOrdered, Layers, FileEdit, History, TrendingUp, ChevronDown } from "lucide-react";
 import { motion, animate, AnimatePresence } from "framer-motion";
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
-import { getDashboardSlides } from '@/app/actions/storefront';
+import { getDashboardSlides, getDashboardSpotlights } from '@/app/actions/storefront';
 
 
 
@@ -109,6 +108,36 @@ const getImageHint = (name: string): string => {
 }
 
 
+
+function RoleIconSlider() {
+  const icons = ['/beautician_3d.png', '/chef_3d.png', '/manager_3d.png', '/waiter_3d.png'];
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % icons.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [icons.length]);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <AnimatePresence initial={false}>
+        <motion.div
+           key={index}
+           initial={{ x: '120%', opacity: 1 }}
+           animate={{ x: '-120%', opacity: 1 }}
+           transition={{ duration: 3.5, ease: "linear" }}
+           className="absolute -bottom-1 left-0 h-12 w-12"
+        >
+          <div className="relative w-full h-full">
+            <Image src={icons[index]} alt="Role" fill className="object-contain" priority />
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function MobileImageSlider() {
   const [current, setCurrent] = useState(0);
@@ -229,10 +258,13 @@ function MobileImageSlider() {
 function MobileActionGrid() {
   const actions = [
     {
-      title: "MagicTab",
+      title: "eBook",
       description: "Automate your menu setup with AI",
       badge: "ULTRA FAST",
-      href: "/magictab",
+      href: "/ebook", 
+      imageUrl: "/dashboard/ebook-premium-3d.png",
+      rightOffset: "-right-12",
+      bottomOffset: "-bottom-2",
       icon: ListOrdered,
       color: "text-orange-500/20",
       badgeColor: "bg-orange-100 text-orange-700"
@@ -242,15 +274,23 @@ function MobileActionGrid() {
       description: "Manage your team's workflow",
       badge: "PRO",
       href: "/templates",
+      imageUrl: "/dashboard/clock-location-premium-3d.png",
+      rightOffset: "-right-10",
+      bottomOffset: "-bottom-3",
       icon: Layers,
       color: "text-blue-500/20",
       badgeColor: "bg-blue-100 text-blue-700"
     },
     {
-      title: "Designs",
-      description: "Curate your custom menu designs",
+      title: "Templates",
+      description: "Curate your custom menu templates",
       badge: "DRAFTING",
       href: "/draft",
+      imageUrl: "/dashboard/templates-premium-3d.png",
+      rightOffset: "-right-5",
+      bottomOffset: "bottom-1",
+      imgWidth: "95px",
+      imgHeight: "95px",
       icon: FileEdit,
       color: "text-purple-500/20",
       badgeColor: "bg-purple-100 text-purple-700"
@@ -266,7 +306,7 @@ function MobileActionGrid() {
   return (
     <div className="md:hidden mt-6">
       <div className="grid grid-cols-2 gap-1.5">
-        {actions.map((action, i) => (
+        {actions.map((action: any, i) => (
           <Link key={action.href} href={action.href} className="block group">
             <motion.div
               whileTap={{ scale: 0.96 }}
@@ -278,14 +318,14 @@ function MobileActionGrid() {
               {action.isWidget ? (
                 <div className="flex flex-col gap-2 w-full h-full">
                   <div className="flex-[0.6] bg-card border border-border/50 rounded-2xl p-3 flex flex-row items-center justify-between shadow-sm relative overflow-hidden group">
-                    <div className="flex flex-col z-10 max-w-[60%]">
+                    <div className="flex flex-col relative z-10 max-w-[60%]">
                       <span className="text-sm font-black text-foreground leading-tight tracking-tight">Free Design</span>
                       <p className="text-[9px] font-medium text-muted-foreground leading-tight mt-0.5 line-clamp-1">Limited time pro offers</p>
                     </div>
-                    <div className="relative h-11 w-11 shrink-0 transition-transform group-hover:scale-110 duration-500">
+                    <div className="absolute -right-2 bottom-2 h-14 w-14 shrink-0 pointer-events-none opacity-95 drop-shadow-xl">
                       <Image
-                        src="/total_orders_3d_icon.png"
-                        alt="Total Orders"
+                        src="/dashboard/color-palette-premium-3d.png"
+                        alt="Free Design"
                         fill
                         className="object-contain"
                         priority
@@ -293,37 +333,51 @@ function MobileActionGrid() {
                     </div>
                   </div>
                   <div className="flex-1 flex flex-row gap-1.5 w-full">
-                    <div className="flex-1 bg-white border border-border/50 rounded-2xl p-3 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
-                      <div className="flex flex-row items-center gap-1 text-foreground/90 font-black text-sm z-10 whitespace-nowrap">
-                        e-Book
+                    <div className="flex-1 bg-white border border-border/50 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
+                      <div className="flex flex-row items-center gap-1 text-foreground/90 font-black text-xs relative z-10 whitespace-nowrap">
+                        MagicTab
                       </div>
-                      <div className="absolute -right-1 -bottom-1 h-10 w-10 opacity-80 transition-transform group-hover:scale-110 duration-500">
-                        <Image src="/ebook_3d_icon.png" alt="e-Book" fill className="object-contain" />
+                      <div className="absolute -right-1 -bottom-2 h-12 w-12 opacity-95">
+                        <Image src="/dashboard/magictab_3d_icon.png" alt="MagicTab" fill className="object-contain" priority />
                       </div>
                     </div>
-                    <div className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-3 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
-                      <div className="flex flex-row items-center gap-1 text-red-600 font-black text-sm z-10 whitespace-nowrap">
-                        All <ChevronDown className="h-3 w-3" />
+                    <div className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
+                      <div className="flex flex-row items-center gap-1 text-red-600 font-black text-xs relative z-10 whitespace-nowrap">
+                        Hiring <ChevronDown className="h-3 w-3" />
                       </div>
-                      <div className="absolute -right-1 -bottom-1 h-10 w-10 opacity-80 transition-transform group-hover:scale-110 duration-500">
-                        <Image src="/analytics_all_3d_icon.png" alt="All" fill className="object-contain" />
-                      </div>
+                      <RoleIconSlider />
                     </div>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="z-10">
+                  <div className="relative z-10">
                     <h3 className="text-lg font-black text-foreground leading-tight">{action.title}</h3>
                     <p className="text-[10px] font-medium text-muted-foreground leading-tight mt-1 max-w-[85%]">
                       {action.description}
                     </p>
                   </div>
 
-                  {action.icon && <action.icon className={cn("h-16 w-16 absolute -right-3 top-14 rotate-12 transition-transform group-hover:scale-110", action.color)} />}
+                  {action.imageUrl ? (
+                    <div className={cn("absolute z-0 pointer-events-none", action.rightOffset, action.bottomOffset)}>
+                      <img 
+                        src={action.imageUrl} 
+                        alt={action.title} 
+                        style={{ width: action.imgWidth || '135px', height: action.imgHeight || '135px', objectFit: 'contain' }}
+                        className="drop-shadow-2xl"
+                      />
+                    </div>
+                  ) : (
+                    action.icon && (
+                      <action.icon className={cn(
+                        "h-16 w-16 absolute -right-3 top-14 rotate-12 transition-transform group-hover:scale-110", 
+                        action.color
+                      )} />
+                    )
+                  )}
 
                   <div className={cn(
-                    "px-2.5 py-1 rounded-full text-[9px] font-black tracking-wider flex items-center gap-1 z-10 uppercase",
+                    "relative z-10 px-2.5 py-1 rounded-full text-[9px] font-black tracking-wider flex items-center gap-1 uppercase",
                     action.badgeColor
                   )}>
                     <ChevronDown className="h-3 w-3 rotate-180" />
@@ -380,11 +434,19 @@ export default function DashboardPage() {
   const { clientUser, clientLoading } = useClientAuth();
   const [activeOfferTab, setActiveOfferTab] = useState("All");
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
+  const [currentSpotlightIndex, setCurrentSpotlightIndex] = useState(-1);
+  const [spotlights, setSpotlights] = useState<any[]>([]);
+
+  const fetchSpotlights = useCallback(async () => {
+    const res = await getDashboardSpotlights();
+    if (res.success) setSpotlights(res.spotlights);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100);
+    fetchSpotlights();
     return () => clearTimeout(timer);
-  }, []);
+  }, [fetchSpotlights]);
 
   useEffect(() => {
     const isMobile = window.innerWidth < 768;
@@ -399,41 +461,6 @@ export default function DashboardPage() {
     setShowWelcomePopup(false);
   };
 
-  // Auto Fullscreen Trigger (runs once on first tap/click - MOBILE ONLY)
-  useEffect(() => {
-    const triggerFullscreen = async () => {
-      // Check if it's mobile before requesting fullscreen
-      if (window.innerWidth >= 768) return;
-
-      try {
-        const doc = document.documentElement as any;
-        const body = document.body as any;
-        const requestFullscreen = 
-          doc.requestFullscreen || doc.webkitRequestFullscreen || doc.msRequestFullscreen || doc.mozRequestFullScreen ||
-          body.requestFullscreen || body.webkitRequestFullscreen || body.msRequestFullscreen || body.mozRequestFullScreen;
-
-        if (requestFullscreen && !document.fullscreenElement) {
-          const target = doc.requestFullscreen ? doc : body;
-          await requestFullscreen.call(target);
-        }
-      } catch (err) {
-        // Silently ignore if browser blocks it (security gesture policy)
-        console.warn("Fullscreen request failed (needs interaction):", err);
-      } finally {
-        // Remove listeners after first attempt
-        window.removeEventListener('click', triggerFullscreen);
-        window.removeEventListener('touchstart', triggerFullscreen);
-      }
-    };
-
-    window.addEventListener('click', triggerFullscreen, { once: true, capture: true });
-    window.addEventListener('touchstart', triggerFullscreen, { once: true, capture: true });
-
-    return () => {
-      window.removeEventListener('click', triggerFullscreen, { capture: true } as any);
-      window.removeEventListener('touchstart', triggerFullscreen, { capture: true } as any);
-    };
-  }, []);
 
   useEffect(() => {
     async function fetchTopRatedTemplates() {
@@ -548,29 +575,20 @@ export default function DashboardPage() {
         <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">MenuSnap Spotlight</h2>
         <div className="w-full overflow-hidden">
           <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-3 pb-6">
-            {[
-              { title: "ORDER & SAVE", img: "/uploads/spotlight/order_save.png" },
-              { title: "AI MAGIC SETUP", img: "/uploads/spotlight/ai_magic.png" },
-              { title: "SECURE PAYMENTS", img: "/uploads/spotlight/secure_pay.png" },
-              { title: "EXCLUSIVE DEALS", img: "/uploads/spotlight/exclusive_deals.png" }
-            ].map((item, idx) => (
+            {spotlights.map((item, idx) => (
               <motion.div
-                key={idx}
+                key={item.id}
                 whileTap={{ scale: 0.95 }}
-                className="min-w-[105px] aspect-[3/5] snap-center relative rounded-[1.25rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10"
+                onClick={() => setCurrentSpotlightIndex(idx)}
+                className="min-w-[105px] aspect-[3/5] snap-center relative rounded-[1.25rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform"
               >
                 <Image 
-                  src={item.img} 
+                  src={item.image_url} 
                   alt={item.title}
                   fill
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-                <div className="absolute bottom-4 left-0 right-0 px-2 text-center z-20">
-                  <p className="text-[10px] font-black text-white leading-tight tracking-[0.05em]">
-                    {item.title}
-                  </p>
-                </div>
               </motion.div>
             ))}
           </div>
@@ -655,6 +673,7 @@ export default function DashboardPage() {
         <Dialog open={showWelcomePopup} onOpenChange={(open) => { if (!open) handleCloseWelcomePopup(); }}>
           <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-sm w-full" style={{ boxShadow: 'none' }}>
             <DialogTitle className="sr-only">Welcome to Dashboard</DialogTitle>
+            <DialogDescription className="sr-only">Initial welcome message and information about the dashboard.</DialogDescription>
             <div className="relative">
               <button
                 onClick={handleCloseWelcomePopup}
@@ -674,65 +693,103 @@ export default function DashboardPage() {
             </div>
           </DialogContent>
         </Dialog>
+ 
+  {/* Immersive Spotlight Story View */}
+  <AnimatePresence>
+    {currentSpotlightIndex !== -1 && spotlights.length > 0 && (
+      <motion.div
+        initial={{ opacity: 0, y: "100%" }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-between md:hidden"
+      >
+        {/* Main Full Image Content (Full Screen Edge-to-Edge) */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <motion.div
+            key={currentSpotlightIndex}
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full h-full relative"
+          >
+            <Image 
+              src={spotlights[currentSpotlightIndex].image_url} 
+              alt={spotlights[currentSpotlightIndex].title} 
+              fill 
+              className="object-cover"
+            />
+            {/* Subtle dark overlay for readability */}
+            <div className="absolute inset-0 bg-black/40" />
+          </motion.div>
+        </div>
 
+        {/* Multiple Progress Bars (Facebook Style) */}
+        <div className="absolute top-4 left-4 right-4 z-50 flex gap-1.5 h-[2.5px]">
+          {spotlights.map((_, i) => (
+            <div key={i} className="flex-1 bg-white/20 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: i < currentSpotlightIndex ? "100%" : "0%" }}
+                animate={{ width: i === currentSpotlightIndex ? "100%" : i < currentSpotlightIndex ? "100%" : "0%" }}
+                transition={{ 
+                   duration: i === currentSpotlightIndex ? 5 : 0, 
+                   ease: "linear" 
+                }}
+                onAnimationComplete={() => {
+                  if (i === currentSpotlightIndex) {
+                    if (currentSpotlightIndex < spotlights.length - 1) {
+                      setCurrentSpotlightIndex(prev => prev + 1);
+                    } else {
+                      setCurrentSpotlightIndex(-1);
+                    }
+                  }
+                }}
+                className="h-full bg-white"
+              />
+            </div>
+          ))}
+        </div>
 
-        <div
-          className={cn(
-            "transform transition-all duration-700 ease-out px-4 md:px-10",
-            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
-          )}
-          style={{ transitionDelay: isMounted ? "150ms" : "0ms" }}
-        >
-          <div className="flex items-center mb-4">
-            <Star className="h-6 w-6 text-primary mr-2" />
-            <h2 className="text-2xl font-semibold text-foreground">Top-Rated Templates</h2>
+        {/* Header / Profile Area */}
+        <div className="w-full flex justify-between items-center z-10 mt-8 px-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full border-2 border-red-600 p-0.5 bg-white overflow-hidden">
+              <Image src="/total_orders_3d_icon.png" alt="Logo" width={40} height={40} className="object-contain" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-white font-black text-sm tracking-tight">MenuSnap</span>
+              <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest leading-none">Sponsored</span>
+            </div>
           </div>
-          <p className="text-muted-foreground mb-6">
-            Our most popular professionally designed templates for your {clientUser?.type || 'business'}.
-          </p>
-
-          {showTemplateSkeletons ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <TemplateSkeletonCard key={index} />
-              ))}
-            </div>
-          ) : templatesError ? (
-            <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
-              <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-              <h2 className="text-xl font-semibold text-destructive mb-2">Oops! Something went wrong.</h2>
-              <p className="text-muted-foreground max-w-md">{templatesError}</p>
-            </div>
-          ) : topRatedTemplates.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {topRatedTemplates.map(template => (
-                <TemplateCard
-                  key={template.id}
-                  imageUrl={template.imageUrl}
-                  imageHint={getImageHint(template.name)}
-                  title={template.name}
-                  description={template.description}
-                  tags={template.tags || []}
-                  isTopRated={template.isTopRated}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-4">No top-rated templates available for your business type at the moment.</p>
-          )}
+          <button 
+            onClick={() => setCurrentSpotlightIndex(-1)}
+            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-90 transition-transform"
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
-        <div
-          className={cn(
-            "text-center mt-12 px-4 md:px-10 transform transition-all duration-700 ease-out",
-            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
-          )}
-          style={{ transitionDelay: isMounted ? "300ms" : "0ms" }}
-        >
-          <Button asChild size="lg" variant="default" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
-            <Link href="/templates">View All Templates</Link>
-          </Button>
+
+
+        {/* Bottom Interactivity */}
+        <div className="absolute bottom-0 left-0 right-0 p-8 z-20 flex flex-col items-center gap-4">
+          <div 
+            onClick={(e) => {
+               e.stopPropagation();
+               const url = spotlights[currentSpotlightIndex]?.link_url;
+               if (url) window.location.href = url;
+            }}
+            className="flex flex-col items-center gap-1 opacity-70 cursor-pointer active:scale-95 transition-transform pointer-events-auto"
+          >
+            <ChevronDown className="h-5 w-5 text-white rotate-180 animate-bounce" />
+            <span className="text-white font-black text-[10px] uppercase tracking-widest">
+              {spotlights[currentSpotlightIndex]?.cta_text || 'Swipe up'}
+            </span>
+          </div>
         </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+
       </div>
     </div>
   );

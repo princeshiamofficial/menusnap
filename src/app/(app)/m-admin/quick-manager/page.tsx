@@ -6,7 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   getDashboardSlides, 
   addDashboardSlide, 
-  deleteDashboardSlide 
+  deleteDashboardSlide,
+  getDashboardSpotlights,
+  addDashboardSpotlight,
+  deleteDashboardSpotlight
 } from "@/app/actions/storefront";
 import { 
   Plus, 
@@ -17,7 +20,9 @@ import {
   ChevronRight, 
   Upload, 
   X,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles,
+  Link
 } from "lucide-react";
 import {
   Dialog,
@@ -35,30 +40,32 @@ export default function QuickManagerPage() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [slides, setSlides] = useState<any[]>([]);
+  const [spotlights, setSpotlights] = useState<any[]>([]);
+  const [isSpotlightUploadOpen, setIsSpotlightUploadOpen] = useState(false);
+  const [spotlightForm, setSpotlightForm] = useState({ link: '', cta: '' });
+  const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const spotlightFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const fetchSlides = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const result = await getDashboardSlides();
-    if (result.success) {
-      setSlides(result.slides);
-    } else {
-      toast({
-        title: "Error",
-        description: result.error,
-        variant: "destructive"
-      });
-    }
+    const [slidesRes, spotlightsRes] = await Promise.all([
+      getDashboardSlides(),
+      getDashboardSpotlights()
+    ]);
+
+    if (slidesRes.success) setSlides(slidesRes.slides);
+    if (spotlightsRes.success) setSpotlights(spotlightsRes.spotlights);
+    
     setIsLoading(false);
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
-    fetchSlides();
-  }, [fetchSlides]);
+    fetchData();
+  }, [fetchData]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -78,56 +85,46 @@ export default function QuickManagerPage() {
     try {
       const result = await addDashboardSlide(previewImage);
       if (result.success) {
-        toast({
-          title: "Success",
-          description: "New slide added successfully.",
-        });
+        toast({ title: "Success", description: "New slide added." });
         setIsUploadOpen(false);
         setPreviewImage(null);
-        fetchSlides();
-      } else {
-        toast({
-          title: "Upload Failed",
-          description: result.error,
-          variant: "destructive"
-        });
+        fetchData();
       }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred during upload.",
-        variant: "destructive"
+    } catch (err) {} finally { setIsUploading(false); }
+  };
+
+  const handleSpotlightUpload = async () => {
+    if (!previewImage) return;
+    setIsUploading(true);
+    
+    try {
+      const result = await addDashboardSpotlight({
+        title: '', // Removed requested fields
+        offer: '', 
+        linkUrl: spotlightForm.link,
+        ctaText: spotlightForm.cta,
+        imageUrl: previewImage
       });
-    } finally {
-      setIsUploading(false);
-    }
+      if (result.success) {
+        toast({ title: "Success", description: "Spotlight added." });
+        setIsSpotlightUploadOpen(false);
+        setSpotlightForm({ link: '', cta: '' });
+        setPreviewImage(null);
+        fetchData();
+      }
+    } catch (err) {} finally { setIsUploading(false); }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this slide?")) return;
+    if (!confirm("Delete this slide?")) return;
+    const result = await deleteDashboardSlide(id);
+    if (result.success) fetchData();
+  };
 
-    try {
-      const result = await deleteDashboardSlide(id);
-      if (result.success) {
-        toast({
-          title: "Deleted",
-          description: "Slide has been removed.",
-        });
-        fetchSlides();
-      } else {
-        toast({
-          title: "Delete Failed",
-          description: result.error,
-          variant: "destructive"
-        });
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to delete slide.",
-        variant: "destructive"
-      });
-    }
+  const handleSpotlightDelete = async (id: number) => {
+    if (!confirm("Delete this spotlight?")) return;
+    const result = await deleteDashboardSpotlight(id);
+    if (result.success) fetchData();
   };
 
 
@@ -299,6 +296,92 @@ export default function QuickManagerPage() {
               <p className="text-muted-foreground font-medium">No slides found. Click "Add New" to begin.</p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Dashboard Spotlights Section */}
+      <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
+        <div className="flex items-center justify-between gap-2 w-full overflow-hidden">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+            <div className="p-2 md:p-3.5 bg-gradient-to-br from-red-500/10 to-orange-500/10 text-red-600 rounded-xl md:rounded-[1.25rem] shadow-inner border border-red-100/20 shrink-0">
+              <Sparkles className="h-4 w-4 md:h-6 md:w-6" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg md:text-2xl font-semibold text-foreground tracking-tight truncate">Spotlight Stories</h2>
+              <p className="hidden md:block text-[10px] md:text-sm text-muted-foreground font-medium mt-0.5 opacity-70 tracking-tight">Manage immersive story visuals</p>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <Dialog open={isSpotlightUploadOpen} onOpenChange={(open) => {
+              setIsSpotlightUploadOpen(open);
+              if (!open) { setPreviewImage(null); setSpotlightForm({ link: '', cta: '' }); }
+            }}>
+              <DialogTrigger asChild>
+                <Button className="rounded-xl md:rounded-2xl bg-red-600 text-white hover:bg-red-700 transition-all active:scale-95 gap-1 md:gap-2 px-2.5 md:px-6 shadow-2xl shadow-red-600/10 font-semibold border border-red-500/10 h-9 md:h-11 text-xs md:text-sm">
+                  <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span>Add Story</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[450px] border-border/40 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-0 overflow-hidden">
+                <DialogHeader className="p-6 pb-2">
+                  <DialogTitle className="text-xl font-semibold tracking-tight flex items-center gap-3">
+                    <Sparkles className="h-5 w-5 text-red-600" />
+                    New Spotlight Story
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground font-medium opacity-70">
+                    Upload an immersive image for your dashboard story.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="px-6 py-4 space-y-4">
+                  <div 
+                    onClick={() => spotlightFileInputRef.current?.click()}
+                    className="relative cursor-pointer border-2 border-dashed rounded-[1.5rem] h-[150px] flex items-center justify-center overflow-hidden bg-slate-50 hover:bg-slate-100 transition-all"
+                  >
+                    {previewImage ? (
+                      <img src={previewImage} className="absolute inset-0 w-full h-full object-cover" />
+                    ) : <ImageIcon className="h-8 w-8 text-slate-300" />}
+                    <input type="file" ref={spotlightFileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                  </div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2 col-span-2">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">CTA TEXT</Label>
+                        <Input value={spotlightForm.cta} onChange={(e) => setSpotlightForm({...spotlightForm, cta: e.target.value})} placeholder="e.g. Swipe up" className="rounded-xl border-border/40" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">LINK URL</Label>
+                      <Input value={spotlightForm.link} onChange={(e) => setSpotlightForm({...spotlightForm, link: e.target.value})} placeholder="/order" className="rounded-xl border-border/40" />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter className="p-6 pt-2">
+                  <Button disabled={!previewImage || isUploading} onClick={handleSpotlightUpload} className="w-full rounded-xl bg-red-600 text-white font-semibold h-12 shadow-lg shadow-red-600/20">
+                    {isUploading ? "Uploading..." : "Save Spotlight"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        <div className="flex overflow-x-auto pb-4 scrollbar-hide md:grid md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {spotlights.map((spot) => (
+            <Card key={spot.id} className="min-w-[150px] md:min-w-0 group relative rounded-2xl overflow-hidden border-border/20 shadow-sm hover:shadow-md transition-all border-2 hover:border-red-500/20">
+              <div className="aspect-[3/5] relative">
+                <img src={spot.image_url} className="object-cover w-full h-full transition-transform group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-3 flex flex-col justify-end">
+                   <p className="text-[10px] font-black text-white italic truncate">{spot.cta_text || 'Active Story'}</p>
+                </div>
+                <button 
+                  onClick={() => handleSpotlightDelete(spot.id)}
+                  className="absolute top-2 right-2 h-7 w-7 bg-red-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </Card>
+          ))}
         </div>
       </section>
     </div>

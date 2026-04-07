@@ -79,7 +79,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </ScrollArea>
         </SidebarInset>
 
-        <SpeedDialFAB />
+        {pathname !== "/dashboard" && pathname !== "/dashboard/" && pathname !== "/magictab" && pathname !== "/magictab/" && <SpeedDialFAB />}
         <BottomNavigation />
 
       </SidebarProvider>

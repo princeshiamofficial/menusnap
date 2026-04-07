@@ -1,0 +1,21 @@
+{
+  "name": "MenuSnap",
+  "short_name": "MenuSnap",
+  "description": "Premium Digital Menu & CRM Dashboard",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#dc2626",
+  "icons": [
+    {
+      "src": "/menusnap-logo-white.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/menusnap-logo-white.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

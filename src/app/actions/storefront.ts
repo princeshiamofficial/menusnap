@@ -36,6 +36,46 @@ async function ensureSlidesTable() {
 }
 
 /**
+ * Ensures the dashboard_spotlights table exists.
+ */
+async function ensureSpotlightsTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS dashboard_spotlights (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        image_url TEXT NOT NULL,
+        link_url TEXT,
+        offer VARCHAR(100),
+        cta_text VARCHAR(100) DEFAULT 'Swipe up',
+        sort_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Add dummy spotlights if the table is empty
+    const [rows]: any = await pool.execute('SELECT COUNT(*) as total FROM dashboard_spotlights');
+    if (rows[0].total === 0) {
+      const initialSpotlights = [
+        { title: "ORDER & SAVE", img: "/uploads/spotlight/order_save.png", offer: "60% OFF", link: "/order" },
+        { title: "AI MAGIC SETUP", img: "/uploads/spotlight/ai_magic.png", offer: "FAST AS MAGIC", link: "/ai" },
+        { title: "SECURE PAYMENTS", img: "/uploads/spotlight/secure_pay.png", offer: "100% SECURE", link: "/pay" },
+        { title: "EXCLUSIVE DEALS", img: "/uploads/spotlight/exclusive_deals.png", offer: "DAILY DEALS", link: "/deals" }
+      ];
+      for (const spot of initialSpotlights) {
+        await pool.execute(
+          'INSERT INTO dashboard_spotlights (title, image_url, offer, link_url) VALUES (?, ?, ?, ?)', 
+          [spot.title, spot.img, spot.offer, spot.link]
+        );
+      }
+    }
+  } catch (err) {
+    console.error("Database initialization error (spotlights):", err);
+    throw err;
+  }
+}
+
+/**
  * Fetches all slides from the database.
  */
 export async function getDashboardSlides() {
@@ -110,5 +150,74 @@ export async function deleteDashboardSlide(slideId: number) {
   } catch (error: any) {
     console.error("Database Error deleting slide:", error);
     return { success: false, error: error?.message || "Failed to delete slide" };
+  }
+}
+
+/**
+ * Fetches all spotlights from the database.
+ */
+export async function getDashboardSpotlights() {
+  try {
+    await ensureSpotlightsTable();
+    const [rows]: any = await pool.execute('SELECT * FROM dashboard_spotlights ORDER BY sort_order ASC, created_at DESC');
+    return { success: true, spotlights: rows };
+  } catch (error: any) {
+    console.error("Database Error fetching spotlights:", error);
+    return { success: false, error: error?.message || "Failed to fetch spotlights", spotlights: [] };
+  }
+}
+
+/**
+ * Adds a new spotlight to the database.
+ */
+export async function addDashboardSpotlight(data: { title: string, imageUrl: string, linkUrl?: string, offer?: string, ctaText?: string }) {
+  try {
+    await ensureSpotlightsTable();
+
+    let finalImageUrl = data.imageUrl;
+
+    if (data.imageUrl.startsWith('data:image')) {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights');
+      
+      try {
+        await fs.access(uploadDir);
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
+
+      const fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
+      const fileName = `spotlight-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = path.join(uploadDir, fileName);
+      
+      const base64Data = data.imageUrl.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      await fs.writeFile(filePath, buffer);
+      finalImageUrl = `/uploads/spotlights/${fileName}`;
+    }
+
+    const [result]: any = await pool.execute(
+      'INSERT INTO dashboard_spotlights (title, image_url, link_url, offer, cta_text) VALUES (?, ?, ?, ?, ?)',
+      [data.title, finalImageUrl, data.linkUrl || '', data.offer || '', data.ctaText || 'Swipe up']
+    );
+
+    return { success: true, spotlightId: result.insertId, path: finalImageUrl };
+  } catch (error: any) {
+    console.error("Database Error adding spotlight:", error);
+    return { success: false, error: error?.message || "Failed to add spotlight" };
+  }
+}
+
+/**
+ * Deletes a spotlight from the database.
+ */
+export async function deleteDashboardSpotlight(id: number) {
+  try {
+    await ensureSpotlightsTable();
+    await pool.execute('DELETE FROM dashboard_spotlights WHERE id = ?', [id]);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error deleting spotlight:", error);
+    return { success: false, error: error?.message || "Failed to delete spotlight" };
   }
 }

@@ -12,9 +12,10 @@ import {
   ChevronRight,
   LogOut,
   Building,
-  History,
+  History as HistoryIcon,
   MoreHorizontal,
   UploadCloud,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -31,7 +32,8 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
   { href: '/magictab', label: 'MagicTab', icon: ListOrdered, hasChevron: true },
   { href: '/templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/draft', label: 'Draft', icon: FileEdit, hasChevron: true },
-  { href: '/order-history', label: 'Order History', icon: History, hasChevron: true },
+  { href: '/order-history', label: 'Order History', icon: HistoryIcon, hasChevron: true },
+  { href: 'https://store.colorhutbd.xyz', label: 'Store', icon: ShoppingBag },
 ];
 
 export function SidebarNav() {
@@ -65,32 +67,39 @@ export function SidebarNav() {
       <nav className="flex-1 p-2 overflow-y-auto">
         {mainNavItems.length > 0 ? (
           <SidebarMenu>
-            {mainNavItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton
-                    variant="default"
-                    className={cn(
-                      "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
-                        ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold"
-                        : "text-sidebar-foreground/80",
-                      "group-data-[collapsible=icon]:justify-center"
-                    )}
-                    isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
-                    tooltip={{
-                      children: item.label,
-                      className: "bg-popover text-popover-foreground border-border shadow-md",
-                      sideOffset: 10
-                    }}
+            {mainNavItems.map((item) => {
+              const isExternal = item.href.startsWith('http');
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <Link 
+                    href={item.href} 
+                    target={isExternal ? "_blank" : undefined}
+                    rel={isExternal ? "noopener noreferrer" : undefined}
                   >
-                    <item.icon className="h-5 w-5" />
-                    <span className="group-data-[collapsible=icon]:hidden flex-1">{item.label}</span>
-                    {item.hasChevron && <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden" />}
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
+                    <SidebarMenuButton
+                      variant="default"
+                      className={cn(
+                        "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
+                          ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold"
+                          : "text-sidebar-foreground/80",
+                        "group-data-[collapsible=icon]:justify-center"
+                      )}
+                      isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
+                      tooltip={{
+                        children: item.label,
+                        className: "bg-popover text-popover-foreground border-border shadow-md",
+                        sideOffset: 10
+                      }}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span className="group-data-[collapsible=icon]:hidden flex-1">{item.label}</span>
+                      {item.hasChevron && <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden" />}
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              );
+            })}
           </SidebarMenu>
         ) : (
           <div className="p-4 text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
