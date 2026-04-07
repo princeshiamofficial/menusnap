@@ -24,6 +24,7 @@ import {
   Sparkles,
   Link
 } from "lucide-react";
+import { compressImage } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -83,7 +84,9 @@ export default function QuickManagerPage() {
     setIsUploading(true);
     
     try {
-      const result = await addDashboardSlide(previewImage);
+      // Compress locally first to avoid CyberPanel proxy limits
+      const compressedImage = await compressImage(previewImage, 1200, 0.7);
+      const result = await addDashboardSlide(compressedImage);
       if (result.success) {
         toast({ title: "Success", description: "New slide added." });
         setIsUploadOpen(false);
@@ -110,12 +113,14 @@ export default function QuickManagerPage() {
     setIsUploading(true);
     
     try {
+      // Compress locally first
+      const compressedImage = await compressImage(previewImage, 1080, 0.75);
       const result = await addDashboardSpotlight({
         title: '', // Removed requested fields
         offer: '', 
         linkUrl: spotlightForm.link,
         ctaText: spotlightForm.cta,
-        imageUrl: previewImage
+        imageUrl: compressedImage
       });
       if (result.success) {
         toast({ title: "Success", description: "Spotlight added." });

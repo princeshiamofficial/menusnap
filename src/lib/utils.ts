@@ -54,3 +54,43 @@ export function isValidWhatsApp(number: string): boolean {
 
   return phoneNumber.isValid() && (phoneNumber.getType() === 'MOBILE' || phoneNumber.getType() === 'FIXED_LINE_OR_MOBILE');
 }
+
+/**
+ * Compresses a base64 image on the client side using Canvas.
+ */
+export async function compressImage(base64: string, maxWidth = 1200, quality = 0.7): Promise<string> {
+  // If not on the client, just return the original
+  if (typeof window === 'undefined') return base64;
+  
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = base64;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Only resize if exceeding maxWidth
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        resolve(base64);
+        return;
+      }
+
+      // Draw and compress
+      ctx.drawImage(img, 0, 0, width, height);
+      const compressed = canvas.toDataURL('image/jpeg', quality);
+      resolve(compressed);
+    };
+    img.onerror = () => resolve(base64);
+  });
+}
