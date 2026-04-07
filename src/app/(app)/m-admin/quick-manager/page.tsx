@@ -89,8 +89,20 @@ export default function QuickManagerPage() {
         setIsUploadOpen(false);
         setPreviewImage(null);
         fetchData();
+      } else {
+        toast({ 
+          title: "Upload Failed", 
+          description: result.error || "Please check image size. Max 10MB.", 
+          variant: "destructive" 
+        });
       }
-    } catch (err) {} finally { setIsUploading(false); }
+    } catch (err: any) {
+      toast({ 
+        title: "Connection Error", 
+        description: "Failed to reach the server. Try again.", 
+        variant: "destructive" 
+      });
+    } finally { setIsUploading(false); }
   };
 
   const handleSpotlightUpload = async () => {
@@ -111,8 +123,20 @@ export default function QuickManagerPage() {
         setSpotlightForm({ link: '', cta: '' });
         setPreviewImage(null);
         fetchData();
+      } else {
+        toast({ 
+          title: "Spotlight Failed", 
+          description: result.error || "Please check image size.", 
+          variant: "destructive" 
+        });
       }
-    } catch (err) {} finally { setIsUploading(false); }
+    } catch (err: any) {
+      toast({ 
+        title: "Connection Error", 
+        description: "Failed to save spotlight.", 
+        variant: "destructive" 
+      });
+    } finally { setIsUploading(false); }
   };
 
   const handleDelete = async (id: number) => {

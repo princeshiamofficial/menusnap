@@ -17,18 +17,7 @@ async function ensureSlidesTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // Add dummy slides if the table is empty
-    const [rows]: any = await pool.execute('SELECT COUNT(*) as total FROM dashboard_slides');
-    if (rows[0].total === 0) {
-      const initialSlides = [
-        '/dashboard/slider1.png',
-        '/dashboard/slider2.png',
-        '/dashboard/slider3.png'
-      ];
-      for (const img of initialSlides) {
-        await pool.execute('INSERT INTO dashboard_slides (image_url) VALUES (?)', [img]);
-      }
-    }
+    // Table created successfully. No dummy data added.
   } catch (err) {
     console.error("Database initialization error (slides):", err);
     throw err;
@@ -53,22 +42,7 @@ async function ensureSpotlightsTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // Add dummy spotlights if the table is empty
-    const [rows]: any = await pool.execute('SELECT COUNT(*) as total FROM dashboard_spotlights');
-    if (rows[0].total === 0) {
-      const initialSpotlights = [
-        { title: "ORDER & SAVE", img: "/uploads/spotlight/order_save.png", offer: "60% OFF", link: "/order" },
-        { title: "AI MAGIC SETUP", img: "/uploads/spotlight/ai_magic.png", offer: "FAST AS MAGIC", link: "/ai" },
-        { title: "SECURE PAYMENTS", img: "/uploads/spotlight/secure_pay.png", offer: "100% SECURE", link: "/pay" },
-        { title: "EXCLUSIVE DEALS", img: "/uploads/spotlight/exclusive_deals.png", offer: "DAILY DEALS", link: "/deals" }
-      ];
-      for (const spot of initialSpotlights) {
-        await pool.execute(
-          'INSERT INTO dashboard_spotlights (title, image_url, offer, link_url) VALUES (?, ?, ?, ?)', 
-          [spot.title, spot.img, spot.offer, spot.link]
-        );
-      }
-    }
+    // Table created successfully. No dummy data added.
   } catch (err) {
     console.error("Database initialization error (spotlights):", err);
     throw err;

@@ -161,27 +161,11 @@ function MobileImageSlider() {
           }));
           setSlides(mappedSlides);
         } else {
-          // Fallback to defaults if no slides in DB
-          setSlides([
-            {
-              src: "/dashboard/slider1.png",
-              title: "Design Your Dream Menu",
-              desc: "Customize templates with your branding"
-            },
-            {
-              src: "/dashboard/slider2.png",
-              title: "Real-time Collaboration",
-              desc: "Edit together in real-time with your team"
-            },
-            {
-              src: "/dashboard/slider3.png",
-              title: "WhatsApp Integration",
-              desc: "Share your menu directly with customers"
-            }
-          ]);
+          setSlides([]);
         }
       } catch (err) {
         console.error("Failed to load dashboard slides:", err);
+        setSlides([]);
       } finally {
         setIsLoading(false);
       }
