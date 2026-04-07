@@ -56,14 +56,7 @@ export async function getDashboardSlides() {
   try {
     await ensureSlidesTable();
     const [rows]: any = await pool.execute('SELECT * FROM dashboard_slides ORDER BY created_at DESC');
-    // Migration: Ensure old paths use the dynamic /api/uploads/ route
-    const mappedSlides = (rows as any[]).map(slide => ({
-      ...slide,
-      image_url: slide.image_url.startsWith('/uploads/') 
-        ? `/api${slide.image_url}` 
-        : slide.image_url
-    }));
-    return { success: true, slides: mappedSlides };
+    return { success: true, slides: rows };
   } catch (error: any) {
     console.error("Database Error fetching slides:", error);
     return { success: false, error: error?.message || "Failed to fetch slides", slides: [] };
@@ -82,7 +75,7 @@ export async function addDashboardSlide(imageUrl: string) {
 
     // Handle base64 image data to keep DB text very short
     if (imageUrl.startsWith('data:image')) {
-      const uploadDir = path.resolve(process.cwd(), 'public', 'uploads', 'slides');
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'slides');
       
       // Ensure directory exists
       try {
@@ -92,9 +85,7 @@ export async function addDashboardSlide(imageUrl: string) {
       }
 
       // Generate unique filename
-      let fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
-      if (fileExt === 'jpeg') fileExt = 'jpg'; // Normalize jpeg to jpg
-      
+      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
       const fileName = `slide-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
       const filePath = path.join(uploadDir, fileName);
       
@@ -102,11 +93,11 @@ export async function addDashboardSlide(imageUrl: string) {
       const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(base64Data, 'base64');
       
-      // Save to filesystem with explicit permissions (readable by web server)
-      await fs.writeFile(filePath, buffer, { mode: 0o644 });
+      // Save to filesystem
+      await fs.writeFile(filePath, buffer);
       
-      // Store the dynamic API path in DB to avoid Next.js static manifest issues in production
-      finalImageUrl = `/api/uploads/slides/${fileName}`;
+      // Store relative path in DB
+      finalImageUrl = `/uploads/slides/${fileName}`;
     }
 
     const [result]: any = await pool.execute(
@@ -143,14 +134,7 @@ export async function getDashboardSpotlights() {
   try {
     await ensureSpotlightsTable();
     const [rows]: any = await pool.execute('SELECT * FROM dashboard_spotlights ORDER BY sort_order ASC, created_at DESC');
-    // Migration: Ensure old paths use the dynamic /api/uploads/ route
-    const mappedSpotlights = (rows as any[]).map(spot => ({
-      ...spot,
-      image_url: spot.image_url.startsWith('/uploads/') 
-        ? `/api${spot.image_url}` 
-        : spot.image_url
-    }));
-    return { success: true, spotlights: mappedSpotlights };
+    return { success: true, spotlights: rows };
   } catch (error: any) {
     console.error("Database Error fetching spotlights:", error);
     return { success: false, error: error?.message || "Failed to fetch spotlights", spotlights: [] };
@@ -167,7 +151,7 @@ export async function addDashboardSpotlight(data: { title: string, imageUrl: str
     let finalImageUrl = data.imageUrl;
 
     if (data.imageUrl.startsWith('data:image')) {
-      const uploadDir = path.resolve(process.cwd(), 'public', 'uploads', 'spotlights');
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights');
       
       try {
         await fs.access(uploadDir);
@@ -175,18 +159,15 @@ export async function addDashboardSpotlight(data: { title: string, imageUrl: str
         await fs.mkdir(uploadDir, { recursive: true });
       }
 
-      let fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
-      if (fileExt === 'jpeg') fileExt = 'jpg';
-      
+      const fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
       const fileName = `spotlight-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
       const filePath = path.join(uploadDir, fileName);
       
       const base64Data = data.imageUrl.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(base64Data, 'base64');
       
-      await fs.writeFile(filePath, buffer, { mode: 0o644 });
-      // Use the dynamic path for Spotlights too
-      finalImageUrl = `/api/uploads/spotlights/${fileName}`;
+      await fs.writeFile(filePath, buffer);
+      finalImageUrl = `/uploads/spotlights/${fileName}`;
     }
 
     const [result]: any = await pool.execute(
