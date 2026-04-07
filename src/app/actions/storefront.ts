@@ -75,7 +75,7 @@ export async function addDashboardSlide(imageUrl: string) {
 
     // Handle base64 image data to keep DB text very short
     if (imageUrl.startsWith('data:image')) {
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'slides');
+      const uploadDir = path.resolve(process.cwd(), 'public', 'uploads', 'slides');
       
       // Ensure directory exists
       try {
@@ -85,7 +85,9 @@ export async function addDashboardSlide(imageUrl: string) {
       }
 
       // Generate unique filename
-      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
+      let fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
+      if (fileExt === 'jpeg') fileExt = 'jpg'; // Normalize jpeg to jpg
+      
       const fileName = `slide-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
       const filePath = path.join(uploadDir, fileName);
       
@@ -93,8 +95,8 @@ export async function addDashboardSlide(imageUrl: string) {
       const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(base64Data, 'base64');
       
-      // Save to filesystem
-      await fs.writeFile(filePath, buffer);
+      // Save to filesystem with explicit permissions (readable by web server)
+      await fs.writeFile(filePath, buffer, { mode: 0o644 });
       
       // Store relative path in DB
       finalImageUrl = `/uploads/slides/${fileName}`;
@@ -151,7 +153,7 @@ export async function addDashboardSpotlight(data: { title: string, imageUrl: str
     let finalImageUrl = data.imageUrl;
 
     if (data.imageUrl.startsWith('data:image')) {
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights');
+      const uploadDir = path.resolve(process.cwd(), 'public', 'uploads', 'spotlights');
       
       try {
         await fs.access(uploadDir);
@@ -159,14 +161,16 @@ export async function addDashboardSpotlight(data: { title: string, imageUrl: str
         await fs.mkdir(uploadDir, { recursive: true });
       }
 
-      const fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
+      let fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
+      if (fileExt === 'jpeg') fileExt = 'jpg';
+      
       const fileName = `spotlight-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
       const filePath = path.join(uploadDir, fileName);
       
       const base64Data = data.imageUrl.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(base64Data, 'base64');
       
-      await fs.writeFile(filePath, buffer);
+      await fs.writeFile(filePath, buffer, { mode: 0o644 });
       finalImageUrl = `/uploads/spotlights/${fileName}`;
     }
 
