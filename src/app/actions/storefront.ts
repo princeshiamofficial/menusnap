@@ -56,7 +56,14 @@ export async function getDashboardSlides() {
   try {
     await ensureSlidesTable();
     const [rows]: any = await pool.execute('SELECT * FROM dashboard_slides ORDER BY created_at DESC');
-    return { success: true, slides: rows };
+    // Migration: Ensure old paths use the dynamic /api/uploads/ route
+    const mappedSlides = (rows as any[]).map(slide => ({
+      ...slide,
+      image_url: slide.image_url.startsWith('/uploads/') 
+        ? `/api${slide.image_url}` 
+        : slide.image_url
+    }));
+    return { success: true, slides: mappedSlides };
   } catch (error: any) {
     console.error("Database Error fetching slides:", error);
     return { success: false, error: error?.message || "Failed to fetch slides", slides: [] };
@@ -136,7 +143,14 @@ export async function getDashboardSpotlights() {
   try {
     await ensureSpotlightsTable();
     const [rows]: any = await pool.execute('SELECT * FROM dashboard_spotlights ORDER BY sort_order ASC, created_at DESC');
-    return { success: true, spotlights: rows };
+    // Migration: Ensure old paths use the dynamic /api/uploads/ route
+    const mappedSpotlights = (rows as any[]).map(spot => ({
+      ...spot,
+      image_url: spot.image_url.startsWith('/uploads/') 
+        ? `/api${spot.image_url}` 
+        : spot.image_url
+    }));
+    return { success: true, spotlights: mappedSpotlights };
   } catch (error: any) {
     console.error("Database Error fetching spotlights:", error);
     return { success: false, error: error?.message || "Failed to fetch spotlights", spotlights: [] };
