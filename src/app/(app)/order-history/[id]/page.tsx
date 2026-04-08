@@ -418,7 +418,6 @@ export default function ClientOrderDetailsPage() {
                                             className="object-cover blur-xl opacity-95"
                                             priority={false}
                                             aria-hidden="true"
-                                            unoptimized
                                         />
                                         <Image 
                                             src={order.templateImageUrl}
@@ -426,7 +425,6 @@ export default function ClientOrderDetailsPage() {
                                             fill
                                             className="object-contain relative z-10 drop-shadow-lg"
                                             sizes="(max-width: 768px) 100vw, 33vw"
-                                            unoptimized
                                         />
                                         <div className="absolute inset-0 shadow-[inset_0_0_30px_rgba(0,0,0,0.1)] pointer-events-none z-20" />
                                     </div>

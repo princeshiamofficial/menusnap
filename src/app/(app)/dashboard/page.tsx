@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,23 +51,17 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
       <Card className="shadow-xl rounded-xl overflow-hidden w-full flex flex-col h-full">
         <CardHeader className="p-0 relative">
           <div className="aspect-[4/3] relative">
-            <Image
+            <img
               src={actualImageUrl}
               alt=""
-              fill
-              className="object-cover blur-xl opacity-95"
-              priority={false}
+              className="absolute inset-0 w-full h-full object-cover blur-xl opacity-95"
               aria-hidden="true"
-              unoptimized
             />
-            <Image
+            <img
               src={actualImageUrl}
               alt={decodeHtmlEntities(title)}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-contain relative z-10 drop-shadow-xl"
+              className="w-full h-full object-contain relative z-10 drop-shadow-xl"
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : (imageHint || "template design")}
-              unoptimized
             />
             <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.15)] pointer-events-none z-20" />
           </div>
@@ -133,7 +126,7 @@ function RoleIconSlider() {
            className="absolute -bottom-1 left-0 h-12 w-12"
         >
           <div className="relative w-full h-full">
-            <Image src={icons[index]} alt="Role" fill className="object-contain" priority />
+            <img src={icons[index]} alt="Role" className="w-full h-full object-contain absolute inset-0" />
           </div>
         </motion.div>
       </AnimatePresence>
@@ -194,7 +187,7 @@ function MobileImageSlider() {
       {/* Hidden preloader for all slider images */}
       <div className="hidden" aria-hidden="true">
         {slides.map((img, i) => (
-          <Image key={`preload-${i}`} src={img.src} alt="" width={1} height={1} priority unoptimized />
+          <img key={`preload-${i}`} src={img.src} alt="" width={1} height={1} />
         ))}
       </div>
 
@@ -210,13 +203,11 @@ function MobileImageSlider() {
             ease: [0.25, 0.1, 0.25, 1],
           }}
         >
-          <Image
+          <img
             src={slides[current].src}
             alt={slides[current].title}
-            fill
-            className="object-contain"
-            priority={current === 0}
-            unoptimized
+            className="w-full h-full object-contain absolute inset-0"
+            loading={current === 0 ? "eager" : "lazy"}
           />
         </motion.div>
       </AnimatePresence>
@@ -310,12 +301,10 @@ function MobileActionGrid() {
                       <p className="text-[9px] font-medium text-muted-foreground leading-tight mt-0.5 line-clamp-1">Limited time pro offers</p>
                     </div>
                     <div className="absolute -right-2 bottom-2 h-14 w-14 shrink-0 pointer-events-none opacity-95 drop-shadow-xl">
-                      <Image
+                      <img
                         src="/dashboard/color-palette-premium-3d.png"
                         alt="Free Design"
-                        fill
-                        className="object-contain"
-                        priority
+                        className="w-full h-full object-contain absolute inset-0"
                       />
                     </div>
                   </div>
@@ -325,7 +314,7 @@ function MobileActionGrid() {
                         MagicTab
                       </div>
                       <div className="absolute -right-1 -bottom-2 h-12 w-12 opacity-95">
-                        <Image src="/dashboard/magictab_3d_icon.png" alt="MagicTab" fill className="object-contain" priority />
+                        <img src="/dashboard/magictab_3d_icon.png" alt="MagicTab" className="w-full h-full object-contain absolute inset-0" />
                       </div>
                     </div>
                     <div className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
@@ -387,24 +376,19 @@ function MobileDashboardHeader({ businessName, type }: { businessName?: string |
     <header className="md:hidden sticky top-3 z-[60] h-14 w-[calc(100%-2rem)] mx-auto bg-background border border-border/40 shadow-lg shadow-black/5 rounded-2xl flex items-center justify-between px-5 transition-all">
       <div className="relative h-8 w-28 bg-black rounded-xl p-1 px-3 border border-white/10 flex items-center justify-center">
         <div className="relative h-full w-full">
-          <Image
+          <img
             src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
             alt="Color Hut Logo"
-            fill
-            sizes="112px"
-            className="object-contain"
-            priority
+            className="w-full h-full object-contain absolute inset-0"
           />
         </div>
       </div>
       <div className="flex items-center gap-2">
         <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-primary/20 shadow-md transition-transform active:scale-95 relative">
-          <Image
+          <img
             src={avatarUrl}
             alt="User Avatar"
-            fill
-            sizes="36px"
-            className="object-cover"
+            className="w-full h-full object-cover absolute inset-0"
           />
         </div>
       </div>
@@ -555,12 +539,10 @@ export default function DashboardPage() {
                 onClick={() => setCurrentSpotlightIndex(idx)}
                 className="min-w-[105px] aspect-[3/5] snap-center relative rounded-[1.25rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform"
               >
-                <Image 
+                <img 
                   src={item.image_url} 
                   alt={item.title}
-                  fill
-                  className="object-cover"
-                  unoptimized
+                  className="w-full h-full object-cover absolute inset-0"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
               </motion.div>
@@ -612,12 +594,10 @@ export default function DashboardPage() {
                 whileTap={{ scale: 0.98 }}
                 className="min-w-[85vw] aspect-[2.2/1] snap-center relative rounded-[1.25rem] overflow-hidden shadow-2xl"
               >
-                <Image 
+                <img 
                   src={offer.img} 
                   alt="Special Offer"
-                  fill
-                  className="object-cover"
-                  unoptimized
+                  className="w-full h-full object-cover absolute inset-0"
                 />
               </motion.div>
             ))}
@@ -665,12 +645,10 @@ export default function DashboardPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full h-full relative"
           >
-            <Image 
+            <img 
               src={spotlights[currentSpotlightIndex].image_url} 
               alt={spotlights[currentSpotlightIndex].title} 
-              fill 
-              className="object-cover"
-              unoptimized
+              className="w-full h-full object-cover absolute inset-0"
             />
             {/* Subtle dark overlay for readability */}
             <div className="absolute inset-0 bg-black/40" />
@@ -707,7 +685,7 @@ export default function DashboardPage() {
         <div className="w-full flex justify-between items-center z-10 mt-8 px-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full border-2 border-red-600 p-0.5 bg-white overflow-hidden">
-              <Image src="/total_orders_3d_icon.png" alt="Logo" width={40} height={40} className="object-contain" />
+              <img src="/total_orders_3d_icon.png" alt="Logo" width={40} height={40} className="object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="text-white font-black text-sm tracking-tight">MenuSnap</span>

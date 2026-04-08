@@ -114,7 +114,6 @@ const OrderCard = ({ order }: { order: ApiOrder }) => {
                                         width={40} 
                                         height={40} 
                                         className="h-full w-full object-cover"
-                                        unoptimized
                                     />
                                 ) : (
                                     <FileTextIcon className="h-5 w-5 text-primary/40" />
