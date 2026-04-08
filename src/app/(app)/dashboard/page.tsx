@@ -804,52 +804,60 @@ export default function DashboardPage() {
               {[
                 { 
                   title: "Manager", 
-                  desc: "Team management & admin support", 
+                  category: "RESTAURANT",
+                  desc: "Expert hospitality admin & team coordination", 
                   img: "/manager_3d.png", 
                   badge: "PRO", 
                   badgeColor: "bg-blue-500" 
                 },
                 { 
                   title: "Beautician", 
-                  desc: "Expert skills for premium salon experiences", 
+                  category: "PARLOR",
+                  desc: "Premium salon & aesthetic care professional", 
                   img: "/beautician_3d.png", 
                   badge: "NEW", 
                   badgeColor: "bg-red-500" 
                 },
                 { 
                   title: "Chef", 
-                  desc: "Professional culinary management & speed", 
+                  category: "RESTAURANT",
+                  desc: "Master culinary speed & kitchen operation", 
                   img: "/chef_3d.png",
                   badge: "HOT",
                   badgeColor: "bg-orange-500"
                 },
                 { 
                   title: "Makeup Artist", 
-                  desc: "Specialized artistry for stunning results", 
+                  category: "PARLOR",
+                  desc: "Creative artistry for events and shoots", 
                   img: "/beautician_3d.png",
                   promo: "৳200 OFF",
                   promoColor: "text-purple-600 bg-purple-50 border-purple-100"
                 },
                 { 
                   title: "Waiter", 
-                  desc: "Exceptional dining & floor service delivery", 
+                  category: "RESTAURANT",
+                  desc: "Top-tier guest serving & floor management", 
                   img: "/waiter_3d.png"
                 },
                 { 
                   title: "Manager", 
-                  desc: "Strategic operations & branch leading", 
+                  category: "PARLOR",
+                  desc: "Strategic parlor operations & staff lead", 
                   img: "/manager_3d.png"
                 },
                 { 
                   title: "Cashier", 
-                  desc: "Accurate billing & payment processing solutions", 
+                  category: "RESTAURANT",
+                  desc: "Secure billing & merchant payment control", 
                   img: "/dashboard/clock-location-premium-3d.png",
                   badge: "NEW",
                   badgeColor: "bg-red-500"
                 },
                 { 
                   title: "Receptionist", 
-                  desc: "Professional greeting & client coordination", 
+                  category: "PARLOR",
+                  desc: "Front desk booking & client coordination", 
                   img: "/menusnap_avatar_3d.png" 
                 }
               ].map((service, idx) => (
@@ -862,6 +870,9 @@ export default function DashboardPage() {
                   className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 h-[140px] relative shadow-sm hover:shadow-md transition-shadow overflow-hidden group"
                 >
                   <div className="flex flex-col h-full relative z-10 max-w-[65%]">
+                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                      {service.category}
+                    </span>
                     <div className="flex items-center gap-1.5 mb-1">
                       <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
                         {service.title}
