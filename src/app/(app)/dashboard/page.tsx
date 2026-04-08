@@ -127,7 +127,7 @@ function RoleIconSlider() {
            key={index}
            initial={{ x: '120%', opacity: 0, scale: 0.8 }}
            animate={{ 
-             x: ['120%', '0%', '0%', '-400%'],
+             x: ['120%', '0%', '0%', '-450%'],
              opacity: [0, 1, 1, 0],
              scale: [0.8, 1, 1, 0.9]
            }}
@@ -136,12 +136,12 @@ function RoleIconSlider() {
              times: [0, 0.15, 0.85, 1],
              ease: ["easeOut", "linear", "easeIn"]
            }}
-           className="absolute -bottom-1 right-0 h-12 flex items-center gap-1"
+           className="absolute -bottom-1 right-1 h-10 flex items-center gap-1"
         >
-          <span className="text-[12px] font-bold text-black/80 whitespace-nowrap">
+          <span className="text-[10px] font-semibold text-black/80 whitespace-nowrap">
             {roles[index].label}
           </span>
-          <div className="h-10 w-10 shrink-0">
+          <div className="h-8 w-8 shrink-0">
             <img src={roles[index].src} alt={roles[index].label} className="w-full h-full object-contain" />
           </div>
         </motion.div>
