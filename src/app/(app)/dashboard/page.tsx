@@ -803,54 +803,54 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 gap-3 pb-20">
               {[
                 { 
+                  title: "Manager", 
+                  desc: "Team management & admin support", 
+                  img: "/manager_3d.png", 
+                  badge: "PRO", 
+                  badgeColor: "bg-blue-500" 
+                },
+                { 
                   title: "Beautician", 
-                  desc: "Skilled professionals for salon services", 
+                  desc: "Expert skills for premium salon experiences", 
                   img: "/beautician_3d.png", 
                   badge: "NEW", 
                   badgeColor: "bg-red-500" 
                 },
                 { 
                   title: "Chef", 
-                  desc: "Safe, fast & delicious management", 
+                  desc: "Professional culinary management & speed", 
                   img: "/chef_3d.png",
                   badge: "HOT",
                   badgeColor: "bg-orange-500"
                 },
                 { 
-                  title: "Manager", 
-                  desc: "Expert admin & team coordination", 
-                  img: "/manager_3d.png",
-                  promo: "৳150 OFF",
-                  promoColor: "text-green-600 bg-green-50 border-green-100"
+                  title: "Makeup Artist", 
+                  desc: "Specialized artistry for stunning results", 
+                  img: "/beautician_3d.png",
+                  promo: "৳200 OFF",
+                  promoColor: "text-purple-600 bg-purple-50 border-purple-100"
                 },
                 { 
                   title: "Waiter", 
-                  desc: "Quality service at your customer doorstep", 
-                  img: "/waiter_3d.png",
-                  badge: "PRO",
-                  badgeColor: "bg-blue-500"
+                  desc: "Exceptional dining & floor service delivery", 
+                  img: "/waiter_3d.png"
                 },
                 { 
-                  title: "eBook", 
-                  desc: "Digital menu and catalog setup", 
-                  img: "/dashboard/ebook-premium-3d.png" 
+                  title: "Manager", 
+                  desc: "Strategic operations & branch leading", 
+                  img: "/manager_3d.png"
                 },
                 { 
-                  title: "Tracker", 
-                  desc: "Team and order status tracking", 
-                  img: "/dashboard/clock-location-premium-3d.png" 
-                },
-                { 
-                  title: "Design", 
-                  desc: "Custom branding and layout services", 
-                  img: "/dashboard/color-palette-premium-3d.png",
+                  title: "Cashier", 
+                  desc: "Accurate billing & payment processing solutions", 
+                  img: "/dashboard/clock-location-premium-3d.png",
                   badge: "NEW",
                   badgeColor: "bg-red-500"
                 },
                 { 
-                  title: "MagicTab", 
-                  desc: "Instant contactless menu cards", 
-                  img: "/dashboard/magictab_3d_icon.png" 
+                  title: "Receptionist", 
+                  desc: "Professional greeting & client coordination", 
+                  img: "/menusnap_avatar_3d.png" 
                 }
               ].map((service, idx) => (
                 <motion.div
