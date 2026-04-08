@@ -752,14 +752,14 @@ export default function DashboardPage() {
     )}
   </AnimatePresence>
 
-  {/* Hiring Career Overlay */}
+  {/* Hiring Career Overlay (All Services Style) */}
   <AnimatePresence>
     {isHiringOpen && (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-end justify-center md:hidden"
+        className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] flex items-end justify-center md:hidden"
         onClick={() => setIsHiringOpen(false)}
       >
         <motion.div
@@ -768,55 +768,120 @@ export default function DashboardPage() {
           exit={{ y: "100%" }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           onClick={(e) => e.stopPropagation()}
-          className="w-full bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-8 pb-12 shadow-2xl flex flex-col gap-6 max-h-[85vh] overflow-y-auto"
+          className="w-full bg-white dark:bg-slate-900 rounded-t-[1.5rem] flex flex-col max-h-[92vh] overflow-hidden shadow-[0_-8px_30px_rgb(0,0,0,0.12)]"
         >
-          {/* Drag Handle */}
-          <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto -mt-2 mb-2" />
-          
-          <div className="flex justify-between items-start">
-            <div className="flex flex-col">
-              <span className="text-red-600 font-black text-xs uppercase tracking-widest mb-1">Career Opportunities</span>
-              <h2 className="text-3xl font-black text-foreground leading-tight tracking-tight">Join Our Team</h2>
-            </div>
-            <button 
-              onClick={() => setIsHiringOpen(false)}
-              className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-foreground active:scale-95 transition-transform"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
-
-          <div className="grid gap-4 mt-2">
-            {[
-              { title: "Beautician", img: "/beautician_3d.png", count: 2, color: "bg-pink-50 border-pink-100" },
-              { title: "Executive Chef", img: "/chef_3d.png", count: 1, color: "bg-orange-50 border-orange-100" },
-              { title: "Manager", img: "/manager_3d.png", count: 1, color: "bg-blue-50 border-blue-100" },
-              { title: "Service Waiter", img: "/waiter_3d.png", count: 4, color: "bg-green-50 border-green-100" }
-            ].map((job) => (
-              <motion.div
-                key={job.title}
-                whileTap={{ scale: 0.98 }}
-                className={cn("p-4 rounded-3xl border flex items-center justify-between group", job.color)}
+          {/* Header Section */}
+          <div className="flex flex-col items-center pt-2 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mb-4" />
+            <div className="w-full px-6 flex justify-between items-center">
+              <div className="w-8" /> {/* Spacer */}
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">All Services</h2>
+              <button 
+                onClick={() => setIsHiringOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 active:scale-90 transition-transform"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 relative shrink-0">
-                    <img src={job.img} alt={job.title} className="w-full h-full object-contain" />
-                  </div>
-                  <div className="flex flex-col">
-                    <h3 className="font-black text-slate-900 text-lg leading-tight">{job.title}</h3>
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{job.count} Positions Open</p>
-                  </div>
-                </div>
-                <Button size="sm" className="rounded-full font-black text-[10px] px-4 h-8 bg-red-600 hover:bg-red-700">APPLY</Button>
-              </motion.div>
-            ))}
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          <div className="mt-4 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
-            <p className="text-sm font-bold text-muted-foreground leading-relaxed">
-              Don't see your role? Send your CV to <br />
-              <span className="text-red-600">careers@menusnap.com</span>
-            </p>
+          {/* Grid Content */}
+          <div className="flex-1 overflow-y-auto p-4 bg-slate-50/50 dark:bg-slate-950/20">
+            <div className="grid grid-cols-2 gap-3 pb-20">
+              {[
+                { 
+                  title: "Beautician", 
+                  desc: "Skilled professionals for salon services", 
+                  img: "/beautician_3d.png", 
+                  badge: "NEW", 
+                  badgeColor: "bg-red-500" 
+                },
+                { 
+                  title: "Chef", 
+                  desc: "Safe, fast & delicious management", 
+                  img: "/chef_3d.png",
+                  badge: "HOT",
+                  badgeColor: "bg-orange-500"
+                },
+                { 
+                  title: "Manager", 
+                  desc: "Expert admin & team coordination", 
+                  img: "/manager_3d.png",
+                  promo: "৳150 OFF",
+                  promoColor: "text-green-600 bg-green-50 border-green-100"
+                },
+                { 
+                  title: "Waiter", 
+                  desc: "Quality service at your customer doorstep", 
+                  img: "/waiter_3d.png",
+                  badge: "PRO",
+                  badgeColor: "bg-blue-500"
+                },
+                { 
+                  title: "eBook", 
+                  desc: "Digital menu and catalog setup", 
+                  img: "/dashboard/ebook-premium-3d.png" 
+                },
+                { 
+                  title: "Tracker", 
+                  desc: "Team and order status tracking", 
+                  img: "/dashboard/clock-location-premium-3d.png" 
+                },
+                { 
+                  title: "Design", 
+                  desc: "Custom branding and layout services", 
+                  img: "/dashboard/color-palette-premium-3d.png",
+                  badge: "NEW",
+                  badgeColor: "bg-red-500"
+                },
+                { 
+                  title: "MagicTab", 
+                  desc: "Instant contactless menu cards", 
+                  img: "/dashboard/magictab_3d_icon.png" 
+                }
+              ].map((service, idx) => (
+                <motion.div
+                  key={service.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 h-[140px] relative shadow-sm hover:shadow-md transition-shadow overflow-hidden group"
+                >
+                  <div className="flex flex-col h-full relative z-10 max-w-[65%]">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
+                        {service.title}
+                      </h3>
+                      {service.badge && (
+                        <span className={cn("text-[8px] font-black text-white px-1.5 py-0.5 rounded-[4px]", service.badgeColor)}>
+                          {service.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug line-clamp-3">
+                      {service.desc}
+                    </p>
+                    {service.promo && (
+                      <div className={cn("mt-auto self-start text-[10px] font-black px-2 py-1 rounded-lg border", service.promoColor)}>
+                        {service.promo}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="absolute right-0 bottom-2 w-[75px] h-[75px] pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                    <img src={service.img} alt={service.title} className="w-full h-full object-contain drop-shadow-xl" />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Floating Action Area */}
+          <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20 pointer-events-none">
+            <button className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 pointer-events-auto active:scale-95 transition-transform">
+              See More <ChevronDown className="w-4 h-4" />
+            </button>
           </div>
         </motion.div>
       </motion.div>
