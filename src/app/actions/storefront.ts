@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from 'next/cache';
 
 import pool from '@/lib/mysql';
 import fs from 'fs/promises';
@@ -105,6 +106,9 @@ export async function addDashboardSlide(imageUrl: string) {
       [finalImageUrl]
     );
 
+    // Invalidate cache so new image appears without PM2 restart
+    revalidatePath('/m-admin/quick-manager');
+
     return { success: true, slideId: result.insertId, path: finalImageUrl };
   } catch (error: any) {
     console.error("Database Error adding slide:", error);
@@ -120,6 +124,8 @@ export async function deleteDashboardSlide(slideId: number) {
   try {
     await ensureSlidesTable();
     await pool.execute('DELETE FROM dashboard_slides WHERE id = ?', [slideId]);
+    // Invalidate cache so removal reflects without PM2 restart
+    revalidatePath('/m-admin/quick-manager');
     return { success: true };
   } catch (error: any) {
     console.error("Database Error deleting slide:", error);
@@ -175,6 +181,9 @@ export async function addDashboardSpotlight(data: { title: string, imageUrl: str
       [data.title, finalImageUrl, data.linkUrl || '', data.offer || '', data.ctaText || 'Swipe up']
     );
 
+    // Invalidate cache so new spotlight appears without PM2 restart
+    revalidatePath('/m-admin/quick-manager');
+
     return { success: true, spotlightId: result.insertId, path: finalImageUrl };
   } catch (error: any) {
     console.error("Database Error adding spotlight:", error);
@@ -189,6 +198,8 @@ export async function deleteDashboardSpotlight(id: number) {
   try {
     await ensureSpotlightsTable();
     await pool.execute('DELETE FROM dashboard_spotlights WHERE id = ?', [id]);
+    // Invalidate cache so removal reflects without PM2 restart
+    revalidatePath('/m-admin/quick-manager');
     return { success: true };
   } catch (error: any) {
     console.error("Database Error deleting spotlight:", error);
