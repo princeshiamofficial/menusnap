@@ -55,7 +55,7 @@ export async function submitOrderToMySql(orderPayload: any) {
 export async function getOrdersFromMySql() {
   try {
     const [rows]: any = await pool.execute(
-      `SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%dT%H:%i:%s') as utcOrderDate FROM orders ORDER BY orderDate DESC`
+      `SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as utcOrderDate FROM orders ORDER BY orderDate DESC`
     );
 
     const formattedOrders = rows.map((order: any) => {
@@ -153,7 +153,7 @@ export async function updateOrderInMySql(order: any) {
  */
 export async function getOrderByIdFromMySql(id: string) {
   try {
-    const [rows] = await pool.execute(`SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%dT%H:%i:%s') as utcOrderDate FROM orders WHERE id = ?`, [id]);
+    const [rows] = await pool.execute(`SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as utcOrderDate FROM orders WHERE id = ?`, [id]);
     const orders = rows as any[];
     if (orders.length === 0) return { success: false, message: 'Order not found' };
 
@@ -184,7 +184,7 @@ export async function getOrderByIdFromMySql(id: string) {
  */
 export async function getCategoriesFromMySql(type?: 'restaurant' | 'parlour', visibleOnly = false) {
   try {
-    let query = "SELECT *, DATE_FORMAT(createdAt, '%Y-%m-%dT%H:%i:%s') as createdAt FROM categories";
+    let query = "SELECT *, DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') as createdAt FROM categories";
     const params: any[] = [];
     const conditions: string[] = [];
 
@@ -256,7 +256,7 @@ export async function getMenuItemsFromMySql(type?: 'restaurant' | 'parlour', vis
  */
 export async function getTemplatesFromMySql() {
   try {
-    const [rows]: any = await pool.execute("SELECT *, DATE_FORMAT(createdAt, '%Y-%m-%dT%H:%i:%s') as createdAt FROM templates ORDER BY createdAt DESC");
+    const [rows]: any = await pool.execute("SELECT *, DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') as createdAt FROM templates ORDER BY createdAt DESC");
     
     const formatted = rows.map((template: any) => ({
       ...template,
