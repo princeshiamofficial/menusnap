@@ -138,7 +138,7 @@ function RoleIconSlider() {
            }}
            className="absolute -bottom-1 right-0 h-11 flex items-center"
         >
-          <span className="text-[10px] font-bold text-black relative z-20 -mr-3 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] whitespace-nowrap">
+          <span className="text-[10px] font-bold text-black relative z-20 -mr-1 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] whitespace-nowrap">
             {roles[index].label}
           </span>
           <div className="h-9 w-9 shrink-0 relative z-10">
