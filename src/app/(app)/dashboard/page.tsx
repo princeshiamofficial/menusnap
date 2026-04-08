@@ -105,28 +105,44 @@ const getImageHint = (name: string): string => {
 
 
 function RoleIconSlider() {
-  const icons = ['/beautician_3d.png', '/chef_3d.png', '/manager_3d.png', '/waiter_3d.png'];
+  const roles = [
+    { src: '/beautician_3d.png', label: 'Beautician' },
+    { src: '/chef_3d.png', label: 'Chef' },
+    { src: '/manager_3d.png', label: 'Manager' },
+    { src: '/waiter_3d.png', label: 'Waiter' }
+  ];
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % icons.length);
-    }, 3500);
+      setIndex((prev) => (prev + 1) % roles.length);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [icons.length]);
+  }, [roles.length]);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <AnimatePresence initial={false}>
         <motion.div
            key={index}
-           initial={{ x: '120%', opacity: 1 }}
-           animate={{ x: '-120%', opacity: 1 }}
-           transition={{ duration: 3.5, ease: "linear" }}
-           className="absolute -bottom-1 left-0 h-12 w-12"
+           initial={{ x: '120%', opacity: 0, scale: 0.8 }}
+           animate={{ 
+             x: ['120%', '0%', '0%', '-400%'],
+             opacity: [0, 1, 1, 0],
+             scale: [0.8, 1, 1, 0.9]
+           }}
+           transition={{ 
+             duration: 3.8,
+             times: [0, 0.15, 0.85, 1],
+             ease: ["easeOut", "linear", "easeIn"]
+           }}
+           className="absolute -bottom-1 right-0 h-12 flex items-center gap-1"
         >
-          <div className="relative w-full h-full">
-            <img src={icons[index]} alt="Role" className="w-full h-full object-contain absolute inset-0" />
+          <span className="text-[12px] font-bold text-black/80 whitespace-nowrap">
+            {roles[index].label}
+          </span>
+          <div className="h-10 w-10 shrink-0">
+            <img src={roles[index].src} alt={roles[index].label} className="w-full h-full object-contain" />
           </div>
         </motion.div>
       </AnimatePresence>
