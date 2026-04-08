@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
 import { Star, AlertTriangle, X, ListOrdered, Layers, FileEdit, History, TrendingUp, ChevronDown } from "lucide-react";
 import { motion, animate, AnimatePresence } from "framer-motion";
 import { useClientAuth } from '@/hooks/use-client-auth';
@@ -414,7 +414,7 @@ export default function DashboardPage() {
   const [topRatedTemplates, setTopRatedTemplates] = useState<ApiTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
-  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  
   const { clientUser, clientLoading } = useClientAuth();
   const [activeOfferTab, setActiveOfferTab] = useState("All");
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
@@ -431,20 +431,6 @@ export default function DashboardPage() {
     fetchSpotlights();
     return () => clearTimeout(timer);
   }, [fetchSpotlights]);
-
-  useEffect(() => {
-    const isMobile = window.innerWidth < 768;
-    const hasSeenPopup = sessionStorage.getItem('dashboard_welcome_seen');
-    if (isMobile && !hasSeenPopup) {
-      setShowWelcomePopup(true);
-    }
-  }, []);
-
-  const handleCloseWelcomePopup = () => {
-    sessionStorage.setItem('dashboard_welcome_seen', 'true');
-    setShowWelcomePopup(false);
-  };
-
 
   useEffect(() => {
     async function fetchTopRatedTemplates() {
@@ -654,29 +640,7 @@ export default function DashboardPage() {
       </div>
         
       {/* Welcome Popup */}
-        <Dialog open={showWelcomePopup} onOpenChange={(open) => { if (!open) handleCloseWelcomePopup(); }}>
-          <DialogContent className="p-0 border-0 bg-transparent shadow-none max-w-sm w-full" style={{ boxShadow: 'none' }}>
-            <DialogTitle className="sr-only">Welcome to Dashboard</DialogTitle>
-            <DialogDescription className="sr-only">Initial welcome message and information about the dashboard.</DialogDescription>
-            <div className="relative">
-              <button
-                onClick={handleCloseWelcomePopup}
-                className="absolute top-2 right-2 z-50 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
-                aria-label="Close welcome popup"
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <Image
-                src="/dashboard-welcome-popup.png"
-                alt="Welcome to Dashboard"
-                width={600}
-                height={800}
-                className="rounded-2xl w-full h-auto"
-                priority
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
+        
  
   {/* Immersive Spotlight Story View */}
   <AnimatePresence>
