@@ -786,7 +786,7 @@ export default function DashboardPage() {
             <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mb-4" />
             <div className="w-full px-6 flex justify-between items-center">
               <div className="w-8" /> {/* Spacer */}
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">All Services</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Hiring Services</h2>
               <button 
                 onClick={() => setIsHiringOpen(false)}
                 className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 active:scale-90 transition-transform"
