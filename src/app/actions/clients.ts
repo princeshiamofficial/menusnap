@@ -131,8 +131,8 @@ export async function getLeads(page: number = 1, limit: number = 20) {
     const [rows]: any = await pool.execute(
       `SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.stage, c.division, c.district,
        (SELECT note FROM client_notes WHERE client_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_note,
-       DATE_FORMAT(c.last_login, '%Y-%m-%dT%H:%i:%s.000Z') as last_login,
-       DATE_FORMAT(c.created_at, '%Y-%m-%dT%H:%i:%s.000Z') as created_at
+       UNIX_TIMESTAMP(c.last_login) as last_login_ts,
+       UNIX_TIMESTAMP(c.created_at) as created_at_ts
        FROM clients c ORDER BY c.created_at DESC LIMIT ? OFFSET ?`,
       [limit, offset]
     );
@@ -157,7 +157,12 @@ export async function getLeads(page: number = 1, limit: number = 20) {
       if (stage === 'Exiting') stage = 'exiting';
       if (stage === 'Fake') stage = 'fake';
       
-      return { ...lead, stage };
+      return { 
+        ...lead, 
+        stage,
+        last_login: lead.last_login_ts ? new Date(lead.last_login_ts * 1000).toISOString() : null,
+        created_at: lead.created_at_ts ? new Date(lead.created_at_ts * 1000).toISOString() : null
+      };
     });
     
     return { 
@@ -204,11 +209,15 @@ export async function getClientHistory(clientId: number) {
   try {
     const [rows]: any = await pool.execute(
       `SELECT id, stage, note, 
-       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') as created_at 
+       UNIX_TIMESTAMP(created_at) as created_at_ts 
        FROM client_notes WHERE client_id = ? ORDER BY created_at DESC`,
       [clientId]
     );
-    return { success: true, history: rows };
+    const history = rows.map((item: any) => ({
+      ...item,
+      created_at: item.created_at_ts ? new Date(item.created_at_ts * 1000).toISOString() : null
+    }));
+    return { success: true, history };
   } catch (error: any) {
     console.error("Database Error fetching client history:", error);
     return { success: false, history: [], error: error?.message || "Failed to fetch history" };
