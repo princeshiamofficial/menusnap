@@ -275,12 +275,13 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
       if (input instanceof Date) {
         date = input;
       } else {
-        // Handle common formats including MySQL output and strings
-        const cleaned = typeof input === 'string' ? (input.includes('T') || input.includes('Z') ? input : input.replace(' ', 'T') + 'Z') : input;
-        date = parseISO(cleaned as string);
-        if (!isValidDate(date)) {
-          date = new Date(input);
-        }
+        // Force the string into a format that browsers reliably treat as LOCAL time
+        // Replace T with space and remove Z/milliseconds if present
+        const cleanString = typeof input === 'string' ? input.replace('T', ' ').replace(/\..*$/, '').replace('Z', '') : input;
+        
+        // Use YYYY/MM/DD which is more cross-browser compatible for local parsing than YYYY-MM-DD
+        const localParsingString = typeof cleanString === 'string' ? cleanString.replace(/-/g, '/') : cleanString;
+        date = new Date(localParsingString);
       }
       
       if (!isValidDate(date)) return "Invalid Date";
@@ -779,13 +780,12 @@ export default function ManageOrdersPage(): React.ReactNode {
   const formatDateForDisplay = useCallback((input: string | Date, includeTime: boolean = true): string => {
     try {
       if (!input) return "N/A";
-      const dateStr = typeof input === 'string' ? (input.endsWith('Z') || input.includes('+') ? input : `${input}Z`) : input;
-      const date = typeof dateStr === 'string' ? parseISO(dateStr) : dateStr;
+      
+      const cleanString = typeof input === 'string' ? input.replace('T', ' ').replace(/\..*$/, '').replace('Z', '') : input;
+      const localParsingString = typeof cleanString === 'string' ? cleanString.replace(/-/g, '/') : cleanString;
+      const date = new Date(localParsingString);
+      
       if (!isValidDate(date)) {
-        const fallbackDate = new Date(dateStr);
-        if (isValidDate(fallbackDate)) {
-           return includeTime ? format(fallbackDate, "MMM d, yyyy, h:mm a") : format(fallbackDate, "MMM d, yyyy");
-        }
         return "Invalid Date";
       }
       return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");

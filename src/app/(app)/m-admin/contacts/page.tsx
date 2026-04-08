@@ -439,8 +439,17 @@ export default function ContactsPage() {
   const formatDate = (dateString: string, includeTime = false) => {
     try {
       if (!dateString) return "-";
-      // The server now provides ISO strings (with 'Z'), so new Date() or parseISO works perfectly
-      const date = new Date(dateString);
+      
+      // Force the string into a format that browsers reliably treat as LOCAL time
+      // Replace T with space and remove Z/milliseconds if present
+      const cleanString = dateString.replace('T', ' ').replace(/\..*$/, '').replace('Z', '');
+      
+      // Use YYYY/MM/DD which is more cross-browser compatible for local parsing than YYYY-MM-DD
+      const localParsingString = cleanString.replace(/-/g, '/');
+      const date = new Date(localParsingString);
+      
+      if (isNaN(date.getTime())) return dateString;
+      
       return format(date, includeTime ? "MMM d, yyyy • h:mm a" : "MMM d, yyyy");
     } catch {
       return dateString;
