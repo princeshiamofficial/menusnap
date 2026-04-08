@@ -108,7 +108,7 @@ function RoleIconSlider() {
   const roles = [
     { src: '/beautician_3d.png', label: 'Beautician', offset: '-mr-3' },
     { src: '/chef_3d.png', label: 'Chef', offset: 'mr-1' },
-    { src: '/manager_3d.png', label: 'Manager', offset: '-mr-1' },
+    { src: '/restaurant_manager_3d.png', label: 'Manager', offset: '-mr-1' },
     { src: '/waiter_3d.png', label: 'Waiter', offset: '-mr-1' }
   ];
   const [index, setIndex] = useState(0);
@@ -806,7 +806,7 @@ export default function DashboardPage() {
                   title: "Manager", 
                   category: "RESTAURANT",
                   desc: "Expert hospitality admin & team coordination", 
-                  img: "/manager_3d.png", 
+                  img: "/restaurant_manager_3d.png", 
                   badge: "PRO", 
                   badgeColor: "bg-blue-500" 
                 },
@@ -842,7 +842,7 @@ export default function DashboardPage() {
                   title: "Manager", 
                   category: "PARLOR",
                   desc: "Strategic parlor operations & staff lead", 
-                  img: "/manager_3d.png"
+                  img: "/parlor_manager_3d.png"
                 },
                 { 
                   title: "Cashier", 
