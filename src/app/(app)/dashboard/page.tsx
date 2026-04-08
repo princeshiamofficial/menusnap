@@ -806,19 +806,25 @@ export default function DashboardPage() {
                   title: "Manager", 
                   category: "RESTAURANT",
                   desc: "Expert hospitality admin & team coordination", 
-                  img: "/manager_3d.png" 
+                  img: "/manager_3d.png", 
+                  badge: "PRO", 
+                  badgeColor: "bg-blue-500" 
                 },
                 { 
                   title: "Beautician", 
                   category: "PARLOR",
                   desc: "Premium salon & aesthetic care professional", 
-                  img: "/beautician_3d.png" 
+                  img: "/beautician_3d.png", 
+                  badge: "NEW", 
+                  badgeColor: "bg-red-500" 
                 },
                 { 
                   title: "Chef", 
                   category: "RESTAURANT",
                   desc: "Master culinary speed & kitchen operation", 
-                  img: "/chef_3d.png"
+                  img: "/chef_3d.png",
+                  badge: "HOT",
+                  badgeColor: "bg-orange-500"
                 },
                 { 
                   title: "Makeup Artist", 
@@ -842,7 +848,9 @@ export default function DashboardPage() {
                   title: "Cashier", 
                   category: "RESTAURANT",
                   desc: "Secure billing & merchant payment control", 
-                  img: "/dashboard/clock-location-premium-3d.png"
+                  img: "/dashboard/clock-location-premium-3d.png",
+                  badge: "NEW",
+                  badgeColor: "bg-red-500"
                 },
                 { 
                   title: "Receptionist", 
@@ -864,10 +872,20 @@ export default function DashboardPage() {
                       <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
                         {service.title}
                       </h3>
+                      {service.badge && (
+                        <span className={cn("text-[8px] font-black text-white px-1.5 py-0.5 rounded-[4px]", service.badgeColor)}>
+                          {service.badge}
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug line-clamp-3">
                       {service.desc}
                     </p>
+                    {service.promo && (
+                      <div className={cn("mt-auto self-start text-[10px] font-black px-2 py-1 rounded-lg border", service.promoColor)}>
+                        {service.promo}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="absolute right-0 bottom-2 w-[75px] h-[75px] pointer-events-none group-hover:scale-110 transition-transform duration-500">
