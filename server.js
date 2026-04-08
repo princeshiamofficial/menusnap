@@ -2,6 +2,8 @@ const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
 const { Server } = require("socket.io");
+const fs = require("fs");
+const path = require("path");
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
@@ -14,6 +16,33 @@ const users = new Map(); // socketId -> { name, color, docId }
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
+    const { pathname } = parsedUrl;
+
+    // Manual static file serving for runtime uploads to bypass Next.js static manifest cache
+    // This allows images to be served immediately after upload without PM2 restart
+    if (pathname && pathname.startsWith('/uploads/')) {
+      const sanitizedPath = pathname.replace(/^\/+/, ''); // Remove leading slashes
+      const filePath = path.join(process.cwd(), 'public', sanitizedPath);
+      
+      if (fs.existsSync(filePath)) {
+        const ext = path.extname(filePath).toLowerCase();
+        const contentType = {
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.webp': 'image/webp',
+          '.svg': 'image/svg+xml',
+          '.ico': 'image/x-icon'
+        }[ext] || 'application/octet-stream';
+
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        fs.createReadStream(filePath).pipe(res);
+        return;
+      }
+    }
+
     handle(req, res, parsedUrl);
   });
 
