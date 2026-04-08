@@ -438,13 +438,14 @@ export default function DashboardPage() {
   const [spotlights, setSpotlights] = useState<any[]>([]);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
   const [showSeeMore, setShowSeeMore] = useState(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
   
-  const handleSheetScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollTop + clientHeight >= scrollHeight - 40) {
-      setShowSeeMore(false);
-    } else {
-      setShowSeeMore(true);
+  const scrollToBottom = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -797,7 +798,15 @@ export default function DashboardPage() {
 
           {/* Grid Content */}
           <div 
-            onScroll={handleSheetScroll}
+            ref={scrollRef}
+            onScroll={(e) => {
+              const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+              if (scrollTop + clientHeight >= scrollHeight - 40) {
+                setShowSeeMore(false);
+              } else {
+                setShowSeeMore(true);
+              }
+            }}
             className="flex-1 overflow-y-auto p-4 bg-slate-50/50 dark:bg-slate-950/20"
           >
             <div className="grid grid-cols-2 gap-3 pb-20">
@@ -905,7 +914,10 @@ export default function DashboardPage() {
                 exit={{ opacity: 0, y: 20 }}
                 className="absolute bottom-6 left-0 right-0 flex justify-center z-20 pointer-events-none"
               >
-                <button className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 pointer-events-auto active:scale-95 transition-transform">
+                <button 
+                  onClick={scrollToBottom}
+                  className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 pointer-events-auto active:scale-95 transition-transform"
+                >
                   See More <ChevronDown className="w-4 h-4" />
                 </button>
               </motion.div>
