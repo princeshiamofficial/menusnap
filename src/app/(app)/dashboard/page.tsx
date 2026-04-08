@@ -104,6 +104,93 @@ const getImageHint = (name: string): string => {
 
 
 
+function HiringBottomSheet({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+  const hiringRoles = [
+    { title: "Chef", desc: "Expert culinary masters", icon: "/chef_3d.png", color: "bg-orange-50", badge: "PRO" },
+    { title: "Waiter", desc: "Service with a smile", icon: "/waiter_3d.png", color: "bg-blue-50" },
+    { title: "Manager", desc: "Business operations", icon: "/manager_3d.png", color: "bg-purple-50", badge: "NEW" },
+    { title: "Beautician", desc: "Style & elegance", icon: "/beautician_3d.png", color: "bg-pink-50" },
+    { title: "Delivery", desc: "Fast & safe delivery", icon: "/dashboard/clock-location-premium-3d.png", color: "bg-red-50" },
+    { title: "Receptionist", desc: "First impressions", icon: "/dashboard/color-palette-premium-3d.png", color: "bg-green-50" }
+  ];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
+          />
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 rounded-t-[2.5rem] z-[101] md:hidden px-6 pb-12 pt-2 shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto"
+          >
+            {/* Drag Handle */}
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full" />
+            </div>
+
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-black text-foreground tracking-tight">Hiring Services</h2>
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-foreground/60 active:scale-95 transition-transform"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {hiringRoles.map((role, idx) => (
+                <motion.div
+                  key={role.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={cn(
+                    "relative rounded-3xl p-4 flex flex-col items-start min-h-[140px] border border-border/10 shadow-sm overflow-hidden",
+                    role.color
+                  )}
+                >
+                  <div className="relative z-10 w-full">
+                    <div className="flex justify-between items-start w-full">
+                      <h3 className="text-lg font-black text-slate-900 leading-tight">{role.title}</h3>
+                      {role.badge && (
+                        <span className="bg-red-600 text-[8px] font-black text-white px-2 py-0.5 rounded-full uppercase tracking-widest">{role.badge}</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-600/80 leading-tight mt-1 max-w-[70%]">{role.desc}</p>
+                  </div>
+                  <div className="absolute -right-4 -bottom-4 w-20 h-20 pointer-events-none drop-shadow-xl">
+                    <img src={role.icon} alt={role.title} className="w-full h-full object-contain" />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* See More Button */}
+            <div className="mt-8 flex justify-center">
+              <button className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-3 rounded-full font-black text-sm flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 transition-all">
+                See More Roles <ChevronDown className="h-4 w-4" />
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function RoleIconSlider() {
   const roles = [
     { src: '/beautician_3d.png', label: 'Beautician', offset: '-mr-3' },
@@ -252,7 +339,7 @@ function MobileImageSlider() {
   );
 }
 
-function MobileActionGrid() {
+function MobileActionGrid({ onHiringOpen }: { onHiringOpen: () => void }) {
   const actions = [
     {
       title: "eBook",
@@ -304,7 +391,7 @@ function MobileActionGrid() {
     <div className="md:hidden mt-6">
       <div className="grid grid-cols-2 gap-1.5">
         {actions.map((action: any, i) => (
-          <Link key={action.href} href={action.href} className="block group">
+          <div key={action.title} className="block group">
             <motion.div
               whileTap={{ scale: 0.96 }}
               className={cn(
@@ -314,7 +401,7 @@ function MobileActionGrid() {
             >
               {action.isWidget ? (
                 <div className="flex flex-col gap-2 w-full h-full">
-                  <div className="flex-[0.6] bg-card border border-border/50 rounded-2xl p-3 flex flex-row items-center justify-between shadow-sm relative overflow-hidden group">
+                  <Link href="/order-history" className="flex-[0.6] bg-card border border-border/50 rounded-2xl p-3 flex flex-row items-center justify-between shadow-sm relative overflow-hidden group">
                     <div className="flex flex-col relative z-10 max-w-[60%]">
                       <span className="text-sm font-black text-foreground leading-tight tracking-tight">Free Design</span>
                       <p className="text-[9px] font-medium text-muted-foreground leading-tight mt-0.5 line-clamp-1">Limited time pro offers</p>
@@ -326,17 +413,23 @@ function MobileActionGrid() {
                         className="w-full h-full object-contain absolute inset-0"
                       />
                     </div>
-                  </div>
+                  </Link>
                   <div className="flex-1 flex flex-row gap-1.5 w-full">
-                    <div className="flex-1 bg-white border border-border/50 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
+                    <Link href="/draft" className="flex-1 bg-white border border-border/50 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
                       <div className="flex flex-row items-center gap-1 text-foreground/90 font-black text-xs relative z-10 whitespace-nowrap">
                         MagicTab
                       </div>
                       <div className="absolute -right-1 -bottom-2 h-12 w-12 opacity-95">
                         <img src="/dashboard/magictab_3d_icon.png" alt="MagicTab" className="w-full h-full object-contain absolute inset-0" />
                       </div>
-                    </div>
-                    <div className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
+                    </Link>
+                    <div 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        onHiringOpen();
+                      }}
+                      className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group cursor-pointer"
+                    >
                       <div className="flex flex-row items-center gap-1 text-red-600 font-black text-xs relative z-10 whitespace-nowrap">
                         Hiring <ChevronDown className="h-3 w-3" />
                       </div>
@@ -345,7 +438,7 @@ function MobileActionGrid() {
                   </div>
                 </div>
               ) : (
-                <>
+                <Link href={action.href} className="w-full h-full flex flex-col justify-between">
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-foreground leading-tight">{action.title}</h3>
                     <p className="text-[10px] font-medium text-muted-foreground leading-tight mt-1 max-w-[85%]">
@@ -378,10 +471,10 @@ function MobileActionGrid() {
                     <ChevronDown className="h-3 w-3 rotate-180" />
                     {action.badge}
                   </div>
-                </>
+                </Link>
               )}
             </motion.div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>
@@ -426,6 +519,7 @@ export default function DashboardPage() {
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
   const [currentSpotlightIndex, setCurrentSpotlightIndex] = useState(-1);
   const [spotlights, setSpotlights] = useState<any[]>([]);
+  const [isHiringOpen, setIsHiringOpen] = useState(false);
 
   const fetchSpotlights = useCallback(async () => {
     const res = await getDashboardSpotlights();
@@ -492,8 +586,10 @@ export default function DashboardPage() {
       <div className="flex-1 space-y-0 pb-12 transition-all pt-4">
         <div className="px-4 md:px-10 space-y-4 max-w-full overflow-hidden">
           <MobileImageSlider />
-          <MobileActionGrid />
+          <MobileActionGrid onHiringOpen={() => setIsHiringOpen(true)} />
         </div>
+
+        <HiringBottomSheet isOpen={isHiringOpen} onClose={() => setIsHiringOpen(false)} />
 
         {/* Quick Actions Section (MOBILE ONLY) */}
         <div className="md:hidden px-4 md:px-10 mt-10 mb-8 w-full max-w-full overflow-hidden">
