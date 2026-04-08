@@ -685,7 +685,7 @@ export default function DashboardPage() {
         <div className="w-full flex justify-between items-center z-10 mt-8 px-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full border-2 border-red-600 p-0.5 bg-white overflow-hidden">
-              <img src="/total_orders_3d_icon.png" alt="Logo" width={40} height={40} className="object-contain" />
+              <img src="/menusnap_avatar_3d.png" alt="Logo" width={40} height={40} className="object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="text-white font-black text-sm tracking-tight">MenuSnap</span>
