@@ -3,6 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import pool from '@/lib/mysql';
+import { formatLocalDateTime } from '@/lib/dateUtils';
 
 export async function getMagicDocsFromMySql() {
   try {
@@ -44,8 +45,8 @@ export async function getMagicDocByIdFromMySql(id: string) {
 export async function upsertMagicDocToMySql(doc: any) {
   try {
     const { id, title, content, isDeleted, deletedAt } = doc;
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    const finalDeletedAt = deletedAt ? new Date(deletedAt).toISOString().slice(0, 19).replace('T', ' ') : null;
+    const now = formatLocalDateTime();
+    const finalDeletedAt = deletedAt ? formatLocalDateTime(new Date(deletedAt)) : null;
 
     await pool.execute(
       `INSERT INTO magic_docs (id, title, content, last_updated, created_at, is_deleted, deleted_at)
@@ -66,7 +67,7 @@ export async function upsertMagicDocToMySql(doc: any) {
 
 export async function deleteMagicDocFromMySql(id: string) {
   try {
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const now = formatLocalDateTime();
     await pool.execute('UPDATE magic_docs SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
     revalidatePath('/m-admin/magic-docs');
     return { success: true };
