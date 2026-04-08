@@ -313,7 +313,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
               )}
             >
               {action.isWidget ? (
-                <div onClick={(e) => e.stopPropagation()} className="flex flex-col gap-2 w-full h-full cursor-default">
+                <div className="flex flex-col gap-2 w-full h-full cursor-default relative z-10">
                   <div className="flex-[0.6] bg-card border border-border/50 rounded-2xl p-3 flex flex-row items-center justify-between shadow-sm relative overflow-hidden group">
                     <div className="flex flex-col relative z-10 max-w-[60%]">
                       <span className="text-sm font-black text-foreground leading-tight tracking-tight">Free Design</span>
@@ -339,8 +339,12 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                       <Link href="/magictab" className="absolute inset-0 z-20" />
                     </div>
                     <div 
-                      onClick={() => setIsHiringOpen(true)}
-                      className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group cursor-pointer active:scale-95 transition-all"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsHiringOpen(true);
+                      }}
+                      className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group cursor-pointer active:scale-95 transition-all z-30"
                     >
                       <div className="flex flex-row items-center gap-1 text-red-600 font-black text-xs relative z-10 whitespace-nowrap">
                         Hiring <ChevronDown className="h-3 w-3" />
