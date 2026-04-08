@@ -7,9 +7,9 @@ import pool from '@/lib/mysql';
 export async function getMagicDocsFromMySql() {
   try {
     const [rows]: any = await pool.execute(
-      `SELECT *, DATE_FORMAT(last_updated, '%Y-%m-%dT%H:%i:%s.000Z') as lastUpdated,
-       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') as createdAt,
-       DATE_FORMAT(deleted_at, '%Y-%m-%dT%H:%i:%s.000Z') as deletedAt
+      `SELECT *, DATE_FORMAT(last_updated, '%Y-%m-%dT%H:%i:%s') as lastUpdated,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s') as createdAt,
+       DATE_FORMAT(deleted_at, '%Y-%m-%dT%H:%i:%s') as deletedAt
        FROM magic_docs ORDER BY last_updated DESC`
     );
 
@@ -27,8 +27,8 @@ export async function getMagicDocsFromMySql() {
 export async function getMagicDocByIdFromMySql(id: string) {
   try {
     const [rows]: any = await pool.execute(
-      `SELECT *, DATE_FORMAT(last_updated, '%Y-%m-%dT%H:%i:%s.000Z') as lastUpdated,
-       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s.000Z') as createdAt 
+      `SELECT *, DATE_FORMAT(last_updated, '%Y-%m-%dT%H:%i:%s') as lastUpdated,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%s') as createdAt 
        FROM magic_docs WHERE id = ? AND is_deleted = 0`,
       [id]
     );

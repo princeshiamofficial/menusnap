@@ -160,8 +160,8 @@ export async function getLeads(page: number = 1, limit: number = 20) {
       return { 
         ...lead, 
         stage,
-        last_login: lead.last_login_ts ? new Date(lead.last_login_ts * 1000).toISOString() : null,
-        created_at: lead.created_at_ts ? new Date(lead.created_at_ts * 1000).toISOString() : null
+        last_login: lead.last_login_ts ? new Date(lead.last_login_ts * 1000).toISOString().replace('Z', '') : null,
+        created_at: lead.created_at_ts ? new Date(lead.created_at_ts * 1000).toISOString().replace('Z', '') : null
       };
     });
     
@@ -215,7 +215,7 @@ export async function getClientHistory(clientId: number) {
     );
     const history = rows.map((item: any) => ({
       ...item,
-      created_at: item.created_at_ts ? new Date(item.created_at_ts * 1000).toISOString() : null
+      created_at: item.created_at_ts ? new Date(item.created_at_ts * 1000).toISOString().replace('Z', '') : null
     }));
     return { success: true, history };
   } catch (error: any) {
