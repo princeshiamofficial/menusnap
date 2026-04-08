@@ -888,7 +888,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   
-                  <div className="absolute right-0 bottom-2 w-[75px] h-[75px] pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                  <div className="absolute -right-2 bottom-1 w-[95px] h-[95px] pointer-events-none group-hover:scale-110 transition-transform duration-500">
                     <img src={service.img} alt={service.title} className="w-full h-full object-contain drop-shadow-xl" />
                   </div>
                 </motion.div>
