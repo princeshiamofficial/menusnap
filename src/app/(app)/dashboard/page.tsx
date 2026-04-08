@@ -830,7 +830,7 @@ export default function DashboardPage() {
                   title: "Makeup Artist", 
                   category: "PARLOR",
                   desc: "Creative artistry for events and shoots", 
-                  img: "/beautician_3d.png"
+                  img: "/makeup_artist_3d.png"
                 },
                 { 
                   title: "Waiter", 
@@ -848,7 +848,7 @@ export default function DashboardPage() {
                   title: "Cashier", 
                   category: "RESTAURANT",
                   desc: "Secure billing & merchant payment control", 
-                  img: "/dashboard/clock-location-premium-3d.png",
+                  img: "/cashier_3d.png",
                   badge: "NEW",
                   badgeColor: "bg-red-500"
                 },
@@ -856,7 +856,7 @@ export default function DashboardPage() {
                   title: "Receptionist", 
                   category: "PARLOR",
                   desc: "Front desk booking & client coordination", 
-                  img: "/menusnap_avatar_3d.png" 
+                  img: "/receptionist_3d.png" 
                 }
               ].map((service, idx) => (
                 <motion.div
