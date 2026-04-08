@@ -870,9 +870,6 @@ export default function DashboardPage() {
                   className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 h-[140px] relative shadow-sm hover:shadow-md transition-shadow overflow-hidden group"
                 >
                   <div className="flex flex-col h-full relative z-10 max-w-[65%]">
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
-                      {service.category}
-                    </span>
                     <div className="flex items-center gap-1.5 mb-1">
                       <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
                         {service.title}
