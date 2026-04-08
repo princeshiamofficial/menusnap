@@ -56,6 +56,7 @@ function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePrevi
               data-ai-hint="template full-view"
               sizes="(max-width: 768px) 95vw, (max-width: 1200px) 80vw, 1000px"
               priority
+              unoptimized
             />
           </div>
           <DialogClose asChild>
@@ -113,6 +114,7 @@ function TemplateCard({
               className="object-cover blur-xl opacity-95"
               priority={false}
               aria-hidden="true"
+              unoptimized
             />
             <Image
               src={actualImageUrl}
@@ -121,6 +123,7 @@ function TemplateCard({
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               className="object-contain relative z-10 transition-all duration-500 group-hover:scale-105 drop-shadow-xl group-hover:drop-shadow-2xl"
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
+              unoptimized
             />
             <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.15)] pointer-events-none z-20 group-hover:shadow-[inset_0_0_60px_rgba(0,0,0,0.2)] transition-shadow duration-500" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />

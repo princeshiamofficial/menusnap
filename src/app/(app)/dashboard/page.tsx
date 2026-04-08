@@ -59,6 +59,7 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
               className="object-cover blur-xl opacity-95"
               priority={false}
               aria-hidden="true"
+              unoptimized
             />
             <Image
               src={actualImageUrl}
@@ -67,6 +68,7 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="object-contain relative z-10 drop-shadow-xl"
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : (imageHint || "template design")}
+              unoptimized
             />
             <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.15)] pointer-events-none z-20" />
           </div>
@@ -192,7 +194,7 @@ function MobileImageSlider() {
       {/* Hidden preloader for all slider images */}
       <div className="hidden" aria-hidden="true">
         {slides.map((img, i) => (
-          <Image key={`preload-${i}`} src={img.src} alt="" width={1} height={1} priority />
+          <Image key={`preload-${i}`} src={img.src} alt="" width={1} height={1} priority unoptimized />
         ))}
       </div>
 
@@ -214,6 +216,7 @@ function MobileImageSlider() {
             fill
             className="object-contain"
             priority={current === 0}
+            unoptimized
           />
         </motion.div>
       </AnimatePresence>
@@ -557,6 +560,7 @@ export default function DashboardPage() {
                   alt={item.title}
                   fill
                   className="object-cover"
+                  unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
               </motion.div>
@@ -613,6 +617,7 @@ export default function DashboardPage() {
                   alt="Special Offer"
                   fill
                   className="object-cover"
+                  unoptimized
                 />
               </motion.div>
             ))}
@@ -665,6 +670,7 @@ export default function DashboardPage() {
               alt={spotlights[currentSpotlightIndex].title} 
               fill 
               className="object-cover"
+              unoptimized
             />
             {/* Subtle dark overlay for readability */}
             <div className="absolute inset-0 bg-black/40" />
