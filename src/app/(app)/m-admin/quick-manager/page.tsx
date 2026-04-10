@@ -9,7 +9,10 @@ import {
   deleteDashboardSlide,
   getDashboardSpotlights,
   addDashboardSpotlight,
-  deleteDashboardSpotlight
+  deleteDashboardSpotlight,
+  getExclusiveOffers,
+  addExclusiveOffer,
+  deleteExclusiveOffer
 } from "@/app/actions/storefront";
 import { 
   Plus, 
@@ -22,7 +25,9 @@ import {
   X,
   CheckCircle2,
   Sparkles,
-  Link
+  Link,
+  Tag,
+  LayoutGrid
 } from "lucide-react";
 import { compressImage } from "@/lib/utils";
 import {
@@ -43,23 +48,29 @@ export default function QuickManagerPage() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [slides, setSlides] = useState<any[]>([]);
   const [spotlights, setSpotlights] = useState<any[]>([]);
+  const [offers, setOffers] = useState<any[]>([]);
   const [isSpotlightUploadOpen, setIsSpotlightUploadOpen] = useState(false);
+  const [isOfferUploadOpen, setIsOfferUploadOpen] = useState(false);
   const [spotlightForm, setSpotlightForm] = useState({ link: '', cta: '' });
+  const [offerForm, setOfferForm] = useState({ category: 'Offer' });
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const spotlightFileInputRef = useRef<HTMLInputElement>(null);
+  const offerFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const [slidesRes, spotlightsRes] = await Promise.all([
+    const [slidesRes, spotlightsRes, offersRes] = await Promise.all([
       getDashboardSlides(),
-      getDashboardSpotlights()
+      getDashboardSpotlights(),
+      getExclusiveOffers()
     ]);
 
     if (slidesRes.success) setSlides(slidesRes.slides);
     if (spotlightsRes.success) setSpotlights(spotlightsRes.spotlights);
+    if (offersRes.success) setOffers(offersRes.offers);
     
     setIsLoading(false);
   }, []);
@@ -153,6 +164,36 @@ export default function QuickManagerPage() {
   const handleSpotlightDelete = async (id: number) => {
     if (!confirm("Delete this spotlight?")) return;
     const result = await deleteDashboardSpotlight(id);
+    if (result.success) fetchData();
+  };
+
+  const handleOfferUpload = async () => {
+    if (!previewImage) return;
+    setIsUploading(true);
+    
+    try {
+      const compressedImage = await compressImage(previewImage, 1080, 0.75);
+      const result = await addExclusiveOffer({
+        category: offerForm.category,
+        imageUrl: compressedImage
+      });
+      if (result.success) {
+        toast({ title: "Success", description: "Exclusive offer added." });
+        setIsOfferUploadOpen(false);
+        setOfferForm({ category: 'Food' });
+        setPreviewImage(null);
+        fetchData();
+      } else {
+        toast({ title: "Upload Failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to save offer.", variant: "destructive" });
+    } finally { setIsUploading(false); }
+  };
+
+  const handleOfferDelete = async (id: number) => {
+    if (!confirm("Delete this offer?")) return;
+    const result = await deleteExclusiveOffer(id);
     if (result.success) fetchData();
   };
 
@@ -405,6 +446,92 @@ export default function QuickManagerPage() {
                 <button 
                   onClick={() => handleSpotlightDelete(spot.id)}
                   className="absolute top-2 right-2 h-7 w-7 bg-red-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Exclusive Offers Section */}
+      <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
+        <div className="flex items-center justify-between gap-2 w-full overflow-hidden">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
+            <div className="p-2 md:p-3.5 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 text-indigo-600 rounded-xl md:rounded-[1.25rem] shadow-inner border border-indigo-100/20 shrink-0">
+              <Tag className="h-4 w-4 md:h-6 md:w-6" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg md:text-2xl font-semibold text-foreground tracking-tight truncate">Exclusive Offers</h2>
+              <p className="hidden md:block text-[10px] md:text-sm text-muted-foreground font-medium mt-0.5 opacity-70 tracking-tight">Manage banner categories & deals</p>
+            </div>
+          </div>
+          <div className="shrink-0">
+            <Dialog open={isOfferUploadOpen} onOpenChange={(open) => {
+              setIsOfferUploadOpen(open);
+              if (!open) { setPreviewImage(null); setOfferForm({ category: 'Food' }); }
+            }}>
+              <DialogTrigger asChild>
+                <Button className="rounded-xl md:rounded-2xl bg-indigo-600 text-white hover:bg-indigo-700 transition-all active:scale-95 gap-1 md:gap-2 px-2.5 md:px-6 shadow-2xl shadow-indigo-600/10 font-semibold border border-indigo-500/10 h-9 md:h-11 text-xs md:text-sm">
+                  <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span>Add Offer</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[450px] border-border/40 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-0 overflow-hidden">
+                <DialogHeader className="p-6 pb-2">
+                  <DialogTitle className="text-xl font-semibold tracking-tight flex items-center gap-3">
+                    <Tag className="h-5 w-5 text-indigo-600" />
+                    New Exclusive Offer
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground font-medium opacity-70">
+                    Upload a deal banner and select a category.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="px-6 py-4 space-y-4">
+                  <div 
+                    onClick={() => offerFileInputRef.current?.click()}
+                    className="relative cursor-pointer border-2 border-dashed rounded-[1.5rem] h-[150px] flex items-center justify-center overflow-hidden bg-slate-50 hover:bg-slate-100 transition-all"
+                  >
+                    {previewImage ? (
+                      <img src={previewImage} className="absolute inset-0 w-full h-full object-cover" />
+                    ) : <ImageIcon className="h-8 w-8 text-slate-300" />}
+                    <input type="file" ref={offerFileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">CATEGORY</Label>
+                      <Input 
+                        value={offerForm.category} 
+                        onChange={(e) => setOfferForm({...offerForm, category: e.target.value})}
+                        placeholder="e.g. Food, MagicAI, Summer" 
+                        className="rounded-xl border-border/40" 
+                      />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter className="p-6 pt-2">
+                  <Button disabled={!previewImage || isUploading} onClick={handleOfferUpload} className="w-full rounded-xl bg-indigo-600 text-white font-semibold h-12 shadow-lg shadow-indigo-600/20">
+                    {isUploading ? "Uploading..." : "Save Offer"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        <div className="flex overflow-x-auto pb-4 scrollbar-hide md:grid md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {offers.map((offer) => (
+            <Card key={offer.id} className="min-w-[200px] md:min-w-0 group relative rounded-2xl overflow-hidden border-border/20 shadow-sm hover:shadow-md transition-all border-2 hover:border-indigo-500/20">
+              <div className="aspect-[2.2/1] relative">
+                <img src={offer.image_url} className="object-cover w-full h-full transition-transform group-hover:scale-105" />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute top-2 left-2 px-2 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-md shadow-lg">
+                  {offer.category}
+                </div>
+                <button 
+                  onClick={() => handleOfferDelete(offer.id)}
+                  className="absolute top-2 right-2 h-7 w-7 bg-red-500 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

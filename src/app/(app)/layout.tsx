@@ -56,9 +56,16 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/m-admin');
+  const isStandaloneRoute = pathname.startsWith('/marketing-consultation') || 
+                            pathname.startsWith('/free-design') || 
+                            pathname.startsWith('/team-tracker');
+
+  if (isStandaloneRoute) {
+    return <>{children}</>;
+  }
 
   if (isAdminRoute) {
-    return <>{children}</>;
+    return <ClientAuthGuard>{children}</ClientAuthGuard>;
   }
 
   // For non-admin routes within the (app) group
@@ -72,7 +79,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <ScrollArea className="h-screen pb-16 md:pb-0"> {/* Added pb-16 for mobile, md:pb-0 for larger screens */}
             <main className={cn(
               "flex-1",
-              (pathname === "/dashboard" || pathname === "/dashboard/") ? "p-0" : "p-6 sm:p-8 md:p-10"
+              (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6 sm:p-8 md:p-10"
             )}>
               {children}
             </main>

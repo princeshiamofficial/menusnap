@@ -12,7 +12,7 @@ import { motion, animate, AnimatePresence } from "framer-motion";
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
-import { getDashboardSlides, getDashboardSpotlights } from '@/app/actions/storefront';
+import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
 
 
 
@@ -124,19 +124,19 @@ function RoleIconSlider() {
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <AnimatePresence initial={false}>
         <motion.div
-           key={index}
-           initial={{ x: '120%', opacity: 0, scale: 0.8 }}
-           animate={{ 
-             x: ['120%', '0%', '0%', '-450%'],
-             opacity: [0, 1, 1, 0],
-             scale: [0.8, 1, 1, 0.9]
-           }}
-           transition={{ 
-             duration: 3.8,
-             times: [0, 0.15, 0.85, 1],
-             ease: ["easeOut", "linear", "easeIn"]
-           }}
-           className="absolute -bottom-1 right-0 h-11 flex items-center"
+          key={index}
+          initial={{ x: '120%', opacity: 0, scale: 0.8 }}
+          animate={{
+            x: ['120%', '0%', '0%', '-450%'],
+            opacity: [0, 1, 1, 0],
+            scale: [0.8, 1, 1, 0.9]
+          }}
+          transition={{
+            duration: 3.8,
+            times: [0, 0.15, 0.85, 1],
+            ease: ["easeOut", "linear", "easeIn"]
+          }}
+          className="absolute -bottom-1 right-0 h-11 flex items-center"
         >
           <span className={cn(
             "text-[10px] font-bold text-black relative z-20 drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)] whitespace-nowrap",
@@ -155,7 +155,7 @@ function RoleIconSlider() {
 
 function MobileImageSlider() {
   const [current, setCurrent] = useState(0);
-  const [slides, setSlides] = useState<{src: string, title: string, desc: string}[]>([]);
+  const [slides, setSlides] = useState<{ src: string, title: string, desc: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -166,12 +166,12 @@ function MobileImageSlider() {
           // Map database rows to slider format
           const mappedSlides = (result.slides as any[]).map((slide, index) => ({
             src: slide.image_url,
-            title: index === 0 ? "Design Your Dream Menu" : 
-                   index === 1 ? "Real-time Collaboration" : 
-                   "WhatsApp Integration",
+            title: index === 0 ? "Design Your Dream Menu" :
+              index === 1 ? "Real-time Collaboration" :
+                "WhatsApp Integration",
             desc: index === 0 ? "Customize templates with your branding" :
-                  index === 1 ? "Edit together in real-time" :
-                  "Share your menu directly"
+              index === 1 ? "Edit together in real-time" :
+                "Share your menu directly"
           }));
           setSlides(mappedSlides);
         } else {
@@ -256,9 +256,9 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
   const actions = [
     {
       title: "eBook",
-      description: "Automate your menu setup with AI",
-      badge: "ULTRA FAST",
-      href: "/ebook", 
+      description: "The ultimate restaurant growth blueprint",
+      badge: "STRATEGIC",
+      href: "/ebook",
       imageUrl: "/dashboard/ebook-premium-3d.png",
       rightOffset: "-right-12",
       bottomOffset: "-bottom-2",
@@ -269,8 +269,8 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
     {
       title: "Team Tracker",
       description: "Manage your team's workflow",
-      badge: "PRO",
-      href: "/templates",
+      badge: "MONITORING",
+      href: "/team-tracker",
       imageUrl: "/dashboard/clock-location-premium-3d.png",
       rightOffset: "-right-10",
       bottomOffset: "-bottom-3",
@@ -281,8 +281,8 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
     {
       title: "Templates",
       description: "Curate your custom menu templates",
-      badge: "DRAFTING",
-      href: "/draft",
+      badge: "PREMIUM",
+      href: "/templates",
       imageUrl: "/dashboard/templates-premium-3d.png",
       rightOffset: "-right-5",
       bottomOffset: "bottom-1",
@@ -294,7 +294,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
     },
     {
       title: "Free Design",
-      description: "Claim your complimentary services",
+      description: "Limited time pro offers - pay after satisfaction",
       href: "/order-history",
       isWidget: true
     },
@@ -315,11 +315,11 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
               {action.isWidget ? (
                 <div className="flex flex-col gap-2 w-full h-full cursor-default relative z-10">
                   <div className="flex-[0.6] bg-card border border-border/50 rounded-2xl p-3 flex flex-row items-center justify-between shadow-sm relative overflow-hidden group">
-                    <div className="flex flex-col relative z-10 max-w-[60%]">
+                    <div className="flex flex-col relative z-20 max-w-[60%]">
                       <span className="text-sm font-black text-foreground leading-tight tracking-tight">Free Design</span>
-                      <p className="text-[9px] font-medium text-muted-foreground leading-tight mt-0.5 line-clamp-1">Limited time pro offers</p>
+                      <p className="text-[9px] font-medium text-muted-foreground leading-tight mt-0.5 line-clamp-1">Pay after satisfaction</p>
                     </div>
-                    <Link href="/order-history" className="absolute inset-0 z-0" />
+                    <Link href="/free-design" className="absolute inset-0 z-30" />
                     <div className="absolute -right-2 bottom-2 h-14 w-14 shrink-0 pointer-events-none opacity-95 drop-shadow-xl">
                       <img
                         src="/dashboard/color-palette-premium-3d.png"
@@ -338,7 +338,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                       </div>
                       <Link href="/magictab" className="absolute inset-0 z-20" />
                     </div>
-                    <div 
+                    <div
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -355,7 +355,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                 </div>
               ) : (
                 <>
-                  <Link href={action.href} className="absolute inset-0 z-0" />
+                  <Link href={action.href} className="absolute inset-0 z-30" />
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-foreground leading-tight">{action.title}</h3>
                     <p className="text-[10px] font-medium text-muted-foreground leading-tight mt-1 max-w-[85%]">
@@ -365,9 +365,9 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
 
                   {action.imageUrl ? (
                     <div className={cn("absolute z-0 pointer-events-none", action.rightOffset, action.bottomOffset)}>
-                      <img 
-                        src={action.imageUrl} 
-                        alt={action.title} 
+                      <img
+                        src={action.imageUrl}
+                        alt={action.title}
                         style={{ width: action.imgWidth || '135px', height: action.imgHeight || '135px', objectFit: 'contain' }}
                         className="drop-shadow-2xl"
                       />
@@ -375,7 +375,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                   ) : (
                     action.icon && (
                       <action.icon className={cn(
-                        "h-16 w-16 absolute -right-3 top-14 rotate-12 transition-transform group-hover:scale-110", 
+                        "h-16 w-16 absolute -right-3 top-14 rotate-12 transition-transform group-hover:scale-110",
                         action.color
                       )} />
                     )
@@ -430,16 +430,17 @@ export default function DashboardPage() {
   const [topRatedTemplates, setTopRatedTemplates] = useState<ApiTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
-  
+
   const { clientUser, clientLoading } = useClientAuth();
   const [activeOfferTab, setActiveOfferTab] = useState("All");
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
   const [currentSpotlightIndex, setCurrentSpotlightIndex] = useState(-1);
   const [spotlights, setSpotlights] = useState<any[]>([]);
+  const [exclusiveOffers, setExclusiveOffers] = useState<any[]>([]);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
   const [showSeeMore, setShowSeeMore] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
-  
+
   const scrollToBottom = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -454,11 +455,17 @@ export default function DashboardPage() {
     if (res.success) setSpotlights(res.spotlights);
   }, []);
 
+  const fetchExclusiveOffers = useCallback(async () => {
+    const res = await getExclusiveOffers();
+    if (res.success) setExclusiveOffers(res.offers);
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100);
     fetchSpotlights();
+    fetchExclusiveOffers();
     return () => clearTimeout(timer);
-  }, [fetchSpotlights]);
+  }, [fetchSpotlights, fetchExclusiveOffers]);
 
   useEffect(() => {
     async function fetchTopRatedTemplates() {
@@ -524,409 +531,408 @@ export default function DashboardPage() {
             <span className="text-[10px] font-bold text-muted-foreground tracking-[0.2em] uppercase opacity-70">Quick Actions</span>
             <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-foreground/20 to-transparent"></div>
           </div>
-          
+
           <div className="w-full overflow-hidden">
             <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-2 pb-4">
-            {/* Shop Card */}
-            <motion.div 
-              whileTap={{ scale: 0.97 }}
-              className="group relative min-w-[53vw] md:min-w-[240px] snap-center bg-white dark:bg-slate-900 border-2 border-red-500/20 rounded-[1rem] p-1.5 shadow-sm hover:shadow-md transition-all duration-300"
-            >
-              <div className="flex flex-col gap-0.5 overflow-hidden">
-                <div className="flex items-center gap-1">
-                  <span className="bg-red-600 text-[7px] font-black text-white px-1.5 py-0.5 rounded-md tracking-tighter uppercase">NEW</span>
-                  <span className="text-red-600 font-black text-[9px]">Shop</span>
-                </div>
-                <h3 className="text-[11px] font-black text-foreground flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                  Explore products <ChevronDown className="h-2 w-2 -rotate-90" />
-                </h3>
-                <p className="text-[7.5px] text-muted-foreground font-medium truncate opacity-80">Toys, Stationery, Sports</p>
-              </div>
-              <div className="absolute -right-0.5 bottom-0.5 w-10 h-10 opacity-20 group-hover:opacity-60 transition-opacity duration-500">
-                 <TrendingUp className="w-full h-full text-red-500/10" />
-              </div>
-            </motion.div>
-
-            {/* PayLater Card */}
-            <motion.div 
-              whileTap={{ scale: 0.97 }}
-              className="group relative min-w-[53vw] md:min-w-[240px] snap-center bg-indigo-50 dark:bg-indigo-950/30 rounded-[1rem] p-1.5 shadow-sm hover:shadow-md transition-all duration-300 border border-indigo-100 dark:border-indigo-900/50"
-            >
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1">
-                  <div className="p-0.5 bg-white rounded-md shadow-sm">
-                    <History className="h-2 w-2 text-indigo-600" />
+              {/* WhatsApp Support Card */}
+              <motion.div
+                whileTap={{ scale: 0.97 }}
+                className="group relative min-w-[53vw] md:min-w-[240px] snap-center bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-500/20 rounded-[1rem] p-1.5 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+              >
+                <div className="flex flex-col gap-0.5 relative z-10">
+                  <div className="flex items-center gap-1">
+                    <span className="bg-emerald-600 text-[7px] font-black text-white px-1.5 py-0.5 rounded-md tracking-tighter uppercase">LIVE</span>
+                    <span className="text-emerald-600 font-black text-[9px]">Support</span>
                   </div>
-                  <span className="text-indigo-600 font-black text-[9px]">PayLater</span>
+                  <h3 className="text-[11px] font-black text-foreground flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    Marketing Consultation <ChevronDown className="h-2 w-2 -rotate-90" />
+                  </h3>
+                  <p className="text-[7.5px] text-muted-foreground font-medium truncate opacity-80">Growth & Strategy Guide</p>
                 </div>
-                <h3 className="text-[11px] font-black text-foreground leading-none tracking-tight">
-                  Pay Smarter, Pay Later
-                </h3>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      {/* MenuSnap Spotlight Section (MOBILE ONLY) */}
-      <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
-        <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">MenuSnap Spotlight</h2>
-        <div className="w-full overflow-hidden">
-          <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-3 pb-6">
-            {spotlights.map((item, idx) => (
-              <motion.div
-                key={item.id}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setCurrentSpotlightIndex(idx)}
-                className="min-w-[105px] aspect-[3/5] snap-center relative rounded-[1.25rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform"
-              >
-                <img 
-                  src={item.image_url} 
-                  alt={item.title}
-                  className="w-full h-full object-cover absolute inset-0"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+                <div className="absolute -right-2 -bottom-1 w-[60px] h-[60px] opacity-100 group-hover:scale-110 transition-transform duration-500 z-0">
+                  <img src="/dashboard/whatsapp-cs-white-bg.png" alt="WhatsApp Support" className="w-full h-full object-contain drop-shadow-md" />
+                </div>
+                <Link href="/marketing-consultation" className="absolute inset-0 z-20" />
               </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      {/* Exclusive Offers Section (MOBILE ONLY) */}
-      <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
-        <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">Exclusive Offers</h2>
-        
-        {/* Filter Chips */}
-        <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">
-          {["All", "Food", "MagicAI", "Updates"].map((chip) => (
-            <button
-              key={chip}
-              onClick={() => setActiveOfferTab(chip)}
-              className={cn(
-                "px-5 py-2 rounded-full text-xs font-black transition-all border shrink-0",
-                activeOfferTab === chip 
-                  ? "bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/20" 
-                  : "bg-white dark:bg-slate-900 text-muted-foreground border-slate-200 dark:border-slate-800"
-              )}
-            >
-              {chip}
-            </button>
-          ))}
-        </div>
-
-        {/* Banners Scroller */}
-        <div className="w-full overflow-hidden">
-          <div 
-            onScroll={(e) => {
-              const target = e.target as HTMLDivElement;
-              const index = Math.round(target.scrollLeft / (target.offsetWidth * 0.85));
-              setCurrentOfferIndex(index);
-            }}
-            className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-2"
-          >
-            {[
-              { id: 1, type: "Food", img: "/uploads/offers/food_50.png" },
-              { id: 2, type: "MagicAI", img: "/uploads/offers/ai_25.png" }
-            ]
-            .filter(offer => activeOfferTab === "All" || offer.type === activeOfferTab)
-            .map((offer) => (
+              {/* Expert Support Card */}
               <motion.div
-                key={offer.id}
-                whileTap={{ scale: 0.98 }}
-                className="min-w-[85vw] aspect-[2.2/1] snap-center relative rounded-[1.25rem] overflow-hidden shadow-2xl"
+                whileTap={{ scale: 0.97 }}
+                className="group relative min-w-[53vw] md:min-w-[240px] snap-center bg-orange-50 dark:bg-orange-950/20 rounded-[1rem] p-1.5 shadow-sm hover:shadow-md transition-all duration-300 border border-orange-100 dark:border-orange-900/50 overflow-hidden"
               >
-                <img 
-                  src={offer.img} 
-                  alt="Special Offer"
-                  className="w-full h-full object-cover absolute inset-0"
-                />
+                <div className="flex flex-col gap-1 relative z-10">
+                  <div className="flex items-center gap-1">
+                    <span className="bg-orange-600 text-[7px] font-black text-white px-1.5 py-0.5 rounded-md tracking-tighter uppercase">LIVE</span>
+                    <span className="text-orange-600 font-black text-[9px]">Support</span>
+                  </div>
+                  <h3 className="text-[11px] font-black text-foreground leading-none tracking-tight">
+                    Expert Support Call
+                  </h3>
+                  <p className="text-[7.5px] text-muted-foreground font-medium truncate opacity-80 mt-1">Fast Response Team</p>
+                </div>
+                <div className="absolute -right-2 -bottom-2 w-[55px] h-[55px] opacity-100 group-hover:scale-110 transition-transform duration-500 z-0">
+                  <img src="/dashboard/cs-man-orange.png" alt="Expert Support" className="w-full h-full object-contain drop-shadow-md" />
+                </div>
+                <Link href="/marketing-consultation" className="absolute inset-0 z-20" />
               </motion.div>
-            ))}
-          </div>
-
-          {/* Working Dynamic Pagination Indicators */}
-          <div className="flex justify-center gap-1.5 mt-2">
-            {[1, 2]
-              .filter(() => activeOfferTab === "All") // Only show dots if both are there, or handle dynamic mapping
-              .concat(activeOfferTab !== "All" ? [1] : []) // Adjust based on filter
-              .slice(0, activeOfferTab === "All" ? 2 : 1) // Simple count for now
-              .map((_, idx) => (
-                <div 
-                  key={idx}
-                  className={cn(
-                    "transition-all duration-300 rounded-full",
-                    currentOfferIndex === idx 
-                      ? "w-4 h-1.5 bg-red-600" 
-                      : "w-1.5 h-1.5 bg-slate-300 dark:bg-slate-700"
-                  )}
-                />
-              ))}
-          </div>
-        </div>
-      </div>
-        
-      {/* Welcome Popup */}
-        
- 
-  {/* Immersive Spotlight Story View */}
-  <AnimatePresence>
-    {currentSpotlightIndex !== -1 && spotlights.length > 0 && (
-      <motion.div
-        initial={{ opacity: 0, y: "100%" }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-between md:hidden"
-      >
-        {/* Main Full Image Content (Full Screen Edge-to-Edge) */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <motion.div
-            key={currentSpotlightIndex}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full h-full relative"
-          >
-            <img 
-              src={spotlights[currentSpotlightIndex].image_url} 
-              alt={spotlights[currentSpotlightIndex].title} 
-              className="w-full h-full object-cover absolute inset-0"
-            />
-            {/* Subtle dark overlay for readability */}
-            <div className="absolute inset-0 bg-black/40" />
-          </motion.div>
-        </div>
-
-        {/* Multiple Progress Bars (Facebook Style) */}
-        <div className="absolute top-4 left-4 right-4 z-50 flex gap-1.5 h-[2.5px]">
-          {spotlights.map((_, i) => (
-            <div key={i} className="flex-1 bg-white/20 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: i < currentSpotlightIndex ? "100%" : "0%" }}
-                animate={{ width: i === currentSpotlightIndex ? "100%" : i < currentSpotlightIndex ? "100%" : "0%" }}
-                transition={{ 
-                   duration: i === currentSpotlightIndex ? 5 : 0, 
-                   ease: "linear" 
-                }}
-                onAnimationComplete={() => {
-                  if (i === currentSpotlightIndex) {
-                    if (currentSpotlightIndex < spotlights.length - 1) {
-                      setCurrentSpotlightIndex(prev => prev + 1);
-                    } else {
-                      setCurrentSpotlightIndex(-1);
-                    }
-                  }
-                }}
-                className="h-full bg-white"
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* Header / Profile Area */}
-        <div className="w-full flex justify-between items-center z-10 mt-8 px-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full border-2 border-red-600 p-0.5 bg-white overflow-hidden">
-              <img src="/menusnap_avatar_3d.png" alt="Logo" width={40} height={40} className="object-contain" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-white font-black text-sm tracking-tight">MenuSnap</span>
-              <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest leading-none">Sponsored</span>
             </div>
           </div>
-          <button 
-            onClick={() => setCurrentSpotlightIndex(-1)}
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-90 transition-transform"
-          >
-            <X className="w-6 h-6" />
-          </button>
         </div>
 
-
-
-        {/* Bottom Interactivity */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 z-20 flex flex-col items-center gap-4">
-          <div 
-            onClick={(e) => {
-               e.stopPropagation();
-               const url = spotlights[currentSpotlightIndex]?.link_url;
-               if (url) window.location.href = url;
-            }}
-            className="flex flex-col items-center gap-1 opacity-70 cursor-pointer active:scale-95 transition-transform pointer-events-auto"
-          >
-            <ChevronDown className="h-5 w-5 text-white rotate-180 animate-bounce" />
-            <span className="text-white font-black text-[10px] uppercase tracking-widest">
-              {spotlights[currentSpotlightIndex]?.cta_text || 'Swipe up'}
-            </span>
-          </div>
-        </div>
-      </motion.div>
-    )}
-  </AnimatePresence>
-
-  {/* Hiring Career Overlay (All Services Style) */}
-  <AnimatePresence>
-    {isHiringOpen && (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] flex items-end justify-center md:hidden"
-        onClick={() => setIsHiringOpen(false)}
-      >
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          onClick={(e) => e.stopPropagation()}
-          className="w-full bg-white dark:bg-slate-900 rounded-t-[1.5rem] flex flex-col max-h-[92vh] overflow-hidden shadow-[0_-8px_30px_rgb(0,0,0,0.12)]"
-        >
-          {/* Header Section */}
-          <div className="flex flex-col items-center pt-2 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-            <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mb-4" />
-            <div className="w-full px-6 flex justify-between items-center">
-              <div className="w-8" /> {/* Spacer */}
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Hiring Services</h2>
-              <button 
-                onClick={() => setIsHiringOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 active:scale-90 transition-transform"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Grid Content */}
-          <div 
-            ref={scrollRef}
-            onScroll={(e) => {
-              const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-              if (scrollTop + clientHeight >= scrollHeight - 40) {
-                setShowSeeMore(false);
-              } else {
-                setShowSeeMore(true);
-              }
-            }}
-            className="flex-1 overflow-y-auto p-4 bg-slate-50/50 dark:bg-slate-950/20"
-          >
-            <div className="grid grid-cols-2 gap-3 pb-20">
-              {[
-                { 
-                  title: "Manager", 
-                  category: "RESTAURANT",
-                  desc: "Expert hospitality admin & team coordination", 
-                  img: "/restaurant_manager_3d.png", 
-                  badge: "PRO", 
-                  badgeColor: "bg-blue-500" 
-                },
-                { 
-                  title: "Beautician", 
-                  category: "PARLOR",
-                  desc: "Premium salon & aesthetic care professional", 
-                  img: "/beautician_3d.png", 
-                  badge: "NEW", 
-                  badgeColor: "bg-red-500" 
-                },
-                { 
-                  title: "Chef", 
-                  category: "RESTAURANT",
-                  desc: "Master culinary speed & kitchen operation", 
-                  img: "/chef_3d.png",
-                  badge: "HOT",
-                  badgeColor: "bg-orange-500"
-                },
-                { 
-                  title: "Makeup Artist", 
-                  category: "PARLOR",
-                  desc: "Creative artistry for events and shoots", 
-                  img: "/makeup_artist_3d.png"
-                },
-                { 
-                  title: "Waiter", 
-                  category: "RESTAURANT",
-                  desc: "Top-tier guest serving & floor management", 
-                  img: "/waiter_3d.png"
-                },
-                { 
-                  title: "Manager", 
-                  category: "PARLOR",
-                  desc: "Strategic parlor operations & staff lead", 
-                  img: "/parlor_manager_3d.png"
-                },
-                { 
-                  title: "Cashier", 
-                  category: "RESTAURANT",
-                  desc: "Secure billing & merchant payment control", 
-                  img: "/cashier_3d.png",
-                  badge: "NEW",
-                  badgeColor: "bg-red-500"
-                },
-                { 
-                  title: "Receptionist", 
-                  category: "PARLOR",
-                  desc: "Front desk booking & client coordination", 
-                  img: "/receptionist_3d.png" 
-                }
-              ].map((service, idx) => (
+        {/* MenuSnap Spotlight Section (MOBILE ONLY) */}
+        <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
+          <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">MenuSnap Spotlight</h2>
+          <div className="w-full overflow-hidden">
+            <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-3 pb-6">
+              {spotlights.map((item, idx) => (
                 <motion.div
-                  key={`${service.title}-${idx}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 h-[140px] relative shadow-sm hover:shadow-md transition-shadow overflow-hidden group"
+                  key={item.id}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setCurrentSpotlightIndex(idx)}
+                  className="min-w-[105px] aspect-[3/5] snap-center relative rounded-[1.25rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform"
                 >
-                  <div className="flex flex-col h-full relative z-10 max-w-[65%]">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
-                        {service.title}
-                      </h3>
-                      {service.badge && (
-                        <span className={cn("text-[8px] font-black text-white px-1.5 py-0.5 rounded-[4px]", service.badgeColor)}>
-                          {service.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug line-clamp-3">
-                      {service.desc}
-                    </p>
-                    {service.promo && (
-                      <div className={cn("mt-auto self-start text-[10px] font-black px-2 py-1 rounded-lg border", service.promoColor)}>
-                        {service.promo}
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="absolute -right-2 bottom-1 w-[95px] h-[95px] pointer-events-none group-hover:scale-110 transition-transform duration-500">
-                    <img src={service.img} alt={service.title} className="w-full h-full object-contain drop-shadow-xl" />
-                  </div>
+                  <img
+                    src={item.image_url}
+                    alt={item.title}
+                    className="w-full h-full object-cover absolute inset-0"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
                 </motion.div>
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Floating Action Area */}
-          <AnimatePresence>
-            {showSeeMore && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="absolute bottom-6 left-0 right-0 flex justify-center z-20 pointer-events-none"
+        {/* Exclusive Offers Section (MOBILE ONLY) */}
+        <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
+          <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">Exclusive Offers</h2>
+
+          {/* Filter Chips */}
+          <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide flex-nowrap w-full">
+            {["All", ...Array.from(new Set(exclusiveOffers.map(o => o.category)))].map((chip) => (
+              <button
+                key={chip}
+                onClick={() => setActiveOfferTab(chip)}
+                className={cn(
+                  "px-5 py-2 rounded-full text-xs font-black transition-all border shrink-0",
+                  activeOfferTab === chip
+                    ? "bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/20"
+                    : "bg-white dark:bg-slate-900 text-muted-foreground border-slate-200 dark:border-slate-800"
+                )}
               >
-                <button 
-                  onClick={scrollToBottom}
-                  className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 pointer-events-auto active:scale-95 transition-transform"
+                {chip}
+              </button>
+            ))}
+          </div>
+
+          {/* Banners Scroller */}
+          <div className="w-full overflow-hidden">
+            <div 
+              onScroll={(e) => {
+                const target = e.target as HTMLDivElement;
+                const index = Math.round(target.scrollLeft / (target.offsetWidth * 0.85));
+                setCurrentOfferIndex(index);
+              }}
+              className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-2"
+            >
+              {exclusiveOffers
+                .filter(offer => activeOfferTab === "All" || offer.category === activeOfferTab)
+                .map((offer) => (
+                  <motion.div
+                    key={offer.id}
+                    whileTap={{ scale: 0.98 }}
+                    className="min-w-[85vw] aspect-[2.2/1] snap-center relative rounded-[1.25rem] overflow-hidden shadow-2xl"
+                  >
+                    <img 
+                      src={offer.image_url} 
+                      alt="Special Offer"
+                      className="w-full h-full object-cover absolute inset-0"
+                    />
+                  </motion.div>
+                ))}
+            </div>
+
+            {/* Working Dynamic Pagination Indicators */}
+            <div className="flex justify-center gap-1.5 mt-2">
+              {exclusiveOffers
+                .filter(offer => activeOfferTab === "All" || offer.category === activeOfferTab)
+                .map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "transition-all duration-300 rounded-full",
+                      currentOfferIndex === idx
+                        ? "w-4 h-1.5 bg-red-600"
+                        : "w-1.5 h-1.5 bg-slate-300 dark:bg-slate-700"
+                    )}
+                  />
+                ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Welcome Popup */}
+
+
+        {/* Immersive Spotlight Story View */}
+        <AnimatePresence>
+          {currentSpotlightIndex !== -1 && spotlights.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-between md:hidden"
+            >
+              {/* Main Full Image Content (Full Screen Edge-to-Edge) */}
+              <div className="absolute inset-0 z-0 overflow-hidden">
+                <motion.div
+                  key={currentSpotlightIndex}
+                  initial={{ opacity: 0, scale: 1.1 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="w-full h-full relative"
                 >
-                  See More <ChevronDown className="w-4 h-4" />
+                  <img
+                    src={spotlights[currentSpotlightIndex].image_url}
+                    alt={spotlights[currentSpotlightIndex].title}
+                    className="w-full h-full object-cover absolute inset-0"
+                  />
+                  {/* Subtle dark overlay for readability */}
+                  <div className="absolute inset-0 bg-black/40" />
+                </motion.div>
+              </div>
+
+              {/* Multiple Progress Bars (Facebook Style) */}
+              <div className="absolute top-4 left-4 right-4 z-50 flex gap-1.5 h-[2.5px]">
+                {spotlights.map((_, i) => (
+                  <div key={i} className="flex-1 bg-white/20 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: i < currentSpotlightIndex ? "100%" : "0%" }}
+                      animate={{ width: i === currentSpotlightIndex ? "100%" : i < currentSpotlightIndex ? "100%" : "0%" }}
+                      transition={{
+                        duration: i === currentSpotlightIndex ? 5 : 0,
+                        ease: "linear"
+                      }}
+                      onAnimationComplete={() => {
+                        if (i === currentSpotlightIndex) {
+                          if (currentSpotlightIndex < spotlights.length - 1) {
+                            setCurrentSpotlightIndex(prev => prev + 1);
+                          } else {
+                            setCurrentSpotlightIndex(-1);
+                          }
+                        }
+                      }}
+                      className="h-full bg-white"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Header / Profile Area */}
+              <div className="w-full flex justify-between items-center z-10 mt-8 px-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full border-2 border-red-600 p-0.5 bg-white overflow-hidden">
+                    <img src="/menusnap_avatar_3d.png" alt="Logo" width={40} height={40} className="object-contain" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-white font-black text-sm tracking-tight">MenuSnap</span>
+                    <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest leading-none">Sponsored</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setCurrentSpotlightIndex(-1)}
+                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-90 transition-transform"
+                >
+                  <X className="w-6 h-6" />
                 </button>
+              </div>
+
+
+
+              {/* Bottom Interactivity */}
+              <div className="absolute bottom-0 left-0 right-0 p-8 z-20 flex flex-col items-center gap-4">
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const url = spotlights[currentSpotlightIndex]?.link_url;
+                    if (url) window.location.href = url;
+                  }}
+                  className="flex flex-col items-center gap-1 opacity-70 cursor-pointer active:scale-95 transition-transform pointer-events-auto"
+                >
+                  <ChevronDown className="h-5 w-5 text-white rotate-180 animate-bounce" />
+                  <span className="text-white font-black text-[10px] uppercase tracking-widest">
+                    {spotlights[currentSpotlightIndex]?.cta_text || 'Swipe up'}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Hiring Career Overlay (All Services Style) */}
+        <AnimatePresence>
+          {isHiringOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] flex items-end justify-center md:hidden"
+              onClick={() => setIsHiringOpen(false)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full bg-white dark:bg-slate-900 rounded-t-[1.5rem] flex flex-col max-h-[92vh] overflow-hidden shadow-[0_-8px_30px_rgb(0,0,0,0.12)]"
+              >
+                {/* Header Section */}
+                <div className="flex flex-col items-center pt-2 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                  <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mb-4" />
+                  <div className="w-full px-6 flex justify-between items-center">
+                    <div className="w-8" /> {/* Spacer */}
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Hiring Services</h2>
+                    <button
+                      onClick={() => setIsHiringOpen(false)}
+                      className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 active:scale-90 transition-transform"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grid Content */}
+                <div
+                  ref={scrollRef}
+                  onScroll={(e) => {
+                    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+                    if (scrollTop + clientHeight >= scrollHeight - 40) {
+                      setShowSeeMore(false);
+                    } else {
+                      setShowSeeMore(true);
+                    }
+                  }}
+                  className="flex-1 overflow-y-auto p-4 bg-slate-50/50 dark:bg-slate-950/20"
+                >
+                  <div className="grid grid-cols-2 gap-3 pb-20">
+                    {[
+                      {
+                        title: "Manager",
+                        category: "RESTAURANT",
+                        desc: "Expert hospitality admin & team coordination",
+                        img: "/restaurant_manager_3d.png",
+                        badge: "PRO",
+                        badgeColor: "bg-blue-500"
+                      },
+                      {
+                        title: "Beautician",
+                        category: "PARLOR",
+                        desc: "Premium salon & aesthetic care professional",
+                        img: "/beautician_3d.png",
+                        badge: "NEW",
+                        badgeColor: "bg-red-500"
+                      },
+                      {
+                        title: "Chef",
+                        category: "RESTAURANT",
+                        desc: "Master culinary speed & kitchen operation",
+                        img: "/chef_3d.png",
+                        badge: "HOT",
+                        badgeColor: "bg-orange-500"
+                      },
+                      {
+                        title: "Makeup Artist",
+                        category: "PARLOR",
+                        desc: "Creative artistry for events and shoots",
+                        img: "/makeup_artist_3d.png"
+                      },
+                      {
+                        title: "Waiter",
+                        category: "RESTAURANT",
+                        desc: "Top-tier guest serving & floor management",
+                        img: "/waiter_3d.png"
+                      },
+                      {
+                        title: "Manager",
+                        category: "PARLOR",
+                        desc: "Strategic parlor operations & staff lead",
+                        img: "/parlor_manager_3d.png"
+                      },
+                      {
+                        title: "Cashier",
+                        category: "RESTAURANT",
+                        desc: "Secure billing & merchant payment control",
+                        img: "/cashier_3d.png",
+                        badge: "NEW",
+                        badgeColor: "bg-red-500"
+                      },
+                      {
+                        title: "Receptionist",
+                        category: "PARLOR",
+                        desc: "Front desk booking & client coordination",
+                        img: "/receptionist_3d.png"
+                      }
+                    ].map((service, idx) => (
+                      <motion.div
+                        key={`${service.title}-${idx}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 h-[140px] relative shadow-sm hover:shadow-md transition-shadow overflow-hidden group"
+                      >
+                        <div className="flex flex-col h-full relative z-10 max-w-[65%]">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
+                              {service.title}
+                            </h3>
+                            {service.badge && (
+                              <span className={cn("text-[8px] font-black text-white px-1.5 py-0.5 rounded-[4px]", service.badgeColor)}>
+                                {service.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug line-clamp-3">
+                            {service.desc}
+                          </p>
+                          {service.promo && (
+                            <div className={cn("mt-auto self-start text-[10px] font-black px-2 py-1 rounded-lg border", service.promoColor)}>
+                              {service.promo}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="absolute -right-2 bottom-1 w-[95px] h-[95px] pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                          <img src={service.img} alt={service.title} className="w-full h-full object-contain drop-shadow-xl" />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Floating Action Area */}
+                <AnimatePresence>
+                  {showSeeMore && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      className="absolute bottom-6 left-0 right-0 flex justify-center z-20 pointer-events-none"
+                    >
+                      <button
+                        onClick={scrollToBottom}
+                        className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 pointer-events-auto active:scale-95 transition-transform"
+                      >
+                        See More <ChevronDown className="w-4 h-4" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </motion.div>
-    )}
-  </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </div>

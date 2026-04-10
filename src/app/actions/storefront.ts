@@ -6,6 +6,21 @@ import fs from 'fs/promises';
 import path from 'path';
 
 /**
+ * Helper to delete a file from the public directory if it exists.
+ */
+async function deleteFileIfExists(relativeUrl: string) {
+  if (!relativeUrl || !relativeUrl.startsWith('/uploads')) return;
+  
+  try {
+    const filePath = path.join(process.cwd(), 'public', relativeUrl);
+    await fs.unlink(filePath);
+  } catch (err) {
+    // File might not exist or already deleted, ignore errors but log warning
+    console.warn(`File deletion ignored for ${relativeUrl}:`, err);
+  }
+}
+
+/**
  * Ensures the dashboard_slides table exists.
  */
 async function ensureSlidesTable() {
@@ -46,6 +61,25 @@ async function ensureSpotlightsTable() {
     // Table created successfully. No dummy data added.
   } catch (err) {
     console.error("Database initialization error (spotlights):", err);
+    throw err;
+  }
+}
+
+/**
+ * Ensures the exclusive_offers table exists.
+ */
+async function ensureExclusiveOffersTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS dashboard_exclusive_offers (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        category VARCHAR(100) NOT NULL,
+        image_url TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+  } catch (err) {
+    console.error("Database initialization error (exclusive offers):", err);
     throw err;
   }
 }
@@ -123,6 +157,13 @@ export async function addDashboardSlide(imageUrl: string) {
 export async function deleteDashboardSlide(slideId: number) {
   try {
     await ensureSlidesTable();
+    
+    // Get image URL before deletion
+    const [rows]: any = await pool.execute('SELECT image_url FROM dashboard_slides WHERE id = ?', [slideId]);
+    if (rows.length > 0) {
+      await deleteFileIfExists(rows[0].image_url);
+    }
+    
     await pool.execute('DELETE FROM dashboard_slides WHERE id = ?', [slideId]);
     // Invalidate cache so removal reflects without PM2 restart
     revalidatePath('/m-admin/quick-manager');
@@ -197,6 +238,13 @@ export async function addDashboardSpotlight(data: { title: string, imageUrl: str
 export async function deleteDashboardSpotlight(id: number) {
   try {
     await ensureSpotlightsTable();
+
+    // Get image URL before deletion
+    const [rows]: any = await pool.execute('SELECT image_url FROM dashboard_spotlights WHERE id = ?', [id]);
+    if (rows.length > 0) {
+      await deleteFileIfExists(rows[0].image_url);
+    }
+
     await pool.execute('DELETE FROM dashboard_spotlights WHERE id = ?', [id]);
     // Invalidate cache so removal reflects without PM2 restart
     revalidatePath('/m-admin/quick-manager');
@@ -204,5 +252,86 @@ export async function deleteDashboardSpotlight(id: number) {
   } catch (error: any) {
     console.error("Database Error deleting spotlight:", error);
     return { success: false, error: error?.message || "Failed to delete spotlight" };
+  }
+}
+
+/**
+ * Fetches all exclusive offers from the database.
+ */
+export async function getExclusiveOffers() {
+  try {
+    await ensureExclusiveOffersTable();
+    const [rows]: any = await pool.execute('SELECT * FROM dashboard_exclusive_offers ORDER BY created_at DESC');
+    return { success: true, offers: rows };
+  } catch (error: any) {
+    console.error("Database Error fetching exclusive offers:", error);
+    return { success: false, error: error?.message || "Failed to fetch exclusive offers", offers: [] };
+  }
+}
+
+/**
+ * Adds a new exclusive offer to the database.
+ */
+export async function addExclusiveOffer(data: { category: string, imageUrl: string }) {
+  try {
+    await ensureExclusiveOffersTable();
+
+    let finalImageUrl = data.imageUrl;
+
+    if (data.imageUrl.startsWith('data:image')) {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'offers');
+      
+      try {
+        await fs.access(uploadDir);
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
+
+      const fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
+      const fileName = `offer-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = path.join(uploadDir, fileName);
+      
+      const base64Data = data.imageUrl.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      await fs.writeFile(filePath, buffer);
+      finalImageUrl = `/uploads/offers/${fileName}`;
+    }
+
+    const [result]: any = await pool.execute(
+      'INSERT INTO dashboard_exclusive_offers (category, image_url) VALUES (?, ?)',
+      [data.category, finalImageUrl]
+    );
+
+    revalidatePath('/m-admin/quick-manager');
+    revalidatePath('/dashboard');
+
+    return { success: true, offerId: result.insertId, path: finalImageUrl };
+  } catch (error: any) {
+    console.error("Database Error adding exclusive offer:", error);
+    return { success: false, error: error?.message || "Failed to add exclusive offer" };
+  }
+}
+
+/**
+ * Deletes an exclusive offer from the database.
+ */
+export async function deleteExclusiveOffer(id: number) {
+  try {
+    await ensureExclusiveOffersTable();
+
+    // Get image URL before deletion
+    const [rows]: any = await pool.execute('SELECT image_url FROM dashboard_exclusive_offers WHERE id = ?', [id]);
+    if (rows.length > 0) {
+      await deleteFileIfExists(rows[0].image_url);
+    }
+
+    await pool.execute('DELETE FROM dashboard_exclusive_offers WHERE id = ?', [id]);
+    revalidatePath('/m-admin/quick-manager');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error deleting exclusive offer:", error);
+    return { success: false, error: error?.message || "Failed to delete exclusive offer" };
   }
 }
