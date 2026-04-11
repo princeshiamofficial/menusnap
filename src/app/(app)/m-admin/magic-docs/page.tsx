@@ -47,7 +47,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 
-import { parseISO, isValid as isValidDate, format } from 'date-fns';
+import { formatDisplayDate, parseMySqlDateAsLocal } from '@/lib/dateUtils';
 
 interface MagicDocument {
     id: string;
@@ -201,21 +201,9 @@ export default function MagicDocsPage(): ReactNode {
         }
     };
 
-    const formatDateForDisplay = (dateString: string, includeTime: boolean = true): string => {
-        try {
-            if (!dateString) return "N/A";
-            
-            // Force the string into a format that browsers reliably treat as LOCAL time
-            const cleanString = dateString.replace('T', ' ').replace(/\..*$/, '').replace('Z', '');
-            const localParsingString = cleanString.replace(/-/g, '/');
-            const date = new Date(localParsingString);
-            
-            if (!isValidDate(date)) return "Invalid Date";
-            return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
-        } catch {
-            return "Invalid Date";
-        }
-    };
+    // Use the shared utility – correctly handles all browser quirks
+    const formatDateForDisplay = (dateString: string | null | undefined, includeTime: boolean = true): string =>
+        formatDisplayDate(dateString, includeTime);
 
     const filteredAndSortedDocs = useMemo(() => {
         let filteredDocs = docs.filter(doc =>
@@ -227,14 +215,14 @@ export default function MagicDocsPage(): ReactNode {
                 filteredDocs.sort((a, b) => {
                     const dateA = a.createdAt || a.lastUpdated;
                     const dateB = b.createdAt || b.lastUpdated;
-                    try { return new Date(dateB).getTime() - new Date(dateA).getTime(); } catch { return 0; }
+                    try { return parseMySqlDateAsLocal(dateB).getTime() - parseMySqlDateAsLocal(dateA).getTime(); } catch { return 0; }
                 });
                 break;
             case 'oldest':
                 filteredDocs.sort((a, b) => {
                     const dateA = a.createdAt || a.lastUpdated;
                     const dateB = b.createdAt || b.lastUpdated;
-                    try { return new Date(dateA).getTime() - new Date(dateB).getTime(); } catch { return 0; }
+                    try { return parseMySqlDateAsLocal(dateA).getTime() - parseMySqlDateAsLocal(dateB).getTime(); } catch { return 0; }
                 });
                 break;
             case 'title-asc':
@@ -530,7 +518,7 @@ export default function MagicDocsPage(): ReactNode {
                                                         </span>
                                                         <span className="text-[12px] text-gray-400 flex items-center gap-1 mt-0.5">
                                                             <CalendarDays className="h-3 w-3" />
-                                                            Deleted {doc.deletedAt ? new Date(doc.deletedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'recently'}
+                                                            Deleted {doc.deletedAt ? formatDisplayDate(doc.deletedAt) : 'recently'}
                                                         </span>
                                                     </div>
                                                 </div>
