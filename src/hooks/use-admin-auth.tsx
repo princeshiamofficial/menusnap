@@ -63,8 +63,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       } else {
         toast({ title: "Login Failed", description: result.error || "Invalid credentials.", variant: "destructive" });
       }
-    } catch {
-      toast({ title: "Login Failed", description: "An unexpected error occurred.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ title: "Login Failed", description: err.message || "An unexpected error occurred.", variant: "destructive" });
     } finally {
       setAdminLoading(false);
     }

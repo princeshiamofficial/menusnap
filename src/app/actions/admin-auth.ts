@@ -17,10 +17,16 @@ async function ensureSessionTable() {
       token VARCHAR(255) PRIMARY KEY,
       admin_id INT NOT NULL,
       email VARCHAR(255) NOT NULL,
-      expires_at TIMESTAMP NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      expires_at DATETIME NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // Ensure expires_at is DATETIME and doesn't have auto-update
+  try {
+    await pool.execute('ALTER TABLE admin_sessions MODIFY expires_at DATETIME NOT NULL');
+  } catch (e) {
+    // Column might already be correct or table just created
+  }
 }
 
 function generateToken(): string {
@@ -71,7 +77,7 @@ export async function adminLoginAction(email: string, password: string): Promise
     return { success: true };
   } catch (e: any) {
     console.error('Admin login error:', e);
-    return { success: false, error: 'Server error. Please try again.' };
+    return { success: false, error: e.message || 'Server error. Please try again.' };
   }
 }
 
