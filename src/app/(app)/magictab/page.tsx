@@ -726,6 +726,7 @@ export default function MagicTabPage() {
   const [isMounted, setIsMounted] = useState(false);
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   const itemCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const selectedCategory = useMemo(() => {
     return apiCategories.find(c => c.id === activeCategoryId) || null;
@@ -750,6 +751,16 @@ export default function MagicTabPage() {
       clearTimeout(handler);
     };
   }, [searchTerm]);
+
+  // Scroll to top when searching
+  useEffect(() => {
+    if (debouncedSearchTerm && scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    }
+  }, [debouncedSearchTerm]);
 
   const loadCategories = useCallback(async (menuType: string) => {
     if (!menuType) return;
@@ -885,7 +896,84 @@ export default function MagicTabPage() {
       toast({ title: "No Category Selected", description: "Please select a category to add an item to.", variant: "destructive" });
       return;
     }
-    setEditingItem(null);
+
+    const trimmedSearch = searchTerm.trim();
+    if (!trimmedSearch) {
+      setEditingItem(null);
+      setIsFormDialogOpen(true);
+      return;
+    }
+
+    // Helper for title casing
+    const toTitleCase = (str: string) => 
+      str.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+    const lines = trimmedSearch.split('\n').map(l => l.trim()).filter(l => l !== '');
+    
+    let itemName = '';
+    let itemPrice = 0;
+    let itemDescription: string | undefined = undefined;
+    const subItems: any[] = [];
+
+    // 1. Process First Line (Main Item)
+    const firstLine = lines[0];
+    
+    // Check if description is on the first line (e.g., "Burger 100/- D: Spicy")
+    const dMatch = firstLine.match(/(.+?)\s*d:\s*(.+)$/i);
+    let lineToParseForPrice = firstLine;
+    if (dMatch) {
+        itemDescription = dMatch[2].trim();
+        lineToParseForPrice = dMatch[1].trim();
+    }
+
+    const priceMatch = lineToParseForPrice.match(/(.+?)\s+(\d+(?:\.\d+)?)\/-\s*$/);
+    if (priceMatch) {
+        itemName = toTitleCase(priceMatch[1]);
+        itemPrice = parseFloat(priceMatch[2]);
+    } else {
+        itemName = toTitleCase(lineToParseForPrice);
+    }
+
+    // 2. Process Subsequent Lines (Sub-items and extra description)
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Description marker (D: spicy)
+        const dLineMatch = line.match(/^d:\s*(.+)$/i);
+        if (dLineMatch) {
+            itemDescription = (itemDescription ? itemDescription + '\n' : '') + dLineMatch[1].trim();
+            continue;
+        }
+
+        // Sub-item marker with price (--Large 200/- or Large 200/-)
+        const subItemMatch = line.match(/^(?:--)?(.+?)\s+(\d+(?:\.\d+)?)\/-\s*$/);
+        if (subItemMatch) {
+            subItems.push({
+                name: toTitleCase(subItemMatch[1]),
+                price: parseFloat(subItemMatch[2])
+            });
+            continue;
+        }
+
+        // Sub-item name only (--Extra Cheese)
+        const nameOnlyMatch = line.match(/^--\s*(.+)$/);
+        if (nameOnlyMatch) {
+            subItems.push({
+                name: toTitleCase(nameOnlyMatch[1]),
+                price: undefined
+            });
+        }
+    }
+
+    setEditingItem({
+      name: itemName,
+      price: itemPrice,
+      description: itemDescription,
+      subItems: subItems.length > 0 ? subItems : undefined,
+      category: selectedCategory.id,
+      visibleToUsers: true,
+    } as MenuItem);
+
     setIsFormDialogOpen(true);
   };
 
@@ -900,7 +988,7 @@ export default function MagicTabPage() {
     let newItems: MenuItem[];
     let itemToSave: MenuItem;
 
-    if (editingItem) {
+    if (editingItem && editingItem.id) {
       itemToSave = { ...editingItem, ...data };
       newItems = allMenuItems.map(item =>
         item.id === editingItem.id ? itemToSave : item
@@ -1204,9 +1292,14 @@ export default function MagicTabPage() {
 
 
             <div className="flex flex-col md:flex-row items-center gap-3">
-              <div className="relative w-full md:flex-grow">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input type="search" placeholder="Search MagicTab item..." className="pl-10 text-sm w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <div className="relative w-full md:flex-grow flex items-center">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+                <Textarea 
+                  placeholder={selectedCategory ? `Search ${decodeHtmlEntities(selectedCategory.name)} items...` : "Search MagicTab items..."}
+                  className="pl-10 text-sm w-full min-h-[40px] h-10 py-2.5 resize-none overflow-y-auto focus-visible:ring-1" 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
               <div className="flex w-full md:w-auto gap-2 md:mt-0">
                 <Button
@@ -1237,7 +1330,7 @@ export default function MagicTabPage() {
             </div>
           </div>
 
-          <ScrollArea className="flex-1 px-4 py-4 sm:p-6 bg-[#fafafa]/50">
+          <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 sm:p-6 bg-[#fafafa]/50">
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-24 w-full rounded-xl" />)}</div>
             ) : error ? (
