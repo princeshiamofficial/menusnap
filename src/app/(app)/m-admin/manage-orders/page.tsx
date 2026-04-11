@@ -88,10 +88,10 @@ import {
   Package,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
-import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { EditableField } from "@/components/ui/editable-field";
 import { getOrdersFromMySql, deleteOrderFromMySql, submitOrderToMySql, updateOrderInMySql, getCategoriesFromMySql } from "@/app/actions/orders";
+import { formatDisplayDate, parseMySqlDateAsUtc } from '@/lib/dateUtils';
 
 interface OrderItemDetailAdmin {
   id: string;
@@ -268,27 +268,9 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
   const router = useRouter();
 
   const formatDate = (input: string | Date, includeTime: boolean = true): string => {
-    try {
-      if (!input) return "N/A";
-      
-      let date: Date;
-      if (input instanceof Date) {
-        date = input;
-      } else {
-        // Handle common formats including MySQL output and strings
-        const cleaned = typeof input === 'string' ? (input.includes('T') || input.includes('Z') ? input : input.replace(' ', 'T') + 'Z') : input;
-        date = parseISO(cleaned as string);
-        if (!isValidDate(date)) {
-          date = new Date(input);
-        }
-      }
-      
-      if (!isValidDate(date)) return "Invalid Date";
-      return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
-    } catch (err) {
-      console.error("formatDate error:", err);
-      return "Invalid Date";
-    }
+    if (!input) return "N/A";
+    const dateStr = input instanceof Date ? input.toISOString() : input;
+    return formatDisplayDate(dateStr, includeTime);
   };
 
   return (
@@ -717,12 +699,12 @@ export default function ManageOrdersPage(): React.ReactNode {
     switch (sortOption) {
       case 'newest':
         orders.sort((a, b) => {
-          try { return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime(); } catch { return 0; }
+          try { return parseMySqlDateAsUtc(b.orderDate as string).getTime() - parseMySqlDateAsUtc(a.orderDate as string).getTime(); } catch { return 0; }
         });
         break;
       case 'oldest':
         orders.sort((a, b) => {
-          try { return new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime(); } catch { return 0; }
+          try { return parseMySqlDateAsUtc(a.orderDate as string).getTime() - parseMySqlDateAsUtc(b.orderDate as string).getTime(); } catch { return 0; }
         });
         break;
       case 'orderId-asc':
@@ -777,19 +759,9 @@ export default function ManageOrdersPage(): React.ReactNode {
 
 
   const formatDateForDisplay = useCallback((input: string | Date, includeTime: boolean = true): string => {
-    try {
-      if (!input) return "N/A";
-      const dateStr = typeof input === 'string' ? (input.endsWith('Z') || input.includes('+') ? input : `${input}Z`) : input;
-      const date = typeof dateStr === 'string' ? parseISO(dateStr) : dateStr;
-      if (!isValidDate(date)) {
-        const fallbackDate = new Date(dateStr);
-        if (isValidDate(fallbackDate)) {
-           return includeTime ? format(fallbackDate, "MMM d, yyyy, h:mm a") : format(fallbackDate, "MMM d, yyyy");
-        }
-        return "Invalid Date";
-      }
-      return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
-    } catch { return "Invalid Date"; }
+    if (!input) return "N/A";
+    const dateStr = input instanceof Date ? input.toISOString() : input;
+    return formatDisplayDate(dateStr, includeTime);
   }, []);
 
   const fetchedOrdersCount = allOrders.length;

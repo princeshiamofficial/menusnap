@@ -35,28 +35,40 @@ export function formatLocalDateTime(dateInput: Date | string | number | null | u
 /**
  * Safely parses a MySQL datetime string ("YYYY-MM-DD HH:mm:ss") as LOCAL time.
  * Prevents UTC misinterpretation in Firefox/Safari by replacing dashes with slashes.
- * Also handles ISO strings with Z suffix by stripping timezone info.
  */
 export function parseMySqlDateAsLocal(dateString: string): Date {
   if (!dateString) return new Date(NaN);
-  // Strip ISO 8601 timezone suffix (Z or ±HH:MM) and milliseconds
   const cleaned = dateString
     .replace('T', ' ')
-    .replace(/\.\d+/, '')   // remove milliseconds
-    .replace(/Z$/, '')       // remove trailing Z
-    .replace(/[+-]\d{2}:\d{2}$/, ''); // remove ±HH:MM offset
-  // Replace hyphens in date part with slashes so all browsers parse as local
+    .replace(/\.\d+/, '')   
+    .replace(/Z$/, '')       
+    .replace(/[+-]\d{2}:\d{2}$/, ''); 
   const localString = cleaned.replace(/-/g, '/');
   return new Date(localString);
 }
 
 /**
- * Formats a MySQL datetime string for display in the UI (local time).
- * Returns "Jan 5, 2026, 9:47 AM" or "Jan 5, 2026" depending on includeTime.
+ * Safely parses a MySQL datetime string as UTC time.
+ * This is the correct way to handle dates that were stored in UTC.
+ */
+export function parseMySqlDateAsUtc(dateString: string): Date {
+  if (!dateString) return new Date(NaN);
+  const normalized = dateString
+    .replace('T', ' ')
+    .replace(/\.\d+/, '')
+    .replace(/Z$/, '')
+    .replace(/[+-]\d{2}:\d{2}$/, '');
+  const isoString = normalized.replace(' ', 'T') + 'Z';
+  return new Date(isoString);
+}
+
+/**
+ * Formats a MySQL datetime string for display in the UI.
+ * Standardizes on interpreting strings as UTC so browsers can apply local offset.
  */
 export function formatDisplayDate(dateString: string | null | undefined, includeTime: boolean = true): string {
   if (!dateString) return 'N/A';
-  const date = parseMySqlDateAsLocal(dateString);
+  const date = parseMySqlDateAsUtc(dateString);
   if (isNaN(date.getTime())) return 'Invalid Date';
   
   const options: Intl.DateTimeFormatOptions = includeTime
