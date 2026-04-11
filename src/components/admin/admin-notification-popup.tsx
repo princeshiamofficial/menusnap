@@ -24,9 +24,7 @@ export function AdminNotificationPopup() {
     document.head.appendChild(link);
 
     const socketUrl = typeof window !== 'undefined' 
-      ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? `${window.location.protocol}//${window.location.hostname}:1234`
-          : window.location.origin)
+      ? `${window.location.protocol}//${window.location.hostname}:1234`
       : 'http://localhost:1234';
       
     const newSocket = io(socketUrl, {
