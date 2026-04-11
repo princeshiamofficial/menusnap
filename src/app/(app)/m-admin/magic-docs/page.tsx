@@ -201,9 +201,15 @@ export default function MagicDocsPage(): ReactNode {
         }
     };
 
-    // Fixed: Now uses centralized utility to treat DB strings as UTC and show Local time
-    const formatDateForDisplay = (dateString: string | null | undefined, includeTime: boolean = true): string => 
-        formatDisplayDate(dateString, includeTime);
+    const formatDateForDisplay = (dateString: string | null | undefined, includeTime: boolean = true): string => {
+        if (!dateString) return 'N/A';
+        const date = parseMySqlDateAsUtc(dateString);
+        if (isNaN(date.getTime())) return 'Invalid Date';
+        const options: Intl.DateTimeFormatOptions = includeTime
+            ? { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Dhaka' }
+            : { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Dhaka' };
+        return date.toLocaleString('en-US', options);
+    };
 
     const filteredAndSortedDocs = useMemo(() => {
         let filteredDocs = docs.filter(doc =>
