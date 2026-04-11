@@ -35,13 +35,12 @@ export async function submitOrderToMySql(orderPayload: any) {
         finalTemplate.name || '',
         totalAmount || 0,
         status || 'Pending',
-        orderDate ? formatLocalDateTime(new Date(orderDate)) : formatLocalDateTime(), 
+        formatLocalDateTime(orderDate), 
         JSON.stringify(finalCustomer),
         JSON.stringify(finalTemplate),
         JSON.stringify(items || [])
       ]
     );
-
 
     revalidatePath('/m-admin/manage-orders');
     return { success: true, message: 'Order submitted directly to MySQL.' };
@@ -57,7 +56,7 @@ export async function submitOrderToMySql(orderPayload: any) {
 export async function getOrdersFromMySql() {
   try {
     const [rows]: any = await pool.execute(
-      `SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as utcOrderDate FROM orders ORDER BY orderDate DESC`
+      `SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as orderDate FROM orders ORDER BY orderDate DESC`
     );
 
     const formattedOrders = rows.map((order: any) => {
@@ -68,7 +67,7 @@ export async function getOrdersFromMySql() {
 
       return {
         ...order,
-        orderDate: order.utcOrderDate || (order.orderDate instanceof Date ? order.orderDate.toISOString() : order.orderDate),
+        orderDate: order.orderDate,
         customerData,
         templateData,
         customer: typeof order.customerData === 'string' ? JSON.parse(order.customerData) : (order.customerData || {}),
@@ -155,7 +154,7 @@ export async function updateOrderInMySql(order: any) {
  */
 export async function getOrderByIdFromMySql(id: string) {
   try {
-    const [rows] = await pool.execute(`SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as utcOrderDate FROM orders WHERE id = ?`, [id]);
+    const [rows] = await pool.execute(`SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as orderDate FROM orders WHERE id = ?`, [id]);
     const orders = rows as any[];
     if (orders.length === 0) return { success: false, message: 'Order not found' };
 
@@ -165,7 +164,7 @@ export async function getOrderByIdFromMySql(id: string) {
       success: true,
       data: {
         ...order,
-        orderDate: order.utcOrderDate || order.orderDate,
+        orderDate: order.orderDate,
         customerData: typeof order.customerData === 'string' ? JSON.parse(order.customerData) : order.customerData,
         templateData: typeof order.templateData === 'string' ? JSON.parse(order.templateData) : order.templateData,
         // For compatibility with some UI components that expect 'template' key
