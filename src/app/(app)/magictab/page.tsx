@@ -50,7 +50,6 @@ import {
 } from "@/components/ui/sheet";
 import { MenuPreviewDialog, type MenuItem, type SubMenuItem, type Category as MenuCategory } from '@/components/menu/menu-preview-dialog';
 import { CategoryList } from '@/components/menu/category-list';
-import { useToast } from "@/hooks/use-toast";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -693,7 +692,6 @@ export default function MagicTabPage() {
   const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]);
 
   const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
-  const { toast } = useToast();
   const router = useRouter();
 
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = useState(false);
@@ -833,30 +831,13 @@ export default function MagicTabPage() {
             if (Array.isArray(draftToRestore.items)) {
               const itemIds = draftToRestore.items.map((item: { id: string }) => item.id);
               setItemsToSelectFromDraft(itemIds);
-              toast({
-                title: "Draft Restored",
-                description: `Selection from "${decodeHtmlEntities(draftToRestore.name)}" is being loaded.`,
-              });
-            }
-          } else {
-            toast({
-              title: "Restore Failed",
-              description: "Could not find the specified draft to restore.",
-              variant: "destructive",
-            });
-          }
         }
       } catch (e) {
         console.error("Failed to restore draft:", e);
-        toast({
-          title: "Restore Error",
-          description: "An error occurred while restoring the draft.",
-          variant: "destructive",
-        });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast]); // Run only on mount
+  }, []); // Run only on mount
 
   // Effect to apply selections after data has finished loading
   useEffect(() => {
@@ -878,7 +859,6 @@ export default function MagicTabPage() {
 
   const handleOpenAddItem = () => {
     if (!selectedCategory) {
-      toast({ title: "No Category Selected", description: "Please select a category to add an item to.", variant: "destructive" });
       return;
     }
 
@@ -978,10 +958,8 @@ export default function MagicTabPage() {
       newItems = allMenuItems.map(item =>
         item.id === editingItem.id ? itemToSave : item
       );
-      toast({ title: "Item Updated", description: `"${decodeHtmlEntities(data.name)}" has been updated.` });
     } else {
       if (!selectedCategory) {
-        toast({ title: "Error", description: "Cannot add item without a selected category.", variant: "destructive" });
         setIsSubmitting(false);
         return;
       }
@@ -993,7 +971,6 @@ export default function MagicTabPage() {
         createdAt: new Date().toISOString(),
       } as MenuItem;
       newItems = [...allMenuItems, itemToSave];
-      toast({ title: "Item Added", description: `"${decodeHtmlEntities(data.name)}" has been added.` });
       setSelectedItems(prev => ({ ...prev, [itemToSave.id]: true }));
     }
 
@@ -1007,14 +984,14 @@ export default function MagicTabPage() {
       }
       localStorage.setItem(CUSTOM_MENU_ITEMS_STORAGE_KEY, JSON.stringify(localItems));
     } catch (e) {
-      toast({ title: "Error", description: "Could not save custom item locally.", variant: "destructive" });
+      // Error handling without toast
     }
 
     setAllMenuItems(newItems);
     setIsFormDialogOpen(false);
     setEditingItem(null);
     setIsSubmitting(false);
-  }, [allMenuItems, editingItem, selectedCategory, toast]);
+  }, [allMenuItems, editingItem, selectedCategory]);
 
   const handleOpenAddCategory = () => {
     setEditingCategory(null);
@@ -1040,7 +1017,6 @@ export default function MagicTabPage() {
         cat.id === editingCategory.id ? categoryToUpdate : cat
       );
       newCategory = categoryToUpdate;
-      toast({ title: "Category Updated", description: `"${decodeHtmlEntities(data.name)}" has been updated.` });
     } else {
       // Adding a new category
       newCategory = {
@@ -1052,7 +1028,6 @@ export default function MagicTabPage() {
         createdAt: new Date().toISOString(),
       };
       updatedCategories = [...apiCategories, newCategory];
-      toast({ title: "Category Added", description: `"${decodeHtmlEntities(data.name)}" has been added locally.` });
     }
 
     setApiCategories(updatedCategories);
@@ -1071,13 +1046,13 @@ export default function MagicTabPage() {
       }
       localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
     } catch (e) {
-      toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
+      // Error handling without toast
     }
 
     setIsCategoryFormOpen(false);
     setEditingCategory(null);
     setIsCategorySubmitting(false);
-  }, [apiCategories, editingCategory, toast]);
+  }, [apiCategories, editingCategory]);
 
   const handleQuickAddCategory = useCallback((name: string) => {
     if (!name.trim()) return;
@@ -1088,7 +1063,6 @@ export default function MagicTabPage() {
     const exists = apiCategories.find(c => decodeHtmlEntities(c.name).toLowerCase() === formattedName.toLowerCase());
     if (exists) {
         setActiveCategoryId(exists.id);
-        toast({ title: "Category Already Exists", description: `"${formattedName}" is already selected.` });
         return;
     }
 
@@ -1109,11 +1083,10 @@ export default function MagicTabPage() {
       const localCategories: any[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
       localCategories.push(newCategory);
       localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
-      toast({ title: "Category Created", description: `"${formattedName}" has been created.` });
     } catch (e) {
-      toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
+      // Error handling without toast
     }
-  }, [apiCategories, setActiveCategoryId, toast]);
+  }, [apiCategories, setActiveCategoryId]);
 
   const currentMenuItems = useMemo(() => {
     if (!activeCategoryId) {
@@ -1180,11 +1153,6 @@ export default function MagicTabPage() {
   const handlePreviewAndSave = useCallback(() => {
     const itemsToSave = allMenuItems.filter(item => selectedItems[item.id]);
     if (itemsToSave.length === 0) {
-      toast({
-        title: "No items selected",
-        description: "Please select items to preview.",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -1205,15 +1173,11 @@ export default function MagicTabPage() {
       existingDrafts.unshift(draft);
       localStorage.setItem(DRAFTS_STORAGE_KEY, JSON.stringify(existingDrafts));
     } catch (e) {
-      toast({
-        title: "Error Saving Draft",
-        description: "Could not save draft automatically.",
-        variant: "destructive",
-      });
+      // Error handling without toast
     }
 
     setIsPreviewDialogOpen(true);
-  }, [allMenuItems, selectedItems, selectedMenuType, toast]);
+  }, [allMenuItems, selectedItems, selectedMenuType]);
 
   const preparedSelectedItemsForPreview = useMemo(() => {
     return allMenuItems.filter(item => selectedItems[item.id]);
