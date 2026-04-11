@@ -217,8 +217,8 @@ export default function ContactsPage() {
 
     try {
       const result = await getLeads(pageNum, 20); 
-      if (result.success) {
-          const leads = (result.leads as Contact[]).map(lead => {
+      if (result.success && Array.isArray(result.leads)) {
+          const leads = result.leads.map(lead => {
             let stageVal = (lead.stage || 'new-lead').trim();
             // Final defensive fix for legacy names
             if (stageVal === 'New Lead' || stageVal === 'Lead') stageVal = 'new-lead';
@@ -235,6 +235,10 @@ export default function ContactsPage() {
         }
         setHasMore(result.hasMore);
         setTotalContacts(result.total);
+      } else if (result.success) {
+        // success is true but leads is not an array (could happen if server returns partial error)
+        console.warn("getLeads succeeded but returned non-array leads:", result.leads);
+        if (pageNum === 1) setContacts([]);
       } else {
         toast({
           title: "Error fetching contacts",

@@ -164,7 +164,7 @@ function MobileImageSlider() {
         const result = await getDashboardSlides();
         if (result.success && result.slides && result.slides.length > 0) {
           // Map database rows to slider format
-          const mappedSlides = (result.slides as any[]).map((slide, index) => ({
+          const mappedSlides = (Array.isArray(result.slides) ? result.slides : []).map((slide: any, index: number) => ({
             src: slide.image_url,
             title: index === 0 ? "Design Your Dream Menu" :
               index === 1 ? "Real-time Collaboration" :
@@ -479,7 +479,7 @@ export default function DashboardPage() {
           throw new Error(result.message || "Failed to fetch templates from local DB.");
         }
 
-        const fetchedTemplates: ApiTemplate[] = (result.data as any[]).map((t: any) => ({
+        const fetchedTemplates: ApiTemplate[] = (Array.isArray(result.data) ? result.data : []).map((t: any) => ({
           id: String(t.id),
           name: t.name,
           description: t.description,

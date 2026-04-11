@@ -100,7 +100,7 @@ export default function MagicDocsPage(): ReactNode {
                 return;
             }
 
-            if (result.data) {
+            if (result.success && Array.isArray(result.data)) {
                 const data = result.data;
                 const allMapped = data.map((d: any) => ({
                     id: d.id,

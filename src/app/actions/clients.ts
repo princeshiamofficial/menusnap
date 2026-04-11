@@ -141,7 +141,7 @@ export async function getLeads(page: number = 1, limit: number = 20) {
     const [countRows]: any = await pool.execute('SELECT COUNT(*) as total FROM clients');
     const total = countRows[0].total;
     
-    const leads = rows.map((lead: any) => {
+    const leads = (Array.isArray(rows) ? rows : []).map((lead: any) => {
       let stage = (lead.stage || '').trim();
       if (!stage || stage === '' || stage === 'null' || stage === 'undefined') {
         stage = 'new-lead';

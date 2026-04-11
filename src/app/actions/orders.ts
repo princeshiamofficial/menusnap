@@ -59,7 +59,7 @@ export async function getOrdersFromMySql() {
       `SELECT *, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as orderDate FROM orders ORDER BY orderDate DESC`
     );
 
-    const formattedOrders = rows.map((order: any) => {
+    const formattedOrders = (Array.isArray(rows) ? rows : []).map((order: any) => {
       // Parse JSON from database safely
       const items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
       const customerData = typeof order.customerData === 'string' ? JSON.parse(order.customerData) : (order.customerData || {});
@@ -240,7 +240,7 @@ export async function getMenuItemsFromMySql(type?: 'restaurant' | 'parlour', vis
     
     const [rows]: any = await pool.execute(query, params);
     
-    const formatted = rows.map((item: any) => ({
+    const formatted = (Array.isArray(rows) ? rows : []).map((item: any) => ({
       ...item,
       subItems: typeof item.subItems === 'string' ? JSON.parse(item.subItems) : (item.subItems || [])
     }));
@@ -259,7 +259,7 @@ export async function getTemplatesFromMySql() {
   try {
     const [rows]: any = await pool.execute("SELECT *, DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') as createdAt FROM templates ORDER BY createdAt DESC");
     
-    const formatted = rows.map((template: any) => ({
+    const formatted = (Array.isArray(rows) ? rows : []).map((template: any) => ({
       ...template,
       tags: typeof template.tags === 'string' ? JSON.parse(template.tags) : (template.tags || [])
     }));
