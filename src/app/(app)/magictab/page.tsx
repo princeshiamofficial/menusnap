@@ -831,6 +831,8 @@ export default function MagicTabPage() {
             if (Array.isArray(draftToRestore.items)) {
               const itemIds = draftToRestore.items.map((item: { id: string }) => item.id);
               setItemsToSelectFromDraft(itemIds);
+            }
+          }
         }
       } catch (e) {
         console.error("Failed to restore draft:", e);
