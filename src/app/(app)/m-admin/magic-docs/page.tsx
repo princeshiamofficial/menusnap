@@ -203,13 +203,7 @@ export default function MagicDocsPage(): ReactNode {
 
     const formatDateForDisplay = (dateString: string, includeTime: boolean = true): string => {
         try {
-            if (!dateString) return "N/A";
-            
-            // Force the string into a format that browsers reliably treat as LOCAL time
-            const cleanString = dateString.replace('T', ' ').replace(/\..*$/, '').replace('Z', '');
-            const localParsingString = cleanString.replace(/-/g, '/');
-            const date = new Date(localParsingString);
-            
+            const date = parseISO(dateString);
             if (!isValidDate(date)) return "Invalid Date";
             return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
         } catch {
