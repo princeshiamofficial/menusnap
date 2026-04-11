@@ -45,21 +45,21 @@ export async function getMagicDocByIdFromMySql(id: string) {
 export async function upsertMagicDocToMySql(doc: any) {
   try {
     const { id, title, content, isDeleted, deletedAt } = doc;
-    const now = formatLocalDateTime();
     const finalDeletedAt = deletedAt ? formatLocalDateTime(new Date(deletedAt)) : null;
 
     await pool.execute(
       `INSERT INTO magic_docs (id, title, content, last_updated, created_at, is_deleted, deleted_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+       VALUES (?, ?, ?, NOW(), NOW(), ?, ?)
        ON DUPLICATE KEY UPDATE
-       title = VALUES(title), content = VALUES(content), last_updated = VALUES(last_updated),
+       title = VALUES(title), content = VALUES(content), last_updated = NOW(),
        is_deleted = VALUES(is_deleted), deleted_at = VALUES(deleted_at)`,
-      [id, title, content, now, now, isDeleted ? 1 : 0, finalDeletedAt]
+      [id, title, content, isDeleted ? 1 : 0, finalDeletedAt]
     );
 
     revalidatePath('/m-admin/magic-docs');
     return { success: true };
   } catch (error: any) {
+
     console.error('MySQL Magic Doc Upsert Error:', error);
     return { success: false, message: error.message };
   }
@@ -67,8 +67,7 @@ export async function upsertMagicDocToMySql(doc: any) {
 
 export async function deleteMagicDocFromMySql(id: string) {
   try {
-    const now = formatLocalDateTime();
-    await pool.execute('UPDATE magic_docs SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
+    await pool.execute('UPDATE magic_docs SET is_deleted = 1, deleted_at = NOW() WHERE id = ?', [id]);
     revalidatePath('/m-admin/magic-docs');
     return { success: true };
   } catch (error: any) {

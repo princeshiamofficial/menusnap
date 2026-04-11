@@ -35,12 +35,13 @@ export async function submitOrderToMySql(orderPayload: any) {
         finalTemplate.name || '',
         totalAmount || 0,
         status || 'Pending',
-        formatLocalDateTime(new Date(orderDate)), 
+        orderDate ? formatLocalDateTime(new Date(orderDate)) : formatLocalDateTime(), 
         JSON.stringify(finalCustomer),
         JSON.stringify(finalTemplate),
         JSON.stringify(items || [])
       ]
     );
+
 
     revalidatePath('/m-admin/manage-orders');
     return { success: true, message: 'Order submitted directly to MySQL.' };
