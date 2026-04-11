@@ -41,6 +41,17 @@ io.on('connection', (socket) => {
     socket.to(docId).emit('document-update', content);
   });
 
+  // Admin notifications
+  socket.on('admin-broadcast', (data) => {
+    // Broadcast notification to all connected clients
+    // The client-side listener will filter based on user role
+    io.emit('admin-notification', {
+      ...data,
+      timestamp: new Date().toISOString()
+    });
+    console.log('Admin broadcast sent:', data.message);
+  });
+
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (user) {

@@ -52,6 +52,7 @@ import {
 } from 'date-fns';
 import { getOrdersFromMySql, getTemplatesFromMySql, getCategoriesFromMySql, getMenuItemsFromMySql } from '@/app/actions/orders';
 import { getLeads, getLeadsTrend } from '@/app/actions/clients';
+import { AdminSendNotification } from '@/components/admin/admin-send-notification';
 
 interface StatCardAdminProps {
   title: string;
@@ -513,6 +514,7 @@ export default function MAdminDashboardPage() {
         </div>
       )}
 
+      <AdminSendNotification />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <Card className="shadow-md rounded-lg">

@@ -27,7 +27,7 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
 
 const BD_ADDRESS_DATA: Record<string, string[]> = {
   "Dhaka": ["Dhaka", "Gazipur", "Narayanganj", "Tangail", "Faridpur", "Gopalganj", "Kishoreganj", "Madaripur", "Manikganj", "Munshiganj", "Narsingdi", "Rajbari", "Shariatpur"],
-  "Chattogram": ["Chattogram", "Cox's Bazar", "Noakhali", "Feni", "Chandpur", "Brahmanbaria", "Lakshmipur", "Rangamati", "Khagrachhari", "Bandarban"],
+  "Chattogram": ["Chattogram", "Cox's Bazar", "Cumilla", "Noakhali", "Feni", "Chandpur", "Brahmanbaria", "Lakshmipur", "Rangamati", "Khagrachhari", "Bandarban"],
   "Rajshahi": ["Rajshahi", "Bogura", "Pabna", "Sirajganj", "Naogaon", "Natore", "Joypurhat", "Chapainawabganj"],
   "Khulna": ["Khulna", "Jashore", "Satkhira", "Kushtia", "Bagerhat", "Jhenaidah", "Chuadanga", "Magura", "Narail", "Meherpur"],
   "Barishal": ["Barishal", "Patuakhali", "Bhola", "Pirojpur", "Barguna", "Jhalokathi"],

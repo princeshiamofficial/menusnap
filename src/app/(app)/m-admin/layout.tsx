@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Menu } from 'lucide-react';
 
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
+import { AdminNotificationPopup } from '@/components/admin/admin-notification-popup';
 
 function MobileSidebarTrigger() {
   const { setOpenMobile } = useSidebar();
@@ -57,6 +58,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
       </Sidebar>
       <SidebarInset className="bg-background min-w-0 w-full max-w-full overflow-x-hidden">
         <main className="flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden relative h-full">
+          <AdminNotificationPopup />
           {children}
         </main>
       </SidebarInset>

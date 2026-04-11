@@ -75,6 +75,13 @@ app.prepare().then(() => {
       socket.to(docId).emit('document-update', content);
     });
 
+    socket.on('admin-broadcast', (data) => {
+      io.emit('admin-notification', {
+        ...data,
+        timestamp: new Date().toISOString()
+      });
+    });
+
     socket.on('disconnect', () => {
       const user = users.get(socket.id);
       if (user) {
