@@ -97,7 +97,7 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
     if (!token) return null;
 
     const [rows]: any = await pool.execute(
-      'SELECT admin_id as id, email FROM admin_sessions WHERE token = ? AND expires_at > CURRENT_TIMESTAMP LIMIT 1',
+      'SELECT admin_id as id, email FROM admin_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1',
       [token]
     );
 
