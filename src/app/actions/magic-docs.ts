@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import pool from '@/lib/mysql';
-import { formatLocalDateTime } from '@/lib/dateUtils';
+import { formatUtcDateTime } from '@/lib/dateUtils';
 
 export async function getMagicDocsFromMySql() {
   try {
@@ -50,18 +50,16 @@ export async function getMagicDocByIdFromMySql(id: string) {
 export async function upsertMagicDocToMySql(doc: any) {
   try {
     const { id, title, content, isDeleted, deletedAt } = doc;
-    const finalDeletedAt = deletedAt ? formatLocalDateTime(deletedAt) : null;
+    const now = formatUtcDateTime();
+    const finalDeletedAt = deletedAt ? formatUtcDateTime(deletedAt) : null;
 
     await pool.execute(
       `INSERT INTO magic_docs (id, title, content, last_updated, created_at, is_deleted, deleted_at)
-       VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP(), ?, ?)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
-       title = VALUES(title), 
-       content = VALUES(content), 
-       last_updated = UTC_TIMESTAMP(),
-       is_deleted = VALUES(is_deleted), 
-       deleted_at = VALUES(deleted_at)`,
-      [id, title, content, isDeleted ? 1 : 0, finalDeletedAt]
+       title = VALUES(title), content = VALUES(content), last_updated = VALUES(last_updated),
+       is_deleted = VALUES(is_deleted), deleted_at = VALUES(deleted_at)`,
+      [id, title, content, now, now, isDeleted ? 1 : 0, finalDeletedAt]
     );
 
     revalidatePath('/m-admin/magic-docs');
@@ -74,7 +72,8 @@ export async function upsertMagicDocToMySql(doc: any) {
 
 export async function deleteMagicDocFromMySql(id: string) {
   try {
-    await pool.execute('UPDATE magic_docs SET is_deleted = 1, deleted_at = UTC_TIMESTAMP() WHERE id = ?', [id]);
+    const now = formatUtcDateTime();
+    await pool.execute('UPDATE magic_docs SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
     revalidatePath('/m-admin/magic-docs');
     return { success: true };
   } catch (error: any) {

@@ -1,7 +1,7 @@
 'use server';
 
 import pool from '@/lib/mysql';
-import { formatLocalDateTime } from '@/lib/dateUtils';
+import { formatUtcDateTime } from '@/lib/dateUtils';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
@@ -62,7 +62,7 @@ export async function adminLoginAction(email: string, password: string): Promise
     
     await pool.execute(
       'INSERT INTO admin_sessions (token, admin_id, email, expires_at) VALUES (?, ?, ?, ?)',
-      [token, admin.id, admin.email, formatLocalDateTime(expiresAt)]
+      [token, admin.id, admin.email, formatUtcDateTime(expiresAt)]
     );
 
     const cookieStore = await cookies();
@@ -107,7 +107,7 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
     const newExpiry = new Date(Date.now() + 60 * 60 * 24 * SESSION_EXPIRY_DAYS * 1000);
     await pool.execute(
       'UPDATE admin_sessions SET expires_at = ? WHERE token = ?',
-      [formatLocalDateTime(newExpiry), token]
+      [formatUtcDateTime(newExpiry), token]
     );
 
     return rows[0];
