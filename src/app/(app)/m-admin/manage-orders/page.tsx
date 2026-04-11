@@ -88,10 +88,10 @@ import {
   Package,
 } from "lucide-react";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
+import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { EditableField } from "@/components/ui/editable-field";
 import { getOrdersFromMySql, deleteOrderFromMySql, submitOrderToMySql, updateOrderInMySql, getCategoriesFromMySql } from "@/app/actions/orders";
-import { formatDisplayDate, parseMySqlDateAsLocal, formatLocalDateTime } from '@/lib/dateUtils';
 
 interface OrderItemDetailAdmin {
   id: string;
@@ -270,11 +270,22 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
   const formatDate = (input: string | Date, includeTime: boolean = true): string => {
     try {
       if (!input) return "N/A";
+      
+      let date: Date;
       if (input instanceof Date) {
-        // Already a Date object – format directly
-        return formatDisplayDate(input.toISOString(), includeTime);
+        date = input;
+      } else {
+        // Force the string into a format that browsers reliably treat as LOCAL time
+        // Replace T with space and remove Z/milliseconds if present
+        const cleanString = typeof input === 'string' ? input.replace('T', ' ').replace(/\..*$/, '').replace('Z', '') : input;
+        
+        // Use YYYY/MM/DD which is more cross-browser compatible for local parsing than YYYY-MM-DD
+        const localParsingString = typeof cleanString === 'string' ? cleanString.replace(/-/g, '/') : cleanString;
+        date = new Date(localParsingString);
       }
-      return formatDisplayDate(input, includeTime);
+      
+      if (!isValidDate(date)) return "Invalid Date";
+      return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
     } catch (err) {
       console.error("formatDate error:", err);
       return "Invalid Date";
@@ -636,7 +647,7 @@ export default function ManageOrdersPage(): React.ReactNode {
       total: originalOrder.totalAmount,
       totalAmount: originalOrder.totalAmount,
       status: 'Pending',
-      orderDate: formatLocalDateTime(date), // Store as local time string, NOT ISO/UTC
+      orderDate: date.toISOString(),
       template: originalOrder.template || {
         name: originalOrder.templateName || "Copied Selection",
       }
@@ -707,12 +718,12 @@ export default function ManageOrdersPage(): React.ReactNode {
     switch (sortOption) {
       case 'newest':
         orders.sort((a, b) => {
-          try { return parseMySqlDateAsLocal(b.orderDate).getTime() - parseMySqlDateAsLocal(a.orderDate).getTime(); } catch { return 0; }
+          try { return new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime(); } catch { return 0; }
         });
         break;
       case 'oldest':
         orders.sort((a, b) => {
-          try { return parseMySqlDateAsLocal(a.orderDate).getTime() - parseMySqlDateAsLocal(b.orderDate).getTime(); } catch { return 0; }
+          try { return new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime(); } catch { return 0; }
         });
         break;
       case 'orderId-asc':
@@ -767,9 +778,18 @@ export default function ManageOrdersPage(): React.ReactNode {
 
 
   const formatDateForDisplay = useCallback((input: string | Date, includeTime: boolean = true): string => {
-    if (!input) return "N/A";
-    if (input instanceof Date) return formatDisplayDate(input.toISOString(), includeTime);
-    return formatDisplayDate(input, includeTime);
+    try {
+      if (!input) return "N/A";
+      
+      const cleanString = typeof input === 'string' ? input.replace('T', ' ').replace(/\..*$/, '').replace('Z', '') : input;
+      const localParsingString = typeof cleanString === 'string' ? cleanString.replace(/-/g, '/') : cleanString;
+      const date = new Date(localParsingString);
+      
+      if (!isValidDate(date)) {
+        return "Invalid Date";
+      }
+      return includeTime ? format(date, "MMM d, yyyy, h:mm a") : format(date, "MMM d, yyyy");
+    } catch { return "Invalid Date"; }
   }, []);
 
   const fetchedOrdersCount = allOrders.length;
