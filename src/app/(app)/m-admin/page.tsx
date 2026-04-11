@@ -147,6 +147,7 @@ export default function MAdminDashboardPage() {
   const [leadsChartData, setLeadsChartData] = useState<any[]>([]);
 
   const [selectedDateRange, setSelectedDateRange] = useState<string>('all_time');
+  const [showBroadcast, setShowBroadcast] = useState(false);
 
   const { setOpenMobile } = useSidebar();
 
@@ -424,7 +425,10 @@ export default function MAdminDashboardPage() {
     <div className="space-y-6 pt-16 p-4 sm:p-6 md:p-8 w-full overflow-x-hidden">
       <div className="rounded-lg bg-gradient-to-r from-slate-900 via-amber-700 to-primary p-6 shadow-lg text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold flex items-center">
+          <h2 
+            className="text-3xl font-bold flex items-center cursor-default select-none"
+            onDoubleClick={() => setShowBroadcast(!showBroadcast)}
+          >
             Welcome Admin <Hand className="ml-2 h-8 w-8 text-yellow-400" />
           </h2>
           <p className="text-sm text-slate-200">
@@ -514,7 +518,7 @@ export default function MAdminDashboardPage() {
         </div>
       )}
 
-      <AdminSendNotification />
+      {showBroadcast && <AdminSendNotification />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <Card className="shadow-md rounded-lg">
