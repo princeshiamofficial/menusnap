@@ -44,6 +44,8 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetClose,
 } from "@/components/ui/sheet";
 import { MenuPreviewDialog, type MenuItem, type SubMenuItem, type Category as MenuCategory } from '@/components/menu/menu-preview-dialog';
@@ -537,15 +539,9 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting, initialDat
         </ScrollArea>
 
         <div className="px-6 pb-6 pt-4 flex gap-3 bg-background">
-          {isMobile ? (
-            <SheetClose asChild>
-              <Button type="button" variant="outline" className="flex-1 h-11 rounded-full text-muted-foreground">Cancel</Button>
-            </SheetClose>
-          ) : (
-            <DialogClose asChild>
-              <Button type="button" variant="outline" className="flex-1 h-11 rounded-full text-muted-foreground">Cancel</Button>
-            </DialogClose>
-          )}
+          <DialogClose asChild>
+            <Button type="button" variant="outline" className="flex-1 h-11 rounded-full text-muted-foreground">Cancel</Button>
+          </DialogClose>
           <Button
             type="submit"
             disabled={isSubmitting}
@@ -557,19 +553,6 @@ function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting, initialDat
       </form>
     </>
   );
-
-  if (isMobile) {
-    return (
-      <Sheet open={isOpen} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col max-h-[80vh] [&>button]:hidden">
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-          </div>
-          {formInner}
-        </SheetContent>
-      </Sheet>
-    );
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -724,6 +707,8 @@ export default function MagicTabPage() {
 
   const [animations, setAnimations] = useState<{ id: number, startX: number, startY: number, endX: number, endY: number }[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   const itemCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -1094,6 +1079,42 @@ export default function MagicTabPage() {
     setIsCategorySubmitting(false);
   }, [apiCategories, editingCategory, toast]);
 
+  const handleQuickAddCategory = useCallback((name: string) => {
+    if (!name.trim()) return;
+    
+    const formattedName = name.trim().toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    
+    // Check if category already exists
+    const exists = apiCategories.find(c => decodeHtmlEntities(c.name).toLowerCase() === formattedName.toLowerCase());
+    if (exists) {
+        setActiveCategoryId(exists.id);
+        toast({ title: "Category Already Exists", description: `"${formattedName}" is already selected.` });
+        return;
+    }
+
+    const newCategory: MenuCategory = {
+      id: `custom-category-${customSlugify(formattedName)}-${Date.now()}`,
+      name: formattedName,
+      icon: "📁",
+      visibleToUsers: true,
+      itemCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedCategories = [...apiCategories, newCategory];
+    setApiCategories(updatedCategories);
+    setActiveCategoryId(newCategory.id);
+
+    try {
+      const localCategories: any[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
+      localCategories.push(newCategory);
+      localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
+      toast({ title: "Category Created", description: `"${formattedName}" has been created.` });
+    } catch (e) {
+      toast({ title: "Error", description: "Could not save category locally.", variant: "destructive" });
+    }
+  }, [apiCategories, setActiveCategoryId, toast]);
+
   const currentMenuItems = useMemo(() => {
     if (!activeCategoryId) {
       return [];
@@ -1257,25 +1278,98 @@ export default function MagicTabPage() {
                   {selectedCategory ? `${decodeHtmlEntities(selectedCategory.name)}` : 'MagicTab'}
                 </h1>
                 
-                {/* Mobile Modern Category Dropdown */}
+                {/* Mobile Modern Category Sheet */}
                 <div className="md:hidden flex-1 max-w-[160px]">
-                  <Select value={activeCategoryId || ''} onValueChange={setActiveCategoryId}>
-                    <SelectTrigger className="h-9 border-none bg-muted/50 hover:bg-muted text-xs font-medium rounded-full px-3">
-                      <SelectValue placeholder="Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {apiCategories.sort((a,b) => a.name.localeCompare(b.name)).map(cat => (
-                        <SelectItem key={cat.id} value={cat.id} className="text-xs">
-                          <span className="mr-2">{cat.icon}</span> {decodeHtmlEntities(cat.name)}
-                        </SelectItem>
-                      ))}
-                      <div className="p-1 border-t mt-1">
-                        <Button variant="ghost" className="w-full justify-start h-8 text-xs font-normal" onClick={handleOpenAddCategory}>
-                          <PlusCircle className="h-3.5 w-3.5 mr-2" /> New Category
-                        </Button>
+                  <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => setIsCategorySheetOpen(true)}
+                      className="h-9 w-full bg-muted/50 hover:bg-muted text-xs font-medium rounded-full px-3 flex items-center justify-between"
+                    >
+                      <span className="truncate mr-1">
+                        {selectedCategory ? (
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-sm">{selectedCategory.icon}</span>
+                            <span className="truncate">{decodeHtmlEntities(selectedCategory.name)}</span>
+                          </span>
+                        ) : 'Category'}
+                      </span>
+                      <ChevronDown className="h-3 w-3 opacity-50 shrink-0" />
+                    </Button>
+                    <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col h-[94vh] [&>button]:hidden">
+                      <div className="flex justify-center pt-3 pb-2">
+                        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
                       </div>
-                    </SelectContent>
-                  </Select>
+                      <div className="px-6 py-4 flex flex-col gap-4 flex-grow overflow-hidden">
+                        <SheetHeader className="text-left space-y-0">
+                          <div className="flex items-center justify-between">
+                            <SheetTitle className="text-lg font-bold text-foreground">Select Category</SheetTitle>
+                            <Button variant="ghost" size="icon" onClick={() => setIsCategorySheetOpen(false)} className="rounded-full h-8 w-8">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </SheetHeader>
+                        
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Search category..." 
+                            className="pl-10 h-11 rounded-full bg-muted/30 border-none focus-visible:ring-orange-400"
+                            value={categorySearchTerm}
+                            onChange={(e) => setCategorySearchTerm(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="flex-1 overflow-hidden flex flex-col -mx-2">
+                          <ScrollArea className="flex-1 w-full">
+                            <div className="px-2 pb-10 space-y-1">
+                              {apiCategories
+                                .filter(cat => decodeHtmlEntities(cat.name).toLowerCase().includes(categorySearchTerm.toLowerCase()))
+                                .sort((a,b) => a.name.localeCompare(b.name))
+                                .map(cat => (
+                                  <Button
+                                    key={cat.id}
+                                    variant={activeCategoryId === cat.id ? "secondary" : "ghost"}
+                                    className={cn(
+                                      "w-full justify-start h-12 rounded-xl px-4 gap-3 transition-all",
+                                      activeCategoryId === cat.id ? "bg-orange-50 text-orange-600 hover:bg-orange-100" : "hover:bg-muted/50 active:scale-[0.98]"
+                                    )}
+                                    onClick={() => {
+                                      setActiveCategoryId(cat.id);
+                                      setIsCategorySheetOpen(false);
+                                      setCategorySearchTerm('');
+                                    }}
+                                  >
+                                    <span className="text-xl flex-shrink-0">{cat.icon}</span>
+                                    <span className="font-semibold">{decodeHtmlEntities(cat.name)}</span>
+                                    {activeCategoryId === cat.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                                  </Button>
+                                ))}
+                              
+                              <div className="pt-2">
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full justify-center h-12 rounded-xl border-dashed border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+                                  onClick={() => {
+                                    if (categorySearchTerm.trim()) {
+                                      handleQuickAddCategory(categorySearchTerm);
+                                      setIsCategorySheetOpen(false);
+                                      setCategorySearchTerm('');
+                                    } else {
+                                      setIsCategorySheetOpen(false);
+                                      handleOpenAddCategory();
+                                    }
+                                  }}
+                                >
+                                  <PlusCircle className="h-4 w-4 mr-2" /> New Category
+                                </Button>
+                              </div>
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                 </div>
               </div>
 
