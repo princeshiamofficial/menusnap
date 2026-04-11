@@ -65,7 +65,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   if (isAdminRoute) {
-    return <ClientAuthGuard>{children}</ClientAuthGuard>;
+    return <>{children}</>;
   }
 
   // For non-admin routes within the (app) group
