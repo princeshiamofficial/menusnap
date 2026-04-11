@@ -3,7 +3,7 @@
 
 import { revalidatePath } from 'next/cache';
 import pool from '@/lib/mysql';
-import { formatUtcDateTime } from '@/lib/dateUtils';
+import { formatLocalDateTime } from '@/lib/dateUtils';
 
 /**
  * Direct MySQL implementation for order submission.
@@ -35,7 +35,7 @@ export async function submitOrderToMySql(orderPayload: any) {
         finalTemplate.name || '',
         totalAmount || 0,
         status || 'Pending',
-        formatUtcDateTime(orderDate), 
+        formatLocalDateTime(orderDate), 
         JSON.stringify(finalCustomer),
         JSON.stringify(finalTemplate),
         JSON.stringify(items || [])

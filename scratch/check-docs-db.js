@@ -11,15 +11,10 @@ async function checkDocs() {
   });
 
   try {
-    console.log('Checking magic_docs timing...');
-    const [docs] = await pool.execute('SELECT title, last_updated, created_at FROM magic_docs LIMIT 10');
-    console.log('Docs data:', JSON.stringify(docs, null, 2));
-
-    const [now] = await pool.execute('SELECT NOW() as db_now, UTC_TIMESTAMP() as db_utc');
-    console.log('DB Time:', now[0]);
-
+    const [rows] = await pool.execute('SELECT id, title, last_updated, created_at FROM magic_docs LIMIT 5');
+    console.log('Magic Docs Rows:', rows);
   } catch (err) {
-    console.error('Database Check Error:', err);
+    console.error('Error:', err);
   } finally {
     await pool.end();
   }
