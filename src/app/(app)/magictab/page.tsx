@@ -15,6 +15,7 @@ import {
   X,
   Plus,
   UtensilsCrossed,
+  Folder,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetClose,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import { MenuPreviewDialog, type MenuItem, type SubMenuItem, type Category as MenuCategory } from '@/components/menu/menu-preview-dialog';
 import { CategoryList } from '@/components/menu/category-list';
@@ -396,37 +398,80 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
   isSubItemsExpanded
 }, ref) {
   return (
-    <Card ref={ref} className="shadow-sm hover:shadow-md transition-shadow rounded-lg bg-card border border-border h-full flex flex-col">
+    <Card 
+      ref={ref} 
+      className={cn(
+        "shadow-sm hover:shadow-md transition-all rounded-lg bg-card border border-border h-full flex flex-col cursor-pointer select-none",
+        isSelected ? "bg-primary/5 shadow-md" : ""
+      )}
+      onClick={() => onSelectItem(item.id, !isSelected)}
+    >
       <CardContent className="p-4 flex flex-col flex-grow">
-        <div className="flex items-start gap-4">
-          <Checkbox id={`item-${item.id}`} checked={isSelected} onCheckedChange={(checked) => onSelectItem(item.id, !!checked)} className="mt-1" />
+        <div className="flex items-center gap-4">
+          <Checkbox 
+            id={`item-${item.id}`} 
+            checked={isSelected} 
+            onCheckedChange={(checked) => onSelectItem(item.id, !!checked)}
+            onClick={(e) => e.stopPropagation()}
+          />
           <div className="flex-1 min-w-0">
-            <label htmlFor={`item-${item.id}`} className="text-sm font-medium text-foreground cursor-pointer block">{decodeHtmlEntities(item.name)}</label>
-            {item.description && <p className="text-xs text-muted-foreground mt-0.5">{decodeHtmlEntities(item.description)}</p>}
-          </div>
-          <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
-            {item.price > 0 && `৳${item.price.toLocaleString()}`}
-          </div>
-          <div className="h-7 w-7 flex items-center justify-center shrink-0">
-            <AnimatePresence>
-              {isSelected && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.5 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)} aria-label="Edit item">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <div className="flex items-start justify-between gap-4">
+              <label 
+                htmlFor={`item-${item.id}`} 
+                className="text-sm font-medium text-foreground cursor-pointer block truncate-2-lines"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {decodeHtmlEntities(item.name)}
+              </label>
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
+                  {item.price > 0 && `৳${item.price.toLocaleString()}`}
+                </div>
+                <div className="h-7 w-7 flex items-center justify-center">
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditItem(item);
+                          }} 
+                          aria-label="Edit item"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+            {item.description && (
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed pr-2">
+                {decodeHtmlEntities(item.description)}
+              </p>
+            )}
           </div>
         </div>
         {item.subItems && item.subItems.length > 0 && (
           <div className="mt-3 pl-2 mt-auto pt-2">
-            <Button variant="link" size="sm" onClick={() => onToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary">
+            <Button 
+              variant="link" 
+              size="sm" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSubItems(item.id);
+              }} 
+              className="text-xs h-auto p-1 text-primary"
+            >
               {isSubItemsExpanded ? 'Hide' : 'Show'} Variations ({item.subItems.length})
               {isSubItemsExpanded ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
             </Button>
@@ -595,6 +640,7 @@ export default function MagicTabPage() {
   const itemCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const magicSearchRef = useRef<HTMLTextAreaElement>(null);
+  const [isMobileSearchActive, setIsMobileSearchActive] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1103,151 +1149,176 @@ export default function MagicTabPage() {
         </div>
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
-          <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card space-y-3 shadow-sm md:shadow-none">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="relative flex-1 md:max-w-md group">
+          <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card shadow-sm md:shadow-none flex flex-col gap-3">
+            {/* First row: Search and Actions */}
+            <div className="flex flex-row items-center justify-between gap-2 md:gap-4 relative">
+              <div className={cn("relative flex-1 md:max-w-md transition-all duration-300", isMobileSearchActive && "flex-auto")}>
                 <Textarea 
                   ref={magicSearchRef}
-                  placeholder={selectedCategory ? `Search ${decodeHtmlEntities(selectedCategory.name)}...` : "Type menu items here... (e.g. Burger 100/-)"}
+                  placeholder="Search Items"
                   className={cn(
-                    "min-h-[44px] h-auto py-2.5 pl-5 rounded-3xl border-muted-foreground/20 bg-background focus-visible:ring-1 focus-visible:ring-orange-500 transition-all shadow-sm resize-none overflow-hidden",
-                    searchTerm.includes('\n') ? "pr-5" : "pr-12"
+                    "min-h-[44px] h-auto py-2.5 pl-5 rounded-3xl border-muted-foreground/20 bg-background focus:outline-none focus-visible:ring-0 transition-all shadow-sm resize-none overflow-hidden",
+                    (searchTerm.includes('\n') || isMobileSearchActive) ? "pr-5" : "pr-12",
+                    isMobileSearchActive ? "border-black focus:border-black" : "focus:border-orange-500"
                   )}
                   value={searchTerm} 
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => {
+                    if (window.innerWidth < 768) {
+                      setIsMobileSearchActive(true);
+                    }
+                  }}
                 />
-                {!searchTerm.includes('\n') && (
-                  <div className="absolute right-1 bottom-1 h-9 w-9 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-sm transition-transform active:scale-95 cursor-pointer">
+                {!searchTerm.includes('\n') && !isMobileSearchActive && (
+                  <div 
+                    onClick={() => magicSearchRef.current?.focus()}
+                    className="absolute right-1 bottom-1 h-9 w-9 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-sm transition-transform active:scale-95 cursor-pointer"
+                  >
                     <Search className="h-4 w-4" />
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center justify-between md:justify-start gap-2 md:gap-3 flex-1 md:flex-none">
-                <div className="flex items-center gap-2 md:gap-3 flex-1 md:flex-none">
-                  <Button
-                    ref={previewButtonRef}
-                    onClick={handlePreviewAndSave}
-                    disabled={selectedCount === 0}
-                    className={cn(
-                      "h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden rounded-full shadow-sm",
-                      selectedCount > 0 && "animate-glow"
-                    )}
-                    variant="default"
-                  >
-                    <div className="flex items-stretch h-full">
-                      <div className="hidden lg:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
-                        {clientUser?.businessName ? (
-                          <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
-                        ) : (
-                          <span>Your Menu</span>
-                        )}
-                      </div>
-                      <div className="bg-primary text-primary-foreground px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
-                        MagicTab ({selectedCount})
-                      </div>
-                    </div>
-                  </Button>
-                  <Button variant="outline" className="text-sm flex-none h-10 px-4 rounded-full border-muted-foreground/20" onClick={handleOpenAddItem}>
-                    <PlusCircle className="h-4 w-4 md:mr-2" />
-                    <span className="hidden md:inline">Add Item</span>
-                  </Button>
-                </div>
+              {isMobileSearchActive && (
+                <button 
+                  onClick={() => {
+                    setIsMobileSearchActive(false);
+                    magicSearchRef.current?.blur();
+                  }}
+                  className="md:hidden text-sm font-bold text-foreground px-1 py-2 whitespace-nowrap active:opacity-70 transition-opacity"
+                >
+                  Cancel
+                </button>
+              )}
 
-                {/* Mobile Modern Category Sheet */}
-                <div className="md:hidden shrink-0 ml-2">
-                <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
+              <div className={cn("flex items-center gap-1.5 md:gap-3 shrink-0", isMobileSearchActive && "hidden")}>
+                <Button
+                  ref={previewButtonRef}
+                  onClick={handlePreviewAndSave}
+                  disabled={selectedCount === 0}
+                  className={cn(
+                    "h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden rounded-full shadow-sm",
+                    selectedCount > 0 && "animate-glow"
+                  )}
+                  variant="default"
+                >
+                  <div className="flex items-stretch h-full">
+                    <div className="hidden lg:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
+                      {clientUser?.businessName ? (
+                        <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
+                      ) : (
+                        <span>Your Menu</span>
+                      )}
+                    </div>
+                    <div className="bg-primary text-primary-foreground px-3 sm:px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
+                      <span>MagicTab ({selectedCount})</span>
+                    </div>
+                  </div>
+                </Button>
+                <Button variant="outline" className="text-sm flex-none h-10 px-4 rounded-full border-muted-foreground/20" onClick={handleOpenAddItem}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  <span>Add Item</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Second row: Category Selector (Mobile only) */}
+            <div className={cn("md:hidden flex justify-center", isMobileSearchActive && "hidden")}>
+              <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
+                <SheetTrigger asChild>
                   <Button 
                     variant="ghost" 
-                    onClick={() => setIsCategorySheetOpen(true)}
-                    className="h-10 w-10 sm:w-auto bg-muted/50 hover:bg-muted text-xs font-medium rounded-full px-0 sm:px-3 flex items-center justify-center sm:justify-between"
+                    className="h-10 w-auto max-w-[280px] bg-muted/50 hover:bg-muted text-xs font-medium rounded-2xl px-5 flex items-center justify-between gap-8"
                   >
-                    <span className="hidden sm:inline-flex truncate mr-1">
+                    <span className="flex items-center gap-2 truncate">
                       {selectedCategory ? (
-                        <span className="flex items-center gap-1.5">
-                          <span className="text-sm">{selectedCategory.icon}</span>
+                        <span className="flex items-center gap-2 font-semibold">
+                          <span className="text-lg">{selectedCategory.icon}</span>
                           <span className="truncate">{decodeHtmlEntities(selectedCategory.name)}</span>
                         </span>
-                      ) : 'Category'}
+                      ) : (
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <Folder className="h-4 w-4" />
+                          <span>Select Category</span>
+                        </span>
+                      )}
                     </span>
-                    <span className="sm:hidden text-lg">{selectedCategory?.icon || <ChevronDown className="h-4 w-4" />}</span>
-                    <ChevronDown className="hidden sm:block h-3 w-3 opacity-50 shrink-0" />
+                    <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                   </Button>
-                  <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col h-[94vh] [&>button]:hidden">
-                    <div className="flex justify-center pt-3 pb-2">
-                      <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                </SheetTrigger>
+                <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col h-[94vh] [&>button]:hidden">
+                  <div className="flex justify-center pt-3 pb-2">
+                    <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                  </div>
+                  <div className="px-6 py-4 flex flex-col gap-4 flex-grow overflow-hidden">
+                    <SheetHeader className="text-left space-y-0">
+                      <div className="flex items-center justify-between">
+                        <SheetTitle className="text-lg font-bold text-foreground">Select Category</SheetTitle>
+                        <Button variant="ghost" size="icon" onClick={() => setIsCategorySheetOpen(false)} className="rounded-full h-8 w-8">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </SheetHeader>
+                    
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Search category..." 
+                        className="pl-10 h-11 rounded-full bg-muted/30 border-none focus-visible:ring-orange-400"
+                        value={categorySearchTerm}
+                        onChange={(e) => setCategorySearchTerm(e.target.value)}
+                      />
                     </div>
-                    <div className="px-6 py-4 flex flex-col gap-4 flex-grow overflow-hidden">
-                      <SheetHeader className="text-left space-y-0">
-                        <div className="flex items-center justify-between">
-                          <SheetTitle className="text-lg font-bold text-foreground">Select Category</SheetTitle>
-                          <Button variant="ghost" size="icon" onClick={() => setIsCategorySheetOpen(false)} className="rounded-full h-8 w-8">
-                            <X className="h-4 w-4" />
-                          </Button>
+
+                    <div className="flex-1 overflow-hidden flex flex-col -mx-2">
+                      <ScrollArea className="flex-1 w-full">
+                        <div className="px-2 pb-10 space-y-1">
+                          {categorySearchTerm.trim() && !apiCategories.some(cat => decodeHtmlEntities(cat.name).toLowerCase() === categorySearchTerm.trim().toLowerCase()) && (
+                            <div className="pt-2">
+                              <Button 
+                                variant="outline" 
+                                className="w-full justify-start h-12 rounded-xl border-dashed border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 gap-3 px-4"
+                                onClick={() => {
+                                  handleQuickAddCategory(categorySearchTerm);
+                                  setIsCategorySheetOpen(false);
+                                  setCategorySearchTerm('');
+                                }}
+                              >
+                                <PlusCircle className="h-5 w-5 shrink-0" />
+                                <span className="font-semibold truncate">Create "{categorySearchTerm}"</span>
+                              </Button>
+                            </div>
+                          )}
+
+                          {apiCategories
+                            .filter(cat => decodeHtmlEntities(cat.name).toLowerCase().includes(categorySearchTerm.toLowerCase()))
+                            .sort((a,b) => a.name.localeCompare(b.name))
+                            .map(cat => (
+                              <Button
+                                key={cat.id}
+                                variant={activeCategoryId === cat.id ? "secondary" : "ghost"}
+                                className={cn(
+                                  "w-full justify-start h-12 rounded-xl px-4 gap-3 transition-all",
+                                  activeCategoryId === cat.id ? "bg-orange-50 text-orange-600 hover:bg-orange-100" : "hover:bg-muted/50 active:scale-[0.98]"
+                                )}
+                                onClick={() => {
+                                  setActiveCategoryId(cat.id);
+                                  setIsCategorySheetOpen(false);
+                                  setCategorySearchTerm('');
+                                }}
+                              >
+                                <span className="text-xl flex-shrink-0">{cat.icon}</span>
+                                <span className="font-semibold">{decodeHtmlEntities(cat.name)}</span>
+                                {activeCategoryId === cat.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                              </Button>
+                            ))}
+                          
                         </div>
-                      </SheetHeader>
-                      
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          placeholder="Search category..." 
-                          className="pl-10 h-11 rounded-full bg-muted/30 border-none focus-visible:ring-orange-400"
-                          value={categorySearchTerm}
-                          onChange={(e) => setCategorySearchTerm(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="flex-1 overflow-hidden flex flex-col -mx-2">
-                        <ScrollArea className="flex-1 w-full">
-                          <div className="px-2 pb-10 space-y-1">
-                            {categorySearchTerm.trim() && !apiCategories.some(cat => decodeHtmlEntities(cat.name).toLowerCase() === categorySearchTerm.trim().toLowerCase()) && (
-                              <div className="pt-2">
-                                <Button 
-                                  variant="outline" 
-                                  className="w-full justify-start h-12 rounded-xl border-dashed border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 gap-3 px-4"
-                                  onClick={() => {
-                                    handleQuickAddCategory(categorySearchTerm);
-                                    setIsCategorySheetOpen(false);
-                                    setCategorySearchTerm('');
-                                  }}
-                                >
-                                  <PlusCircle className="h-5 w-5 shrink-0" />
-                                  <span className="font-semibold truncate">Create "{categorySearchTerm}"</span>
-                                </Button>
-                              </div>
-                            )}
-
-                            {apiCategories
-                              .filter(cat => decodeHtmlEntities(cat.name).toLowerCase().includes(categorySearchTerm.toLowerCase()))
-                              .sort((a,b) => a.name.localeCompare(b.name))
-                              .map(cat => (
-                                <Button
-                                  key={cat.id}
-                                  variant={activeCategoryId === cat.id ? "secondary" : "ghost"}
-                                  className={cn(
-                                    "w-full justify-start h-12 rounded-xl px-4 gap-3 transition-all",
-                                    activeCategoryId === cat.id ? "bg-orange-50 text-orange-600 hover:bg-orange-100" : "hover:bg-muted/50 active:scale-[0.98]"
-                                  )}
-                                  onClick={() => {
-                                    setActiveCategoryId(cat.id);
-                                    setIsCategorySheetOpen(false);
-                                    setCategorySearchTerm('');
-                                  }}
-                                >
-                                  <span className="text-xl flex-shrink-0">{cat.icon}</span>
-                                  <span className="font-semibold">{decodeHtmlEntities(cat.name)}</span>
-                                  {activeCategoryId === cat.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
-                                </Button>
-                              ))}
-                            
-                          </div>
-                        </ScrollArea>
-                      </div>
+                      </ScrollArea>
                     </div>
-                  </SheetContent>
-                </Sheet>
-                </div>
-              </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
           <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 sm:p-6 bg-[#fafafa]/50">
