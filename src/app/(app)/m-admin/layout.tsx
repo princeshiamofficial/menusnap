@@ -56,8 +56,8 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r border-sidebar-border shadow-md bg-sidebar">
         <AdminSidebarNav />
       </Sidebar>
-      <SidebarInset className="bg-background min-w-0 w-full max-w-full overflow-x-hidden">
-        <main className="flex-1 flex flex-col min-w-0 w-full max-w-full overflow-x-hidden relative h-full">
+      <SidebarInset className="bg-background min-w-0 w-full max-w-full">
+        <main className="flex-1 flex flex-col min-w-0 w-full max-w-full relative">
           <AdminNotificationPopup />
           {children}
         </main>
