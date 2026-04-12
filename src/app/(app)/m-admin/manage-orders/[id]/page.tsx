@@ -40,7 +40,8 @@ import {
     Users,
     PenSquare,
     Loader2,
-    Check
+    Check,
+    MoreHorizontal
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -1055,6 +1056,30 @@ export default function OrderDetailsPage() {
                                     <DropdownMenuItem onClick={() => handleShare('editor')}>
                                         <PenSquare className="mr-2 h-4 w-4" />
                                         Share with editor
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="px-2 sm:px-3">
+                                        <MoreHorizontal className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">More</span>
+                                        <ChevronDown className="h-4 w-4 ml-1 -mr-1 hidden sm:inline-flex" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuItem>
+                                        <CalendarDays className="mr-2 h-4 w-4" />
+                                        Order History
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                        <Save className="mr-2 h-4 w-4" />
+                                        Duplicate Order
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                        <AlertTriangle className="mr-2 h-4 w-4" />
+                                        Delete Order
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
