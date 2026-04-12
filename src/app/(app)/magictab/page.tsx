@@ -1151,176 +1151,198 @@ export default function MagicTabPage() {
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
           <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card shadow-sm md:shadow-none flex flex-col gap-3">
             {/* First row: Search and Actions */}
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-4 relative">
-              {/* Search Bar Block */}
-              <div className={cn("relative w-full md:flex-1 md:max-w-md transition-all duration-300", isMobileSearchActive && "flex-auto")}>
-                 <Textarea 
-                  ref={magicSearchRef}
-                  placeholder="Search Items"
-                  className={cn(
-                    "min-h-[44px] h-auto py-2.5 pl-5 rounded-3xl border-muted-foreground/20 bg-background focus:outline-none focus-visible:ring-0 transition-all shadow-sm resize-none overflow-hidden",
-                    (searchTerm.includes('\n') || isMobileSearchActive) ? "pr-5" : "pr-12",
-                    isMobileSearchActive ? "border-black focus:border-black" : "focus:border-orange-500"
+            <div className="flex flex-col gap-3">
+              {/* Row 1: Search and MagicTab */}
+              <div className="flex flex-row items-center gap-2 md:gap-4 relative">
+                <div className={cn("relative flex-1 md:max-w-md transition-all duration-300", isMobileSearchActive && "flex-auto")}>
+                   <Textarea 
+                    ref={magicSearchRef}
+                    placeholder="Search Items"
+                    className={cn(
+                      "min-h-[44px] h-auto py-2.5 pl-5 rounded-3xl border-muted-foreground/20 bg-background focus:outline-none focus-visible:ring-0 transition-all shadow-sm resize-none overflow-hidden",
+                      (searchTerm.includes('\n') || isMobileSearchActive) ? "pr-5" : "pr-12",
+                      isMobileSearchActive ? "border-black focus:border-black" : "focus:border-orange-500"
+                    )}
+                    value={searchTerm} 
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => {
+                      if (window.innerWidth < 768) {
+                        setIsMobileSearchActive(true);
+                      }
+                    }}
+                  />
+                  {!searchTerm.includes('\n') && !isMobileSearchActive && (
+                    <div 
+                      onClick={() => magicSearchRef.current?.focus()}
+                      className="absolute right-1 bottom-1 h-9 w-9 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-sm transition-transform active:scale-95 cursor-pointer"
+                    >
+                      <Search className="h-4 w-4" />
+                    </div>
                   )}
-                  value={searchTerm} 
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => {
-                    if (window.innerWidth < 768) {
-                      setIsMobileSearchActive(true);
-                    }
-                  }}
-                />
-                {!searchTerm.includes('\n') && !isMobileSearchActive && (
-                  <div 
-                    onClick={() => magicSearchRef.current?.focus()}
-                    className="absolute right-1 bottom-1 h-9 w-9 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-sm transition-transform active:scale-95 cursor-pointer"
+                </div>
+
+                {isMobileSearchActive && (
+                  <button 
+                    onClick={() => {
+                      setIsMobileSearchActive(false);
+                      magicSearchRef.current?.blur();
+                    }}
+                    className="md:hidden text-sm font-bold text-foreground px-1 py-2 whitespace-nowrap active:opacity-70 transition-opacity"
                   >
-                    <Search className="h-4 w-4" />
-                  </div>
+                    Cancel
+                  </button>
                 )}
+
+                {/* Desktop Buttons (Always Row 1 on Desktop) */}
+                <div className={cn("hidden md:flex flex-row items-center gap-3 shrink-0", isMobileSearchActive && "hidden")}>
+                  <Button
+                    ref={previewButtonRef}
+                    onClick={handlePreviewAndSave}
+                    disabled={selectedCount === 0}
+                    className={cn(
+                      "h-10 p-0 text-sm overflow-hidden rounded-full shadow-sm",
+                      selectedCount > 0 && "animate-glow"
+                    )}
+                    variant="default"
+                  >
+                    <div className="flex items-stretch h-full">
+                      <div className="hidden lg:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
+                        {clientUser?.businessName ? (
+                          <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
+                        ) : (
+                          <span>Your Menu</span>
+                        )}
+                      </div>
+                      <div className="bg-primary text-primary-foreground px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
+                        <span>MagicTab ({selectedCount})</span>
+                      </div>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="text-sm h-10 px-4 rounded-full border-muted-foreground/20" onClick={handleOpenAddItem}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    <span>Add Item</span>
+                  </Button>
+                </div>
+
+                {/* Mobile MagicTab Button (Row 1 on Mobile) */}
+                <div className={cn("md:hidden shrink-0", isMobileSearchActive && "hidden")}>
+                  <Button
+                    onClick={handlePreviewAndSave}
+                    disabled={selectedCount === 0}
+                    className={cn(
+                      "h-10 px-4 text-xs font-bold rounded-full shadow-sm bg-primary text-primary-foreground transition-all active:scale-95",
+                      selectedCount > 0 ? "opacity-100" : "opacity-50"
+                    )}
+                  >
+                    MagicTab ({selectedCount})
+                  </Button>
+                </div>
               </div>
 
-              {isMobileSearchActive && (
-                <button 
-                  onClick={() => {
-                    setIsMobileSearchActive(false);
-                    magicSearchRef.current?.blur();
-                  }}
-                  className="md:hidden text-sm font-bold text-foreground px-1 py-2 whitespace-nowrap active:opacity-70 transition-opacity"
-                >
-                  Cancel
-                </button>
-              )}
-
-              {/* Action Buttons Block */}
-              <div className={cn("flex flex-row items-center gap-2 md:gap-3 shrink-0", isMobileSearchActive && "hidden")}>
-                <Button
-                  ref={previewButtonRef}
-                  onClick={handlePreviewAndSave}
-                  disabled={selectedCount === 0}
-                  className={cn(
-                    "h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden rounded-full shadow-sm",
-                    selectedCount > 0 && "animate-glow"
-                  )}
-                  variant="default"
-                >
-                  <div className="flex items-stretch h-full">
-                    <div className="hidden lg:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
-                      {clientUser?.businessName ? (
-                        <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
-                      ) : (
-                        <span>Your Menu</span>
-                      )}
-                    </div>
-                    <div className="bg-primary text-primary-foreground px-3 sm:px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
-                      <span>MagicTab ({selectedCount})</span>
-                    </div>
-                  </div>
-                </Button>
-                <Button variant="outline" className="text-sm flex-none h-10 px-4 rounded-full border-muted-foreground/20" onClick={handleOpenAddItem}>
-                  <PlusCircle className="h-4 w-4 mr-2" />
+              {/* Row 2: Add Item & Category Selector (Mobile only) */}
+              <div className={cn("md:hidden flex flex-row items-center gap-2", isMobileSearchActive && "hidden")}>
+                <Button variant="outline" className="text-xs font-bold flex-1 h-10 px-3 rounded-full border-muted-foreground/20 bg-white shadow-sm" onClick={handleOpenAddItem}>
+                  <PlusCircle className="h-4 w-4 mr-1.5" />
                   <span>Add Item</span>
                 </Button>
-              </div>
-            </div>
 
-            {/* Second row: Category Selector (Mobile only) */}
-            <div className={cn("md:hidden flex justify-center", isMobileSearchActive && "hidden")}>
-              <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
-                <SheetTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="h-10 w-auto max-w-[280px] bg-muted/50 hover:bg-muted text-xs font-medium rounded-2xl px-5 flex items-center justify-between gap-8"
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      {selectedCategory ? (
-                        <span className="flex items-center gap-2 font-semibold">
-                          <span className="text-lg">{selectedCategory.icon}</span>
-                          <span className="truncate">{decodeHtmlEntities(selectedCategory.name)}</span>
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2 text-muted-foreground">
-                          <Folder className="h-4 w-4" />
-                          <span>Select Category</span>
-                        </span>
-                      )}
-                    </span>
-                    <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col h-[94vh] [&>button]:hidden">
-                  <div className="flex justify-center pt-3 pb-2">
-                    <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-                  </div>
-                  <div className="px-6 py-4 flex flex-col gap-4 flex-grow overflow-hidden">
-                    <SheetHeader className="text-left space-y-0">
-                      <div className="flex items-center justify-between">
-                        <SheetTitle className="text-lg font-bold text-foreground">Select Category</SheetTitle>
-                        <Button variant="ghost" size="icon" onClick={() => setIsCategorySheetOpen(false)} className="rounded-full h-8 w-8">
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </SheetHeader>
-                    
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Search category..." 
-                        className="pl-10 h-11 rounded-full bg-muted/30 border-none focus-visible:ring-orange-400"
-                        value={categorySearchTerm}
-                        onChange={(e) => setCategorySearchTerm(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="flex-1 overflow-hidden flex flex-col -mx-2">
-                      <ScrollArea className="flex-1 w-full">
-                        <div className="px-2 pb-10 space-y-1">
-                          {categorySearchTerm.trim() && !apiCategories.some(cat => decodeHtmlEntities(cat.name).toLowerCase() === categorySearchTerm.trim().toLowerCase()) && (
-                            <div className="pt-2">
-                              <Button 
-                                variant="outline" 
-                                className="w-full justify-start h-12 rounded-xl border-dashed border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 gap-3 px-4"
-                                onClick={() => {
-                                  handleQuickAddCategory(categorySearchTerm);
-                                  setIsCategorySheetOpen(false);
-                                  setCategorySearchTerm('');
-                                }}
-                              >
-                                <PlusCircle className="h-5 w-5 shrink-0" />
-                                <span className="font-semibold truncate">Create "{categorySearchTerm}"</span>
-                              </Button>
-                            </div>
+                <div className="flex-1 h-10">
+                  <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
+                    <SheetTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="h-full w-full bg-muted/50 hover:bg-muted text-xs font-bold rounded-full px-4 flex items-center justify-between gap-2 border border-border/50"
+                      >
+                        <span className="flex items-center gap-1.5 truncate">
+                          {selectedCategory ? (
+                            <span className="flex items-center gap-1.5 font-bold">
+                              <span className="text-base leading-none">{selectedCategory.icon}</span>
+                              <span className="truncate">{decodeHtmlEntities(selectedCategory.name)}</span>
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <Folder className="h-3.5 w-3.5" />
+                              <span>Category</span>
+                            </span>
                           )}
-
-                          {apiCategories
-                            .filter(cat => decodeHtmlEntities(cat.name).toLowerCase().includes(categorySearchTerm.toLowerCase()))
-                            .sort((a,b) => a.name.localeCompare(b.name))
-                            .map(cat => (
-                              <Button
-                                key={cat.id}
-                                variant={activeCategoryId === cat.id ? "secondary" : "ghost"}
-                                className={cn(
-                                  "w-full justify-start h-12 rounded-xl px-4 gap-3 transition-all",
-                                  activeCategoryId === cat.id ? "bg-orange-50 text-orange-600 hover:bg-orange-100" : "hover:bg-muted/50 active:scale-[0.98]"
-                                )}
-                                onClick={() => {
-                                  setActiveCategoryId(cat.id);
-                                  setIsCategorySheetOpen(false);
-                                  setCategorySearchTerm('');
-                                }}
-                              >
-                                <span className="text-xl flex-shrink-0">{cat.icon}</span>
-                                <span className="font-semibold">{decodeHtmlEntities(cat.name)}</span>
-                                {activeCategoryId === cat.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
-                              </Button>
-                            ))}
-                          
+                        </span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col h-[94vh] [&>button]:hidden">
+                      <div className="flex justify-center pt-3 pb-2">
+                        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                      </div>
+                      <div className="px-6 py-4 flex flex-col gap-4 flex-grow overflow-hidden">
+                        <SheetHeader className="text-left space-y-0">
+                          <div className="flex items-center justify-between">
+                            <SheetTitle className="text-lg font-bold text-foreground">Select Category</SheetTitle>
+                            <Button variant="ghost" size="icon" onClick={() => setIsCategorySheetOpen(false)} className="rounded-full h-8 w-8">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </SheetHeader>
+                        
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Search category..." 
+                            className="pl-10 h-11 rounded-full bg-muted/30 border-none focus-visible:ring-orange-400"
+                            value={categorySearchTerm}
+                            onChange={(e) => setCategorySearchTerm(e.target.value)}
+                          />
                         </div>
-                      </ScrollArea>
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
+
+                        <div className="flex-1 overflow-hidden flex flex-col -mx-2">
+                          <ScrollArea className="flex-1 w-full">
+                            <div className="px-2 pb-10 space-y-1">
+                              {categorySearchTerm.trim() && !apiCategories.some(cat => decodeHtmlEntities(cat.name).toLowerCase() === categorySearchTerm.trim().toLowerCase()) && (
+                                <div className="pt-2">
+                                  <Button 
+                                    variant="outline" 
+                                    className="w-full justify-start h-12 rounded-xl border-dashed border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 gap-3 px-4"
+                                    onClick={() => {
+                                      handleQuickAddCategory(categorySearchTerm);
+                                      setIsCategorySheetOpen(false);
+                                      setCategorySearchTerm('');
+                                    }}
+                                  >
+                                    <PlusCircle className="h-5 w-5 shrink-0" />
+                                    <span className="font-semibold truncate">Create "{categorySearchTerm}"</span>
+                                  </Button>
+                                </div>
+                              )}
+
+                              {apiCategories
+                                .filter(cat => decodeHtmlEntities(cat.name).toLowerCase().includes(categorySearchTerm.toLowerCase()))
+                                .sort((a,b) => a.name.localeCompare(b.name))
+                                .map(cat => (
+                                  <Button
+                                    key={cat.id}
+                                    variant={activeCategoryId === cat.id ? "secondary" : "ghost"}
+                                    className={cn(
+                                      "w-full justify-start h-12 rounded-xl px-4 gap-3 transition-all",
+                                      activeCategoryId === cat.id ? "bg-orange-50 text-orange-600 hover:bg-orange-100" : "hover:bg-muted/50 active:scale-[0.98]"
+                                    )}
+                                    onClick={() => {
+                                      setActiveCategoryId(cat.id);
+                                      setIsCategorySheetOpen(false);
+                                      setCategorySearchTerm('');
+                                    }}
+                                  >
+                                    <span className="text-xl flex-shrink-0">{cat.icon}</span>
+                                    <span className="font-semibold">{decodeHtmlEntities(cat.name)}</span>
+                                    {activeCategoryId === cat.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                                  </Button>
+                                ))}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              </div>
             </div>
           </div>
           <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 sm:p-6 bg-[#fafafa]/50">
