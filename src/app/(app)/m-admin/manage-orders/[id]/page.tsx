@@ -1098,6 +1098,32 @@ export default function OrderDetailsPage() {
                                     </Button>
                                 </div>
 
+                                {/* Floating Toolbar at Top */}
+                                <motion.div 
+                                    initial={{ y: -50, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="absolute top-16 flex items-center gap-1 p-1.5 bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl z-10"
+                                >
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <FileText className="h-5 w-5" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <Users className="h-5 w-5" />
+                                    </Button>
+                                    <div className="w-px h-6 bg-border mx-1" />
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <ImageIcon className="h-5 w-5" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <Search className="h-5 w-5" />
+                                    </Button>
+                                    <div className="w-px h-6 bg-border mx-1" />
+                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 ml-2">
+                                        <Plus className="h-5 w-5" />
+                                    </Button>
+                                </motion.div>
+
                                 <motion.div
                                     animate={{ 
                                         y: [0, -10, 0],
@@ -1108,6 +1134,7 @@ export default function OrderDetailsPage() {
                                         repeat: Infinity,
                                         ease: "easeInOut"
                                     }}
+                                    className="mt-12"
                                 >
                                     <Sparkles className="h-20 w-20 text-primary mb-6 drop-shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
                                 </motion.div>
@@ -1117,32 +1144,6 @@ export default function OrderDetailsPage() {
                                     Next-gen document vibe crafting. <br/>
                                     <span className="text-xs opacity-60">Coming soon in future update.</span>
                                 </p>
-
-                                {/* Floating Toolbar */}
-                                <motion.div 
-                                    initial={{ y: 50, opacity: 0 }}
-                                    animate={{ y: 0, opacity: 1 }}
-                                    transition={{ delay: 0.3 }}
-                                    className="absolute bottom-8 flex items-center gap-1 p-1.5 bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl"
-                                >
-                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                        <FileText className="h-5 w-5" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                        <Users className="h-5 w-5" />
-                                    </Button>
-                                    <div className="w-px h-6 bg-border mx-1" />
-                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                        <ImageIcon className="h-5 w-5" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                        <Search className="h-5 w-5" />
-                                    </Button>
-                                    <div className="w-px h-6 bg-border mx-1" />
-                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 ml-2">
-                                        <Plus className="h-5 w-5" />
-                                    </Button>
-                                </motion.div>
                             </motion.div>
                         ) : (
                             <>
