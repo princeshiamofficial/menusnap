@@ -1159,7 +1159,7 @@ export default function MagicTabPage() {
                     ref={magicSearchRef}
                     placeholder="Search Items"
                     className={cn(
-                      "min-h-[44px] h-auto py-2.5 pl-5 rounded-3xl border-muted-foreground/20 bg-background focus:outline-none focus-visible:ring-0 transition-all shadow-sm resize-none overflow-hidden",
+                      "min-h-[40px] h-10 py-2.5 pl-5 rounded-3xl border-muted-foreground/20 bg-background focus:outline-none focus-visible:ring-0 transition-all shadow-sm resize-none overflow-hidden",
                       (searchTerm.includes('\n') || isMobileSearchActive) ? "pr-5" : "pr-12",
                       isMobileSearchActive ? "border-black focus:border-black" : "focus:border-orange-500"
                     )}
@@ -1174,7 +1174,7 @@ export default function MagicTabPage() {
                   {!searchTerm.includes('\n') && !isMobileSearchActive && (
                     <div 
                       onClick={() => magicSearchRef.current?.focus()}
-                      className="absolute right-1 bottom-1 h-9 w-9 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-sm transition-transform active:scale-95 cursor-pointer"
+                      className="absolute right-1 top-1 h-8 w-8 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-sm transition-transform active:scale-95 cursor-pointer"
                     >
                       <Search className="h-4 w-4" />
                     </div>
