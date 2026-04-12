@@ -448,119 +448,6 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
 }));
 MenuItemCard.displayName = 'MenuItemCard';
 
-const categoryFormSchema = z.object({
-  name: z.string().min(1, "Category name is required").max(50, "Name is too long"),
-  icon: z.string().min(1, "Icon is required").max(10, "Icon is too long"),
-});
-
-type CategoryFormValues = z.infer<typeof categoryFormSchema>;
-
-interface CategoryFormProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CategoryFormValues) => void;
-  isSubmitting: boolean;
-  initialData?: Partial<Category>;
-}
-
-function CategoryForm({ isOpen, onOpenChange, onSubmit, isSubmitting, initialData }: CategoryFormProps) {
-  const form = useForm<CategoryFormValues>({
-    resolver: zodResolver(categoryFormSchema),
-    defaultValues: {
-      name: decodeHtmlEntities(initialData?.name) || "",
-      icon: initialData?.icon || "📁",
-    },
-    mode: 'onChange',
-  });
-
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      form.reset({
-        name: decodeHtmlEntities(initialData?.name) || "",
-        icon: initialData?.icon || "📁",
-      });
-    }
-  }, [isOpen, initialData, form]);
-
-  const dialogTitle = initialData ? "Edit Category" : "Add New Category";
-  const dialogDescription = initialData ? "Update the details for this category." : "Create a new category to organize your MagicTab items.";
-  const submitButtonText = initialData ? (isSubmitting ? 'Saving...' : 'Save Changes') : (isSubmitting ? 'Adding...' : 'Add Category');
-
-  const formInner = (
-    <>
-      {/* Header */}
-      <div className="relative px-6 pt-6 pb-5 bg-background">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
-            <span className="text-2xl">{initialData?.icon || "📁"}</span>
-          </div>
-          <div className="flex-1 min-w-0 pt-0.5">
-            <DialogTitle className="text-lg font-bold leading-tight text-foreground">{dialogTitle}</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground mt-0.5">{dialogDescription}</DialogDescription>
-          </div>
-        </div>
-      </div>
-
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-grow overflow-hidden">
-        <ScrollArea className="flex-grow">
-          <div className="px-6 pb-2 space-y-5">
-            <div className="flex gap-3 items-start">
-              <div className="w-28 space-y-1.5">
-                <Label htmlFor="category-icon" className="text-sm font-semibold text-foreground">Icon</Label>
-                <Input
-                  id="category-icon"
-                  {...form.register("icon")}
-                  placeholder="e.g., 🍔"
-                  className="rounded-full border-border/70 h-11 px-4 text-center text-lg focus-visible:ring-orange-400 focus-visible:border-orange-400"
-                />
-                {form.formState.errors.icon && <p className="text-sm text-destructive mt-1">{form.formState.errors.icon.message}</p>}
-              </div>
-              <div className="flex-1 space-y-1.5">
-                <Label htmlFor="category-name" className="text-sm font-semibold text-foreground">Category Name</Label>
-                <Input
-                  id="category-name"
-                  {...form.register("name")}
-                  placeholder="e.g., Appetizers"
-                  className="rounded-full border-border/70 h-11 px-4 focus-visible:ring-orange-400 focus-visible:border-orange-400"
-                />
-                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
-
-        <div className="px-6 pb-6 pt-4 flex gap-3 bg-background">
-          <DialogClose asChild>
-            <Button type="button" variant="outline" className="flex-1 h-11 rounded-full text-muted-foreground">Cancel</Button>
-          </DialogClose>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1 h-11 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200"
-          >
-            {submitButtonText}
-          </Button>
-        </div>
-      </form>
-    </>
-  );
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md flex flex-col max-h-[90vh] p-0 gap-0 rounded-2xl overflow-hidden border-0 shadow-2xl">
-        {formInner}
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 const customSlugify = (text: string): string => {
   if (!text) return '';
@@ -699,9 +586,6 @@ export default function MagicTabPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [isCategoryFormOpen, setIsCategoryFormOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [isCategorySubmitting, setIsCategorySubmitting] = useState(false);
 
   const [animations, setAnimations] = useState<{ id: number, startX: number, startY: number, endX: number, endY: number }[]>([]);
   const [isMounted, setIsMounted] = useState(false);
@@ -710,6 +594,27 @@ export default function MagicTabPage() {
   const previewButtonRef = useRef<HTMLButtonElement>(null);
   const itemCardRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const magicSearchRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (magicSearchRef.current) {
+        // Reset height to 0 to measure exact content height
+        magicSearchRef.current.style.height = '0px';
+        const scrollHeight = magicSearchRef.current.scrollHeight;
+        
+        // If there are no newlines, force back to the default height (44px)
+        const hasNewLine = searchTerm.includes('\n');
+        const newHeight = !hasNewLine ? 44 : Math.max(44, Math.min(scrollHeight, 300));
+        
+        magicSearchRef.current.style.height = `${newHeight}px`;
+      }
+    };
+
+    // Use requestAnimationFrame to ensure we measure after the DOM has updated
+    const animationId = requestAnimationFrame(handleResize);
+    return () => cancelAnimationFrame(animationId);
+  }, [searchTerm]);
 
   const selectedCategory = useMemo(() => {
     return apiCategories.find(c => c.id === activeCategoryId) || null;
@@ -995,66 +900,27 @@ export default function MagicTabPage() {
     setIsSubmitting(false);
   }, [allMenuItems, editingItem, selectedCategory]);
 
-  const handleOpenAddCategory = () => {
-    setEditingCategory(null);
-    setIsCategoryFormOpen(true);
-  };
 
   const handleOpenEditCategory = useCallback((category: Category) => {
-    setEditingCategory(category);
-    setIsCategoryFormOpen(true);
-  }, []);
+    const newName = window.prompt("Edit category name:", decodeHtmlEntities(category.name));
+    if (!newName || newName.trim() === decodeHtmlEntities(category.name)) return;
 
-
-  const handleCategoryFormSubmit = useCallback((data: CategoryFormValues) => {
-    setIsCategorySubmitting(true);
-
-    let updatedCategories;
-    let newCategory = null;
-
-    if (editingCategory) {
-      // Editing an existing category
-      const categoryToUpdate = { ...editingCategory, ...data };
-      updatedCategories = apiCategories.map(cat =>
-        cat.id === editingCategory.id ? categoryToUpdate : cat
-      );
-      newCategory = categoryToUpdate;
-    } else {
-      // Adding a new category
-      newCategory = {
-        id: `custom-category-${customSlugify(data.name)}-${Date.now()}`,
-        name: data.name,
-        icon: data.icon,
-        visibleToUsers: true,
-        itemCount: 0,
-        createdAt: new Date().toISOString(),
-      };
-      updatedCategories = [...apiCategories, newCategory];
-    }
-
-    setApiCategories(updatedCategories);
+    const updatedCategory = { ...category, name: newName.trim() };
+    setApiCategories(prev => prev.map(cat => cat.id === category.id ? updatedCategory : cat));
 
     try {
       const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
-      if (editingCategory) {
-        const index = localCategories.findIndex(c => c.id === editingCategory.id);
-        if (index > -1) {
-          localCategories[index] = { ...localCategories[index], ...data };
-        } else {
-          localCategories.push(newCategory);
-        }
-      } else {
-        localCategories.push(newCategory);
+      const index = localCategories.findIndex(c => c.id === category.id);
+      if (index > -1) {
+        localCategories[index] = { ...localCategories[index], name: newName.trim() };
+        localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
       }
-      localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
     } catch (e) {
       // Error handling without toast
     }
+  }, []);
 
-    setIsCategoryFormOpen(false);
-    setEditingCategory(null);
-    setIsCategorySubmitting(false);
-  }, [apiCategories, editingCategory]);
+
 
   const handleQuickAddCategory = useCallback((name: string) => {
     if (!name.trim()) return;
@@ -1223,14 +1089,14 @@ export default function MagicTabPage() {
         document.body
       )}
 
-      <div className="flex flex-col md:flex-row h-[calc(100vh-theme(spacing.16)-1px)] overflow-hidden">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-theme(spacing.16))] md:h-screen overflow-hidden">
 
         <div className="hidden md:block h-full">
           <CategoryList
             categories={apiCategories}
             onCategoryChange={setActiveCategoryId}
-            onAddCategory={handleOpenAddCategory}
             onEditCategory={handleOpenEditCategory}
+            onQuickAdd={handleQuickAddCategory}
             loading={loadingCategories}
             error={error}
           />
@@ -1238,158 +1104,152 @@ export default function MagicTabPage() {
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
           <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card space-y-3 shadow-sm md:shadow-none">
-            <div className="flex flex-col md:flex-row justify-between md:items-center gap-3">
-              <div className="flex items-center justify-between gap-2">
-                <h1 className="text-lg md:text-2xl font-bold tracking-tight text-foreground">
-                  {selectedCategory ? `${decodeHtmlEntities(selectedCategory.name)}` : 'MagicTab'}
-                </h1>
-                
-                {/* Mobile Modern Category Sheet */}
-                <div className="md:hidden flex-1 max-w-[160px]">
-                  <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => setIsCategorySheetOpen(true)}
-                      className="h-9 w-full bg-muted/50 hover:bg-muted text-xs font-medium rounded-full px-3 flex items-center justify-between"
-                    >
-                      <span className="truncate mr-1">
-                        {selectedCategory ? (
-                          <span className="flex items-center gap-1.5">
-                            <span className="text-sm">{selectedCategory.icon}</span>
-                            <span className="truncate">{decodeHtmlEntities(selectedCategory.name)}</span>
-                          </span>
-                        ) : 'Category'}
-                      </span>
-                      <ChevronDown className="h-3 w-3 opacity-50 shrink-0" />
-                    </Button>
-                    <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col h-[94vh] [&>button]:hidden">
-                      <div className="flex justify-center pt-3 pb-2">
-                        <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-                      </div>
-                      <div className="px-6 py-4 flex flex-col gap-4 flex-grow overflow-hidden">
-                        <SheetHeader className="text-left space-y-0">
-                          <div className="flex items-center justify-between">
-                            <SheetTitle className="text-lg font-bold text-foreground">Select Category</SheetTitle>
-                            <Button variant="ghost" size="icon" onClick={() => setIsCategorySheetOpen(false)} className="rounded-full h-8 w-8">
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </SheetHeader>
-                        
-                        <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            placeholder="Search category..." 
-                            className="pl-10 h-11 rounded-full bg-muted/30 border-none focus-visible:ring-orange-400"
-                            value={categorySearchTerm}
-                            onChange={(e) => setCategorySearchTerm(e.target.value)}
-                          />
-                        </div>
-
-                        <div className="flex-1 overflow-hidden flex flex-col -mx-2">
-                          <ScrollArea className="flex-1 w-full">
-                            <div className="px-2 pb-10 space-y-1">
-                              {apiCategories
-                                .filter(cat => decodeHtmlEntities(cat.name).toLowerCase().includes(categorySearchTerm.toLowerCase()))
-                                .sort((a,b) => a.name.localeCompare(b.name))
-                                .map(cat => (
-                                  <Button
-                                    key={cat.id}
-                                    variant={activeCategoryId === cat.id ? "secondary" : "ghost"}
-                                    className={cn(
-                                      "w-full justify-start h-12 rounded-xl px-4 gap-3 transition-all",
-                                      activeCategoryId === cat.id ? "bg-orange-50 text-orange-600 hover:bg-orange-100" : "hover:bg-muted/50 active:scale-[0.98]"
-                                    )}
-                                    onClick={() => {
-                                      setActiveCategoryId(cat.id);
-                                      setIsCategorySheetOpen(false);
-                                      setCategorySearchTerm('');
-                                    }}
-                                  >
-                                    <span className="text-xl flex-shrink-0">{cat.icon}</span>
-                                    <span className="font-semibold">{decodeHtmlEntities(cat.name)}</span>
-                                    {activeCategoryId === cat.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
-                                  </Button>
-                                ))}
-                              
-                              <div className="pt-2">
-                                <Button 
-                                  variant="outline" 
-                                  className="w-full justify-center h-12 rounded-xl border-dashed border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
-                                  onClick={() => {
-                                    if (categorySearchTerm.trim()) {
-                                      handleQuickAddCategory(categorySearchTerm);
-                                      setIsCategorySheetOpen(false);
-                                      setCategorySearchTerm('');
-                                    } else {
-                                      setIsCategorySheetOpen(false);
-                                      handleOpenAddCategory();
-                                    }
-                                  }}
-                                >
-                                  <PlusCircle className="h-4 w-4 mr-2" /> New Category
-                                </Button>
-                              </div>
-                            </div>
-                          </ScrollArea>
-                        </div>
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-                </div>
-              </div>
-
-              <Select value={selectedMenuType} onValueChange={setSelectedMenuType} disabled={clientLoading}>
-                <SelectTrigger className="w-full md:w-[200px] h-9 md:h-10 text-xs md:text-sm bg-muted/30 md:bg-background"><SelectValue placeholder="Select type" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="restaurant">Restaurant Menu</SelectItem>
-                  <SelectItem value="parlour">Parlour Menu</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Category selection is now handled by the responsive CategoryList component */}
-
-
-            <div className="flex flex-col md:flex-row items-center gap-3">
-              <div className="relative w-full md:flex-grow flex items-center">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="relative flex-1 md:max-w-md group">
                 <Textarea 
-                  placeholder={selectedCategory ? `Search ${decodeHtmlEntities(selectedCategory.name)} items...` : "Search MagicTab items..."}
-                  className="pl-10 text-sm w-full min-h-[40px] h-10 py-2.5 resize-none overflow-y-auto focus-visible:ring-1" 
+                  ref={magicSearchRef}
+                  placeholder={selectedCategory ? `Search ${decodeHtmlEntities(selectedCategory.name)}...` : "Type menu items here... (e.g. Burger 100/-)"}
+                  className={cn(
+                    "min-h-[44px] h-auto py-2.5 pl-5 rounded-3xl border-muted-foreground/20 bg-background focus-visible:ring-1 focus-visible:ring-orange-500 transition-all shadow-sm resize-none overflow-hidden",
+                    searchTerm.includes('\n') ? "pr-5" : "pr-12"
+                  )}
                   value={searchTerm} 
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-              </div>
-              <div className="flex w-full md:w-auto gap-2 md:mt-0">
-                <Button
-                  ref={previewButtonRef}
-                  onClick={handlePreviewAndSave}
-                  disabled={selectedCount === 0}
-                  className={cn(
-                    "h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden",
-                    selectedCount > 0 && "animate-glow"
-                  )}
-                  variant="default"
-                >
-                  <div className="flex items-stretch h-full">
-                    <div className="hidden md:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
-                      {clientUser?.businessName ? (
-                        <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
-                      ) : (
-                        <span>Your Menu</span>
-                      )}
-                    </div>
-                    <div className="bg-primary text-primary-foreground px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
-                      MagicTab ({selectedCount})
-                    </div>
+                {!searchTerm.includes('\n') && (
+                  <div className="absolute right-1 bottom-1 h-9 w-9 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-sm transition-transform active:scale-95 cursor-pointer">
+                    <Search className="h-4 w-4" />
                   </div>
-                </Button>
-                <Button variant="outline" className="text-sm flex-1 md:flex-none h-10 px-3 md:px-4" onClick={handleOpenAddItem}><PlusCircle className="h-4 w-4 mr-2 hidden xs:block" />Add Item</Button>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between md:justify-start gap-2 md:gap-3 flex-1 md:flex-none">
+                <div className="flex items-center gap-2 md:gap-3 flex-1 md:flex-none">
+                  <Button
+                    ref={previewButtonRef}
+                    onClick={handlePreviewAndSave}
+                    disabled={selectedCount === 0}
+                    className={cn(
+                      "h-10 p-0 text-sm flex-1 md:flex-none overflow-hidden rounded-full shadow-sm",
+                      selectedCount > 0 && "animate-glow"
+                    )}
+                    variant="default"
+                  >
+                    <div className="flex items-stretch h-full">
+                      <div className="hidden lg:flex bg-black text-white px-4 items-center transition-colors hover:bg-gray-800">
+                        {clientUser?.businessName ? (
+                          <Typewriter words={[clientUser.businessName, clientUser.type.charAt(0).toUpperCase() + clientUser.type.slice(1)]} />
+                        ) : (
+                          <span>Your Menu</span>
+                        )}
+                      </div>
+                      <div className="bg-primary text-primary-foreground px-4 flex-grow flex items-center justify-center transition-colors hover:bg-primary/90">
+                        MagicTab ({selectedCount})
+                      </div>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="text-sm flex-none h-10 px-4 rounded-full border-muted-foreground/20" onClick={handleOpenAddItem}>
+                    <PlusCircle className="h-4 w-4 md:mr-2" />
+                    <span className="hidden md:inline">Add Item</span>
+                  </Button>
+                </div>
+
+                {/* Mobile Modern Category Sheet */}
+                <div className="md:hidden shrink-0 ml-2">
+                <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => setIsCategorySheetOpen(true)}
+                    className="h-10 w-10 sm:w-auto bg-muted/50 hover:bg-muted text-xs font-medium rounded-full px-0 sm:px-3 flex items-center justify-center sm:justify-between"
+                  >
+                    <span className="hidden sm:inline-flex truncate mr-1">
+                      {selectedCategory ? (
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-sm">{selectedCategory.icon}</span>
+                          <span className="truncate">{decodeHtmlEntities(selectedCategory.name)}</span>
+                        </span>
+                      ) : 'Category'}
+                    </span>
+                    <span className="sm:hidden text-lg">{selectedCategory?.icon || <ChevronDown className="h-4 w-4" />}</span>
+                    <ChevronDown className="hidden sm:block h-3 w-3 opacity-50 shrink-0" />
+                  </Button>
+                  <SheetContent side="bottom" className="p-0 gap-0 rounded-t-2xl overflow-hidden border-0 shadow-2xl flex flex-col h-[94vh] [&>button]:hidden">
+                    <div className="flex justify-center pt-3 pb-2">
+                      <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                    </div>
+                    <div className="px-6 py-4 flex flex-col gap-4 flex-grow overflow-hidden">
+                      <SheetHeader className="text-left space-y-0">
+                        <div className="flex items-center justify-between">
+                          <SheetTitle className="text-lg font-bold text-foreground">Select Category</SheetTitle>
+                          <Button variant="ghost" size="icon" onClick={() => setIsCategorySheetOpen(false)} className="rounded-full h-8 w-8">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </SheetHeader>
+                      
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="Search category..." 
+                          className="pl-10 h-11 rounded-full bg-muted/30 border-none focus-visible:ring-orange-400"
+                          value={categorySearchTerm}
+                          onChange={(e) => setCategorySearchTerm(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="flex-1 overflow-hidden flex flex-col -mx-2">
+                        <ScrollArea className="flex-1 w-full">
+                          <div className="px-2 pb-10 space-y-1">
+                            {categorySearchTerm.trim() && !apiCategories.some(cat => decodeHtmlEntities(cat.name).toLowerCase() === categorySearchTerm.trim().toLowerCase()) && (
+                              <div className="pt-2">
+                                <Button 
+                                  variant="outline" 
+                                  className="w-full justify-start h-12 rounded-xl border-dashed border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 gap-3 px-4"
+                                  onClick={() => {
+                                    handleQuickAddCategory(categorySearchTerm);
+                                    setIsCategorySheetOpen(false);
+                                    setCategorySearchTerm('');
+                                  }}
+                                >
+                                  <PlusCircle className="h-5 w-5 shrink-0" />
+                                  <span className="font-semibold truncate">Create "{categorySearchTerm}"</span>
+                                </Button>
+                              </div>
+                            )}
+
+                            {apiCategories
+                              .filter(cat => decodeHtmlEntities(cat.name).toLowerCase().includes(categorySearchTerm.toLowerCase()))
+                              .sort((a,b) => a.name.localeCompare(b.name))
+                              .map(cat => (
+                                <Button
+                                  key={cat.id}
+                                  variant={activeCategoryId === cat.id ? "secondary" : "ghost"}
+                                  className={cn(
+                                    "w-full justify-start h-12 rounded-xl px-4 gap-3 transition-all",
+                                    activeCategoryId === cat.id ? "bg-orange-50 text-orange-600 hover:bg-orange-100" : "hover:bg-muted/50 active:scale-[0.98]"
+                                  )}
+                                  onClick={() => {
+                                    setActiveCategoryId(cat.id);
+                                    setIsCategorySheetOpen(false);
+                                    setCategorySearchTerm('');
+                                  }}
+                                >
+                                  <span className="text-xl flex-shrink-0">{cat.icon}</span>
+                                  <span className="font-semibold">{decodeHtmlEntities(cat.name)}</span>
+                                  {activeCategoryId === cat.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                                </Button>
+                              ))}
+                            
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+                </div>
               </div>
             </div>
           </div>
-
           <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 sm:p-6 bg-[#fafafa]/50">
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-24 w-full rounded-xl" />)}</div>
@@ -1435,13 +1295,6 @@ export default function MagicTabPage() {
         isSubmitting={isSubmitting}
       />
 
-      <CategoryForm
-        isOpen={isCategoryFormOpen}
-        onOpenChange={setIsCategoryFormOpen}
-        onSubmit={handleCategoryFormSubmit}
-        isSubmitting={isCategorySubmitting}
-        initialData={editingCategory || undefined}
-      />
 
       <MenuPreviewDialog
         isOpen={isPreviewDialogOpen}

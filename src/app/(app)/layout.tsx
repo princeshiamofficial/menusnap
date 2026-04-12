@@ -76,10 +76,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <SidebarNav />
         </Sidebar>
         <SidebarInset className="bg-background">
-          <ScrollArea className="h-screen pb-16 md:pb-0"> {/* Added pb-16 for mobile, md:pb-0 for larger screens */}
+          <ScrollArea className={cn("h-screen", (pathname === "/magictab" || pathname === "/magictab/") ? "pb-0" : "pb-16 md:pb-0")}> 
             <main className={cn(
               "flex-1",
-              (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6 sm:p-8 md:p-10"
+              (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6 sm:p-8 md:p-10"
             )}>
               {children}
             </main>
