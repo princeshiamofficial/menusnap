@@ -1152,7 +1152,7 @@ export default function MagicTabPage() {
           <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card shadow-sm md:shadow-none flex flex-col gap-3">
             {/* First row: Search and Actions */}
             <div className="flex flex-col gap-3">
-              {/* Row 1: Search and MagicTab */}
+              {/* Row 1: Search and Add Item */}
               <div className="flex flex-row items-center gap-2 md:gap-4 relative">
                 <div className={cn("relative flex-1 md:max-w-md transition-all duration-300", isMobileSearchActive && "flex-auto")}>
                    <Textarea 
@@ -1224,28 +1224,17 @@ export default function MagicTabPage() {
                   </Button>
                 </div>
 
-                {/* Mobile MagicTab Button (Row 1 on Mobile) */}
+                {/* Mobile Add Item Button (Row 1 on Mobile) */}
                 <div className={cn("md:hidden shrink-0", isMobileSearchActive && "hidden")}>
-                  <Button
-                    onClick={handlePreviewAndSave}
-                    disabled={selectedCount === 0}
-                    className={cn(
-                      "h-10 px-4 text-xs font-bold rounded-full shadow-sm bg-primary text-primary-foreground transition-all active:scale-95",
-                      selectedCount > 0 ? "opacity-100" : "opacity-50"
-                    )}
-                  >
-                    MagicTab ({selectedCount})
+                  <Button variant="outline" className="text-xs font-bold h-10 px-3 rounded-full border-muted-foreground/20 bg-white shadow-sm" onClick={handleOpenAddItem}>
+                    <PlusCircle className="h-4 w-4 mr-1.5" />
+                    <span>Add Item</span>
                   </Button>
                 </div>
               </div>
 
-              {/* Row 2: Add Item & Category Selector (Mobile only) */}
+              {/* Row 2: Category Selector & MagicTab (Mobile only) */}
               <div className={cn("md:hidden flex flex-row items-center gap-2", isMobileSearchActive && "hidden")}>
-                <Button variant="outline" className="text-xs font-bold flex-1 h-10 px-3 rounded-full border-muted-foreground/20 bg-white shadow-sm" onClick={handleOpenAddItem}>
-                  <PlusCircle className="h-4 w-4 mr-1.5" />
-                  <span>Add Item</span>
-                </Button>
-
                 <div className="flex-1 h-10">
                   <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
                     <SheetTrigger asChild>
@@ -1342,6 +1331,17 @@ export default function MagicTabPage() {
                     </SheetContent>
                   </Sheet>
                 </div>
+
+                <Button
+                  onClick={handlePreviewAndSave}
+                  disabled={selectedCount === 0}
+                  className={cn(
+                    "h-10 px-4 text-xs font-bold rounded-full shadow-sm bg-primary text-primary-foreground flex-1 transition-all active:scale-95",
+                    selectedCount > 0 ? "opacity-100" : "opacity-50"
+                  )}
+                >
+                  MagicTab ({selectedCount})
+                </Button>
               </div>
             </div>
           </div>
