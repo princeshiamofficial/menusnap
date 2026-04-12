@@ -1036,19 +1036,19 @@ export default function OrderDetailsPage() {
                                 <FileArchive className="h-4 w-4 sm:mr-2" />
                                 <span className="hidden sm:inline">Download</span>
                             </Button>
-                            <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)}>
-                                <Shuffle className="h-4 w-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Shuffle</span>
-                            </Button>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        <Share2 className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">Share</span>
+                                    <Button variant="outline" size="sm" className="px-2 sm:px-3">
+                                        <MoreHorizontal className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Actions</span>
                                         <ChevronDown className="h-4 w-4 ml-1 -mr-1 hidden sm:inline-flex" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuItem onClick={() => setIsPreviewOpen(true)}>
+                                        <Shuffle className="mr-2 h-4 w-4" />
+                                        Shuffle Menu
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleShare('viewer')}>
                                         <Users className="mr-2 h-4 w-4" />
                                         Share with viewer
@@ -1056,30 +1056,6 @@ export default function OrderDetailsPage() {
                                     <DropdownMenuItem onClick={() => handleShare('editor')}>
                                         <PenSquare className="mr-2 h-4 w-4" />
                                         Share with editor
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="px-2 sm:px-3">
-                                        <MoreHorizontal className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">More</span>
-                                        <ChevronDown className="h-4 w-4 ml-1 -mr-1 hidden sm:inline-flex" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem>
-                                        <CalendarDays className="mr-2 h-4 w-4" />
-                                        Order History
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Save className="mr-2 h-4 w-4" />
-                                        Duplicate Order
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                        <AlertTriangle className="mr-2 h-4 w-4" />
-                                        Delete Order
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
