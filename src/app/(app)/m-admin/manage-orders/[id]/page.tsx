@@ -1066,7 +1066,7 @@ export default function OrderDetailsPage() {
                 </header>
 
                 <div className="flex-grow p-2 sm:p-6 lg:p-8">
-                    <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50 overflow-hidden">
+                    <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50">
                         <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
                             <div>
                                 <EditableField
