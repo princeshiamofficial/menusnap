@@ -1151,9 +1151,10 @@ export default function MagicTabPage() {
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
           <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card shadow-sm md:shadow-none flex flex-col gap-3">
             {/* First row: Search and Actions */}
-            <div className="flex flex-row items-center justify-between gap-2 md:gap-4 relative">
-              <div className={cn("relative flex-1 md:max-w-md transition-all duration-300", isMobileSearchActive && "flex-auto")}>
-                <Textarea 
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-4 relative">
+              {/* Search Bar Block */}
+              <div className={cn("relative w-full md:flex-1 md:max-w-md transition-all duration-300", isMobileSearchActive && "flex-auto")}>
+                 <Textarea 
                   ref={magicSearchRef}
                   placeholder="Search Items"
                   className={cn(
@@ -1191,7 +1192,8 @@ export default function MagicTabPage() {
                 </button>
               )}
 
-              <div className={cn("flex items-center gap-1.5 md:gap-3 shrink-0", isMobileSearchActive && "hidden")}>
+              {/* Action Buttons Block */}
+              <div className={cn("flex flex-row items-center gap-2 md:gap-3 shrink-0", isMobileSearchActive && "hidden")}>
                 <Button
                   ref={previewButtonRef}
                   onClick={handlePreviewAndSave}
