@@ -620,6 +620,7 @@ export default function OrderDetailsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
+    const [showVibeSection, setShowVibeSection] = useState(false);
 
     const lastSavedDataRef = useRef<string>("");
     const isSavingRef = useRef(false);
@@ -1061,9 +1062,10 @@ export default function OrderDetailsPage() {
                                         Share with editor
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => {
+                                        setShowVibeSection(true);
                                         toast({
-                                            title: "Vibe Docs",
-                                            description: "Vibe Docs functionality is coming soon!",
+                                            title: "Vibe Docs Active",
+                                            description: "Switched to Vibe Docs view.",
                                         });
                                     }}>
                                         <Sparkles className="mr-2 h-4 w-4 text-primary" />
@@ -1093,66 +1095,90 @@ export default function OrderDetailsPage() {
                             </div>
                         </div>
 
-                        <section>
-                            <div
-                                className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
-                                style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
+                        {showVibeSection ? (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex flex-col items-center justify-center py-20 bg-muted/30 rounded-3xl border-2 border-dashed border-muted-foreground/20"
                             >
-                                Document Summary
-                            </div>
-                            
-                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12">
-                                <div className="flex items-center gap-2">
-                                    <div className="relative flex-grow">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            type="search"
-                                            placeholder={`Search ${searchFilterType}...`}
-                                            className="pl-10 w-full"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                        />
+                                <Sparkles className="h-16 w-16 text-primary mb-4 animate-pulse" />
+                                <h3 className="text-2xl font-bold text-foreground">Vibe Docs</h3>
+                                <p className="text-muted-foreground mt-2 max-w-md text-center">
+                                    This section is currently under development. Stay tuned for future updates!
+                                </p>
+                                <Button 
+                                    variant="outline" 
+                                    className="mt-8"
+                                    onClick={() => setShowVibeSection(false)}
+                                >
+                                    <Undo2 className="mr-2 h-4 w-4" />
+                                    Back to Menu
+                                </Button>
+                            </motion.div>
+                        ) : (
+                            <>
+                                <section>
+                                    <div
+                                        className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
+                                        style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
+                                    >
+                                        Document Summary
                                     </div>
-                                    <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Search by..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="items">Search Items</SelectItem>
-                                            <SelectItem value="categories">Search Categories</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
+                                    
+                                    <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12">
+                                        <div className="flex items-center gap-2">
+                                            <div className="relative flex-grow">
+                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    type="search"
+                                                    placeholder={`Search ${searchFilterType}...`}
+                                                    className="pl-10 w-full"
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                />
+                                            </div>
+                                            <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
+                                                <SelectTrigger className="w-[180px]">
+                                                    <SelectValue placeholder="Search by..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="items">Search Items</SelectItem>
+                                                    <SelectItem value="categories">Search Categories</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
 
-                            <div>
-                                {categoriesForRender.map((category) => (
-                                    <div key={category.id}>
-                                       <CategorySection
-                                            category={category}
-                                            onAddCategory={handleAddCategory}
-                                            onRemoveCategory={handleRemoveCategory}
-                                            onCategoryNameChange={handleCategoryNameChange}
-                                            onAddItemToCategory={handleOpenAddDialog}
-                                            onEditItem={handleOpenEditDialog}
-                                            onRemoveItem={handleRemoveItem}
-                                            onToggleSubItems={handleToggleSubItems}
-                                            expandedSubItems={expandedSubItems}
-                                       />
+                                    <div>
+                                        {categoriesForRender.map((category) => (
+                                            <div key={category.id}>
+                                            <CategorySection
+                                                    category={category}
+                                                    onAddCategory={handleAddCategory}
+                                                    onRemoveCategory={handleRemoveCategory}
+                                                    onCategoryNameChange={handleCategoryNameChange}
+                                                    onAddItemToCategory={handleOpenAddDialog}
+                                                    onEditItem={handleOpenEditDialog}
+                                                    onRemoveItem={handleRemoveItem}
+                                                    onToggleSubItems={handleToggleSubItems}
+                                                    expandedSubItems={expandedSubItems}
+                                            />
+                                            </div>
+                                        ))}
+                                        {categoriesForRender.length === 0 && (
+                                            <div className="text-center text-muted-foreground py-10">
+                                                <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                                <p>No results found for your search.</p>
+                                            </div>
+                                        )}
                                     </div>
-                                ))}
-                                {categoriesForRender.length === 0 && (
-                                    <div className="text-center text-muted-foreground py-10">
-                                        <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                        <p>No results found for your search.</p>
-                                    </div>
-                                )}
-                            </div>
 
-                            <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
-                                <Plus className="mr-2 h-4 w-4" />Add Category
-                            </Button>
-                        </section>
+                                    <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
+                                        <Plus className="mr-2 h-4 w-4" />Add Category
+                                    </Button>
+                                </section>
+                            </>
+                        )}
                     </main>
                 </div>
             </div>
