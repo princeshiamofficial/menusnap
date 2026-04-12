@@ -1198,8 +1198,11 @@ export default function MagicTabPage() {
                   </button>
                 )}
 
+                {/* Desktop Spacer to push buttons to right */}
+                <div className="hidden md:block flex-1" />
+
                 {/* Desktop Buttons (Always Row 1 on Desktop) */}
-                <div className={cn("hidden md:flex flex-row items-center gap-3 shrink-0", isMobileSearchActive && "hidden")}>
+                <div className={cn("hidden md:flex flex-row items-center gap-2 shrink-0 ml-auto", isMobileSearchActive && "hidden")}>
                   <Button
                     ref={previewButtonRef}
                     onClick={handlePreviewAndSave}
