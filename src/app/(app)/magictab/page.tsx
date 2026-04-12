@@ -1157,11 +1157,11 @@ export default function MagicTabPage() {
                 <div className={cn("relative flex-1 md:max-w-md transition-all duration-300", isMobileSearchActive && "flex-auto")}>
                    <Textarea 
                     ref={magicSearchRef}
-                    placeholder={isMobileSearchActive && selectedCategory ? `Search ${decodeHtmlEntities(selectedCategory.name)} items` : "Search Items"}
+                    placeholder={selectedCategory ? `Search ${decodeHtmlEntities(selectedCategory.name)} items` : "Search Items"}
                     className={cn(
                       "min-h-[40px] h-10 py-2.5 pl-5 rounded-3xl border-muted-foreground/20 bg-background focus:outline-none focus-visible:ring-0 transition-all shadow-sm resize-none overflow-hidden",
                       (searchTerm.includes('\n') || isMobileSearchActive) ? "pr-5" : "pr-12",
-                      isMobileSearchActive ? "border-black focus:border-black" : "focus:border-orange-500"
+                      isMobileSearchActive ? "border-black focus:border-black" : "focus:border-primary"
                     )}
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -1174,7 +1174,7 @@ export default function MagicTabPage() {
                   {!searchTerm.includes('\n') && !isMobileSearchActive && (
                     <div 
                       onClick={() => magicSearchRef.current?.focus()}
-                      className="absolute right-1 top-1 h-8 w-8 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-sm transition-transform active:scale-95 cursor-pointer"
+                      className="absolute right-1 top-1 h-8 w-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-sm transition-transform active:scale-95 cursor-pointer"
                     >
                       <Search className="h-4 w-4" />
                     </div>
