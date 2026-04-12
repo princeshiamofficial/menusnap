@@ -1090,26 +1090,29 @@ export default function OrderDetailsPage() {
                             >
                                 Document Summary
                             </div>
-                            <div className="flex items-center gap-2 mb-6">
-                                <div className="relative flex-grow">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        type="search"
-                                        placeholder={`Search ${searchFilterType}...`}
-                                        className="pl-10 w-full"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
+                            
+                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12">
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-grow">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="search"
+                                            placeholder={`Search ${searchFilterType}...`}
+                                            className="pl-10 w-full"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                    <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Search by..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="items">Search Items</SelectItem>
+                                            <SelectItem value="categories">Search Categories</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                                <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Search by..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="items">Search Items</SelectItem>
-                                        <SelectItem value="categories">Search Categories</SelectItem>
-                                    </SelectContent>
-                                </Select>
                             </div>
 
                             <div>

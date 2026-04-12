@@ -1148,8 +1148,8 @@ export default function MagicTabPage() {
           />
         </div>
 
-        <main className="flex-1 flex flex-col bg-background overflow-hidden relative">
-          <div className="sticky top-0 z-20 py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card/95 backdrop-blur-sm shadow-sm md:shadow-none flex flex-col gap-3">
+        <main className="flex-1 flex flex-col bg-background overflow-hidden">
+          <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card shadow-sm md:shadow-none flex flex-col gap-3">
             {/* First row: Search and Actions */}
             <div className="flex flex-col gap-3">
               {/* Row 1: Search and Add Item */}
