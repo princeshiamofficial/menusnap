@@ -40,6 +40,7 @@ import {
     Users,
     PenSquare,
     Loader2,
+    Check,
     MoreHorizontal,
     Sparkles
 } from 'lucide-react';
