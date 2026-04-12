@@ -1181,18 +1181,6 @@ export default function MagicTabPage() {
                   )}
                 </div>
 
-                {isMobileSearchActive && (
-                  <button 
-                    onClick={() => {
-                      setIsMobileSearchActive(false);
-                      magicSearchRef.current?.blur();
-                    }}
-                    className="md:hidden text-sm font-bold text-foreground px-1 py-2 whitespace-nowrap active:opacity-70 transition-opacity"
-                  >
-                    Cancel
-                  </button>
-                )}
-
                 {/* Desktop Buttons (Always Row 1 on Desktop) */}
                 <div className={cn("hidden md:flex flex-row items-center gap-3 shrink-0", isMobileSearchActive && "hidden")}>
                   <Button
@@ -1224,17 +1212,33 @@ export default function MagicTabPage() {
                   </Button>
                 </div>
 
-                {/* Mobile Add Item Button (Row 1 on Mobile) */}
-                <div className={cn("md:hidden shrink-0", isMobileSearchActive && "hidden")}>
-                  <Button variant="outline" className="text-xs font-bold h-10 px-3 rounded-full border-muted-foreground/20 bg-white shadow-sm" onClick={handleOpenAddItem}>
-                    <PlusCircle className="h-4 w-4 mr-1.5" />
-                    <span>Add</span>
-                  </Button>
+                {/* Mobile Button Area (Row 1) */}
+                <div className="md:hidden shrink-0">
+                  {isMobileSearchActive && searchTerm && currentMenuItems.length > 0 ? (
+                    <button 
+                      onClick={() => {
+                        setIsMobileSearchActive(false);
+                        setSearchTerm('');
+                        magicSearchRef.current?.blur();
+                      }}
+                      className="text-sm font-bold text-foreground px-1 py-2 whitespace-nowrap active:opacity-70 transition-opacity"
+                    >
+                      Cancel
+                    </button>
+                  ) : (
+                    <div className={cn(isMobileSearchActive && "flex-shrink-0")}>
+                      <Button variant="outline" className="text-xs font-bold h-10 px-3 rounded-full border-muted-foreground/20 bg-white shadow-sm" onClick={handleOpenAddItem}>
+                        <PlusCircle className="h-4 w-4 mr-1.5" />
+                        <span>Add</span>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Row 2: Category Selector & MagicTab (Mobile only) */}
-              <div className={cn("md:hidden flex flex-row items-center gap-2", isMobileSearchActive && "hidden")}>
+              {/* Row 2: Category Selector & MagicTab (Mobile only - hidden during active search if items found) */}
+              <div className={cn("md:hidden flex flex-row items-center gap-2", (isMobileSearchActive && searchTerm && currentMenuItems.length > 0) && "hidden")}>
+
                 <div className="flex-1 h-10">
                   <Sheet open={isCategorySheetOpen} onOpenChange={setIsCategorySheetOpen}>
                     <SheetTrigger asChild>
