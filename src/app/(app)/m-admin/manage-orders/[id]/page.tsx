@@ -40,8 +40,8 @@ import {
     Users,
     PenSquare,
     Loader2,
-    Check,
-    MoreHorizontal
+    MoreHorizontal,
+    Sparkles
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -1058,6 +1058,15 @@ export default function OrderDetailsPage() {
                                     <DropdownMenuItem onSelect={() => handleShare('editor')}>
                                         <PenSquare className="mr-2 h-4 w-4" />
                                         Share with editor
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => {
+                                        toast({
+                                            title: "Vibe Mood",
+                                            description: "Coming soon in a future update.",
+                                        });
+                                    }}>
+                                        <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                                        Vibe Mood
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
