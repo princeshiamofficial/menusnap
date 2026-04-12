@@ -43,6 +43,7 @@ import {
     Check,
     MoreHorizontal,
     Sparkles,
+    LayoutGrid,
     Image as ImageIcon
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
@@ -1103,24 +1104,10 @@ export default function OrderDetailsPage() {
                                     initial={{ y: -50, opacity: 0 }}
                                     animate={{ y: 0, opacity: 1 }}
                                     transition={{ delay: 0.2 }}
-                                    className="absolute top-16 flex items-center gap-1 p-1.5 bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl z-10"
+                                    className="absolute top-16 flex items-center justify-center p-2 bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-xl z-10"
                                 >
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                        <FileText className="h-5 w-5" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                        <Users className="h-5 w-5" />
-                                    </Button>
-                                    <div className="w-px h-6 bg-border mx-1" />
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                        <ImageIcon className="h-5 w-5" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
-                                        <Search className="h-5 w-5" />
-                                    </Button>
-                                    <div className="w-px h-6 bg-border mx-1" />
-                                    <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 ml-2">
-                                        <Plus className="h-5 w-5" />
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <LayoutGrid className="h-6 w-6" />
                                     </Button>
                                 </motion.div>
 
