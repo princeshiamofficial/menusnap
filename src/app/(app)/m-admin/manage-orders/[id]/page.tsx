@@ -598,6 +598,62 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
 
 type SaveStatus = "unsaved" | "saving" | "saved";
 
+function VibeMoodDialog({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange: (open: boolean) => void }) {
+    const vibes = [
+        { name: 'Elegant', color: 'bg-slate-900', text: 'text-slate-100', icon: '🏛️' },
+        { name: 'Modern', color: 'bg-white', text: 'text-slate-900', icon: '🏢' },
+        { name: 'Nature', color: 'bg-emerald-500', text: 'text-white', icon: '🌿' },
+        { name: 'Warm', color: 'bg-orange-500', text: 'text-white', icon: '🔥' },
+        { name: 'Cool', color: 'bg-blue-500', text: 'text-white', icon: '❄️' },
+        { name: 'Lux', color: 'bg-amber-600', text: 'text-white', icon: '✨' },
+    ];
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xl p-0 gap-0 overflow-hidden bg-background border-none shadow-2xl rounded-[2rem]">
+                <div className="p-8 bg-gradient-to-br from-primary/10 via-background to-background relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl pointer-events-none" />
+                    
+                    <DialogHeader className="mb-8 items-start text-left">
+                        <DialogTitle className="text-3xl font-extrabold flex items-center gap-3">
+                            <Sparkles className="h-8 w-8 text-primary animate-pulse" />
+                            Vibe Mood
+                        </DialogTitle>
+                        <DialogDescription className="text-lg font-medium text-muted-foreground">
+                            Select a visual theme to craft its unique vibe.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {vibes.map((vibe) => (
+                            <motion.button
+                                key={vibe.name}
+                                whileHover={{ scale: 1.05, y: -5 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => onOpenChange(false)}
+                                className={cn(
+                                    "relative h-32 rounded-[2rem] p-6 flex flex-col items-center justify-center gap-2 shadow-sm border border-border group overflow-hidden transition-all hover:shadow-2xl hover:border-primary/50",
+                                    vibe.color, vibe.text
+                                )}
+                            >
+                                <span className="text-3xl filter drop-shadow-md">{vibe.icon}</span>
+                                <span className="font-bold text-xs uppercase tracking-[0.2em]">{vibe.name}</span>
+                                <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </motion.button>
+                        ))}
+                    </div>
+
+                    <div className="mt-12 text-center text-xs text-muted-foreground/60 p-4 rounded-2xl border-2 border-dashed border-border/40">
+                        <p className="font-medium italic">
+                            Custom vibe crafting coming in version 2.0
+                        </p>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function OrderDetailsPage() {
     const params = useParams();
     const router = useRouter();
@@ -617,6 +673,7 @@ export default function OrderDetailsPage() {
     const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [isVibeMoodOpen, setIsVibeMoodOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
@@ -1061,10 +1118,7 @@ export default function OrderDetailsPage() {
                                         Share with editor
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => {
-                                        toast({
-                                            title: "Vibe Mood",
-                                            description: "Coming soon in a future update.",
-                                        });
+                                        setTimeout(() => setIsVibeMoodOpen(true), 100);
                                     }}>
                                         <Sparkles className="mr-2 h-4 w-4 text-primary" />
                                         Vibe Mood
@@ -1074,6 +1128,7 @@ export default function OrderDetailsPage() {
                         </div>
                     </div>
                 </header>
+                <VibeMoodDialog isOpen={isVibeMoodOpen} onOpenChange={setIsVibeMoodOpen} />
 
                 <div className="flex-grow p-2 sm:p-6 lg:p-8">
                     <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50">
