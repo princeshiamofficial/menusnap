@@ -42,7 +42,8 @@ import {
     Loader2,
     Check,
     MoreHorizontal,
-    Sparkles
+    Sparkles,
+    Image as ImageIcon
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -1081,23 +1082,67 @@ export default function OrderDetailsPage() {
                     <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50">
                         {showVibeSection ? (
                             <motion.div 
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="flex flex-col items-center justify-center py-20 bg-muted/30 rounded-3xl border-2 border-dashed border-muted-foreground/20"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="relative flex flex-col items-center justify-center py-32 bg-muted/20 rounded-3xl border-2 border-dashed border-primary/20 overflow-hidden"
                             >
-                                <Sparkles className="h-16 w-16 text-primary mb-4 animate-pulse" />
-                                <h3 className="text-2xl font-bold text-foreground">Vibe Docs</h3>
-                                <p className="text-muted-foreground mt-2 max-w-md text-center">
-                                    This section is currently under development. Stay tuned for future updates!
-                                </p>
-                                <Button 
-                                    variant="outline" 
-                                    className="mt-8"
-                                    onClick={() => setShowVibeSection(false)}
+                                <div className="absolute top-4 left-4">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => setShowVibeSection(false)}
+                                        className="text-muted-foreground hover:text-primary"
+                                    >
+                                        <Undo2 className="mr-2 h-4 w-4" />
+                                        Back to Menu
+                                    </Button>
+                                </div>
+
+                                <motion.div
+                                    animate={{ 
+                                        y: [0, -10, 0],
+                                        rotate: [0, 5, -5, 0]
+                                    }}
+                                    transition={{ 
+                                        duration: 4,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
                                 >
-                                    <Undo2 className="mr-2 h-4 w-4" />
-                                    Back to Menu
-                                </Button>
+                                    <Sparkles className="h-20 w-20 text-primary mb-6 drop-shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
+                                </motion.div>
+                                
+                                <h3 className="text-3xl font-bold bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">Vibe Docs</h3>
+                                <p className="text-muted-foreground mt-3 max-w-sm text-center font-medium">
+                                    Next-gen document vibe crafting. <br/>
+                                    <span className="text-xs opacity-60">Coming soon in future update.</span>
+                                </p>
+
+                                {/* Floating Toolbar */}
+                                <motion.div 
+                                    initial={{ y: 50, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                    className="absolute bottom-8 flex items-center gap-1 p-1.5 bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl"
+                                >
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <FileText className="h-5 w-5" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <Users className="h-5 w-5" />
+                                    </Button>
+                                    <div className="w-px h-6 bg-border mx-1" />
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <ImageIcon className="h-5 w-5" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all">
+                                        <Search className="h-5 w-5" />
+                                    </Button>
+                                    <div className="w-px h-6 bg-border mx-1" />
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 ml-2">
+                                        <Plus className="h-5 w-5" />
+                                    </Button>
+                                </motion.div>
                             </motion.div>
                         ) : (
                             <>
