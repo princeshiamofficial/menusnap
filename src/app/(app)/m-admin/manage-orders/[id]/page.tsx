@@ -486,9 +486,6 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                 <DialogHeader className="px-6 py-4 border-b">
                     <DialogTitle className="text-xl">Shuffle & Reorder Menu</DialogTitle>
                     <DialogDescription>Drag and drop categories or items to change their order.</DialogDescription>
-                    <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                        <X className="h-5 w-5" /><span className="sr-only">Close</span>
-                    </DialogClose>
                 </DialogHeader>
 
                 <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
