@@ -1228,7 +1228,7 @@ export default function MagicTabPage() {
                 <div className={cn("md:hidden shrink-0", isMobileSearchActive && "hidden")}>
                   <Button variant="outline" className="text-xs font-bold h-10 px-3 rounded-full border-muted-foreground/20 bg-white shadow-sm" onClick={handleOpenAddItem}>
                     <PlusCircle className="h-4 w-4 mr-1.5" />
-                    <span>Add Item</span>
+                    <span>Add</span>
                   </Button>
                 </div>
               </div>
