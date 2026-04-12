@@ -1045,15 +1045,17 @@ export default function OrderDetailsPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuItem onClick={() => setIsPreviewOpen(true)}>
+                                    <DropdownMenuItem onSelect={() => {
+                                        setTimeout(() => setIsPreviewOpen(true), 100);
+                                    }}>
                                         <Shuffle className="mr-2 h-4 w-4" />
                                         Shuffle Menu
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleShare('viewer')}>
+                                    <DropdownMenuItem onSelect={() => handleShare('viewer')}>
                                         <Users className="mr-2 h-4 w-4" />
                                         Share with viewer
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleShare('editor')}>
+                                    <DropdownMenuItem onSelect={() => handleShare('editor')}>
                                         <PenSquare className="mr-2 h-4 w-4" />
                                         Share with editor
                                     </DropdownMenuItem>
