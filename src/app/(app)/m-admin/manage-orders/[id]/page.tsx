@@ -1061,10 +1061,7 @@ export default function OrderDetailsPage() {
                                         Share with editor
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => {
-                                        toast({
-                                            title: "Vibe Mode",
-                                            description: "Coming soon in a future update.",
-                                        });
+                                        router.push(`/m-admin/vibe/${order.id}`);
                                     }}>
                                         <Sparkles className="mr-2 h-4 w-4 text-primary" />
                                         Vibe Mode
