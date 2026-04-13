@@ -1005,9 +1005,9 @@ export default function VibeModePage() {
                             <div className="h-6 border-l border-border"></div>
                             <div className="flex flex-col">
                                 <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                                    <Sparkles className="h-4 w-4 text-primary" /> Vibe Mode
+                                    <Sparkles className="h-4 w-4 text-primary" /> {decodeHtmlEntities(order.customer?.restaurant)}
                                 </h1>
-                                <p className="text-xs text-muted-foreground truncate max-w-[150px] sm:max-w-none">{decodeHtmlEntities(order.customer?.restaurant)}</p>
+                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Vibe Mode</p>
                             </div>
                         </div>
 
