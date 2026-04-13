@@ -944,9 +944,18 @@ export default function OrderDetailsPage() {
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
         try {
-            const date = parseISO(dateString);
+            // Standardize format to handle both ISO and MySQL style strings
+            let standardized = dateString.replace(' ', 'T');
+            // If it's a raw date string from DB (UTC), append Z to force UTC interpretation
+            if (!standardized.includes('Z') && !standardized.includes('+')) {
+                standardized = standardized + 'Z';
+            }
+            const date = parseISO(standardized);
             return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
-        } catch { return "Invalid Date"; }
+        } catch { 
+            const date = new Date(dateString);
+            return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
+        }
     };
 
 
