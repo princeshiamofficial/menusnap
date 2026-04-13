@@ -1071,7 +1071,7 @@ export default function VibeModePage() {
 
                         <section>
                             <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12 shadow-sm">
-                                <div className="flex flex-col sm:flex-row items-center gap-3">
+                                <div className="flex items-center justify-center gap-3">
 
 
                                     {/* Action Group */}
