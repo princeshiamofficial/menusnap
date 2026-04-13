@@ -928,9 +928,19 @@ export default function VibeModePage() {
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
         try {
-            const date = parseISO(dateString);
+            // Standardize: if NO 'Z' and NO offset, append 'Z' for UTC interpretation
+            // This ensures strings like "2026-04-10 02:51:00" from DB are correctly shifted to local time
+            let standardized = dateString.replace(' ', 'T');
+            if (!standardized.includes('Z') && !standardized.includes('+')) {
+                standardized = standardized + 'Z';
+            }
+            
+            const date = parseISO(standardized);
             return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
-        } catch { return "Invalid Date"; }
+        } catch { 
+            const date = new Date(dateString);
+            return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
+        }
     };
 
 
