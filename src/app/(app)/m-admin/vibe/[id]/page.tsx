@@ -894,7 +894,6 @@ export default function VibeModePage() {
     const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [isMagicMode, setIsMagicMode] = useState(false);
     const [bulkInput, setBulkInput] = useState("");
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -902,11 +901,6 @@ export default function VibeModePage() {
 
     const lastSavedDataRef = useRef<string>("");
     const isSavingRef = useRef(false);
-
-    const handleBulkSave = (newItems: OrderItemDetail[]) => {
-        if (!order) return;
-        handleOrderUpdate({ ...order, items: newItems });
-    };
 
     const handleBulkInputUpdate = (text: string) => {
         const lines = text.split('\n');
@@ -971,7 +965,7 @@ export default function VibeModePage() {
     };
 
     useEffect(() => {
-        if (!order?.items || isMagicMode) return;
+        if (!order?.items) return;
         
         // Generate text from items to keep bulkInput in sync when editing cards
         let text = "";
@@ -1000,7 +994,7 @@ export default function VibeModePage() {
             text += "\n";
         });
         setBulkInput(text.trim());
-    }, [order?.items, isMagicMode]);
+    }, [order?.items]);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -1459,18 +1453,6 @@ export default function VibeModePage() {
                                 <div className="flex items-center justify-center gap-3">
                                     {/* Action Group */}
                                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto no-scrollbar">
-                                        <Button 
-                                            variant={isMagicMode ? "default" : "outline"}
-                                            size="sm" 
-                                            onClick={() => setIsMagicMode(!isMagicMode)} 
-                                            className={cn(
-                                                "h-10 gap-2 whitespace-nowrap transition-all font-bold",
-                                                isMagicMode ? "bg-primary text-primary-foreground shadow-lg" : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
-                                            )}
-                                        >
-                                            <Sparkles className="h-4 w-4" /> {isMagicMode ? "Hide Magic Box" : "Magic Box"}
-                                        </Button>
-                                        <div className="h-8 w-px bg-border hidden sm:block mx-1"></div>
                                         <Button variant="outline" size="sm" onClick={handleAddCategory} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
                                             <Plus className="h-4 w-4" /> Add Category
                                         </Button>
@@ -1484,44 +1466,35 @@ export default function VibeModePage() {
                                 </div>
                             </div>
 
-                            <AnimatePresence>
-                                {isMagicMode && (
-                                    <motion.div 
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: "auto", opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        className="overflow-hidden mb-8"
-                                    >
-                                        <div className="bg-muted/30 border-2 border-primary/20 rounded-xl p-4 sm:p-6 mb-2 relative group md:mx-0 -mx-2">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="flex items-center gap-2">
-                                                    <PenSquare className="h-5 w-5 text-primary" />
-                                                    <h3 className="font-bold text-lg">All-In-One Magic Editor</h3>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded border">
-                                                    <span># Category</span>
-                                                    <span className="opacity-30">|</span>
-                                                    <span>Item - Price</span>
-                                                    <span className="opacity-30">|</span>
-                                                    <span>- Variation - Price</span>
-                                                </div>
-                                            </div>
-                                            <Textarea 
-                                                value={bulkInput}
-                                                onChange={(e) => {
-                                                    setBulkInput(e.target.value);
-                                                    handleBulkInputUpdate(e.target.value);
-                                                }}
-                                                placeholder="# DRINKS\nCoke - 30\nChilled\n- Small - 25\n- Large - 50"
-                                                className="w-full font-mono text-sm p-4 leading-relaxed resize-none focus-visible:ring-1 border-2 min-h-[300px] shadow-inner bg-card/50"
-                                            />
-                                            <div className="mt-3 flex justify-end gap-2 text-[10px] text-muted-foreground italic">
-                                                * Everything you type here updates the vibe cards below in real-time.
-                                            </div>
+                            <div className="overflow-hidden mb-8">
+                                <div className="bg-muted/30 border-2 border-primary/20 rounded-xl p-4 sm:p-6 mb-2 relative group md:mx-0 -mx-2">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <PenSquare className="h-5 w-5 text-primary" />
+                                            <h3 className="font-bold text-lg">All-In-One Magic Editor</h3>
                                         </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                        <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded border">
+                                            <span># Category</span>
+                                            <span className="opacity-30">|</span>
+                                            <span>Item - Price</span>
+                                            <span className="opacity-30">|</span>
+                                            <span>- Variation - Price</span>
+                                        </div>
+                                    </div>
+                                    <Textarea 
+                                        value={bulkInput}
+                                        onChange={(e) => {
+                                            setBulkInput(e.target.value);
+                                            handleBulkInputUpdate(e.target.value);
+                                        }}
+                                        placeholder="# DRINKS\nCoke - 30\nChilled\n- Small - 25\n- Large - 50"
+                                        className="w-full font-mono text-sm p-4 leading-relaxed resize-none focus-visible:ring-1 border-2 min-h-[300px] shadow-inner bg-card/50"
+                                    />
+                                    <div className="mt-3 flex justify-end gap-2 text-[10px] text-muted-foreground italic">
+                                        * Everything you type here updates the vibe cards below in real-time.
+                                    </div>
+                                </div>
+                            </div>
 
                             <div
                                 className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
