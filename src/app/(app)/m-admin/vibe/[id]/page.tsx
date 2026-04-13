@@ -1015,7 +1015,7 @@ export default function VibeModePage() {
                             <div className="h-6 border-l border-border"></div>
                             <div className="flex flex-col">
                                 <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                                    <Sparkles className="h-4 w-4 text-primary" /> {decodeHtmlEntities(order.customer?.restaurant)}
+                                    {decodeHtmlEntities(order.customer?.restaurant)}
                                 </h1>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 opacity-70">
                                     <CalendarDays className="h-3 w-3" />
