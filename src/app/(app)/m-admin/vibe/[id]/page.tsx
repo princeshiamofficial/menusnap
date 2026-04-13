@@ -1072,28 +1072,7 @@ export default function VibeModePage() {
                         <section>
                             <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12 shadow-sm">
                                 <div className="flex flex-col sm:flex-row items-center gap-3">
-                                    {/* Search & Filter Group */}
-                                    <div className="flex items-center gap-2 flex-grow w-full">
-                                        <div className="relative flex-grow">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input
-                                                type="search"
-                                                placeholder={`Search vibe ${searchFilterType}...`}
-                                                className="pl-9 h-10"
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                            />
-                                        </div>
-                                        <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
-                                            <SelectTrigger className="w-[120px] h-10 text-xs sm:text-sm">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="items">Items</SelectItem>
-                                                <SelectItem value="categories">Categories</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+
 
                                     {/* Action Group */}
                                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto no-scrollbar">
