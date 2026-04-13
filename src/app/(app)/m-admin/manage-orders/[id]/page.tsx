@@ -1036,7 +1036,10 @@ export default function OrderDetailsPage() {
                                     className="text-lg font-semibold text-foreground"
                                     inputClassName="text-lg font-semibold"
                                 />
-                                <p className="text-xs text-muted-foreground">Doc ID: {order.orderId}</p>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 opacity-70">
+                                    <CalendarDays className="h-3 w-3" />
+                                    {formatDate(order.orderDate)}
+                                </p>
                             </div>
                         </div>
 
