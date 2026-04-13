@@ -1040,6 +1040,12 @@ export default function VibeModePage() {
                                         <PenSquare className="mr-2 h-4 w-4" />
                                         Share with editor
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => {
+                                        router.push(`/m-admin/manage-orders/${order.id}`);
+                                    }}>
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        General Mode
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
