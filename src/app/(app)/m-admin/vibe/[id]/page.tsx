@@ -1070,27 +1070,44 @@ export default function VibeModePage() {
 
 
                         <section>
-                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12">
-                                <div className="flex items-center gap-2">
-                                    <div className="relative flex-grow">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input
-                                            type="search"
-                                            placeholder={`Search vibe ${searchFilterType}...`}
-                                            className="pl-10 w-full"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                        />
+                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12 shadow-sm">
+                                <div className="flex flex-col sm:flex-row items-center gap-3">
+                                    {/* Search & Filter Group */}
+                                    <div className="flex items-center gap-2 flex-grow w-full">
+                                        <div className="relative flex-grow">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input
+                                                type="search"
+                                                placeholder={`Search vibe ${searchFilterType}...`}
+                                                className="pl-9 h-10"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                            />
+                                        </div>
+                                        <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
+                                            <SelectTrigger className="w-[120px] h-10 text-xs sm:text-sm">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="items">Items</SelectItem>
+                                                <SelectItem value="categories">Categories</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                    <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Search by..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="items">Items</SelectItem>
-                                            <SelectItem value="categories">Categories</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+
+                                    {/* Action Group */}
+                                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto no-scrollbar">
+                                        <Button variant="outline" size="sm" onClick={handleAddCategory} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
+                                            <Plus className="h-4 w-4" /> Add Category
+                                        </Button>
+                                        <div className="h-8 w-px bg-border hidden sm:block mx-1"></div>
+                                        <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
+                                            <Shuffle className="h-4 w-4" /> Shuffle
+                                        </Button>
+                                        <Button variant="secondary" size="sm" onClick={() => handleShare('viewer')} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
+                                            <Share2 className="h-4 w-4" /> Share
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
 
