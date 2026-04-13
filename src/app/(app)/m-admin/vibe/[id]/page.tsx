@@ -353,40 +353,11 @@ const CategorySection = memo(({
                             className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
                         >
                             <div className="flex items-start gap-4">
-                                <AllInOneItemEditor 
-                                    item={item} 
-                                    onUpdate={(updates) => onUpdateItem(item.id, updates)} 
-                                />
-
-                                <div className="flex-grow min-w-0 hidden">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <EditableField
-                                            value={decodeHtmlEntities(item.name)}
-                                            onSave={(val) => onUpdateItem(item.id, { name: val })}
-                                            placeholder="Item Name"
-                                            className="font-bold text-foreground flex-grow"
-                                            inputClassName="font-bold"
-                                        />
-                                        <div className="flex items-center gap-1 shrink-0">
-                                            <span className="text-foreground font-bold">৳</span>
-                                            <EditableField
-                                                value={item.price}
-                                                onSave={(val) => onUpdateItem(item.id, { price: parseFloat(val) })}
-                                                placeholder="0"
-                                                className="font-bold text-foreground min-w-[40px] text-right"
-                                                inputClassName="font-bold text-right w-20"
-                                            />
-                                        </div>
-                                    </div>
-                                    <EditableField
-                                        value={decodeHtmlEntities(item.description)}
-                                        onSave={(val) => onUpdateItem(item.id, { description: val })}
-                                        placeholder="Add a description..."
-                                        multiline
-                                        className="text-sm text-muted-foreground mt-1"
-                                        inputClassName="text-sm"
+                                <div className="flex-grow min-w-0">
+                                    <AllInOneItemEditor 
+                                        item={item} 
+                                        onUpdate={(updates) => onUpdateItem(item.id, updates)} 
                                     />
-                                </div>
 
                                     {item.subItems && item.subItems.length > 0 && (
                                         <>
@@ -398,16 +369,18 @@ const CategorySection = memo(({
                                                 <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-4">
                                                     {item.subItems?.map((subItem: any, index: number) => (
                                                         <div key={subItem.id || index} className="flex justify-between items-center text-sm group/subitem">
-                                                            <EditableField
-                                                                value={decodeHtmlEntities(subItem.name)}
-                                                                onSave={(val) => {
-                                                                    const newSubItems = [...item.subItems];
-                                                                    newSubItems[index] = { ...newSubItems[index], name: val };
-                                                                    onUpdateItem(item.id, { subItems: newSubItems });
-                                                                }}
-                                                                placeholder="Variation Name"
-                                                                className="text-muted-foreground flex-grow"
-                                                            />
+                                                            <div className="flex-grow min-w-0">
+                                                                <EditableField
+                                                                    value={decodeHtmlEntities(subItem.name)}
+                                                                    onSave={(val) => {
+                                                                        const newSubItems = [...item.subItems];
+                                                                        newSubItems[index] = { ...newSubItems[index], name: val };
+                                                                        onUpdateItem(item.id, { subItems: newSubItems });
+                                                                    }}
+                                                                    placeholder="Variation Name"
+                                                                    className="text-muted-foreground"
+                                                                />
+                                                            </div>
                                                             <div className="flex items-center gap-1 shrink-0 ml-4">
                                                                 <span className="text-muted-foreground">৳</span>
                                                                 <EditableField
