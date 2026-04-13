@@ -197,6 +197,107 @@ const EditableField = memo(({ value, onSave, placeholder = "Click to edit", mult
         </div>
     );
 });
+// --- All-In-One Item Editor ---
+const AllInOneItemEditor = memo(({ 
+    item, 
+    onUpdate 
+}: { 
+    item: OrderItemDetail; 
+    onUpdate: (updates: Partial<OrderItemDetail>) => void;
+}) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const initialText = `${decodeHtmlEntities(item.name)}${item.price ? ` - ${item.price}` : ''}${item.description ? `\n${decodeHtmlEntities(item.description)}` : ''}`;
+    const [text, setText] = useState(initialText);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        setText(`${decodeHtmlEntities(item.name)}${item.price ? ` - ${item.price}` : ''}${item.description ? `\n${decodeHtmlEntities(item.description)}` : ''}`);
+    }, [item]);
+
+    useEffect(() => {
+        if (isEditing && textareaRef.current) {
+            textareaRef.current.focus();
+            textareaRef.current.select();
+            textareaRef.current.style.height = 'auto';
+            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+    }, [isEditing]);
+
+    const handleSave = () => {
+        if (text === initialText) {
+            setIsEditing(false);
+            return;
+        }
+
+        const lines = text.split('\n');
+        const firstLine = lines[0] || '';
+        const description = lines.slice(1).join('\n').trim();
+        
+        let name = firstLine;
+        let price = item.price;
+        
+        // Regex to match "Name - 120", "Name: 120", or just "Name 120" at the end
+        const priceMatch = firstLine.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
+        if (priceMatch) {
+            name = priceMatch[1].trim();
+            price = parseFloat(priceMatch[2]);
+        }
+
+        onUpdate({ 
+            name: name || item.name, 
+            price: isNaN(price) ? 0 : price, 
+            description 
+        });
+        setIsEditing(false);
+    };
+
+    if (isEditing) {
+        return (
+            <div className="w-full">
+                <Textarea
+                    ref={textareaRef}
+                    value={text}
+                    onChange={(e) => {
+                        setText(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                    }}
+                    onBlur={handleSave}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                            handleSave();
+                        } else if (e.key === 'Escape') {
+                            setText(initialText);
+                            setIsEditing(false);
+                        }
+                    }}
+                    className="w-full bg-yellow-101/50 dark:bg-yellow-901/50 border-primary ring-0 focus-visible:ring-0 p-2 rounded-md min-h-[80px] text-sm overflow-hidden"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1 px-1">Tip: "Name - Price" on first line. Ctrl+Enter to save.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div 
+            onClick={() => setIsEditing(true)} 
+            className="flex-grow min-w-0 cursor-pointer group/inner relative p-1 -m-1 rounded-md hover:bg-primary/5 transition-colors"
+        >
+            <div className="flex justify-between items-start gap-4">
+                <p className="font-bold text-foreground line-clamp-2">{decodeHtmlEntities(item.name)}</p>
+                <p className="font-bold text-foreground text-right shrink-0">৳{item.price.toLocaleString()}</p>
+            </div>
+            {item.description && (
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-3 italic">
+                    {decodeHtmlEntities(item.description)}
+                </p>
+            )}
+            <Edit3 className="h-3 w-3 text-muted-foreground absolute top-1 right-[-10px] opacity-0 group-hover/inner:opacity-100 transition-opacity" />
+        </div>
+    );
+});
+AllInOneItemEditor.displayName = "AllInOneItemEditor";
+
 EditableField.displayName = "EditableField";
 
 // --- Memoized Category Section ---
@@ -252,7 +353,12 @@ const CategorySection = memo(({
                             className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
                         >
                             <div className="flex items-start gap-4">
-                                <div className="flex-grow min-w-0">
+                                <AllInOneItemEditor 
+                                    item={item} 
+                                    onUpdate={(updates) => onUpdateItem(item.id, updates)} 
+                                />
+
+                                <div className="flex-grow min-w-0 hidden">
                                     <div className="flex justify-between items-start gap-4">
                                         <EditableField
                                             value={decodeHtmlEntities(item.name)}
@@ -280,6 +386,7 @@ const CategorySection = memo(({
                                         className="text-sm text-muted-foreground mt-1"
                                         inputClassName="text-sm"
                                     />
+                                </div>
 
                                     {item.subItems && item.subItems.length > 0 && (
                                         <>
