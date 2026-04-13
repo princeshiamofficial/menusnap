@@ -45,7 +45,8 @@ import {
     MoreHorizontal,
     Sparkles,
     Palette,
-    Zap
+    Zap,
+    Image as ImageIcon
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
