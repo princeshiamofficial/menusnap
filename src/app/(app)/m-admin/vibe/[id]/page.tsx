@@ -1007,7 +1007,10 @@ export default function VibeModePage() {
                                 <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
                                     <Sparkles className="h-4 w-4 text-primary" /> {decodeHtmlEntities(order.customer?.restaurant)}
                                 </h1>
-                                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Vibe Mode</p>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 opacity-70">
+                                    <CalendarDays className="h-3 w-3" />
+                                    {formatDate(order.orderDate)}
+                                </p>
                             </div>
                         </div>
 
