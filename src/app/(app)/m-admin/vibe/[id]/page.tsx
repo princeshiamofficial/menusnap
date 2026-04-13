@@ -199,90 +199,12 @@ const EditableField = memo(({ value, onSave, placeholder = "Click to edit", mult
 });
 // --- All-In-One Item Editor ---
 const AllInOneItemEditor = memo(({ 
-    item, 
-    onUpdate 
+    item 
 }: { 
     item: OrderItemDetail; 
-    onUpdate: (updates: Partial<OrderItemDetail>) => void;
 }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const initialText = `${decodeHtmlEntities(item.name)}${item.price ? ` - ${item.price}` : ''}${item.description ? `\n${decodeHtmlEntities(item.description)}` : ''}`;
-    const [text, setText] = useState(initialText);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    useEffect(() => {
-        setText(`${decodeHtmlEntities(item.name)}${item.price ? ` - ${item.price}` : ''}${item.description ? `\n${decodeHtmlEntities(item.description)}` : ''}`);
-    }, [item]);
-
-    useEffect(() => {
-        if (isEditing && textareaRef.current) {
-            textareaRef.current.focus();
-            textareaRef.current.select();
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-        }
-    }, [isEditing]);
-
-    const handleSave = () => {
-        if (text === initialText) {
-            setIsEditing(false);
-            return;
-        }
-
-        const lines = text.split('\n');
-        const firstLine = lines[0] || '';
-        const description = lines.slice(1).join('\n').trim();
-        
-        let name = firstLine;
-        let price = item.price;
-        
-        // Regex to match "Name - 120", "Name: 120", or just "Name 120" at the end
-        const priceMatch = firstLine.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
-        if (priceMatch) {
-            name = priceMatch[1].trim();
-            price = parseFloat(priceMatch[2]);
-        }
-
-        onUpdate({ 
-            name: name || item.name, 
-            price: isNaN(price) ? 0 : price, 
-            description 
-        });
-        setIsEditing(false);
-    };
-
-    if (isEditing) {
-        return (
-            <div className="w-full">
-                <Textarea
-                    ref={textareaRef}
-                    value={text}
-                    onChange={(e) => {
-                        setText(e.target.value);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                    }}
-                    onBlur={handleSave}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                            handleSave();
-                        } else if (e.key === 'Escape') {
-                            setText(initialText);
-                            setIsEditing(false);
-                        }
-                    }}
-                    className="w-full bg-yellow-101/50 dark:bg-yellow-901/50 border-primary ring-0 focus-visible:ring-0 p-2 rounded-md min-h-[80px] text-sm overflow-hidden"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1 px-1">Tip: "Name - Price" on first line. Ctrl+Enter to save.</p>
-            </div>
-        );
-    }
-
     return (
-        <div 
-            onClick={() => setIsEditing(true)} 
-            className="flex-grow min-w-0 cursor-pointer group/inner relative p-1 -m-1 rounded-md hover:bg-primary/5 transition-colors"
-        >
+        <div className="flex-grow min-w-0 p-1 -m-1">
             <div className="flex justify-between items-start gap-4">
                 <p className="font-bold text-foreground line-clamp-2">{decodeHtmlEntities(item.name)}</p>
                 <p className="font-bold text-foreground text-right shrink-0">৳{item.price.toLocaleString()}</p>
@@ -292,10 +214,10 @@ const AllInOneItemEditor = memo(({
                     {decodeHtmlEntities(item.description)}
                 </p>
             )}
-            <Edit3 className="h-3 w-3 text-muted-foreground absolute top-1 right-[-10px] opacity-0 group-hover/inner:opacity-100 transition-opacity" />
         </div>
     );
 });
+AllInOneItemEditor.displayName = "AllInOneItemEditor";;
 AllInOneItemEditor.displayName = "AllInOneItemEditor";
 
 EditableField.displayName = "EditableField";
@@ -303,24 +225,10 @@ EditableField.displayName = "EditableField";
 // --- Memoized Category Section ---
 const CategorySection = memo(({ 
     category, 
-    onAddCategory, 
-    onRemoveCategory, 
-    onCategoryNameChange, 
-    onAddItemToCategory, 
-    onEditItem, 
-    onUpdateItem,
-    onRemoveItem, 
     onToggleSubItems,
     expandedSubItems 
 }: { 
     category: any;
-    onAddCategory: () => void;
-    onRemoveCategory: (id: string) => void;
-    onCategoryNameChange: (id: string, name: string) => void;
-    onAddItemToCategory: (id: string) => void;
-    onEditItem: (item: any) => void;
-    onUpdateItem: (itemId: string, updates: Partial<OrderItemDetail>) => void;
-    onRemoveItem: (id: string) => void;
     onToggleSubItems: (id: string) => void;
     expandedSubItems: Record<string, boolean>;
 }) => {
@@ -328,16 +236,8 @@ const CategorySection = memo(({
         <div className="mb-8 group/category">
             <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
                 <span className="text-xl mr-2 text-primary">{category.icon}</span>
-                <EditableField
-                    value={category.name}
-                    onSave={(val) => onCategoryNameChange(category.id, val)}
-                    placeholder="Category Name"
-                    className="text-xl font-semibold text-primary"
-                    inputClassName="text-xl font-semibold"
-                />
-                <Badge variant="secondary">{category.items.length}</Badge>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => onRemoveCategory(category.id)}><X className="h-4 w-4" /></Button>
-                <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => onAddItemToCategory(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+                <h3 className="text-xl font-semibold text-primary">{decodeHtmlEntities(category.name)}</h3>
+                <Badge variant="secondary" className="ml-1">{category.items.length}</Badge>
             </div>
 
             <div className="space-y-3">
@@ -354,10 +254,7 @@ const CategorySection = memo(({
                         >
                             <div className="flex items-start gap-4">
                                 <div className="flex-grow min-w-0">
-                                    <AllInOneItemEditor 
-                                        item={item} 
-                                        onUpdate={(updates) => onUpdateItem(item.id, updates)} 
-                                    />
+                                    <AllInOneItemEditor item={item} />
 
                                     {item.subItems && item.subItems.length > 0 && (
                                         <>
@@ -370,30 +267,11 @@ const CategorySection = memo(({
                                                     {item.subItems?.map((subItem: any, index: number) => (
                                                         <div key={subItem.id || index} className="flex justify-between items-center text-sm group/subitem">
                                                             <div className="flex-grow min-w-0">
-                                                                <EditableField
-                                                                    value={decodeHtmlEntities(subItem.name)}
-                                                                    onSave={(val) => {
-                                                                        const newSubItems = [...item.subItems];
-                                                                        newSubItems[index] = { ...newSubItems[index], name: val };
-                                                                        onUpdateItem(item.id, { subItems: newSubItems });
-                                                                    }}
-                                                                    placeholder="Variation Name"
-                                                                    className="text-muted-foreground"
-                                                                />
+                                                                <p className="text-muted-foreground">{decodeHtmlEntities(subItem.name)}</p>
                                                             </div>
                                                             <div className="flex items-center gap-1 shrink-0 ml-4">
                                                                 <span className="text-muted-foreground">৳</span>
-                                                                <EditableField
-                                                                    value={subItem.price}
-                                                                    onSave={(val) => {
-                                                                        const newSubItems = [...item.subItems];
-                                                                        newSubItems[index] = { ...newSubItems[index], price: parseFloat(val) };
-                                                                        onUpdateItem(item.id, { subItems: newSubItems });
-                                                                    }}
-                                                                    placeholder="0"
-                                                                    className="text-muted-foreground min-w-[30px] text-right"
-                                                                    inputClassName="text-right w-16"
-                                                                />
+                                                                <span className="text-muted-foreground">{subItem.price}</span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -402,10 +280,6 @@ const CategorySection = memo(({
                                         </>
                                     )}
                                 </div>
-                                <div className="flex flex-col gap-1 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4" /></Button>
-                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
-                                </div>
                             </div>
                         </motion.div>
                     ))}
@@ -413,7 +287,7 @@ const CategorySection = memo(({
             </div>
         </div>
     );
-});
+});;
 CategorySection.displayName = "CategorySection";
 
 // --- Add/Edit Item Form ---
@@ -1453,14 +1327,11 @@ export default function VibeModePage() {
                                 <div className="flex items-center justify-center gap-3">
                                     {/* Action Group */}
                                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto no-scrollbar">
-                                        <Button variant="outline" size="sm" onClick={handleAddCategory} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
-                                            <Plus className="h-4 w-4" /> Add Category
-                                        </Button>
                                         <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
-                                            <Shuffle className="h-4 w-4" /> Shuffle
+                                            <Shuffle className="h-4 w-4" /> Shuffle Preview
                                         </Button>
                                         <Button variant="secondary" size="sm" onClick={() => handleShare('viewer')} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
-                                            <Share2 className="h-4 w-4" /> Share
+                                            <Share2 className="h-4 w-4" /> Share Vibe
                                         </Button>
                                     </div>
                                 </div>
@@ -1488,10 +1359,10 @@ export default function VibeModePage() {
                                             handleBulkInputUpdate(e.target.value);
                                         }}
                                         placeholder="# DRINKS\nCoke - 30\nChilled\n- Small - 25\n- Large - 50"
-                                        className="w-full font-mono text-sm p-4 leading-relaxed resize-none focus-visible:ring-1 border-2 min-h-[300px] shadow-inner bg-card/50"
+                                        className="w-full font-mono text-sm p-4 leading-relaxed resize-none focus-visible:ring-1 border-2 min-h-[400px] shadow-inner bg-card/50"
                                     />
                                     <div className="mt-3 flex justify-end gap-2 text-[10px] text-muted-foreground italic">
-                                        * Everything you type here updates the vibe cards below in real-time.
+                                        * Type here to build your menu. Changes reflect instantly below.
                                     </div>
                                 </div>
                             </div>
@@ -1500,21 +1371,14 @@ export default function VibeModePage() {
                                 className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
                                 style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
                             >
-                                Vibe Summary
+                                Vibe Summary Preview
                             </div>
 
-                            <div>
+                            <div className="mb-20">
                                 {categoriesForRender.map((category) => (
                                     <div key={category.id}>
                                        <CategorySection
                                             category={category}
-                                            onAddCategory={handleAddCategory}
-                                            onRemoveCategory={handleRemoveCategory}
-                                            onCategoryNameChange={handleCategoryNameChange}
-                                            onAddItemToCategory={handleOpenAddDialog}
-                                            onEditItem={handleOpenEditDialog}
-                                            onUpdateItem={handleUpdateItem}
-                                            onRemoveItem={handleRemoveItem}
                                             onToggleSubItems={handleToggleSubItems}
                                             expandedSubItems={expandedSubItems}
                                        />
@@ -1523,29 +1387,14 @@ export default function VibeModePage() {
                                 {categoriesForRender.length === 0 && (
                                     <div className="text-center py-20 bg-muted/20 border-2 border-dashed rounded-xl">
                                         <PlusCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
-                                        <p className="text-muted-foreground">Start adding items to create your vibe.</p>
+                                        <p className="text-muted-foreground">Start adding items in the Magic Editor above.</p>
                                     </div>
                                 )}
                             </div>
-
-                            <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
-                                <Plus className="mr-2 h-4 w-4" />Add Section
-                            </Button>
                         </section>
                     </main>
                 </div>
             </div>
-            <MenuItemForm
-                isOpen={isFormOpen}
-                onOpenChange={setIsFormOpen}
-                onSubmit={handleFormSubmit}
-                initialData={editingItem}
-                categoryName={
-                    editingItem
-                        ? categoriesForRender.find(c => c.id === editingItem.categoryId)?.name
-                        : categoriesForRender.find(c => c.id === addingToCategoryId)?.name
-                }
-            />
             {order && (
                 <OrderPreviewDialog
                     isOpen={isPreviewOpen}
