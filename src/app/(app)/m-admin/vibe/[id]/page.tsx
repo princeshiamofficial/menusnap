@@ -894,7 +894,8 @@ export default function VibeModePage() {
     const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+    const [isMagicMode, setIsMagicMode] = useState(false);
+    const [bulkInput, setBulkInput] = useState("");
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
@@ -906,6 +907,100 @@ export default function VibeModePage() {
         if (!order) return;
         handleOrderUpdate({ ...order, items: newItems });
     };
+
+    const handleBulkInputUpdate = (text: string) => {
+        const lines = text.split('\n');
+        const newItems: OrderItemDetail[] = [];
+        let currentCategoryName = "Uncategorized";
+        let currentItem: OrderItemDetail | null = null;
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            if (trimmed.startsWith('#')) {
+                currentCategoryName = trimmed.replace(/^#\s*/, '').trim();
+                currentItem = null;
+                return;
+            }
+
+            if (trimmed.startsWith('-')) {
+                if (!currentItem) return;
+                const subContent = trimmed.replace(/^- \s*/, '').trim();
+                const priceMatch = subContent.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
+                let siName = subContent;
+                let siPrice = 0;
+                if (priceMatch) {
+                    siName = priceMatch[1].trim();
+                    siPrice = parseFloat(priceMatch[2]);
+                }
+                currentItem.subItems = [...(currentItem.subItems || []), {
+                    id: `si-${Date.now()}-${Math.random()}`,
+                    name: siName,
+                    price: siPrice
+                }];
+                return;
+            }
+
+            const priceMatch = trimmed.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
+            if (priceMatch && !trimmed.includes('\n')) {
+                const itemName = priceMatch[1].trim();
+                const itemPrice = parseFloat(priceMatch[2]);
+                
+                currentItem = {
+                    id: `item-${Date.now()}-${Math.random()}`,
+                    name: itemName,
+                    price: isNaN(itemPrice) ? 0 : itemPrice,
+                    quantity: 1,
+                    categoryId: `cat-${currentCategoryName.toLowerCase().replace(/\s+/g, '-')}`,
+                    categoryName: currentCategoryName,
+                    description: '',
+                    subItems: []
+                };
+                newItems.push(currentItem);
+            } else if (currentItem) {
+                currentItem.description = currentItem.description 
+                    ? `${currentItem.description}\n${trimmed}`
+                    : trimmed;
+            }
+        });
+
+        if (order) {
+            handleOrderUpdate({ ...order, items: newItems });
+        }
+    };
+
+    useEffect(() => {
+        if (!order?.items || isMagicMode) return;
+        
+        // Generate text from items to keep bulkInput in sync when editing cards
+        let text = "";
+        const categoryMap = new Map<string, OrderItemDetail[]>();
+        
+        order.items.forEach(item => {
+            const catName = item.categoryName || "Uncategorized";
+            if (!categoryMap.has(catName)) categoryMap.set(catName, []);
+            categoryMap.get(catName)!.push(item);
+        });
+
+        categoryMap.forEach((items, catName) => {
+            text += `# ${catName}\n`;
+            items.forEach(item => {
+                text += `${decodeHtmlEntities(item.name)}${item.price ? ` - ${item.price}` : ''}\n`;
+                if (item.description) {
+                    text += `${decodeHtmlEntities(item.description)}\n`;
+                }
+                if (item.subItems && item.subItems.length > 0) {
+                    item.subItems.forEach(si => {
+                        text += `- ${decodeHtmlEntities(si.name)}${si.price ? ` - ${si.price}` : ''}\n`;
+                    });
+                }
+                text += "\n";
+            });
+            text += "\n";
+        });
+        setBulkInput(text.trim());
+    }, [order?.items, isMagicMode]);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -1360,17 +1455,20 @@ export default function VibeModePage() {
 
 
                         <section>
-                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12 shadow-sm">
+                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-3 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12 shadow-sm">
                                 <div className="flex items-center justify-center gap-3">
                                     {/* Action Group */}
                                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto no-scrollbar">
                                         <Button 
-                                            variant="outline" 
+                                            variant={isMagicMode ? "default" : "outline"}
                                             size="sm" 
-                                            onClick={() => setIsBulkEditOpen(true)} 
-                                            className="h-10 gap-2 whitespace-nowrap bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-all font-bold"
+                                            onClick={() => setIsMagicMode(!isMagicMode)} 
+                                            className={cn(
+                                                "h-10 gap-2 whitespace-nowrap transition-all font-bold",
+                                                isMagicMode ? "bg-primary text-primary-foreground shadow-lg" : "bg-primary/5 text-primary border-primary/20 hover:bg-primary/10"
+                                            )}
                                         >
-                                            <FileText className="h-4 w-4" /> Bulk Vibe
+                                            <Sparkles className="h-4 w-4" /> {isMagicMode ? "Hide Magic Box" : "Magic Box"}
                                         </Button>
                                         <div className="h-8 w-px bg-border hidden sm:block mx-1"></div>
                                         <Button variant="outline" size="sm" onClick={handleAddCategory} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
@@ -1385,6 +1483,45 @@ export default function VibeModePage() {
                                     </div>
                                 </div>
                             </div>
+
+                            <AnimatePresence>
+                                {isMagicMode && (
+                                    <motion.div 
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        className="overflow-hidden mb-8"
+                                    >
+                                        <div className="bg-muted/30 border-2 border-primary/20 rounded-xl p-4 sm:p-6 mb-2 relative group md:mx-0 -mx-2">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <PenSquare className="h-5 w-5 text-primary" />
+                                                    <h3 className="font-bold text-lg">All-In-One Magic Editor</h3>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded border">
+                                                    <span># Category</span>
+                                                    <span className="opacity-30">|</span>
+                                                    <span>Item - Price</span>
+                                                    <span className="opacity-30">|</span>
+                                                    <span>- Variation - Price</span>
+                                                </div>
+                                            </div>
+                                            <Textarea 
+                                                value={bulkInput}
+                                                onChange={(e) => {
+                                                    setBulkInput(e.target.value);
+                                                    handleBulkInputUpdate(e.target.value);
+                                                }}
+                                                placeholder="# DRINKS\nCoke - 30\nChilled\n- Small - 25\n- Large - 50"
+                                                className="w-full font-mono text-sm p-4 leading-relaxed resize-none focus-visible:ring-1 border-2 min-h-[300px] shadow-inner bg-card/50"
+                                            />
+                                            <div className="mt-3 flex justify-end gap-2 text-[10px] text-muted-foreground italic">
+                                                * Everything you type here updates the vibe cards below in real-time.
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             <div
                                 className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
@@ -1411,9 +1548,9 @@ export default function VibeModePage() {
                                     </div>
                                 ))}
                                 {categoriesForRender.length === 0 && (
-                                    <div className="text-center text-muted-foreground py-10">
-                                        <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                        <p>No vibe matches found.</p>
+                                    <div className="text-center py-20 bg-muted/20 border-2 border-dashed rounded-xl">
+                                        <PlusCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
+                                        <p className="text-muted-foreground">Start adding items to create your vibe.</p>
                                     </div>
                                 )}
                             </div>
