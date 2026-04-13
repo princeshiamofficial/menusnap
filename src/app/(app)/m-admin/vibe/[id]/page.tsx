@@ -44,8 +44,6 @@ import {
     Check,
     MoreHorizontal,
     Sparkles,
-    Palette,
-    Zap,
     Image as ImageIcon
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
@@ -83,6 +81,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 import Image from 'next/image';
+
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
 
@@ -173,7 +172,7 @@ const EditableField = memo(({ value, onSave, placeholder = "Click to edit", mult
             onBlur: handleSave,
             onKeyDown: handleKeyDown,
             className: cn(
-                "bg-primary/5 border-primary ring-primary focus-visible:ring-primary p-1 -m-1 rounded-md transition-all",
+                "bg-yellow-100/50 dark:bg-yellow-900/50 border-primary ring-primary focus-visible:ring-primary p-1 -m-1 rounded-md transition-all",
                 inputClassName
             ),
         };
@@ -200,6 +199,7 @@ const EditableField = memo(({ value, onSave, placeholder = "Click to edit", mult
 });
 EditableField.displayName = "EditableField";
 
+// --- Memoized Category Section ---
 const CategorySection = memo(({ 
     category, 
     onAddCategory, 
@@ -232,9 +232,9 @@ const CategorySection = memo(({
                     className="text-xl font-semibold text-primary"
                     inputClassName="text-xl font-semibold"
                 />
-                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">{category.items.length}</Badge>
+                <Badge variant="secondary">{category.items.length}</Badge>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => onRemoveCategory(category.id)}><X className="h-4 w-4" /></Button>
-                <Button variant="outline" size="sm" className="ml-auto h-7 border-primary/20 hover:bg-primary/5 text-primary" onClick={() => onAddItemToCategory(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+                <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => onAddItemToCategory(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
             </div>
 
             <div className="space-y-3">
@@ -243,21 +243,17 @@ const CategorySection = memo(({
                         <motion.div
                             key={item.id}
                             layout
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
                             transition={{ duration: 0.2 }}
-                            className="bg-card border border-primary/5 p-3 rounded-lg shadow-sm hover:border-primary/40 group/item relative overflow-hidden"
+                            className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
                         >
-                            <div className="absolute top-0 right-0 p-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                <Sparkles className="h-3 w-3 text-primary/30" />
-                            </div>
-                            
                             <div className="flex items-start gap-3">
                                 <div className="flex-grow">
                                     <div className="flex justify-between items-start gap-4">
                                         <p className="font-bold text-foreground">{decodeHtmlEntities(item.name)}</p>
-                                        <p className="font-bold text-primary text-right">৳{item.price.toLocaleString()}</p>
+                                        <p className="font-bold text-foreground text-right">৳{item.price.toLocaleString()}</p>
                                     </div>
                                     {item.description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(item.description)}</p>}
 
@@ -268,11 +264,11 @@ const CategorySection = memo(({
                                                 Variations
                                             </Button>
                                             {expandedSubItems[item.id] && (
-                                                <div className="mt-2 space-y-2 border-l-2 border-primary/10 pl-3">
+                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
                                                     {item.subItems?.map((subItem: any, index: number) => (
                                                         <div key={subItem.id || index} className="flex justify-between items-center text-sm">
                                                             <p className="text-muted-foreground">- {decodeHtmlEntities(subItem.name)}</p>
-                                                            <p className="text-muted-foreground font-medium">৳{subItem.price?.toLocaleString()}</p>
+                                                            <p className="text-muted-foreground">৳{subItem.price?.toLocaleString()}</p>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -281,8 +277,8 @@ const CategorySection = memo(({
                                     )}
                                 </div>
                                 <div className="flex flex-col gap-1 shrink-0">
-                                    <Button variant="outline" size="icon" className="h-7 w-7 border-primary/20 hover:bg-primary/5 text-primary" onClick={() => onEditItem(item)}><Edit className="h-4 w-4" /></Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive/60 hover:text-destructive hover:bg-destructive/5" onClick={() => onRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
+                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
                                 </div>
                             </div>
                         </motion.div>
@@ -294,6 +290,7 @@ const CategorySection = memo(({
 });
 CategorySection.displayName = "CategorySection";
 
+// --- Add/Edit Item Form ---
 const menuItemFormSchema = z.object({
     name: z.string().min(1, "Item name is required"),
     price: z.coerce.number().min(0, "Price must be non-negative"),
@@ -380,9 +377,7 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
                                 <Textarea id="item-description" {...form.register("description")} placeholder="Item description (optional)" />
                             </div>
                             <div className="pt-4">
-                                <Label className="font-semibold text-primary flex items-center gap-2">
-                                    <Zap className="h-4 w-4" /> Variations / Sizes
-                                </Label>
+                                <Label className="font-semibold">Variations / Sizes</Label>
                                 <div className="mt-2 flex items-start gap-2">
                                     <Input placeholder="Variation name" value={newSubItemName} onChange={e => setNewSubItemName(e.target.value)} className="flex-grow" />
                                     <Input placeholder="Price (optional)" type="number" value={newSubItemPrice} onChange={e => setNewSubItemPrice(e.target.value)} className="w-32" />
@@ -403,15 +398,16 @@ function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryNam
                             )}
                         </div>
                     </ScrollArea>
-                    <DialogFooter className="px-6 py-4 border-t mt-auto gap-2">
+                    <DialogFooter className="px-6 py-4 border-t mt-auto">
                         <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                        <Button type="submit" className="bg-primary hover:bg-primary/90">Save Changes</Button>
+                        <Button type="submit">Save</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
     );
 }
+// --- End Form ---
 
 interface OrderPreviewDialogProps {
     isOpen: boolean;
@@ -476,6 +472,7 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
     };
 
     const handleSaveAndClose = () => {
+        // Rebuild the final item list based on the ordered categories to ensure it's correct.
         const finalOrderedItems = orderedCategories.flatMap(cat => itemsGroupedByCategory[cat.id] || []);
         onSaveChanges(finalOrderedItems);
         onOpenChange(false);
@@ -489,19 +486,17 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
 
     return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[95vw] sm:w-full h-[95vh] sm:h-[90vh] flex flex-col p-0 gap-0 overflow-hidden border-primary/20 bg-background/95 backdrop-blur-xl">
-                <DialogHeader className="px-6 py-4 border-b border-primary/10">
-                    <DialogTitle className="text-xl flex items-center gap-2">
-                        <Shuffle className="h-5 w-5 text-primary" /> Shuffle & Reorder
-                    </DialogTitle>
-                    <DialogDescription>Arrange categories and items to perfect your document vibe.</DialogDescription>
+      <DialogContent className="max-w-4xl w-[95vw] sm:w-full h-[95vh] sm:h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                <DialogHeader className="px-6 py-4 border-b">
+                    <DialogTitle className="text-xl">Shuffle & Reorder Menu</DialogTitle>
+                    <DialogDescription>Drag and drop categories or items to change their order.</DialogDescription>
                 </DialogHeader>
 
                 <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-                    <div className={cn("border-b lg:border-b-0 lg:border-r border-primary/10 bg-primary/5 transition-all duration-300", isSidebarCollapsed ? "h-12 lg:h-auto lg:w-12" : "h-auto max-h-[30vh] lg:max-h-none lg:w-64")}>
-                        <div className="flex items-center justify-between p-2 h-12 lg:h-14 border-b border-primary/10">
-                            {!isSidebarCollapsed && <span className="font-bold text-[10px] uppercase tracking-widest text-primary/60 px-2">Categories</span>}
-                            <Button variant="ghost" size="icon" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="h-7 w-7 text-primary">
+                    <div className={cn("border-b lg:border-b-0 lg:border-r bg-muted/40 transition-all duration-300 ease-in-out", isSidebarCollapsed ? "h-12 lg:h-auto lg:w-12" : "h-auto max-h-[30vh] lg:max-h-none lg:w-64")}>
+                        <div className="flex items-center justify-between p-2 h-12 lg:h-14 border-b">
+                            {!isSidebarCollapsed && <span className="font-medium text-xs sm:text-sm px-2">Categories</span>}
+                            <Button variant="ghost" size="icon" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="h-7 w-7 sm:h-8 sm:w-8">
                                 <ChevronLeft className={cn("h-4 w-4 transition-transform", isSidebarCollapsed ? "rotate-90 lg:rotate-180" : "-rotate-90 lg:rotate-0")} />
                             </Button>
                         </div>
@@ -509,8 +504,9 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                             {orderedCategories.length > 0 && (
                                 <Button
                                     variant="ghost"
-                                    className={cn("w-full justify-start text-sm mb-1 h-9", !activeCategoryId ? "bg-primary text-white font-bold" : "hover:bg-primary/10 text-primary/60", isSidebarCollapsed ? "justify-center px-0" : "px-3")}
+                                    className={cn("w-full justify-start text-sm mb-1 h-9", !activeCategoryId ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent", isSidebarCollapsed ? "justify-center px-0" : "px-2")}
                                     onClick={() => setActiveCategoryId(null)}
+                                    title="All Items"
                                 >
                                     <FileText className="h-4 w-4 shrink-0" />
                                     {!isSidebarCollapsed && <span className="ml-2 truncate flex-1 text-left">All Items</span>}
@@ -518,16 +514,16 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                             )}
                             <Reorder.Group axis="y" values={orderedCategories} onReorder={setOrderedCategories} className="space-y-1">
                                 {orderedCategories.map(category => (
-                                    <Reorder.Item key={category.id} value={category} className="bg-transparent rounded-md">
+                                    <Reorder.Item key={category.id} value={category} className="bg-card rounded-md">
                                         <Button
                                             variant="ghost"
-                                            className={cn("w-full justify-start text-sm mb-0 h-9 flex items-center transition-all", activeCategoryId === category.id ? "bg-primary/20 text-primary font-bold shadow-sm" : "hover:bg-primary/5 text-primary/40", isSidebarCollapsed ? "justify-center px-0" : "px-3")}
+                                            className={cn("w-full justify-start text-sm mb-0 h-9 flex items-center", activeCategoryId === category.id ? "bg-primary/10 text-primary font-semibold" : "hover:bg-accent", isSidebarCollapsed ? "justify-center px-0" : "px-2")}
                                             onClick={() => setActiveCategoryId(category.id)}
                                             title={decodeHtmlEntities(category.name)}
                                         >
                                             <span className={cn("text-base w-4 h-4 flex items-center justify-center shrink-0", isSidebarCollapsed ? "" : "mr-2")}>{category.icon}</span>
                                             {!isSidebarCollapsed && <span className="truncate flex-1 text-left">{decodeHtmlEntities(category.name)}</span>}
-                                            {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-primary/20 cursor-grab ml-1 shrink-0" />}
+                                            {!isSidebarCollapsed && <GripVertical className="h-4 w-4 text-muted-foreground/30 cursor-grab ml-1 shrink-0" />}
                                         </Button>
                                     </Reorder.Item>
                                 ))}
@@ -535,16 +531,16 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                         </ScrollArea>
                     </div>
 
-                    <ScrollArea className="flex-1 p-6 bg-background/50">
+                    <ScrollArea className="flex-1 p-6 bg-background">
                         {categoriesToDisplayInMainPanel.map(category => {
                             const items = itemsGroupedByCategory[category.id] || [];
                             if (items.length === 0) return null;
                             return (
-                                <div key={category.id} className="mb-8 pl-2 sm:pl-0">
+                                <div key={category.id} className="mb-8">
                                     <div className="flex items-center mb-4">
                                         <span className="text-xl mr-2 text-primary">{category.icon}</span>
-                                        <h3 className="text-lg font-black tracking-tight text-foreground uppercase">{decodeHtmlEntities(category.name)}</h3>
-                                        <Badge className="ml-2 bg-primary/10 text-primary border-primary/20 font-bold">{items.length}</Badge>
+                                        <h3 className="text-lg font-semibold text-foreground">{decodeHtmlEntities(category.name)}</h3>
+                                        <Badge variant="secondary" className="ml-2 text-xs">{items.length}</Badge>
                                     </div>
                                     <Reorder.Group
                                         axis="y"
@@ -554,23 +550,26 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                                     >
                                         {items.map(item => (
                                             <Reorder.Item key={item.id} value={item}>
-                                                <div className="flex items-center p-4 border border-primary/5 rounded-2xl bg-card shadow-sm hover:border-primary/30 transition-all group/shuffle">
-                                                    <GripVertical className="h-5 w-5 text-primary/20 cursor-grab mr-3" />
-                                                    <div className="h-12 w-12 rounded-xl bg-primary/5 flex items-center justify-center mr-4 shrink-0 transition-transform group-hover/shuffle:scale-105">
-                                                        <ImageIcon className="h-6 w-6 text-primary/20" />
+                                                <div className="flex items-center p-3 border rounded-lg bg-card shadow-sm hover:border-primary/50">
+                                                    <GripVertical className="h-5 w-5 text-muted-foreground/50 cursor-grab mr-3" />
+                                                    <Image
+                                                        src={STATIC_ITEM_IMAGE_URL}
+                                                        alt={decodeHtmlEntities(item.name)}
+                                                        width={48} height={48}
+                                                        className="h-12 w-12 rounded-md object-contain mr-4 bg-muted"
+                                                    />
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
+                                                        {item.description && <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>}
                                                     </div>
-                                                    <div className="flex-1 overflow-hidden">
-                                                        <p className="font-bold text-sm text-foreground truncate">{decodeHtmlEntities(item.name)}</p>
-                                                        {item.description && <p className="text-[10px] text-muted-foreground truncate">{decodeHtmlEntities(item.description)}</p>}
-                                                    </div>
-                                                    <div className="text-right ml-4 shrink-0">
-                                                        <p className="font-black text-sm text-primary">৳{item.price.toLocaleString()}</p>
+                                                    <div className="text-right">
+                                                        <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
                                                         <Button
-                                                            variant="ghost" size="sm"
-                                                            className="text-destructive/40 hover:text-destructive hover:bg-destructive/5 h-auto p-0 text-[10px] font-bold uppercase tracking-widest mt-1"
+                                                            variant="link" size="sm"
+                                                            className="text-destructive hover:text-destructive/80 h-auto p-0 text-xs"
                                                             onClick={() => handleRemoveItem(item.id)}
                                                         >
-                                                            Remove
+                                                            <X className="h-3 w-3 mr-1" /> Remove
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -580,12 +579,18 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                                 </div>
                             );
                         })}
+                        {currentItems.length === 0 && (
+                            <div className="text-center text-muted-foreground py-10">
+                                <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                <p>No items in this selection.</p>
+                            </div>
+                        )}
                     </ScrollArea>
                 </div>
 
-                <DialogFooter className="px-6 py-4 border-t border-primary/10 flex flex-col sm:flex-row gap-3 bg-primary/5">
-                    <Button variant="ghost" className="w-full sm:w-auto text-primary" onClick={() => onOpenChange(false)}>Discard</Button>
-                    <Button className="w-full sm:w-auto bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 font-bold" onClick={handleSaveAndClose}><Check className="h-4 w-4 mr-2" />Apply Vibe Order</Button>
+                <DialogFooter className="px-4 sm:px-6 py-4 border-t flex flex-col sm:flex-row gap-3">
+                    <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button className="w-full sm:w-auto" onClick={handleSaveAndClose}><Save className="h-4 w-4 mr-2" />Save & Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -599,7 +604,7 @@ export default function VibeModePage() {
     const router = useRouter();
     const { toast } = useToast();
     const { isAdminLoggedIn, adminLoading } = useAdminAuth();
-    const orderId = params.id as string;
+    const orderIdFromUrl = params.id as string;
 
     const [order, setOrder] = useState<ApiOrder | null>(null);
     const [allCategories, setAllCategories] = useState<any[]>([]);
@@ -620,251 +625,503 @@ export default function VibeModePage() {
     const lastSavedDataRef = useRef<string>("");
     const isSavingRef = useRef(false);
 
-    const fetchData = useCallback(async () => {
+    const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
             const [orderRes, resCatRes, parCatRes] = await Promise.all([
-                getOrderByIdFromMySql(orderId),
+                getOrderByIdFromMySql(orderIdFromUrl),
                 getCategoriesFromMySql('restaurant'),
                 getCategoriesFromMySql('parlour')
             ]);
 
             const combinedCategories: any[] = [];
-            if (resCatRes.success && Array.isArray(resCatRes.data)) combinedCategories.push(...resCatRes.data);
-            if (parCatRes.success && Array.isArray(parCatRes.data)) combinedCategories.push(...parCatRes.data);
+            if (resCatRes.success && Array.isArray(resCatRes.data)) {
+                combinedCategories.push(...resCatRes.data);
+            }
+            if (parCatRes.success && Array.isArray(parCatRes.data)) {
+                combinedCategories.push(...parCatRes.data);
+            }
             setAllCategories(combinedCategories);
 
-            if (!orderRes.success) throw new Error(orderRes.message || 'Failed to fetch vibe data.');
-            const data = orderRes.data;
+            if (!orderRes.success) throw new Error(orderRes.message || 'Failed to fetch docs.');
+            const orderData = orderRes.data;
 
-            if (data) {
-                const formatted: ApiOrder = {
-                    id: String(data.id),
-                    orderId: String(data.orderId || data.id),
-                    orderDate: String(data.orderDate || data.createdAt || new Date().toISOString()),
-                    status: data.status as OrderStatus || "Pending",
-                    customer: data.customerData || data.customer,
-                    template: data.templateData || data.template,
-                    totalAmount: parseFloat(data.totalAmount || 0),
-                    items: (data.items || []).map((item: any, index: number): OrderItemDetail => ({
-                        id: String(item.id || `vibe-item-${Date.now()}-${index}`),
-                        name: String(item.name || 'New Vibe Item'),
+            if (orderData) {
+                const formattedOrder: ApiOrder = {
+                    id: String(orderData.id),
+                    orderId: String(orderData.orderId || orderData.id),
+                    orderDate: String(orderData.orderDate || orderData.createdAt || orderData.date || new Date().toISOString()),
+                    status: ALL_ORDER_STATUSES.includes(orderData.status as any) ? orderData.status as OrderStatus : "Pending",
+                    customer: orderData.customerData || orderData.customer,
+                    template: orderData.templateData || orderData.template,
+                    totalAmount: parseFloat(orderData.totalAmount || orderData.total || 0),
+                    items: (orderData.items || []).map((item: any, index: number): OrderItemDetail => ({
+                        id: String(item.id || `custom-item-${Date.now()}-${index}`),
+                        name: String(item.name || 'Untitled Item'),
                         quantity: Number(item.quantity || 1),
                         price: Number(item.price || 0),
-                        categoryId: String(item.categoryId || 'uncategorized'),
+                        categoryId: String(item.categoryId || item.category || 'uncategorized'),
                         categoryName: item.categoryName,
                         description: item.description || null,
                         subItems: Array.isArray(item.subItems) ? item.subItems : [],
                     })),
                 };
-                setOrder(formatted);
+                setOrder(formattedOrder);
                 setSaveStatus("saved");
+            } else {
+                setError(`Docs with ID ${orderIdFromUrl} not found.`);
             }
         } catch (e: any) {
-            setError(e.message || 'Failed to load vibe mode.');
+            setError(e.message || 'Failed to load docs details.');
         } finally {
             setIsLoading(false);
         }
-    }, [orderId]);
+    }, [orderIdFromUrl]);
 
     useEffect(() => {
-        if (!isAdminLoggedIn || !orderId) {
+        if (!isAdminLoggedIn || !orderIdFromUrl) {
             if (!adminLoading) setIsLoading(false);
             return;
         }
-        fetchData();
-    }, [orderId, isAdminLoggedIn, adminLoading, fetchData]);
+        fetchOrderAndCategoryDetails();
+    }, [orderIdFromUrl, isAdminLoggedIn, adminLoading, fetchOrderAndCategoryDetails]);
 
+    // Robust saving effect with debounce
     useEffect(() => {
         if (!order || saveStatus === "saved" || isSavingRef.current) return;
+
+        const currentDataString = JSON.stringify(order);
+        if (currentDataString === lastSavedDataRef.current) {
+            setSaveStatus("saved");
+            return;
+        }
 
         const timer = setTimeout(async () => {
             isSavingRef.current = true;
             setSaveStatus("saving");
+            
             try {
+                console.log("Auto-saving Vibe document:", order.orderId);
                 const result = await updateOrderInMySql(order);
-                if (!result.success) throw new Error("Save failed");
+                
+                if (!result.success) {
+                    throw new Error(result.message || "Failed to save document changes.");
+                }
+
                 lastSavedDataRef.current = JSON.stringify(order);
                 setSaveStatus("saved");
-            } catch (e) {
+                console.log("Vibe Auto-save successful.");
+            } catch (e: any) {
+                console.error("Save error:", e);
                 setSaveStatus("unsaved");
             } finally {
                 isSavingRef.current = false;
             }
-        }, 1500);
+        }, 1500); // 1.5s debounce for stability
+
         return () => clearTimeout(timer);
     }, [order, saveStatus]);
 
-    const handleOrderUpdate = useCallback((updated: ApiOrder) => {
-        setOrder(updated);
+    const handleOrderUpdate = useCallback((updatedOrder: ApiOrder) => {
+        setOrder(updatedOrder);
         setSaveStatus("unsaved");
     }, []);
+
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (saveStatus === 'unsaved' || saveStatus === 'saving') {
+                const message = "Changes you made may not be saved.";
+                event.returnValue = message;
+                return message;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [saveStatus]);
+
 
     const handleShare = (mode: 'viewer' | 'editor') => {
         if (!order) return;
         const path = mode === 'viewer' ? 'share' : 'editor';
         const shareUrl = `${window.location.origin}/${path}/${order.id}`;
-        navigator.clipboard.writeText(shareUrl);
-        toast({ title: "Link Copied", description: `${mode === 'viewer' ? 'Viewer' : 'Editor'} link copied to clipboard.` });
+
+        navigator.clipboard.writeText(shareUrl).then(() => {
+            toast({ title: "Link Copied", description: `${mode === 'viewer' ? 'Viewer' : 'Editor'} link copied.` });
+        }).catch(err => {
+            console.error('Failed to copy link: ', err);
+        });
     };
+
+    const handleDownloadDocx = async () => {
+        if (!order || !order.items) {
+            return;
+        }
+
+        try {
+            const menuItemsForDocx: MenuItem[] = order.items.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                category: item.categoryId,
+                description: item.description || undefined,
+                subItems: item.subItems?.map(si => ({ ...si, id: si.id || si.name, price: si.price || 0 })),
+            }));
+
+            const categoriesForDocx: Category[] = categoriesForRender.map(c => {
+                const fullCategory = allCategories.find(ac => String(ac.id) === c.id);
+                return {
+                    id: c.id,
+                    name: c.name,
+                    icon: fullCategory?.icon || '📁'
+                };
+            });
+
+            const blob = await generateMenuDocx(menuItemsForDocx, categoriesForDocx, order.customer?.restaurant || "Menu Selection");
+            saveAs(blob, `${order.customer?.restaurant || 'menu'}_${order.orderId}_vibe.docx`);
+
+        } catch (error) {
+            console.error("Failed to generate DOCX file:", error);
+        }
+    };
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     const categoriesForRender = useMemo(() => {
         if (!order?.items) return [];
+
         const categoryMap = new Map<string, { name: string, items: OrderItemDetail[] }>();
+
         order.items.forEach(item => {
             const catId = item.categoryId;
             if (!categoryMap.has(catId)) {
-                const fullCat = allCategories.find(c => String(c.id) === catId);
-                const name = decodeHtmlEntities(item.categoryName || fullCat?.name) || 'Unknown Vibe';
+                const fullCategory = allCategories.find(c => String(c.id) === catId);
+                const name = decodeHtmlEntities(item.categoryName || fullCategory?.name) || 'Uncategorized';
                 categoryMap.set(catId, { name, items: [] });
             }
         });
 
         let filteredItems = order.items;
+        const lowerCaseSearchTerm = debouncedSearch.toLowerCase();
+
         if (debouncedSearch) {
-            const term = debouncedSearch.toLowerCase();
             if (searchFilterType === 'items') {
-                filteredItems = order.items.filter(i => decodeHtmlEntities(i.name).toLowerCase().includes(term));
+                filteredItems = order.items.filter(item =>
+                    decodeHtmlEntities(item.name).toLowerCase().includes(lowerCaseSearchTerm)
+                );
             } else {
-                const matches = new Set<string>();
-                categoryMap.forEach((v, k) => { if (v.name.toLowerCase().includes(term)) matches.add(k); });
-                filteredItems = order.items.filter(i => matches.has(i.categoryId));
+                const matchingCategoryIds = new Set<string>();
+                for (const [id, data] of categoryMap.entries()) {
+                    if (data.name.toLowerCase().includes(lowerCaseSearchTerm)) {
+                        matchingCategoryIds.add(id);
+                    }
+                }
+                filteredItems = order.items.filter(item => matchingCategoryIds.has(item.categoryId));
             }
         }
 
-        filteredItems.forEach(i => categoryMap.get(i.categoryId)?.items.push(i));
+        filteredItems.forEach(item => {
+            const catData = categoryMap.get(item.categoryId);
+            if (catData) {
+                catData.items.push(item);
+            }
+        });
+
         const orderedCategoryIds = [...new Map(order.items.map(item => [item.categoryId, item])).keys()];
 
         return orderedCategoryIds
             .map(id => {
                 const data = categoryMap.get(id);
-                if (!data || data.items.length === 0) return null;
-                const fullCat = allCategories.find(c => String(c.id) === id);
-                return { id, name: data.name, items: data.items, icon: fullCat?.icon || '📁' };
-            }).filter(Boolean);
-    }, [order?.items, allCategories, debouncedSearch, searchFilterType]);
+                if (!data || data.items.length === 0) return null; // Only show categories that have matching items
+                const fullCategory = allCategories.find(c => String(c.id) === id);
+                return { id, name: data.name, items: data.items, icon: fullCategory?.icon || '📁' };
+            })
+            .filter(Boolean) as { id: string; name: string; items: OrderItemDetail[], icon: string }[];
 
-    useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
+    }, [order?.items, allCategories, searchTerm, searchFilterType]);
 
-    const handleCategoryNameChange = (id: string, name: string) => {
-        const newItems = order?.items?.map(i => i.categoryId === id ? { ...i, categoryName: name } : i);
-        if (order) handleOrderUpdate({ ...order, items: newItems });
+    const handleCategoryNameChange = (categoryId: string, newName: string) => {
+        if (!order) return;
+        const newItems = order.items?.map(item => item.categoryId === categoryId ? { ...item, categoryName: newName } : item);
+        handleOrderUpdate({ ...order, items: newItems });
     };
 
-    const handleAddItemToCategory = (catId: string) => { setAddingToCategoryId(catId); setEditingItem(null); setIsFormOpen(true); };
-    const handleEditItem = (item: any) => { setEditingItem(item); setAddingToCategoryId(null); setIsFormOpen(true); };
-    const handleRemoveItem = (id: string) => { handleOrderUpdate({ ...order!, items: order?.items?.filter(i => i.id !== id) }); };
-    
-    const handleFormSubmit = (data: any) => {
+    const handleRemoveItem = (itemId: string) => {
         if (!order) return;
+        const updatedItems = order.items?.filter(item => item.id !== itemId);
+        handleOrderUpdate({ ...order, items: updatedItems });
+    };
+
+    const handleAddCategory = () => {
+        if (!order) return;
+        const newCategoryId = `custom-cat-${Date.now()}`;
+        const newItem: OrderItemDetail = {
+            id: `custom-item-${Date.now()}`,
+            name: 'New Item',
+            price: 0,
+            quantity: 1,
+            categoryId: newCategoryId,
+            categoryName: 'New Category',
+            description: '',
+            subItems: []
+        };
+        const updatedItems = [...(order.items || []), newItem];
+        handleOrderUpdate({ ...order, items: updatedItems });
+    };
+
+    const handleRemoveCategory = (categoryId: string) => {
+        if (!order) return;
+        const updatedItems = order.items?.filter(item => item.categoryId !== categoryId);
+        handleOrderUpdate({ ...order, items: updatedItems });
+    };
+
+    const handleToggleSubItems = (itemId: string) => {
+        setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+    };
+
+    const handleOpenEditDialog = (item: OrderItemDetail) => {
+        setEditingItem(item);
+        setAddingToCategoryId(null);
+        setIsFormOpen(true);
+    };
+
+    const handleOpenAddDialog = (categoryId: string) => {
+        setEditingItem(null);
+        setAddingToCategoryId(categoryId);
+        setIsFormOpen(true);
+    };
+
+    const handleFormSubmit = (data: MenuItemFormValues) => {
+        if (!order) return;
+
         if (editingItem) {
-            const items = order.items?.map(i => i.id === editingItem.id ? { ...i, ...data } : i);
-            handleOrderUpdate({ ...order, items });
-        } else {
-            const cat = categoriesForRender.find(c => c.id === addingToCategoryId);
-            const item = { id: `vibe-item-${Date.now()}`, ...data, quantity: 1, categoryId: addingToCategoryId, categoryName: cat?.name };
-            handleOrderUpdate({ ...order, items: [...(order.items || []), item] });
+            const updatedItems = order.items?.map(item =>
+                item.id === editingItem.id ? { ...item, ...data } : item
+            );
+            handleOrderUpdate({ ...order, items: updatedItems });
+        } else if (addingToCategoryId) {
+            const category = categoriesForRender.find(c => c.id === addingToCategoryId);
+            const newItem: OrderItemDetail = {
+                id: `custom-item-${Date.now()}`,
+                ...data,
+                quantity: 1,
+                categoryId: addingToCategoryId,
+                categoryName: category?.name || 'New Category',
+            };
+            handleOrderUpdate({ ...order, items: [...(order.items || []), newItem] });
         }
         setIsFormOpen(false);
+        setEditingItem(null);
+        setAddingToCategoryId(null);
     };
 
-    if (adminLoading || isLoading) return <div className="bg-primary/5 min-h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 text-primary animate-spin" /></div>;
-    if (!isAdminLoggedIn) return <div className="flex flex-col items-center justify-center min-h-screen"><AdminLoginForm /></div>;
-    if (error || !order) return <div className="p-8 text-center text-destructive"><AlertTriangle className="h-12 w-12 mx-auto mb-4" /><p>{error || "Vibe not found"}</p><Button onClick={() => router.back()} className="mt-4">Go Back</Button></div>;
+
+    const formatDate = (dateString?: string): string => {
+        if (!dateString) return 'N/A';
+        try {
+            const date = parseISO(dateString);
+            return isValidDate(date) ? format(date, "MMM d, yyyy, h:mm a") : "Invalid Date";
+        } catch { return "Invalid Date"; }
+    };
+
+
+    if (adminLoading || isLoading) {
+        return (
+            <div className="bg-muted min-h-screen flex flex-col">
+                <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
+                    <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center gap-4">
+                            <Skeleton className="h-9 w-24" />
+                            <div className="space-y-1">
+                                <Skeleton className="h-5 w-48" />
+                                <Skeleton className="h-3 w-32" />
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="h-9 w-24" />
+                            <Skeleton className="h-9 w-24" />
+                        </div>
+                    </div>
+                </header>
+                <div className="flex-grow p-4 sm:p-6 lg:p-8">
+                    <main className="max-w-5xl mx-auto bg-card p-8 sm:p-12 shadow-lg rounded-lg border border-border/50">
+                        <div className="flex justify-between items-start border-b pb-8 mb-8">
+                            <div className="space-y-2">
+                                <Skeleton className="h-10 w-64" />
+                                <Skeleton className="h-6 w-48" />
+                            </div>
+                            <div className="space-y-2 text-right">
+                                <Skeleton className="h-5 w-56" />
+                            </div>
+                        </div>
+                        <div className="mt-10 mb-6">
+                            <Skeleton className="h-10 w-48" />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
+                        </div>
+                    </main>
+                </div>
+            </div>
+        )
+    }
+
+    if (!isAdminLoggedIn) return <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8"><AdminLoginForm /></div>;
+    if (error) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Vibe</h2><p className="text-muted-foreground max-w-md">{error}</p><Button variant="outline" onClick={() => router.back()} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go Back</Button></div>;
+    if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Vibe Order Not Found</h2><p className="text-muted-foreground max-w-md">The requested vibe document could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Documents History</Button></div>;
+
+    const SaveStatusIndicator = () => {
+        switch (saveStatus) {
+            case 'saving':
+                return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Saving...</div>;
+            case 'saved':
+                return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Check className="h-4 w-4" />Saved</div>;
+            case 'unsaved':
+                return <div className="flex items-center gap-2 text-sm text-yellow-600">Unsaved changes</div>;
+            default:
+                return null;
+        }
+    };
 
     return (
-        <div className="bg-[#fdfdfd] min-h-screen flex flex-col selection:bg-primary/10 selection:text-primary">
-            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-primary/5">
-                <div className="max-w-7xl mx-auto h-16 sm:h-20 flex items-center justify-between px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => router.back()} className="hover:bg-primary/5 text-primary">
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
-                        <div className="flex flex-col">
-                            <h1 className="text-lg font-black tracking-tight flex items-center gap-2 text-primary uppercase">
-                                <Sparkles className="h-4 w-4" /> Vibe MODE
-                            </h1>
-                            <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">
-                                {decodeHtmlEntities(order.customer?.restaurant)} • {order.orderId}
-                            </p>
+        <>
+            <div className="bg-muted min-h-screen flex flex-col">
+                <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
+                    <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <Button variant="outline" size="sm" onClick={() => router.back()}>
+                                <ArrowLeft className="h-4 w-4" />
+                                <span className="hidden sm:inline ml-2">Back</span>
+                            </Button>
+                            <div className="h-6 border-l border-border"></div>
+                            <div className="flex flex-col">
+                                <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                                    <Sparkles className="h-4 w-4 text-primary" /> Vibe Mode
+                                </h1>
+                                <p className="text-xs text-muted-foreground truncate max-w-[150px] sm:max-w-none">{decodeHtmlEntities(order.customer?.restaurant)}</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <SaveStatusIndicator />
+                            <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
+                                <FileArchive className="h-4 w-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Download</span>
+                            </Button>
+                            <Button variant="outline" size="sm" className="hidden sm:flex border-primary/20 text-primary hover:bg-primary/5" onClick={() => setIsPreviewOpen(true)}>
+                                <Shuffle className="h-4 w-4 mr-2" /> Shuffle
+                            </Button>
                         </div>
                     </div>
+                </header>
 
-                    <div className="flex items-center gap-2">
-                        {saveStatus === 'saving' && <Loader2 className="h-4 w-4 animate-spin text-primary/40 mr-2" />}
-                        <Button className="bg-primary text-white hover:bg-primary/90 font-black rounded-full shadow-lg shadow-primary/20 px-4 sm:px-8 h-10 sm:h-12 gap-2 text-xs sm:text-sm">
-                            <Palette className="h-4 w-4" /> Apply Styles
-                        </Button>
-                    </div>
+                <div className="flex-grow p-2 sm:p-6 lg:p-8">
+                    <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50">
+                        <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
+                            <div>
+                                <h2 className="text-2xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground leading-tight flex items-center gap-4">
+                                    {decodeHtmlEntities(order.customer?.restaurant)}
+                                    <Sparkles className="h-8 w-8 text-primary animate-pulse" />
+                                </h2>
+                                <p className="font-bold text-sm sm:text-lg text-muted-foreground mt-2 tracking-widest uppercase opacity-60">VIBE MODE ACTIVATED</p>
+                            </div>
+                            <div className="text-right text-muted-foreground text-[10px] sm:text-sm space-y-1 shrink-0">
+                                <p className="flex items-center justify-end gap-1 sm:gap-2"><CalendarDays className="h-3 w-3 sm:h-4 sm:w-4" />{formatDate(order.orderDate)}</p>
+                            </div>
+                        </div>
+
+                        <section>
+                            <div
+                                className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
+                                style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
+                            >
+                                Vibe Summary
+                            </div>
+                            
+                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12">
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-grow">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="search"
+                                            placeholder={`Search vibe ${searchFilterType}...`}
+                                            className="pl-10 w-full"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                    </div>
+                                    <Select value={searchFilterType} onValueChange={(value) => setSearchFilterType(value as 'items' | 'categories')}>
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Search by..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="items">Items</SelectItem>
+                                            <SelectItem value="categories">Categories</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div>
+                                {categoriesForRender.map((category) => (
+                                    <div key={category.id}>
+                                       <CategorySection
+                                            category={category}
+                                            onAddCategory={handleAddCategory}
+                                            onRemoveCategory={handleRemoveCategory}
+                                            onCategoryNameChange={handleCategoryNameChange}
+                                            onAddItemToCategory={handleOpenAddDialog}
+                                            onEditItem={handleOpenEditDialog}
+                                            onRemoveItem={handleRemoveItem}
+                                            onToggleSubItems={handleToggleSubItems}
+                                            expandedSubItems={expandedSubItems}
+                                       />
+                                    </div>
+                                ))}
+                                {categoriesForRender.length === 0 && (
+                                    <div className="text-center text-muted-foreground py-10">
+                                        <Search className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                        <p>No vibe matches found.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
+                                <Plus className="mr-2 h-4 w-4" />Add Section
+                            </Button>
+                        </section>
+                    </main>
                 </div>
-            </header>
-
-            <div className="flex-grow p-4 sm:p-8 lg:p-12">
-                <main className="max-w-4xl mx-auto bg-white p-6 sm:p-16 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] rounded-[3rem] border border-primary/5 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-orange-400 to-primary/20" />
-                    
-                    <div className="flex justify-between items-start border-b border-primary/10 pb-10 mb-10">
-                        <div>
-                            <h2 className="text-3xl sm:text-6xl font-black tracking-tighter uppercase text-primary leading-tight">
-                                {decodeHtmlEntities(order.customer?.restaurant)}
-                            </h2>
-                            <p className="font-bold text-xs sm:text-sm text-muted-foreground mt-4 tracking-[0.2em] uppercase opacity-40">Creative Vibe Blueprint</p>
-                        </div>
-                        <div className="text-right flex flex-col items-end gap-2">
-                            <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl">
-                                <Sparkles className="h-6 w-6 text-primary" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <section className="relative">
-                        <div className="sticky top-[80px] sm:top-[100px] z-30 bg-white/95 backdrop-blur-md py-6 mb-10 border-b border-primary/10 -mx-6 px-6 sm:-mx-16 sm:px-16 flex flex-col sm:flex-row gap-4 items-center">
-                            <div className="relative flex-grow w-full">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/30" />
-                                <Input
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                    placeholder={`Search vibe ${searchFilterType}...`}
-                                    className="pl-12 h-12 bg-primary/5 border-none rounded-2xl font-bold placeholder:text-primary/20"
-                                />
-                            </div>
-                            <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl border-primary/10 text-primary shrink-0" onClick={() => setIsPreviewOpen(true)}>
-                                <Shuffle className="h-5 w-5" />
-                            </Button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {categoriesForRender.map(category => (
-                                <CategorySection
-                                    key={category.id}
-                                    category={category}
-                                    onAddCategory={() => {}}
-                                    onRemoveCategory={() => {}}
-                                    onCategoryNameChange={handleCategoryNameChange}
-                                    onAddItemToCategory={handleAddItemToCategory}
-                                    onEditItem={handleEditItem}
-                                    onRemoveItem={handleRemoveItem}
-                                    onToggleSubItems={id => setExpandedSubItems(p => ({ ...p, [id]: !p[id] }))}
-                                    expandedSubItems={expandedSubItems}
-                                />
-                            ))}
-                        </div>
-
-                        <div className="mt-12 flex justify-center">
-                            <Button variant="ghost" className="rounded-full py-8 px-12 border-2 border-dashed border-primary/10 text-primary/40 hover:text-primary hover:border-primary/40 hover:bg-primary/5 font-black uppercase tracking-widest gap-2">
-                                <Plus className="h-5 w-5" /> Add New Vibe Section
-                            </Button>
-                        </div>
-                    </section>
-                </main>
             </div>
-
-            <MenuItemForm isOpen={isFormOpen} onOpenChange={setIsFormOpen} onSubmit={handleFormSubmit} initialData={editingItem} categoryName={editingItem ? '' : addingToCategoryId || ''} />
-            {order && <OrderPreviewDialog isOpen={isPreviewOpen} onOpenChange={setIsPreviewOpen} initialOrder={order} allCategories={allCategories} onSaveChanges={items => handleOrderUpdate({ ...order, items })} />}
-        </div>
-    );
+            <MenuItemForm
+                isOpen={isFormOpen}
+                onOpenChange={setIsFormOpen}
+                onSubmit={handleFormSubmit}
+                initialData={editingItem}
+                categoryName={
+                    editingItem
+                        ? categoriesForRender.find(c => c.id === editingItem.categoryId)?.name
+                        : categoriesForRender.find(c => c.id === addingToCategoryId)?.name
+                }
+            />
+            {order && (
+                <OrderPreviewDialog
+                    isOpen={isPreviewOpen}
+                    onOpenChange={setIsPreviewOpen}
+                    initialOrder={order}
+                    allCategories={allCategories}
+                    onSaveChanges={(newItems) => handleOrderUpdate({ ...order, items: newItems })}
+                />
+            )}
+        </>
+    )
 }
