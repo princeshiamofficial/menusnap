@@ -1582,13 +1582,6 @@ export default function VibeModePage() {
                     onSaveChanges={(items) => handleOrderUpdate({ ...order, items })}
                 />
             )}
-            <BulkEditDialog 
-                isOpen={isBulkEditOpen}
-                onOpenChange={setIsBulkEditOpen}
-                currentItems={order.items || []}
-                allCategories={allCategories}
-                onSave={handleBulkSave}
-            />
         </>
     )
 }
