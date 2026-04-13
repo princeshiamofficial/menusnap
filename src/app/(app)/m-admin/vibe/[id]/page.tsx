@@ -1070,14 +1070,7 @@ export default function VibeModePage() {
 
 
                         <section>
-                            <div
-                                className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
-                                style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
-                            >
-                                Vibe Summary
-                            </div>
-                            
-                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12">
+                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12">
                                 <div className="flex items-center gap-2">
                                     <div className="relative flex-grow">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1099,6 +1092,13 @@ export default function VibeModePage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            </div>
+
+                            <div
+                                className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
+                                style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
+                            >
+                                Vibe Summary
                             </div>
 
                             <div>
