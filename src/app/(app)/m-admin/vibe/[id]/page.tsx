@@ -207,6 +207,7 @@ const CategorySection = memo(({
     onCategoryNameChange, 
     onAddItemToCategory, 
     onEditItem, 
+    onUpdateItem,
     onRemoveItem, 
     onToggleSubItems,
     expandedSubItems 
@@ -217,6 +218,7 @@ const CategorySection = memo(({
     onCategoryNameChange: (id: string, name: string) => void;
     onAddItemToCategory: (id: string) => void;
     onEditItem: (item: any) => void;
+    onUpdateItem: (itemId: string, updates: Partial<OrderItemDetail>) => void;
     onRemoveItem: (id: string) => void;
     onToggleSubItems: (id: string) => void;
     expandedSubItems: Record<string, boolean>;
@@ -249,26 +251,70 @@ const CategorySection = memo(({
                             transition={{ duration: 0.2 }}
                             className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
                         >
-                            <div className="flex items-start gap-3">
-                                <div className="flex-grow">
+                            <div className="flex items-start gap-4">
+                                <div className="flex-grow min-w-0">
                                     <div className="flex justify-between items-start gap-4">
-                                        <p className="font-bold text-foreground">{decodeHtmlEntities(item.name)}</p>
-                                        <p className="font-bold text-foreground text-right">৳{item.price.toLocaleString()}</p>
+                                        <EditableField
+                                            value={decodeHtmlEntities(item.name)}
+                                            onSave={(val) => onUpdateItem(item.id, { name: val })}
+                                            placeholder="Item Name"
+                                            className="font-bold text-foreground flex-grow"
+                                            inputClassName="font-bold"
+                                        />
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <span className="text-foreground font-bold">৳</span>
+                                            <EditableField
+                                                value={item.price}
+                                                onSave={(val) => onUpdateItem(item.id, { price: parseFloat(val) })}
+                                                placeholder="0"
+                                                className="font-bold text-foreground min-w-[40px] text-right"
+                                                inputClassName="font-bold text-right w-20"
+                                            />
+                                        </div>
                                     </div>
-                                    {item.description && <p className="text-sm text-muted-foreground mt-1">{decodeHtmlEntities(item.description)}</p>}
+                                    <EditableField
+                                        value={decodeHtmlEntities(item.description)}
+                                        onSave={(val) => onUpdateItem(item.id, { description: val })}
+                                        placeholder="Add a description..."
+                                        multiline
+                                        className="text-sm text-muted-foreground mt-1"
+                                        inputClassName="text-sm"
+                                    />
 
                                     {item.subItems && item.subItems.length > 0 && (
                                         <>
-                                            <Button variant="link" size="sm" onClick={() => onToggleSubItems(item.id)} className="text-xs h-auto p-1 text-primary -ml-1 mt-2">
+                                            <Button variant="link" size="sm" onClick={() => onToggleSubItems(item.id)} className="text-xs h-auto p-0 text-primary mt-2">
                                                 {expandedSubItems[item.id] ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                                                Variations
+                                                Variations ({item.subItems.length})
                                             </Button>
                                             {expandedSubItems[item.id] && (
-                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-3">
+                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-4">
                                                     {item.subItems?.map((subItem: any, index: number) => (
-                                                        <div key={subItem.id || index} className="flex justify-between items-center text-sm">
-                                                            <p className="text-muted-foreground">- {decodeHtmlEntities(subItem.name)}</p>
-                                                            <p className="text-muted-foreground">৳{subItem.price?.toLocaleString()}</p>
+                                                        <div key={subItem.id || index} className="flex justify-between items-center text-sm group/subitem">
+                                                            <EditableField
+                                                                value={decodeHtmlEntities(subItem.name)}
+                                                                onSave={(val) => {
+                                                                    const newSubItems = [...item.subItems];
+                                                                    newSubItems[index] = { ...newSubItems[index], name: val };
+                                                                    onUpdateItem(item.id, { subItems: newSubItems });
+                                                                }}
+                                                                placeholder="Variation Name"
+                                                                className="text-muted-foreground flex-grow"
+                                                            />
+                                                            <div className="flex items-center gap-1 shrink-0 ml-4">
+                                                                <span className="text-muted-foreground">৳</span>
+                                                                <EditableField
+                                                                    value={subItem.price}
+                                                                    onSave={(val) => {
+                                                                        const newSubItems = [...item.subItems];
+                                                                        newSubItems[index] = { ...newSubItems[index], price: parseFloat(val) };
+                                                                        onUpdateItem(item.id, { subItems: newSubItems });
+                                                                    }}
+                                                                    placeholder="0"
+                                                                    className="text-muted-foreground min-w-[30px] text-right"
+                                                                    inputClassName="text-right w-16"
+                                                                />
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -276,8 +322,8 @@ const CategorySection = memo(({
                                         </>
                                     )}
                                 </div>
-                                <div className="flex flex-col gap-1 shrink-0">
-                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4" /></Button>
+                                <div className="flex flex-col gap-1 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit2 className="h-4 w-4" /></Button>
                                     <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
                                 </div>
                             </div>
@@ -855,6 +901,14 @@ export default function VibeModePage() {
         handleOrderUpdate({ ...order, items: newItems });
     };
 
+    const handleUpdateItem = (itemId: string, updates: Partial<OrderItemDetail>) => {
+        if (!order) return;
+        const updatedItems = order.items?.map(item =>
+            item.id === itemId ? { ...item, ...updates } : item
+        );
+        handleOrderUpdate({ ...order, items: updatedItems });
+    };
+
     const handleRemoveItem = (itemId: string) => {
         if (!order) return;
         const updatedItems = order.items?.filter(item => item.id !== itemId);
@@ -1107,6 +1161,7 @@ export default function VibeModePage() {
                                             onCategoryNameChange={handleCategoryNameChange}
                                             onAddItemToCategory={handleOpenAddDialog}
                                             onEditItem={handleOpenEditDialog}
+                                            onUpdateItem={handleUpdateItem}
                                             onRemoveItem={handleRemoveItem}
                                             onToggleSubItems={handleToggleSubItems}
                                             expandedSubItems={expandedSubItems}
