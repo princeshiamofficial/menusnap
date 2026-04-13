@@ -1065,7 +1065,7 @@ export default function VibeModePage() {
                     </div>
                 </header>
 
-                <div className="flex-grow p-2 sm:p-6 lg:p-8">
+                <div className="flex-grow px-2 pb-2 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
                     <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50">
 
 
