@@ -1086,21 +1086,7 @@ export default function OrderDetailsPage() {
 
                 <div className="flex-grow p-2 sm:p-6 lg:p-8">
                     <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50">
-                        <div className="flex justify-between items-start border-b pb-8 mb-4 border-border">
-                            <div>
-                                <EditableField
-                                    value={order.customer?.restaurant}
-                                    onSave={(val) => handleOrderUpdate({ ...order, customer: { ...order.customer, restaurant: val } })}
-                                    placeholder="Business Name"
-                                    className="text-2xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground leading-tight"
-                                    inputClassName="text-2xl sm:text-5xl font-extrabold tracking-tight uppercase"
-                                />
-                                <p className="font-bold text-sm sm:text-lg text-muted-foreground mt-2">Doc ID: {order.orderId}</p>
-                            </div>
-                            <div className="text-right text-muted-foreground text-[10px] sm:text-sm space-y-1 shrink-0">
-                                <p className="flex items-center justify-end gap-1 sm:gap-2"><CalendarDays className="h-3 w-3 sm:h-4 sm:w-4" />{formatDate(order.orderDate)}</p>
-                            </div>
-                        </div>
+
 
                         <section>
                             <div
