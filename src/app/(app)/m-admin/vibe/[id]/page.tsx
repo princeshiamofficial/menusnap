@@ -723,6 +723,156 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
     );
 }
 
+// --- Bulk Edit Dialog ---
+interface BulkEditDialogProps {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    currentItems: OrderItemDetail[];
+    allCategories: any[];
+    onSave: (newItems: OrderItemDetail[]) => void;
+}
+
+function BulkEditDialog({ isOpen, onOpenChange, currentItems, allCategories, onSave }: BulkEditDialogProps) {
+    const [text, setText] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            // Generate text from items
+            let bulkText = "";
+            const categoryMap = new Map<string, OrderItemDetail[]>();
+            
+            currentItems.forEach(item => {
+                const catName = item.categoryName || "Uncategorized";
+                if (!categoryMap.has(catName)) categoryMap.set(catName, []);
+                categoryMap.get(catName)!.push(item);
+            });
+
+            categoryMap.forEach((items, catName) => {
+                bulkText += `# ${catName}\n`;
+                items.forEach(item => {
+                    bulkText += `${decodeHtmlEntities(item.name)}${item.price ? ` - ${item.price}` : ''}\n`;
+                    if (item.description) {
+                        bulkText += `${decodeHtmlEntities(item.description)}\n`;
+                    }
+                    if (item.subItems && item.subItems.length > 0) {
+                        item.subItems.forEach(si => {
+                            bulkText += `- ${decodeHtmlEntities(si.name)}${si.price ? ` - ${si.price}` : ''}\n`;
+                        });
+                    }
+                    bulkText += "\n";
+                });
+                bulkText += "\n";
+            });
+            setText(bulkText.trim());
+        }
+    }, [isOpen, currentItems]);
+
+    const handleApply = () => {
+        const lines = text.split('\n');
+        const newItems: OrderItemDetail[] = [];
+        let currentCategoryName = "Uncategorized";
+        let currentItem: OrderItemDetail | null = null;
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            // Category
+            if (trimmed.startsWith('#')) {
+                currentCategoryName = trimmed.replace(/^#\s*/, '').trim();
+                currentItem = null;
+                return;
+            }
+
+            // Sub-item
+            if (trimmed.startsWith('-')) {
+                if (!currentItem) return;
+                const subContent = trimmed.replace(/^- \s*/, '').trim();
+                const priceMatch = subContent.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
+                let siName = subContent;
+                let siPrice = 0;
+                if (priceMatch) {
+                    siName = priceMatch[1].trim();
+                    siPrice = parseFloat(priceMatch[2]);
+                }
+                currentItem.subItems = [...(currentItem.subItems || []), {
+                    id: `si-${Date.now()}-${Math.random()}`,
+                    name: siName,
+                    price: siPrice
+                }];
+                return;
+            }
+
+            // Item or Description
+            const priceMatch = trimmed.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
+            if (priceMatch && !trimmed.includes('\n')) {
+                // It's a new item
+                const itemName = priceMatch[1].trim();
+                const itemPrice = parseFloat(priceMatch[2]);
+                
+                currentItem = {
+                    id: `item-${Date.now()}-${Math.random()}`,
+                    name: itemName,
+                    price: itemPrice,
+                    quantity: 1,
+                    categoryId: `cat-${currentCategoryName.toLowerCase().replace(/\s+/g, '-')}`,
+                    categoryName: currentCategoryName,
+                    description: '',
+                    subItems: []
+                };
+                newItems.push(currentItem);
+            } else if (currentItem) {
+                // It's a description for the current item
+                currentItem.description = currentItem.description 
+                    ? `${currentItem.description}\n${trimmed}`
+                    : trimmed;
+            }
+        });
+
+        onSave(newItems);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+                <DialogHeader className="px-6 py-4 border-b">
+                    <DialogTitle className="text-2xl flex items-center gap-2">
+                        <PenSquare className="h-6 w-6 text-primary" /> Magic Bulk Editor
+                    </DialogTitle>
+                    <DialogDescription>
+                        Edit your entire menu vibes as simple text. Magic!
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 overflow-hidden p-6 bg-muted/30">
+                    <div className="h-full flex flex-col gap-4">
+                        <div className="bg-card border rounded-lg p-3 text-[10px] text-muted-foreground grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div><span className="font-bold text-foreground"># Category</span> for headers</div>
+                            <div><span className="font-bold text-foreground">Item - Price</span> for main items</div>
+                            <div><span className="font-bold text-foreground">Description</span> on next line</div>
+                            <div><span className="font-bold text-foreground">- Variation - Price</span> for sizes</div>
+                        </div>
+                        <Textarea 
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="# DRINKS\nCoke - 30\nChilled\n- Small - 25\n- Large - 50"
+                            className="flex-1 font-mono text-sm p-4 leading-relaxed resize-none focus-visible:ring-1 border-2"
+                        />
+                    </div>
+                </div>
+                <DialogFooter className="px-6 py-4 border-t bg-card">
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleApply} className="gap-2">
+                        <Sparkles className="h-4 w-4" /> Apply Magic
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+// --- End Bulk Editor ---
+
 type SaveStatus = "unsaved" | "saving" | "saved";
 
 export default function VibeModePage() {
@@ -744,12 +894,18 @@ export default function VibeModePage() {
     const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
 
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
 
     const lastSavedDataRef = useRef<string>("");
     const isSavingRef = useRef(false);
+
+    const handleBulkSave = (newItems: OrderItemDetail[]) => {
+        if (!order) return;
+        handleOrderUpdate({ ...order, items: newItems });
+    };
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -1206,14 +1362,20 @@ export default function VibeModePage() {
                         <section>
                             <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-6 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12 shadow-sm">
                                 <div className="flex items-center justify-center gap-3">
-
-
                                     {/* Action Group */}
                                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto no-scrollbar">
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            onClick={() => setIsBulkEditOpen(true)} 
+                                            className="h-10 gap-2 whitespace-nowrap bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 transition-all font-bold"
+                                        >
+                                            <FileText className="h-4 w-4" /> Bulk Vibe
+                                        </Button>
+                                        <div className="h-8 w-px bg-border hidden sm:block mx-1"></div>
                                         <Button variant="outline" size="sm" onClick={handleAddCategory} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
                                             <Plus className="h-4 w-4" /> Add Category
                                         </Button>
-                                        <div className="h-8 w-px bg-border hidden sm:block mx-1"></div>
                                         <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
                                             <Shuffle className="h-4 w-4" /> Shuffle
                                         </Button>
@@ -1280,9 +1442,16 @@ export default function VibeModePage() {
                     onOpenChange={setIsPreviewOpen}
                     initialOrder={order}
                     allCategories={allCategories}
-                    onSaveChanges={(newItems) => handleOrderUpdate({ ...order, items: newItems })}
+                    onSaveChanges={(items) => handleOrderUpdate({ ...order, items })}
                 />
             )}
+            <BulkEditDialog 
+                isOpen={isBulkEditOpen}
+                onOpenChange={setIsBulkEditOpen}
+                currentItems={order.items || []}
+                allCategories={allCategories}
+                onSave={handleBulkSave}
+            />
         </>
     )
 }
