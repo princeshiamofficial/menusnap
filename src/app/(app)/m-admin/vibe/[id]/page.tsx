@@ -1030,7 +1030,6 @@ export default function VibeModePage() {
                             <div>
                                 <h2 className="text-2xl sm:text-5xl font-extrabold tracking-tight uppercase text-foreground leading-tight flex items-center gap-4">
                                     {decodeHtmlEntities(order.customer?.restaurant)}
-                                    <Sparkles className="h-8 w-8 text-primary animate-pulse" />
                                 </h2>
                                 <p className="font-bold text-sm sm:text-lg text-muted-foreground mt-2 tracking-widest uppercase opacity-60">VIBE MODE ACTIVATED</p>
                             </div>
