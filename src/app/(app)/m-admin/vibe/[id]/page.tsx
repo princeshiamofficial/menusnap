@@ -1017,9 +1017,31 @@ export default function VibeModePage() {
                                 <FileArchive className="h-4 w-4 sm:mr-2" />
                                 <span className="hidden sm:inline">Download</span>
                             </Button>
-                            <Button variant="outline" size="sm" className="hidden sm:flex border-primary/20 text-primary hover:bg-primary/5" onClick={() => setIsPreviewOpen(true)}>
-                                <Shuffle className="h-4 w-4 mr-2" /> Shuffle
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="px-2 sm:px-3">
+                                        <MoreHorizontal className="h-4 w-4 sm:mr-2" />
+                                        <span className="hidden sm:inline">Actions</span>
+                                        <ChevronDown className="h-4 w-4 ml-1 -mr-1 hidden sm:inline-flex" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuItem onSelect={() => {
+                                        setTimeout(() => setIsPreviewOpen(true), 100);
+                                    }}>
+                                        <Shuffle className="mr-2 h-4 w-4" />
+                                        Shuffle Menu
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleShare('viewer')}>
+                                        <Users className="mr-2 h-4 w-4" />
+                                        Share with viewer
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleShare('editor')}>
+                                        <PenSquare className="mr-2 h-4 w-4" />
+                                        Share with editor
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
                 </header>
