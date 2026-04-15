@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   verification: {
-    google: '0MSR9xuP1-dRqWn74VvBsj1A74QY64nmL819tUlLlic',
+    google: '0MSR9xuP1-dRqWn74VvBsj1A74QY64nmL8l9tUlLlic',
   },
 };
 
