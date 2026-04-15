@@ -13,6 +13,7 @@ interface HeaderProps {
     docId?: string
     onlineUsers?: any[]
     isConnected?: boolean
+    customActions?: React.ReactNode
 }
 
 export default function Header({ 
@@ -22,7 +23,8 @@ export default function Header({
     readOnly = false, 
     docId, 
     onlineUsers = [],
-    isConnected = false
+    isConnected = false,
+    customActions
 }: HeaderProps) {
     const [isStarred, setIsStarred] = useState(false)
     const [showShareMenu, setShowShareMenu] = useState(false)
@@ -128,6 +130,7 @@ export default function Header({
 
                 {/* Share button with dropdown */}
                 <div className="flex items-center gap-3">
+                    {customActions}
                     {/* Presence Icons - Only shown on edit pages */}
                         <div className="flex -space-x-3 mr-4">
                             {onlineUsers.map((u, i) => (

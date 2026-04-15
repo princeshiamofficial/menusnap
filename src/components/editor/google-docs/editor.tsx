@@ -22,23 +22,9 @@ import { Plugin, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { Extension, Node, mergeAttributes } from '@tiptap/core'
 import { io, Socket } from 'socket.io-client'
+import { getRandomColor, getGuestName } from './editor-utils'
 
-// Random color for presence
-export function getRandomColor() {
-    const colors = ['#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
-    return colors[Math.floor(Math.random() * colors.length)]
-}
 
-// Random guest name
-export function getGuestName() {
-    const adjectives = ['Swift', 'Bright', 'Calm', 'Bold', 'Wise', 'Kind']
-    const nouns = ['Editor', 'Writer', 'Author', 'Scribe', 'Coder', 'Creator']
-    return `${adjectives[Math.floor(Math.random() * adjectives.length)]} ${nouns[Math.floor(Math.random() * nouns.length)]}`
-}
-
-// ... (TabNode, FontSize, TextCase remain the same)
-// I'll skip re-writing them in this replacement block for brevity if the tool allows, 
-// but I must ensure they stay. I'll include them to be safe.
 
 export const TabNode = Node.create({
     name: 'tabNode',
@@ -321,6 +307,7 @@ interface EditorProps {
     docId?: string;
     socket?: Socket | null;
     onlineUsers?: any[];
+    onUpdateText?: (text: string) => void;
 }
 
 export default function GoogleDocsEditor(props: EditorProps) {
@@ -338,7 +325,8 @@ function GoogleDocsEditorInner({
     tabStops = [], 
     docId,
     socket,
-    onlineUsers
+    onlineUsers,
+    onUpdateText
 }: EditorProps & { socket: Socket | null, onlineUsers: any[] }) {
     const isRemoteUpdate = useRef(false)
 
@@ -504,6 +492,7 @@ function GoogleDocsEditorInner({
         onUpdate: ({ editor }) => {
             const html = editor.getHTML()
             onChange(html)
+            if (onUpdateText) onUpdateText(editor.getText())
             if (!isRemoteUpdate.current && socket && docId) {
                 socket.emit('content-change', { docId, content: html })
             }

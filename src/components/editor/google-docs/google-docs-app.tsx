@@ -10,7 +10,7 @@ import FindReplaceDialog from './find-replace-dialog'
 import { Editor } from '@tiptap/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { io, Socket } from 'socket.io-client'
-import { getRandomColor, getGuestName } from './editor'
+import { getRandomColor, getGuestName } from './editor-utils'
 
 // Dynamically import editor with no SSR to avoid hydrations issues
 const EditorComponent = dynamic(() => import('./editor'), {
@@ -42,6 +42,10 @@ export default function GoogleDocsApp({
   docId,
   showWatermark = false,
   customPaperHeader,
+  isVibeMode = false,
+  customActions,
+  onUpdateText,
+  onTitleChange,
 }: {
   initialTitle?: string;
   initialContent?: string;
@@ -51,6 +55,10 @@ export default function GoogleDocsApp({
   docId?: string;
   showWatermark?: boolean;
   customPaperHeader?: React.ReactNode;
+  isVibeMode?: boolean;
+  customActions?: React.ReactNode;
+  onUpdateText?: (text: string) => void;
+  onTitleChange?: (title: string) => void;
 }) {
   const [title, setTitle] = useState(initialTitle)
   const [content, setContent] = useState(initialContent)
@@ -150,7 +158,8 @@ export default function GoogleDocsApp({
   const handleTitleChange = useCallback((newTitle: string) => {
     setTitle(newTitle)
     document.title = `${newTitle} - Magic Docs`
-  }, [])
+    if (onTitleChange) onTitleChange(newTitle)
+  }, [onUpdateText, onTitleChange])
 
   return (
     <div
@@ -171,10 +180,11 @@ export default function GoogleDocsApp({
             docId={docId}
             onlineUsers={onlineUsers}
             isConnected={isConnected}
+            customActions={customActions}
           />
           {!readOnly && (
             <div className="flex flex-col">
-              <Toolbar editor={editor} title={title} />
+              <Toolbar editor={editor} title={title} isVibeMode={isVibeMode} />
               <Ruler onMarginsChange={setMargins} />
             </div>
           )}
@@ -194,6 +204,7 @@ export default function GoogleDocsApp({
             docId={docId}
             socket={socket}
             onlineUsers={onlineUsers}
+            onUpdateText={onUpdateText}
           />
         </div>
       </main>
@@ -222,7 +233,7 @@ export default function GoogleDocsApp({
         )}
       </AnimatePresence>
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         /* Global typography and editor specific styles */
         .search-result {
           background-color: #ceead6;
@@ -265,7 +276,6 @@ export default function GoogleDocsApp({
           }
           
           /* Responsive Name-Price Alignment */
-          /* Only apply flex if the paragraph contains a tab node (used as a spacer/separator) */
           .ProseMirror p:has(span[data-type="tab"]) {
             display: flex;
             flex-wrap: nowrap;
@@ -385,7 +395,7 @@ export default function GoogleDocsApp({
           .shadow-md { box-shadow: none !important; }
           .border { border: none !important; }
         }
-      `}</style>
+      ` }} />
     </div>
   )
 }

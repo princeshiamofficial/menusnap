@@ -6,7 +6,8 @@ import {
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
     Link as LinkIcon, Image as ImageIcon, Code, Highlighter,
     ChevronDown, Minus, Plus, Quote, CheckSquare, RemoveFormatting, Download,
-    Baseline, CaseSensitive, Palette, ArrowUpDown as LineHeightIcon
+    Baseline, CaseSensitive, Palette, ArrowUpDown as LineHeightIcon,
+    PlusCircle, ListIcon, FileText as FileTextIcon, Layers
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,6 +22,7 @@ import { saveAs } from 'file-saver'
 interface ToolbarProps {
     editor: Editor | null
     title?: string
+    isVibeMode?: boolean
 }
 
 const FONTS = [
@@ -70,7 +72,7 @@ const LINE_HEIGHTS = [
     { label: 'Double', value: '2.0' },
 ]
 
-export default function Toolbar({ editor, title }: ToolbarProps) {
+export default function Toolbar({ editor, title, isVibeMode = false }: ToolbarProps) {
     const [fontSize, setFontSize] = useState(11)
 
     // Auto-detect font size on selection change
@@ -176,6 +178,34 @@ export default function Toolbar({ editor, title }: ToolbarProps) {
                     tooltip="Download as Word (.docx)"
                 />
             </div>
+
+            {isVibeMode && (
+                <>
+                    <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
+                    <div className="flex items-center gap-0.5 ml-1 mr-1">
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().insertContent('<h1>CATEGORY</h1>\n').run()}
+                            icon={<Layers className="w-4 h-4" />}
+                            tooltip="Add Category (#)"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().insertContent('Item Name - 100\n').run()}
+                            icon={<PlusCircle className="w-4 h-4" />}
+                            tooltip="Add Item"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().insertContent('Description goes here...\n').run()}
+                            icon={<FileTextIcon className="w-4 h-4" />}
+                            tooltip="Add Description"
+                        />
+                        <ToolbarButton
+                            onClick={() => editor.chain().focus().insertContent('- Variation - 50\n').run()}
+                            icon={<ListIcon className="w-4 h-4" />}
+                            tooltip="Add Sub-item (-)"
+                        />
+                    </div>
+                </>
+            )}
 
             <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
 

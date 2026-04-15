@@ -21,30 +21,22 @@ import {
     FileText as FileTextIcon,
     AlertTriangle,
     Share2,
-    Edit3,
     Save,
-    Plus,
     X,
     PlusCircle,
-    Undo2,
     GripVertical,
     ChevronDown,
-    ChevronRight,
     ChevronLeft,
-    Edit,
     FileArchive,
-    Eye,
     Shuffle,
     ShoppingCart,
     FileText,
-    Search,
     Users,
     PenSquare,
     Loader2,
     Check,
     MoreHorizontal,
-    Sparkles,
-    Image as ImageIcon
+    Eye,
 } from 'lucide-react';
 import { format, parseISO, isValid as isValidDate } from 'date-fns';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
@@ -59,20 +51,12 @@ import {
     DialogFooter,
     DialogClose,
 } from "@/components/ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { generateMenuDocx } from '@/lib/docx-generator';
 import { saveAs } from 'file-saver';
+import dynamic from 'next/dynamic';
+
 import { 
     getOrderByIdFromMySql, 
     getCategoriesFromMySql, 
@@ -81,6 +65,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { MenuItem, Category } from '@/components/menu/menu-preview-dialog';
 import Image from 'next/image';
+
+const GoogleDocsApp = dynamic(() => import("@/components/editor/google-docs/google-docs-app"), {
+    ssr: false,
+    loading: () => <div className="h-screen w-full bg-[#f8f9fa] flex items-center justify-center animate-pulse text-gray-500 font-medium font-sans text-xl">Loading Vibe Editor...</div>
+});
 
 
 type OrderStatus = "Pending" | "Processing" | "In Progress" | "Shipped" | "Delivered" | "Cancelled" | "Refunded" | "On Hold" | "Out for Delivery";
@@ -131,283 +120,10 @@ interface ApiOrder {
     items?: OrderItemDetail[];
 }
 
-const EditableField = memo(({ value, onSave, placeholder = "Click to edit", multiline = false, className = '', inputClassName = '' }: { value?: string | number | null, onSave: (newValue: string) => void, placeholder?: string, multiline?: boolean, className?: string, inputClassName?: string }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [currentValue, setCurrentValue] = useState(String(value || ''));
-    const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
-    useEffect(() => {
-        setCurrentValue(String(value || ''));
-    }, [value]);
-
-    useEffect(() => {
-        if (isEditing) {
-            inputRef.current?.focus();
-            inputRef.current?.select();
-        }
-    }, [isEditing]);
-
-    const handleSave = () => {
-        if (String(value || '') !== currentValue) {
-            onSave(currentValue);
-        }
-        setIsEditing(false);
-    };
-
-    const handleKeyDown = (e: any) => {
-        if (e.key === 'Enter' && !multiline) {
-            handleSave();
-            e.preventDefault();
-        } else if (e.key === 'Escape') {
-            setCurrentValue(String(value || ''));
-            setIsEditing(false);
-        }
-    };
-
-    if (isEditing) {
-        const commonProps = {
-            ref: inputRef as any,
-            value: currentValue,
-            onChange: (e: React.ChangeEvent<any>) => setCurrentValue(e.target.value),
-            onBlur: handleSave,
-            onKeyDown: handleKeyDown,
-            className: cn(
-                "bg-yellow-100/50 dark:bg-yellow-900/50 border-primary ring-primary focus-visible:ring-primary p-1 -m-1 rounded-md transition-all",
-                inputClassName
-            ),
-        };
-
-        return multiline ? (
-            <Textarea {...commonProps} rows={2} />
-        ) : (
-            <Input {...commonProps} type={typeof value === 'number' ? 'number' : 'text'} />
-        );
-    }
-
-    return (
-        <div
-            onClick={() => setIsEditing(true)}
-            className={cn("hover:bg-primary/10 p-1 -m-1 rounded-md cursor-pointer group relative min-h-[24px]", className)}
-            role="button"
-            tabIndex={0}
-            onFocus={() => setIsEditing(true)}
-        >
-            {value || <span className="text-muted-foreground italic">{placeholder}</span>}
-            <Edit3 className="h-3 w-3 text-muted-foreground absolute top-1/2 -translate-y-1/2 right-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
-    );
-});
-// --- All-In-One Item Editor ---
-const AllInOneItemEditor = memo(({ 
-    item 
-}: { 
-    item: OrderItemDetail; 
-}) => {
-    return (
-        <div className="flex-grow min-w-0 p-1 -m-1">
-            <div className="flex justify-between items-start gap-4">
-                <p className="font-bold text-foreground line-clamp-2">{decodeHtmlEntities(item.name)}</p>
-                <p className="font-bold text-foreground text-right shrink-0">৳{item.price.toLocaleString()}</p>
-            </div>
-            {item.description && (
-                <p className="text-sm text-muted-foreground mt-1 line-clamp-3 italic">
-                    {decodeHtmlEntities(item.description)}
-                </p>
-            )}
-        </div>
-    );
-});
-AllInOneItemEditor.displayName = "AllInOneItemEditor";;
-AllInOneItemEditor.displayName = "AllInOneItemEditor";
-
-EditableField.displayName = "EditableField";
-
-// --- Memoized Category Section ---
-const CategorySection = memo(({ 
-    category, 
-    onToggleSubItems,
-    expandedSubItems 
-}: { 
-    category: any;
-    onToggleSubItems: (id: string) => void;
-    expandedSubItems: Record<string, boolean>;
-}) => {
-    return (
-        <div className="mb-8 group/category">
-            <div className="flex items-center gap-2 mb-4 border-b-2 border-primary/20 pb-2">
-                <span className="text-xl mr-2 text-primary">{category.icon}</span>
-                <h3 className="text-xl font-semibold text-primary">{decodeHtmlEntities(category.name)}</h3>
-                <Badge variant="secondary" className="ml-1">{category.items.length}</Badge>
-            </div>
-
-            <div className="space-y-3">
-                <AnimatePresence mode="popLayout">
-                    {category.items.map((item: any) => (
-                        <motion.div
-                            key={item.id}
-                            layout
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                            transition={{ duration: 0.2 }}
-                            className="bg-card border p-3 rounded-lg shadow-sm hover:border-primary/50 group/item relative"
-                        >
-                            <div className="flex items-start gap-4">
-                                <div className="flex-grow min-w-0">
-                                    <AllInOneItemEditor item={item} />
-
-                                    {item.subItems && item.subItems.length > 0 && (
-                                        <>
-                                            <Button variant="link" size="sm" onClick={() => onToggleSubItems(item.id)} className="text-xs h-auto p-0 text-primary mt-2">
-                                                {expandedSubItems[item.id] ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                                                Variations ({item.subItems.length})
-                                            </Button>
-                                            {expandedSubItems[item.id] && (
-                                                <div className="mt-2 space-y-2 border-l-2 border-muted/50 pl-4">
-                                                    {item.subItems?.map((subItem: any, index: number) => (
-                                                        <div key={subItem.id || index} className="flex justify-between items-center text-sm group/subitem">
-                                                            <div className="flex-grow min-w-0">
-                                                                <p className="text-muted-foreground">{decodeHtmlEntities(subItem.name)}</p>
-                                                            </div>
-                                                            <div className="flex items-center gap-1 shrink-0 ml-4">
-                                                                <span className="text-muted-foreground">৳</span>
-                                                                <span className="text-muted-foreground">{subItem.price}</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
-        </div>
-    );
-});;
-CategorySection.displayName = "CategorySection";
 
 // --- Add/Edit Item Form ---
-const menuItemFormSchema = z.object({
-    name: z.string().min(1, "Item name is required"),
-    price: z.coerce.number().min(0, "Price must be non-negative"),
-    description: z.string().optional().nullable(),
-    subItems: z.array(
-        z.object({
-            id: z.string().optional(),
-            name: z.string().min(1, "Variation name is required."),
-            price: z.coerce.number().min(0).optional(),
-        })
-    ).optional(),
-});
-type MenuItemFormValues = z.infer<typeof menuItemFormSchema>;
 
-interface MenuItemFormProps {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    onSubmit: (data: MenuItemFormValues) => void;
-    initialData?: Partial<OrderItemDetail> | null;
-    categoryName?: string;
-}
-
-function MenuItemForm({ isOpen, onOpenChange, onSubmit, initialData, categoryName }: MenuItemFormProps) {
-    const form = useForm<MenuItemFormValues>({
-        resolver: zodResolver(menuItemFormSchema),
-        mode: 'onChange',
-    });
-
-    const { fields, append, remove } = useFieldArray({
-        control: form.control,
-        name: "subItems",
-    });
-
-    const [newSubItemName, setNewSubItemName] = useState('');
-    const [newSubItemPrice, setNewSubItemPrice] = useState('');
-
-    useEffect(() => {
-        if (isOpen) {
-            form.reset({
-                name: decodeHtmlEntities(initialData?.name) || "",
-                price: initialData?.price || 0,
-                description: decodeHtmlEntities(initialData?.description) || "",
-                subItems: initialData?.subItems?.map(si => ({ ...si, name: decodeHtmlEntities(si.name) || "" })) || [],
-            });
-        }
-    }, [isOpen, initialData, form]);
-
-    const handleAddSubItemClick = () => {
-        form.clearErrors("subItems");
-        const nameVal = newSubItemName.trim();
-        if (!nameVal) {
-            form.setError("subItems", { type: "manual", message: "Variation name cannot be empty." });
-            return;
-        }
-        const priceVal = newSubItemPrice ? parseFloat(newSubItemPrice) : undefined;
-        append({ name: nameVal, price: priceVal });
-        setNewSubItemName('');
-        setNewSubItemPrice('');
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg md:max-w-xl flex flex-col h-[80vh] max-h-[750px] p-0 gap-0">
-                <DialogHeader className="px-6 py-4 border-b">
-                    <DialogTitle className="text-xl">
-                        {initialData ? `Edit "${decodeHtmlEntities(initialData.name)}"` : `Add New Item to "${categoryName}"`}
-                    </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden min-h-0">
-                    <ScrollArea className="flex-grow p-6">
-                        <div className="space-y-4">
-                            <div>
-                                <Label htmlFor="item-name">Item Name</Label>
-                                <Input id="item-name" {...form.register("name")} placeholder="Enter item name" />
-                                {form.formState.errors.name && <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="item-price">Base Price</Label>
-                                <Input id="item-price" type="number" {...form.register("price")} placeholder="Enter base price" step="0.01" />
-                                {form.formState.errors.price && <p className="text-sm text-destructive mt-1">{form.formState.errors.price.message}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="item-description">Description</Label>
-                                <Textarea id="item-description" {...form.register("description")} placeholder="Item description (optional)" />
-                            </div>
-                            <div className="pt-4">
-                                <Label className="font-semibold">Variations / Sizes</Label>
-                                <div className="mt-2 flex items-start gap-2">
-                                    <Input placeholder="Variation name" value={newSubItemName} onChange={e => setNewSubItemName(e.target.value)} className="flex-grow" />
-                                    <Input placeholder="Price (optional)" type="number" value={newSubItemPrice} onChange={e => setNewSubItemPrice(e.target.value)} className="w-32" />
-                                    <Button type="button" variant="outline" size="icon" onClick={handleAddSubItemClick}><Plus className="h-4 w-4" /></Button>
-                                </div>
-                                {form.formState.errors.subItems?.root && <p className="text-sm text-destructive mt-1">{form.formState.errors.subItems.root.message}</p>}
-                            </div>
-                            {fields.length > 0 && (
-                                <div className="space-y-2">
-                                    {fields.map((field, index) => (
-                                        <div key={field.id} className="flex items-center gap-2">
-                                            <Input {...form.register(`subItems.${index}.name`)} className="flex-grow" />
-                                            <Input {...form.register(`subItems.${index}.price`)} type="number" className="w-32" />
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><X className="h-4 w-4" /></Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </ScrollArea>
-                    <DialogFooter className="px-6 py-4 border-t mt-auto">
-                        <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                        <Button type="submit">Save</Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-    );
-}
-// --- End Form ---
 
 interface OrderPreviewDialogProps {
     isOpen: boolean;
@@ -597,155 +313,7 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
     );
 }
 
-// --- Bulk Edit Dialog ---
-interface BulkEditDialogProps {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    currentItems: OrderItemDetail[];
-    allCategories: any[];
-    onSave: (newItems: OrderItemDetail[]) => void;
-}
 
-function BulkEditDialog({ isOpen, onOpenChange, currentItems, allCategories, onSave }: BulkEditDialogProps) {
-    const [text, setText] = useState('');
-
-    useEffect(() => {
-        if (isOpen) {
-            // Generate text from items
-            let bulkText = "";
-            const categoryMap = new Map<string, OrderItemDetail[]>();
-            
-            currentItems.forEach(item => {
-                const catName = item.categoryName || "Uncategorized";
-                if (!categoryMap.has(catName)) categoryMap.set(catName, []);
-                categoryMap.get(catName)!.push(item);
-            });
-
-            categoryMap.forEach((items, catName) => {
-                bulkText += `# ${catName}\n`;
-                items.forEach(item => {
-                    bulkText += `${decodeHtmlEntities(item.name)}${item.price ? ` - ${item.price}` : ''}\n`;
-                    if (item.description) {
-                        bulkText += `${decodeHtmlEntities(item.description)}\n`;
-                    }
-                    if (item.subItems && item.subItems.length > 0) {
-                        item.subItems.forEach(si => {
-                            bulkText += `- ${decodeHtmlEntities(si.name)}${si.price ? ` - ${si.price}` : ''}\n`;
-                        });
-                    }
-                    bulkText += "\n";
-                });
-                bulkText += "\n";
-            });
-            setText(bulkText.trim());
-        }
-    }, [isOpen, currentItems]);
-
-    const handleApply = () => {
-        const lines = text.split('\n');
-        const newItems: OrderItemDetail[] = [];
-        let currentCategoryName = "Uncategorized";
-        let currentItem: OrderItemDetail | null = null;
-
-        lines.forEach(line => {
-            const trimmed = line.trim();
-            if (!trimmed) return;
-
-            // Category
-            if (trimmed.startsWith('#')) {
-                currentCategoryName = trimmed.replace(/^#\s*/, '').trim();
-                currentItem = null;
-                return;
-            }
-
-            // Sub-item
-            if (trimmed.startsWith('-')) {
-                if (!currentItem) return;
-                const subContent = trimmed.replace(/^- \s*/, '').trim();
-                const priceMatch = subContent.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
-                let siName = subContent;
-                let siPrice = 0;
-                if (priceMatch) {
-                    siName = priceMatch[1].trim();
-                    siPrice = parseFloat(priceMatch[2]);
-                }
-                currentItem.subItems = [...(currentItem.subItems || []), {
-                    id: `si-${Date.now()}-${Math.random()}`,
-                    name: siName,
-                    price: siPrice
-                }];
-                return;
-            }
-
-            // Item or Description
-            const priceMatch = trimmed.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
-            if (priceMatch && !trimmed.includes('\n')) {
-                // It's a new item
-                const itemName = priceMatch[1].trim();
-                const itemPrice = parseFloat(priceMatch[2]);
-                
-                currentItem = {
-                    id: `item-${Date.now()}-${Math.random()}`,
-                    name: itemName,
-                    price: itemPrice,
-                    quantity: 1,
-                    categoryId: `cat-${currentCategoryName.toLowerCase().replace(/\s+/g, '-')}`,
-                    categoryName: currentCategoryName,
-                    description: '',
-                    subItems: []
-                };
-                newItems.push(currentItem);
-            } else if (currentItem) {
-                // It's a description for the current item
-                currentItem.description = currentItem.description 
-                    ? `${currentItem.description}\n${trimmed}`
-                    : trimmed;
-            }
-        });
-
-        onSave(newItems);
-        onOpenChange(false);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-                <DialogHeader className="px-6 py-4 border-b">
-                    <DialogTitle className="text-2xl flex items-center gap-2">
-                        <PenSquare className="h-6 w-6 text-primary" /> Magic Bulk Editor
-                    </DialogTitle>
-                    <DialogDescription>
-                        Edit your entire menu vibes as simple text. Magic!
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex-1 overflow-hidden p-6 bg-muted/30">
-                    <div className="h-full flex flex-col gap-4">
-                        <div className="bg-card border rounded-lg p-3 text-[10px] text-muted-foreground grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <div><span className="font-bold text-foreground"># Category</span> for headers</div>
-                            <div><span className="font-bold text-foreground">Item - Price</span> for main items</div>
-                            <div><span className="font-bold text-foreground">Description</span> on next line</div>
-                            <div><span className="font-bold text-foreground">- Variation - Price</span> for sizes</div>
-                        </div>
-                        <Textarea 
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            placeholder="# DRINKS\nCoke - 30\nChilled\n- Small - 25\n- Large - 50"
-                            className="flex-1 font-mono text-sm p-4 leading-relaxed resize-none focus-visible:ring-1 border-2"
-                        />
-                    </div>
-                </div>
-                <DialogFooter className="px-6 py-4 border-t bg-card">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleApply} className="gap-2">
-                        <Sparkles className="h-4 w-4" /> Apply Magic
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-}
-
-// --- End Bulk Editor ---
 
 type SaveStatus = "unsaved" | "saving" | "saved";
 
@@ -761,87 +329,88 @@ export default function VibeModePage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
-    const [expandedSubItems, setExpandedSubItems] = useState<Record<string, boolean>>({});
-
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<OrderItemDetail | null>(null);
-    const [addingToCategoryId, setAddingToCategoryId] = useState<string | null>(null);
-
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [bulkInput, setBulkInput] = useState("");
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
 
-    const lastSavedDataRef = useRef<string>("");
-    const isSavingRef = useRef(false);
-
-    const handleBulkInputUpdate = (text: string) => {
+    const handleBulkInputUpdate = useCallback((text: string) => {
+        if (!text) return;
+        
+        const currentData = JSON.stringify(order?.items);
         const lines = text.split('\n');
         const newItems: OrderItemDetail[] = [];
-        let currentCategoryName = "Uncategorized";
-        let currentItem: OrderItemDetail | null = null;
-
-        lines.forEach(line => {
+        let currentCategory: { id: string, name: string } | null = null;
+        
+        lines.forEach((line, index) => {
             const trimmed = line.trim();
             if (!trimmed) return;
 
-            if (trimmed.startsWith('#')) {
-                currentCategoryName = trimmed.replace(/^#\s*/, '').trim();
-                currentItem = null;
+            // Category matching
+            const catMatch = trimmed.match(/^#+\s*(.*)$/) || (trimmed === trimmed.toUpperCase() && trimmed.length > 3 && !trimmed.includes('-') ? [null, trimmed] : null);
+            
+            if (catMatch) {
+                const catName = (catMatch[1] || catMatch[0]).trim();
+                const existingCat = allCategories.find(c => c.name.toLowerCase() === catName.toLowerCase());
+                currentCategory = {
+                    id: existingCat ? String(existingCat.id) : `new-${index}`,
+                    name: catName
+                };
                 return;
             }
 
-            if (trimmed.startsWith('-')) {
-                if (!currentItem) return;
-                const subContent = trimmed.replace(/^- \s*/, '').trim();
-                const priceMatch = subContent.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
-                let siName = subContent;
-                let siPrice = 0;
-                if (priceMatch) {
-                    siName = priceMatch[1].trim();
-                    siPrice = parseFloat(priceMatch[2]);
-                }
-                currentItem.subItems = [...(currentItem.subItems || []), {
-                    id: `si-${Date.now()}-${Math.random()}`,
-                    name: siName,
-                    price: siPrice
-                }];
-                return;
-            }
-
+            // Item matching (e.g., "Item Name - 100")
             const priceMatch = trimmed.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
             if (priceMatch && !trimmed.includes('\n')) {
                 const itemName = priceMatch[1].trim();
-                const itemPrice = parseFloat(priceMatch[2]);
+                const price = parseFloat(priceMatch[2]);
                 
-                currentItem = {
-                    id: `item-${Date.now()}-${Math.random()}`,
-                    name: itemName,
-                    price: isNaN(itemPrice) ? 0 : itemPrice,
-                    quantity: 1,
-                    categoryId: `cat-${currentCategoryName.toLowerCase().replace(/\s+/g, '-')}`,
-                    categoryName: currentCategoryName,
-                    description: '',
-                    subItems: []
-                };
-                newItems.push(currentItem);
-            } else if (currentItem) {
-                currentItem.description = currentItem.description 
-                    ? `${currentItem.description}\n${trimmed}`
-                    : trimmed;
+                if (trimmed.startsWith('-') && newItems.length > 0) {
+                    const lastItem = newItems[newItems.length - 1];
+                    if (!lastItem.subItems) lastItem.subItems = [];
+                    lastItem.subItems.push({
+                        id: `si-${index}`,
+                        name: itemName.replace(/^-/, '').trim(),
+                        price: price
+                    });
+                } else {
+                    newItems.push({
+                        id: `item-${index}`,
+                        name: itemName,
+                        price: price,
+                        quantity: 1,
+                        categoryId: currentCategory?.id || 'uncategorized',
+                        categoryName: currentCategory?.name || 'Uncategorized',
+                        description: '',
+                        subItems: []
+                    });
+                }
+                return;
+            }
+
+            // Description logic
+            if (newItems.length > 0 && !trimmed.startsWith('-') && !trimmed.startsWith('#')) {
+                const lastItem = newItems[newItems.length - 1];
+                if (!lastItem.description) {
+                    lastItem.description = trimmed;
+                } else {
+                    lastItem.description += ' ' + trimmed;
+                }
             }
         });
 
-        if (order) {
-            handleOrderUpdate({ ...order, items: newItems });
-        }
-    };
+        // Only update if things actually changed to avoid cycles
+        if (JSON.stringify(newItems) === currentData) return;
 
-    useEffect(() => {
-        if (!order?.items) return;
-        
-        // Generate text from items to keep bulkInput in sync when editing cards
+        setOrder(prev => {
+            if (!prev) return prev;
+            return { ...prev, items: newItems };
+        });
+        setSaveStatus("unsaved");
+    }, [order?.items, allCategories]);
+
+    const initialEditorContent = useMemo(() => {
+        if (!order?.items) return "";
         let text = "";
         const categoryMap = new Map<string, OrderItemDetail[]>();
         
@@ -867,8 +436,19 @@ export default function VibeModePage() {
             });
             text += "\n";
         });
-        setBulkInput(text.trim());
-    }, [order?.items]);
+        return text.trim();
+    }, [order?.id]);
+
+    const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
+
+    useEffect(() => {
+        if (order && !isInitialLoadDone) {
+            setIsInitialLoadDone(true);
+        }
+    }, [order, isInitialLoadDone]);
+
+    const lastSavedDataRef = useRef<string>("");
+    const isSavingRef = useRef(false);
 
     const fetchOrderAndCategoryDetails = useCallback(async () => {
         setIsLoading(true);
@@ -1094,12 +674,6 @@ export default function VibeModePage() {
 
     }, [order?.items, allCategories, searchTerm, searchFilterType]);
 
-    const handleCategoryNameChange = (categoryId: string, newName: string) => {
-        if (!order) return;
-        const newItems = order.items?.map(item => item.categoryId === categoryId ? { ...item, categoryName: newName } : item);
-        handleOrderUpdate({ ...order, items: newItems });
-    };
-
     const handleUpdateItem = (itemId: string, updates: Partial<OrderItemDetail>) => {
         if (!order) return;
         const updatedItems = order.items?.map(item =>
@@ -1113,70 +687,6 @@ export default function VibeModePage() {
         const updatedItems = order.items?.filter(item => item.id !== itemId);
         handleOrderUpdate({ ...order, items: updatedItems });
     };
-
-    const handleAddCategory = () => {
-        if (!order) return;
-        const newCategoryId = `custom-cat-${Date.now()}`;
-        const newItem: OrderItemDetail = {
-            id: `custom-item-${Date.now()}`,
-            name: 'New Item',
-            price: 0,
-            quantity: 1,
-            categoryId: newCategoryId,
-            categoryName: 'New Category',
-            description: '',
-            subItems: []
-        };
-        const updatedItems = [...(order.items || []), newItem];
-        handleOrderUpdate({ ...order, items: updatedItems });
-    };
-
-    const handleRemoveCategory = (categoryId: string) => {
-        if (!order) return;
-        const updatedItems = order.items?.filter(item => item.categoryId !== categoryId);
-        handleOrderUpdate({ ...order, items: updatedItems });
-    };
-
-    const handleToggleSubItems = (itemId: string) => {
-        setExpandedSubItems(prev => ({ ...prev, [itemId]: !prev[itemId] }));
-    };
-
-    const handleOpenEditDialog = (item: OrderItemDetail) => {
-        setEditingItem(item);
-        setAddingToCategoryId(null);
-        setIsFormOpen(true);
-    };
-
-    const handleOpenAddDialog = (categoryId: string) => {
-        setEditingItem(null);
-        setAddingToCategoryId(categoryId);
-        setIsFormOpen(true);
-    };
-
-    const handleFormSubmit = (data: MenuItemFormValues) => {
-        if (!order) return;
-
-        if (editingItem) {
-            const updatedItems = order.items?.map(item =>
-                item.id === editingItem.id ? { ...item, ...data } : item
-            );
-            handleOrderUpdate({ ...order, items: updatedItems });
-        } else if (addingToCategoryId) {
-            const category = categoriesForRender.find(c => c.id === addingToCategoryId);
-            const newItem: OrderItemDetail = {
-                id: `custom-item-${Date.now()}`,
-                ...data,
-                quantity: 1,
-                categoryId: addingToCategoryId,
-                categoryName: category?.name || 'New Category',
-            };
-            handleOrderUpdate({ ...order, items: [...(order.items || []), newItem] });
-        }
-        setIsFormOpen(false);
-        setEditingItem(null);
-        setAddingToCategoryId(null);
-    };
-
 
     const formatDate = (dateString?: string): string => {
         if (!dateString) return 'N/A';
@@ -1256,145 +766,35 @@ export default function VibeModePage() {
     };
 
     return (
-        <>
-            <div className="bg-muted min-h-screen flex flex-col">
-                <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-sm border-b border-border">
-                    <div className="max-w-7xl mx-auto h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center gap-2 sm:gap-4">
-                            <Button variant="outline" size="sm" onClick={() => router.back()}>
-                                <ArrowLeft className="h-4 w-4" />
-                                <span className="hidden sm:inline ml-2">Back</span>
-                            </Button>
-                            <div className="h-6 border-l border-border"></div>
-                            <div className="flex flex-col">
-                                <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                                    {decodeHtmlEntities(order.customer?.restaurant)}
-                                </h1>
-                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 opacity-70">
-                                    <CalendarDays className="h-3 w-3" />
-                                    {formatDate(order.orderDate)}
-                                </p>
-                            </div>
-                        </div>
+        <div className="flex flex-col h-screen overflow-hidden bg-[#f8f9fa]">
+            <GoogleDocsApp
+                key={order.id}
+                initialTitle={order.customer?.restaurant || "New Menu Document"}
+                initialContent={initialEditorContent ? `<p>${initialEditorContent.replace(/\n/g, '</p><p>')}</p>` : ''}
+                onUpdateText={handleBulkInputUpdate}
+                onTitleChange={(newTitle) => {
+                    if (order && order.customer) {
+                        handleOrderUpdate({
+                            ...order,
+                            customer: { ...order.customer, restaurant: newTitle }
+                        });
+                    }
+                }}
+                docId={order.id}
+                isVibeMode={true}
+                customActions={
+                    <Button 
+                        onClick={() => setIsPreviewOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        className="bg-white hover:bg-gray-50 text-gray-700 border-gray-300 gap-2 h-9 rounded-full px-4 font-semibold text-xs transition-all shadow-sm"
+                    >
+                        <Eye className="w-4 h-4 text-primary" />
+                        Preview Menu
+                    </Button>
+                }
+            />
 
-                        <div className="flex items-center gap-4">
-                            <SaveStatusIndicator />
-                            <Button variant="outline" size="sm" onClick={handleDownloadDocx}>
-                                <FileArchive className="h-4 w-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Download</span>
-                            </Button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="px-2 sm:px-3">
-                                        <MoreHorizontal className="h-4 w-4 sm:mr-2" />
-                                        <span className="hidden sm:inline">Actions</span>
-                                        <ChevronDown className="h-4 w-4 ml-1 -mr-1 hidden sm:inline-flex" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuItem onSelect={() => {
-                                        setTimeout(() => setIsPreviewOpen(true), 100);
-                                    }}>
-                                        <Shuffle className="mr-2 h-4 w-4" />
-                                        Shuffle Menu
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleShare('viewer')}>
-                                        <Users className="mr-2 h-4 w-4" />
-                                        Share with viewer
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleShare('editor')}>
-                                        <PenSquare className="mr-2 h-4 w-4" />
-                                        Share with editor
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => {
-                                        router.push(`/m-admin/manage-orders/${order.id}`);
-                                    }}>
-                                        <FileText className="mr-2 h-4 w-4" />
-                                        General Mode
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-                </header>
-
-                <div className="flex-grow px-2 pb-2 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
-                    <main className="max-w-5xl mx-auto bg-card text-card-foreground p-4 sm:p-12 shadow-lg rounded-lg border border-border/50">
-
-
-                        <section>
-                            <div className="sticky top-[64px] z-30 bg-card/95 backdrop-blur-sm py-4 mb-3 border-b -mx-4 px-4 sm:-mx-12 sm:px-12 -mt-4 sm:-mt-12 shadow-sm">
-                                <div className="flex items-center justify-center gap-3">
-                                    {/* Action Group */}
-                                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 overflow-x-auto no-scrollbar">
-                                        <Button variant="outline" size="sm" onClick={() => setIsPreviewOpen(true)} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
-                                            <Shuffle className="h-4 w-4" /> Shuffle Preview
-                                        </Button>
-                                        <Button variant="secondary" size="sm" onClick={() => handleShare('viewer')} className="h-10 gap-2 whitespace-nowrap flex-grow sm:flex-grow-0">
-                                            <Share2 className="h-4 w-4" /> Share Vibe
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="overflow-hidden mb-8">
-                                <div className="bg-muted/30 border-2 border-primary/20 rounded-xl p-4 sm:p-6 mb-2 relative group md:mx-0 -mx-2">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <PenSquare className="h-5 w-5 text-primary" />
-                                            <h3 className="font-bold text-lg">All-In-One Magic Editor</h3>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded border">
-                                            <span># Category</span>
-                                            <span className="opacity-30">|</span>
-                                            <span>Item - Price</span>
-                                            <span className="opacity-30">|</span>
-                                            <span>- Variation - Price</span>
-                                        </div>
-                                    </div>
-                                    <Textarea 
-                                        value={bulkInput}
-                                        onChange={(e) => {
-                                            setBulkInput(e.target.value);
-                                            handleBulkInputUpdate(e.target.value);
-                                        }}
-                                        placeholder="# DRINKS\nCoke - 30\nChilled\n- Small - 25\n- Large - 50"
-                                        className="w-full font-mono text-sm p-4 leading-relaxed resize-none focus-visible:ring-1 border-2 min-h-[400px] shadow-inner bg-card/50"
-                                    />
-                                    <div className="mt-3 flex justify-end gap-2 text-[10px] text-muted-foreground italic">
-                                        * Type here to build your menu. Changes reflect instantly below.
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div
-                                className="inline-block relative mb-6 px-4 py-1.5 text-sm font-bold uppercase tracking-widest text-white"
-                                style={{ backgroundImage: 'url("https://erp.colorhutbd.xyz/file/uploads/68538749e7a83_brush-stroke-banner-6.png")', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#ffffff' }}
-                            >
-                                Vibe Summary Preview
-                            </div>
-
-                            <div className="mb-20">
-                                {categoriesForRender.map((category) => (
-                                    <div key={category.id}>
-                                       <CategorySection
-                                            category={category}
-                                            onToggleSubItems={handleToggleSubItems}
-                                            expandedSubItems={expandedSubItems}
-                                       />
-                                    </div>
-                                ))}
-                                {categoriesForRender.length === 0 && (
-                                    <div className="text-center py-20 bg-muted/20 border-2 border-dashed rounded-xl">
-                                        <PlusCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
-                                        <p className="text-muted-foreground">Start adding items in the Magic Editor above.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-                    </main>
-                </div>
-            </div>
             {order && (
                 <OrderPreviewDialog
                     isOpen={isPreviewOpen}
@@ -1404,6 +804,6 @@ export default function VibeModePage() {
                     onSaveChanges={(items) => handleOrderUpdate({ ...order, items })}
                 />
             )}
-        </>
-    )
+        </div>
+    );
 }
