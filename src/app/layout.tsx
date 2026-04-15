@@ -24,11 +24,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'MenuSnap',
   },
+  applicationName: 'MenuSnap',
   formatDetection: {
     telephone: false,
-  },
-  verification: {
-    google: '0MSR9xuP1-dRqWn74VvBsj1A74QY64nmL8l9tUlLlic',
   },
 };
 
@@ -51,7 +49,6 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
       </head>
-      {/* Microsoft Clarity */}
       <Script
         id="microsoft-clarity"
         strategy="afterInteractive"
@@ -62,24 +59,6 @@ export default function RootLayout({
               t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
               y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
             })(window, document, "clarity", "script", "wc1ds6399n");
-          `,
-        }}
-      />
-      {/* Google Analytics */}
-      <Script
-        id="google-analytics-src"
-        strategy="afterInteractive"
-        src="https://www.googletagmanager.com/gtag/js?id=G-KZ5H87DZCT"
-      />
-      <Script
-        id="google-analytics-config"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-KZ5H87DZCT');
           `,
         }}
       />
