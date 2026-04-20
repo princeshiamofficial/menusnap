@@ -1157,6 +1157,13 @@ function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
     }
   }, [editingStage]);
 
+  // Fix for Radix UI body lock issue
+  useEffect(() => {
+    if (!isOpen) {
+      document.body.style.pointerEvents = 'auto';
+    }
+  }, [isOpen]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
@@ -1212,7 +1219,12 @@ function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
         }
         
         setConfirmDeleteId(null);
-        onRefresh();
+        
+        // Brief delay to allow AlertDialog cleanup before refreshing state
+        setTimeout(() => {
+          onRefresh();
+          document.body.style.pointerEvents = 'auto';
+        }, 100);
       } else {
         toast({ 
           title: "Delete failed", 
