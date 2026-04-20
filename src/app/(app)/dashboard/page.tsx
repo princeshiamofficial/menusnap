@@ -13,6 +13,7 @@ import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
 import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
+import { getClientTimer, saveClientTimer } from '@/app/actions/client-timer';
 
 
 
@@ -438,8 +439,62 @@ export default function DashboardPage() {
   const [spotlights, setSpotlights] = useState<any[]>([]);
   const [exclusiveOffers, setExclusiveOffers] = useState<any[]>([]);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  const [timeLeft, setTimeLeft] = useState({ hours: 24, minutes: 0, seconds: 0 });
+  const [targetTime, setTargetTime] = useState<Date | null>(null);
   const [showSeeMore, setShowSeeMore] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function syncTimer() {
+      if (!showWelcomePopup || !clientUser?.whatsappNumber) return;
+
+      const res = await getClientTimer(clientUser.whatsappNumber);
+      let target: Date;
+
+      if (res.success && res.targetTime) {
+        target = new Date(res.targetTime);
+      } else {
+        // Create new 24h timer and save to DB
+        target = new Date();
+        target.setHours(target.getHours() + 23, 59, 59);
+        const mysqlFormat = target.toISOString().slice(0, 19).replace('T', ' ');
+        await saveClientTimer(clientUser.whatsappNumber, mysqlFormat);
+      }
+      setTargetTime(target);
+    }
+    syncTimer();
+  }, [showWelcomePopup, clientUser?.whatsappNumber]);
+
+  useEffect(() => {
+    if (!targetTime) return;
+
+    const timer = setInterval(() => {
+      const now = new Date();
+      const diff = targetTime.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        clearInterval(timer);
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft({ hours: h, minutes: m, seconds: s });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [targetTime]);
+
+  useEffect(() => {
+    // Automatically show popup on mobile on page load
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      const timer = setTimeout(() => setShowWelcomePopup(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
@@ -671,7 +726,68 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Welcome Popup */}
+        {/* Welcome Popup for Mobile */}
+        <AnimatePresence>
+          {showWelcomePopup && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-6 md:hidden"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-sm overflow-hidden relative shadow-2xl border border-white/20 aspect-[4/5] sm:aspect-auto"
+              >
+                {/* Background Image */}
+                <div className="absolute inset-0 z-0">
+                  <img 
+                    src="/dashboard/offer.png" 
+                    alt="" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                <div className="px-6 pb-6 flex flex-col items-center justify-end h-full text-center relative z-10">
+                  <div className="flex flex-col items-center w-full">
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="bg-black/40 w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-black border border-white/20 shadow-xl">
+                          {String(timeLeft.hours).padStart(2, '0')}
+                        </div>
+                        <span className="text-[7px] font-black text-white/60 uppercase tracking-tighter">Hours</span>
+                      </div>
+                      <span className="text-white/60 text-sm font-bold mb-3">:</span>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="bg-black/40 w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-black border border-white/20 shadow-xl">
+                          {String(timeLeft.minutes).padStart(2, '0')}
+                        </div>
+                        <span className="text-[7px] font-black text-white/60 uppercase tracking-tighter">Minutes</span>
+                      </div>
+                      <span className="text-white/60 text-sm font-bold mb-3">:</span>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="bg-black/40 w-11 h-11 rounded-xl flex items-center justify-center text-white text-lg font-black border border-white/20 shadow-xl">
+                          {String(timeLeft.seconds).padStart(2, '0')}
+                        </div>
+                        <span className="text-[7px] font-black text-white/60 uppercase tracking-tighter">Seconds</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Close button in top right */}
+                <button 
+                  onClick={() => setShowWelcomePopup(false)}
+                  className="absolute top-5 right-5 w-8 h-8 rounded-full bg-black/20 flex items-center justify-center text-white/50 active:scale-90 transition-transform z-20 border border-white/10"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
 
         {/* Immersive Spotlight Story View */}
