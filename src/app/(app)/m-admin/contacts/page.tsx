@@ -1276,7 +1276,7 @@ function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
                       </div>
                       <div>
                         <p className="text-[13px] font-black text-slate-800 tracking-tight font-glancyr leading-tight">{stage.label}</p>
-                        <p className="text-[9px] text-slate-400 font-bold font-mono uppercase tracking-widest">{stage.value}</p>
+                        <p className="text-[9px] text-slate-400 font-bold font-mono uppercase tracking-widest">ID: {stage.id || 'NEW'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">

@@ -24,7 +24,10 @@ async function ensureStagesTable() {
     `);
 
     // Set AUTO_INCREMENT to 1,000,000 to ensure 7-digit IDs for new entries
-    await pool.execute('ALTER TABLE client_stages AUTO_INCREMENT = 1000000');
+    const [status]: any = await pool.execute("SELECT AUTO_INCREMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'client_stages'");
+    if (status.length > 0 && status[0].AUTO_INCREMENT < 1000000) {
+      await pool.execute('ALTER TABLE client_stages AUTO_INCREMENT = 1000000');
+    }
 
     // Check if table is empty, if so, insert defaults
     const [rows]: any = await pool.execute('SELECT COUNT(*) as count FROM client_stages');
@@ -67,11 +70,11 @@ export async function addStage(stage: any) {
   try {
     await ensureStagesTable();
     const { value, label, icon, color, dotColor, hint, placeholder, sort_order } = stage;
-    await pool.execute(
+    const [result]: any = await pool.execute(
       'INSERT INTO client_stages (value, label, icon, color, dotColor, hint, placeholder, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [value, label, icon, color, dotColor, hint, placeholder, sort_order || 0]
     );
-    return { success: true };
+    return { success: true, id: Number(result.insertId) };
   } catch (error: any) {
     console.error("Database Error adding stage:", error);
     return { success: false, error: error?.message || "Failed to add stage" };
