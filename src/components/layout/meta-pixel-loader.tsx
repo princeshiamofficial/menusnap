@@ -31,7 +31,7 @@ export function MetaPixelScriptLoader() {
   }, [pathname, searchParams, settings]);
 
   // Disable Meta Pixel on admin pages
-  if (pathname?.startsWith('/m-admin')) {
+  if (pathname?.startsWith('/m-admin') || pathname?.startsWith('/panel')) {
     return null;
   }
 

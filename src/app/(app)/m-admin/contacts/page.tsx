@@ -31,7 +31,15 @@ import {
   Trash2,
   Trash,
   DoorOpen,
-  ShieldAlert
+  ShieldAlert,
+  Layers,
+  ClipboardList,
+  ShoppingCart,
+  LayoutDashboard,
+  Package,
+  FolderOpen,
+  LogOut,
+  FileEdit
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -80,7 +88,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { getLeads, updateClientNote, updateClientStage, getClientHistory, deleteClient } from '@/app/actions/clients';
+import { getStages, addStage, updateStage, deleteStage } from '@/app/actions/stages';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+
+// Help map icon names to Lucide icons
+const IconMap: Record<string, React.ElementType> = {
+  UserPlus, MessageCircle, Star, Heart, XCircle, DoorOpen, ShieldAlert, 
+  HelpCircle, MessageSquare, Zap, Tag, StickyNote, RefreshCw, Layers, ClipboardList, ShoppingCart, Users, LayoutDashboard, Globe, AlertCircle, CheckCircle2, ChevronDown, Package, FolderOpen, LogOut, Building2, Phone, Calendar, Clock, Filter, ArrowUpDown, ExternalLink, Trash2, Trash, ShieldAlert
+};
+
+const getIcon = (iconName: string) => IconMap[iconName] || HelpCircle;
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -106,11 +123,11 @@ interface Contact {
   created_at: string;
 }
 
-const STAGES = [
+const DEFAULT_STAGES = [
   { 
     value: 'new-lead', 
     label: 'New Lead', 
-    icon: UserPlus,
+    iconName: 'UserPlus',
     color: 'bg-slate-50 text-slate-600 border-slate-100',
     dotColor: 'bg-slate-400',
     hint: 'Initial contact received. What is the plan?',
@@ -119,7 +136,7 @@ const STAGES = [
   { 
     value: 'contacted', 
     label: 'Contacted', 
-    icon: MessageCircle,
+    iconName: 'MessageCircle',
     color: 'bg-blue-50 text-blue-600 border-blue-100',
     dotColor: 'bg-blue-500',
     hint: 'How did the first conversation go via WhatsApp or call?',
@@ -128,7 +145,7 @@ const STAGES = [
   { 
     value: 'interested', 
     label: 'Interested', 
-    icon: Star,
+    iconName: 'Star',
     color: 'bg-amber-50 text-amber-600 border-amber-100',
     dotColor: 'bg-amber-500',
     hint: 'Client is ready to pay or finalize the order.',
@@ -137,7 +154,7 @@ const STAGES = [
   { 
     value: 'donated', 
     label: 'Donated', 
-    icon: Heart,
+    iconName: 'Heart',
     color: 'bg-rose-50 text-rose-600 border-rose-100',
     dotColor: 'bg-rose-500',
     hint: 'The client has completed a transaction or contribution.',
@@ -146,7 +163,7 @@ const STAGES = [
   { 
     value: 'not-interested', 
     label: 'Not Interested', 
-    icon: XCircle,
+    iconName: 'XCircle',
     color: 'bg-gray-50 text-gray-500 border-gray-100',
     dotColor: 'bg-gray-400',
     hint: 'The client moved on or found another solution.',
@@ -155,7 +172,7 @@ const STAGES = [
   { 
     value: 'exiting', 
     label: 'Exiting', 
-    icon: DoorOpen,
+    iconName: 'DoorOpen',
     color: 'bg-indigo-50 text-indigo-600 border-indigo-100',
     dotColor: 'bg-indigo-500',
     hint: 'Why is the client leaving or terminating their service?',
@@ -164,7 +181,7 @@ const STAGES = [
   { 
     value: 'fake', 
     label: 'Fake', 
-    icon: ShieldAlert,
+    iconName: 'ShieldAlert',
     color: 'bg-slate-100 text-slate-500 border-slate-200',
     dotColor: 'bg-slate-600',
     hint: 'Mark as bot, spam, or invalid contact.',
@@ -179,6 +196,8 @@ export default function ContactsPage() {
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stages, setStages] = useState<any[]>(DEFAULT_STAGES);
+  const [isStageManagerOpen, setIsStageManagerOpen] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -208,7 +227,24 @@ export default function ContactsPage() {
 
   useEffect(() => {
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  }, []);
+    if (isAdminLoggedIn) {
+      fetchStages();
+    }
+  }, [isAdminLoggedIn]);
+
+  const fetchStages = async () => {
+    try {
+      const result = await getStages();
+      if (result.success && result.data) {
+        setStages(result.data.map((s: any) => ({
+          ...s,
+          iconName: s.icon // Store icon string to map back to icon component
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to fetch stages:", err);
+    }
+  };
   const observerTarget = React.useRef<HTMLDivElement>(null);
 
   const fetchContacts = useCallback(async (pageNum: number, isRefresh = false) => {
@@ -493,7 +529,10 @@ export default function ContactsPage() {
                         Viewing in {timezone}
                     </div>
                 )}
-                <div className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-slate-200 flex-1 sm:flex-none whitespace-nowrap">
+                <div 
+                  onDoubleClick={() => setIsStageManagerOpen(true)}
+                  className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-slate-200 flex-1 sm:flex-none whitespace-nowrap cursor-pointer select-none"
+                >
                     {totalContacts} Total
                 </div>
             </div>
@@ -527,7 +566,7 @@ export default function ContactsPage() {
                       All Stages
                     </div>
                   </SelectItem>
-                  {STAGES.map((stage) => (
+                  {stages.map((stage) => (
                     <SelectItem 
                       key={stage.value} 
                       value={stage.value}
@@ -611,6 +650,7 @@ export default function ContactsPage() {
                       <ContactRow 
                         key={contact.id} 
                         contact={contact} 
+                        stages={stages}
                         index={totalContacts - index}
                         onStageChange={(val: string) => {
                           setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
@@ -670,6 +710,7 @@ export default function ContactsPage() {
                           <MobileContactCard 
                             key={contact.id} 
                             contact={contact} 
+                            stages={stages}
                             index={index}
                             onStageChange={(val: string) => {
                               setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
@@ -706,12 +747,12 @@ export default function ContactsPage() {
                 Change Stage to {pendingStage?.stage}
               </DialogTitle>
               <DialogDescription className="font-medium text-slate-500">
-                {STAGES.find(s => s.value === pendingStage?.stage)?.hint}
+                {stages.find(s => s.value === pendingStage?.stage)?.hint}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
               <Textarea
-                placeholder={STAGES.find(s => s.value === pendingStage?.stage)?.placeholder}
+                placeholder={stages.find(s => s.value === pendingStage?.stage)?.placeholder}
                 className="min-h-[120px] rounded-2xl border-slate-200 focus:ring-slate-900 focus:border-slate-900 font-medium resize-none shadow-sm"
                 value={stageNote}
                 onChange={(e) => setStageNote(e.target.value)}
@@ -775,8 +816,8 @@ export default function ContactsPage() {
               ) : (
                 <div className="space-y-6 pb-4">
                   {clientHistory.map((item, idx) => {
-                    const stageInfo = STAGES.find(s => s.value === item.stage) || STAGES[0];
-                    const Icon = stageInfo.icon || HelpCircle;
+                    const stageInfo = stages.find(s => s.value === item.stage) || stages[0];
+                    const Icon = getIcon(stageInfo.iconName || 'HelpCircle');
                     
                     return (
                       <div key={item.id} className="relative flex gap-4 group">
@@ -850,14 +891,22 @@ export default function ContactsPage() {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* Stage Manager Dialog */}
+        <StageManagerDialog 
+          isOpen={isStageManagerOpen} 
+          onOpenChange={setIsStageManagerOpen} 
+          stages={stages} 
+          onRefresh={fetchStages} 
+        />
+
       </div>
     </div>
   );
 }
 
 // Sub-components for better organization and performance
-function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
-  const currentStageInfo = STAGES.find(s => s.value === contact.stage) || STAGES[0];
+function ContactRow({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
+  const currentStageInfo = stages.find((s: any) => s.value === contact.stage) || stages[0];
 
   return (
     <TableRow 
@@ -908,11 +957,11 @@ function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrig
             "h-8 w-40 text-[11px] font-bold uppercase tracking-wider rounded-full border px-3 transition-all hover:shadow-md flex items-center gap-1.5",
             currentStageInfo.color
           )}>
-            {React.createElement(currentStageInfo.icon, { className: "h-3.5 w-3.5 shrink-0" })}
+            {React.createElement(getIcon(currentStageInfo.iconName || 'HelpCircle'), { className: "h-3.5 w-3.5 shrink-0" })}
             <span className="truncate">{currentStageInfo.label}</span>
           </SelectTrigger>
           <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1">
-            {STAGES.map((stage) => (
+            {stages.map((stage: any) => (
               <SelectItem 
                 key={stage.value} 
                 value={stage.value}
@@ -968,8 +1017,8 @@ function ContactRow({ contact, index, onStageChange, onViewHistory, onDeleteTrig
   );
 }
 
-function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick }: any) {
-  const stageInfo = STAGES.find(s => s.value === contact.stage) || STAGES[0];
+function MobileContactCard({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick }: any) {
+  const stageInfo = stages.find((s: any) => s.value === contact.stage) || stages[0];
   const initials = contact.business_name.substring(0, 2).toUpperCase();
 
   return (
@@ -1006,11 +1055,11 @@ function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDel
                             "h-6 w-fit text-[9px] font-black uppercase tracking-[0.1em] rounded-full border px-3 bg-opacity-10 shadow-none transition-all focus:ring-0 flex items-center gap-1.5",
                             stageInfo.color
                         )}>
-                            {React.createElement(stageInfo.icon, { className: "h-3 w-3 shrink-0" })}
+                            {React.createElement(getIcon(stageInfo.iconName || 'HelpCircle'), { className: "h-3 w-3 shrink-0" })}
                             <span>{stageInfo.label}</span>
                         </SelectTrigger>
                         <SelectContent className="rounded-3xl border-slate-100 shadow-2xl p-2">
-                            {STAGES.map((stage) => (
+                            {stages.map((stage: any) => (
                                 <SelectItem 
                                     key={stage.value} 
                                     value={stage.value}
@@ -1018,7 +1067,7 @@ function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDel
                                     className="text-[12px] font-bold tracking-tight rounded-xl py-2.5 px-4 my-0.5 focus:bg-slate-50"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={cn("h-2 w-2 rounded-full", STAGES.find(s => s.value === stage.value)?.dotColor)} />
+                                        <div className={cn("h-2 w-2 rounded-full", stage.dotColor)} />
                                         {stage.label}
                                     </div>
                                 </SelectItem>
@@ -1071,6 +1120,317 @@ function MobileContactCard({ contact, index, onStageChange, onViewHistory, onDel
             </motion.button>
         </div>
     </motion.div>
+  );
+}
+
+const COLOR_THEMES = [
+  { name: 'Slate', color: '#64748b', classes: 'bg-slate-50 text-slate-600 border-slate-100', dot: 'bg-slate-400' },
+  { name: 'Blue', color: '#3b82f6', classes: 'bg-blue-50 text-blue-600 border-blue-100', dot: 'bg-blue-500' },
+  { name: 'Amber', color: '#f59e0b', classes: 'bg-amber-50 text-amber-600 border-amber-100', dot: 'bg-amber-500' },
+  { name: 'Rose', color: '#f43f5e', classes: 'bg-rose-50 text-rose-600 border-rose-100', dot: 'bg-rose-500' },
+  { name: 'Emerald', color: '#10b981', classes: 'bg-emerald-50 text-emerald-600 border-emerald-100', dot: 'bg-emerald-500' },
+  { name: 'Indigo', color: '#6366f1', classes: 'bg-indigo-50 text-indigo-600 border-indigo-100', dot: 'bg-indigo-500' },
+  { name: 'Violet', color: '#8b5cf6', classes: 'bg-violet-50 text-violet-600 border-violet-100', dot: 'bg-violet-500' },
+  { name: 'Orange', color: '#f97316', classes: 'bg-orange-50 text-orange-600 border-orange-100', dot: 'bg-orange-500' },
+  { name: 'Cyan', color: '#06b6d4', classes: 'bg-cyan-50 text-cyan-600 border-cyan-100', dot: 'bg-cyan-500' },
+  { name: 'Pink', color: '#ec4899', classes: 'bg-pink-50 text-pink-600 border-pink-100', dot: 'bg-pink-500' },
+  { name: 'Lime', color: '#84cc16', classes: 'bg-lime-50 text-lime-600 border-lime-100', dot: 'bg-lime-500' },
+  { name: 'Sky', color: '#0ea5e9', classes: 'bg-sky-50 text-sky-600 border-sky-100', dot: 'bg-sky-500' },
+  { name: 'Teal', color: '#14b8a6', classes: 'bg-teal-50 text-teal-600 border-teal-100', dot: 'bg-teal-500' },
+  { name: 'Fuchsia', color: '#d946ef', classes: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100', dot: 'bg-fuchsia-500' },
+  { name: 'Red', color: '#ef4444', classes: 'bg-red-50 text-red-600 border-red-100', dot: 'bg-red-500' },
+  { name: 'Yellow', color: '#eab308', classes: 'bg-yellow-50 text-yellow-600 border-yellow-100', dot: 'bg-yellow-500' },
+];
+
+function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
+  const [editingStage, setEditingStage] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<any>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (editingStage) {
+      const theme = COLOR_THEMES.find(t => t.classes === editingStage.color) || COLOR_THEMES[0];
+      setSelectedTheme(theme);
+    }
+  }, [editingStage]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const label = formData.get('label') as string;
+    
+    // Use the selected theme's classes
+    const color = selectedTheme?.classes || COLOR_THEMES[0].classes;
+    const dotColor = selectedTheme?.dot || COLOR_THEMES[0].dot;
+
+    const stageData = {
+      label,
+      value: label.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, ''),
+      iconName: formData.get('iconName'),
+      color,
+      dotColor,
+      hint: formData.get('hint'),
+      placeholder: formData.get('placeholder'),
+    };
+
+    setIsSaving(true);
+    try {
+      let result;
+      if (editingStage?.id) {
+        result = await updateStage(editingStage.id, { ...stageData, icon: stageData.iconName });
+      } else {
+        result = await addStage({ ...stageData, icon: stageData.iconName });
+      }
+
+      if (result.success) {
+        toast({ title: editingStage?.id ? "Stage updated" : "Stage added" });
+        onRefresh();
+        setEditingStage(null);
+      } else {
+        toast({ title: "Error", description: result.error, variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Something went wrong", variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (stageId: number) => {
+    setIsDeleting(true);
+    try {
+      const result = await deleteStage(stageId);
+      if (result.success) {
+        toast({ title: "Stage deleted", description: "Successfully removed the stage and migrated contacts." });
+        
+        // If we were editing the deleted stage, clear it
+        if (editingStage && editingStage.id === stageId) {
+          setEditingStage(null);
+        }
+        
+        setConfirmDeleteId(null);
+        onRefresh();
+      } else {
+        toast({ 
+          title: "Delete failed", 
+          description: result.error || "Could not delete stage.", 
+          variant: "destructive" 
+        });
+      }
+    } catch (err) {
+      console.error("Delete Error:", err);
+      toast({ 
+        title: "System Error", 
+        description: "An unexpected error occurred while deleting.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-4xl rounded-2xl max-h-[90vh] flex flex-col p-0 border-none shadow-2xl overflow-hidden bg-white font-glancyr">
+        <div className="p-8 pb-6 flex items-center gap-6 border-b border-slate-50">
+          <div className="h-16 w-16 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+            <Tag className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-2 font-glancyr">
+              Manage Custom Stages
+            </DialogTitle>
+            <DialogDescription className="text-slate-500 font-bold text-sm font-glancyr">
+              Customize the workflow stages for your contact management system.
+            </DialogDescription>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-hidden flex flex-col lg:flex-row bg-white">
+          {/* List of Stages */}
+          <div className="w-full lg:w-[38%] p-6 border-r border-slate-50 flex flex-col bg-slate-50/20 font-glancyr">
+            <h4 className="text-[10px] uppercase font-black text-slate-400 tracking-[0.2em] mb-4 pl-1 font-glancyr">Existing Stages</h4>
+            <ScrollArea className="flex-1 h-[400px]">
+              <div className="space-y-2 pr-4">
+                {stages.map((stage: any) => (
+                  <div key={stage.id || stage.value} className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-100/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all group cursor-pointer" onClick={() => setEditingStage(stage)}>
+                    <div className="flex items-center gap-3">
+                      <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center border shadow-inner transition-transform group-hover:scale-105", stage.color)}>
+                        {React.createElement(getIcon(stage.iconName || 'HelpCircle'), { className: "h-4 w-4" })}
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-black text-slate-800 tracking-tight font-glancyr leading-tight">{stage.label}</p>
+                        <p className="text-[9px] text-slate-400 font-bold font-mono uppercase tracking-widest">{stage.value}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-7 w-7 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600" 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingStage(stage);
+                        }}
+                      >
+                        <FileEdit className="h-3.5 w-3.5" />
+                      </Button>
+                      {stage.id && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600" 
+                            disabled={isDeleting}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(stage.id);
+                            }}
+                          >
+                            <Trash className="h-3.5 w-3.5" />
+                          </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+            <Button 
+                className="mt-4 rounded-xl font-black h-11 border-2 border-dashed border-slate-200 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group font-glancyr text-xs" 
+                variant="outline"
+                onClick={() => setEditingStage({ label: '', value: '', iconName: 'Tag', color: 'bg-slate-50 text-slate-600 border-slate-100', dotColor: 'bg-slate-400', hint: '', placeholder: '' })}
+            >
+              <UserPlus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" /> Add New Stage
+            </Button>
+          </div>
+
+          {/* Edit Form */}
+          <div className="w-full lg:w-[62%] p-8 bg-white relative font-glancyr">
+            {editingStage ? (
+              <form onSubmit={handleSave} className="space-y-7 font-glancyr">
+                <div className="grid grid-cols-2 gap-5 items-end">
+                  <div className="space-y-2.5 font-glancyr">
+                    <label className="text-[11px] uppercase font-black text-slate-400 tracking-wider pl-1 font-glancyr">Select Icon</label>
+                    <Select name="iconName" defaultValue={editingStage.iconName || 'Tag'}>
+                      <SelectTrigger className="rounded-xl h-14 text-sm font-bold border-slate-100 bg-slate-50/50 focus:ring-primary/20 transition-all font-glancyr">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-slate-100 shadow-2xl p-3 min-w-[300px] font-glancyr">
+                        <div className="grid grid-cols-5 gap-2">
+                          {Object.keys(IconMap).map(iconName => {
+                            const Icon = getIcon(iconName);
+                            return (
+                              <SelectItem 
+                                key={iconName} 
+                                value={iconName} 
+                                className="rounded-lg flex items-center justify-center p-3 focus:bg-primary/10 group h-12 w-12"
+                                textValue={iconName}
+                              >
+                                <Icon className="h-5 w-5 text-slate-400 group-hover:text-primary group-data-[state=checked]:text-primary transition-colors" />
+                              </SelectItem>
+                            );
+                          })}
+                        </div>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2.5 font-glancyr">
+                    <label className="text-[11px] uppercase font-black text-slate-400 tracking-wider pl-1 font-glancyr">Stage Name</label>
+                    <Input name="label" defaultValue={editingStage.label} placeholder="e.g. In Progress" required className="rounded-xl h-14 text-sm font-bold border-slate-100 bg-slate-50/50 focus:ring-primary/20 placeholder:text-slate-300 font-glancyr" />
+                  </div>
+                </div>
+
+                <div className="space-y-3.5 font-glancyr">
+                  <label className="text-[11px] uppercase font-black text-slate-400 tracking-wider pl-1 font-glancyr">Theme Color</label>
+                  <div className="flex flex-wrap gap-3.5 p-5 bg-slate-50/50 rounded-2xl border border-slate-50 shadow-inner">
+                    {COLOR_THEMES.map((theme) => (
+                      <button
+                        key={theme.name}
+                        type="button"
+                        onClick={() => setSelectedTheme(theme)}
+                        className={cn(
+                          "h-10 w-10 rounded-lg border-4 transition-all hover:scale-110 active:scale-95 shadow-md flex items-center justify-center",
+                          selectedTheme?.name === theme.name ? "border-slate-900 scale-110" : "border-white"
+                        )}
+                        style={{ backgroundColor: theme.color }}
+                      >
+                         {selectedTheme?.name === theme.name && <div className="h-2 w-2 rounded-full bg-white shadow-sm" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 font-glancyr">
+                  <label className="text-[11px] uppercase font-black text-slate-400 tracking-wider pl-1 font-glancyr">Helper Hint</label>
+                  <Textarea name="hint" defaultValue={editingStage.hint} className="rounded-xl text-sm font-medium min-h-[120px] border-slate-100 bg-slate-50/50 focus:ring-primary/20 p-5 leading-relaxed font-glancyr" placeholder="What should the admin do in this stage?" />
+                </div>
+
+                <div className="flex gap-4 pt-4 font-glancyr">
+                  <Button type="button" variant="ghost" className="flex-1 rounded-xl h-14 font-black text-slate-400 hover:text-slate-900 transition-all tracking-tight font-glancyr" onClick={() => setEditingStage(null)}>
+                    Discard
+                  </Button>
+                  <Button type="submit" className="flex-[2.5] rounded-xl h-14 font-black bg-primary text-white hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all active:scale-[0.98] tracking-tight text-base font-glancyr" disabled={isSaving}>
+                    {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : (editingStage?.id ? "Apply Changes" : "Save New Stage")}
+                  </Button>
+                </div>
+              </form>
+            ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-7 px-16 font-glancyr">
+                    <div className="p-10 bg-slate-50 rounded-3xl animate-pulse">
+                        <Layers className="h-20 w-20 text-slate-200" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3 font-glancyr">Editor Active</h3>
+                      <p className="text-[15px] font-bold text-slate-400 leading-relaxed max-w-sm mx-auto font-glancyr">Select a stage from the left list or click the add button to begin customizing your workflow system.</p>
+                    </div>
+                </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* Non-blocking Delete Confirmation */}
+    <AlertDialog open={!!confirmDeleteId} onOpenChange={(open) => !open && setConfirmDeleteId(null)}>
+      <AlertDialogContent className="rounded-3xl border-slate-200 shadow-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-xl font-bold flex items-center gap-3 text-slate-900 font-glancyr">
+            <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            Confirm Stage Deletion
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-slate-500 font-bold py-2 font-glancyr">
+            Are you sure you want to delete <span className="text-slate-900">"{stages.find((s: any) => s.id === confirmDeleteId)?.label}"</span>? 
+            <br />
+            All clients currently in this stage will be rolled back to <span className="font-bold text-primary">New Lead</span>.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="gap-3 sm:gap-0 font-glancyr">
+          <AlertDialogCancel className="rounded-full font-bold border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all h-12 px-6">
+            Keep Stage
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+            className="rounded-full font-bold bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-200 h-12 px-8 transition-all border-none"
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              'Confirm Delete'
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 

@@ -161,6 +161,10 @@
   .animate-spin-slow {
     animation: spin 3s linear infinite;
   }
+
+  .font-glancyr {
+    font-family: 'Glancyr', 'Inter', sans-serif;
+  }
 }
 
 @media (max-width: 768px) {

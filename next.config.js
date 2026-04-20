@@ -45,6 +45,14 @@ const nextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  async rewrites() {
+    return [
+      {
+        source: '/panel/:path*',
+        destination: '/m-admin/:path*',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

@@ -40,6 +40,7 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
 
 export function AdminSidebarNav() {
   const pathname = usePathname();
+  const normalizedPathname = pathname.replace(/^\/panel/, '/m-admin');
   const { adminLogout } = useAdminAuth();
 
   return (
@@ -71,12 +72,12 @@ export function AdminSidebarNav() {
                     variant="default"
                     className={cn(
                       "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      (pathname === item.href || (item.href !== '/m-admin' && pathname.startsWith(item.href)))
+                      (normalizedPathname === item.href || (item.href !== '/m-admin' && normalizedPathname.startsWith(item.href)))
                         ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold"
                         : "text-sidebar-foreground/80",
                       "group-data-[collapsible=icon]:justify-center"
                     )}
-                    isActive={pathname === item.href || (item.href !== '/m-admin' && pathname.startsWith(item.href))}
+                    isActive={normalizedPathname === item.href || (item.href !== '/m-admin' && normalizedPathname.startsWith(item.href))}
                     tooltip={{
                       children: item.label,
                       className: "bg-popover text-popover-foreground border-border shadow-md",

@@ -55,7 +55,7 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith('/m-admin');
+  const isAdminRoute = pathname.startsWith('/m-admin') || pathname.startsWith('/panel');
   const isStandaloneRoute = pathname.startsWith('/marketing-consultation') || 
                             pathname.startsWith('/free-design') || 
                             pathname.startsWith('/team-tracker');
