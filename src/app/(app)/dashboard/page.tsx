@@ -13,7 +13,7 @@ import { useClientAuth } from '@/hooks/use-client-auth';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
 import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
-import { getClientTimer, saveClientTimer } from '@/app/actions/client-timer';
+import { getClientTimer, saveClientTimer, markTimerAsSeen } from '@/app/actions/client-timer';
 
 
 
@@ -447,24 +447,43 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function syncTimer() {
-      if (!showWelcomePopup || !clientUser?.whatsappNumber) return;
+      if (!clientUser?.whatsappNumber) return;
 
       const res = await getClientTimer(clientUser.whatsappNumber);
       let target: Date;
 
       if (res.success && res.targetTime) {
         target = new Date(res.targetTime);
+        // On mobile, show popup ONLY if they haven't seen it
+        const isMobile = window.innerWidth < 768;
+        if (isMobile && !res.hasSeen) {
+          const timer = setTimeout(() => {
+            setShowWelcomePopup(true);
+            markTimerAsSeen(clientUser.whatsappNumber!);
+          }, 1200);
+          return () => clearTimeout(timer);
+        }
       } else {
-        // Create new 24h timer and save to DB
+        // Create new 24h timer (First time visit)
         target = new Date();
         target.setHours(target.getHours() + 23, 59, 59);
         const mysqlFormat = target.toISOString().slice(0, 19).replace('T', ' ');
         await saveClientTimer(clientUser.whatsappNumber, mysqlFormat);
+        
+        // Always show on first time visit on mobile
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+          const timer = setTimeout(() => {
+            setShowWelcomePopup(true);
+            markTimerAsSeen(clientUser.whatsappNumber!);
+          }, 1200);
+          return () => clearTimeout(timer);
+        }
       }
       setTargetTime(target);
     }
     syncTimer();
-  }, [showWelcomePopup, clientUser?.whatsappNumber]);
+  }, [clientUser?.whatsappNumber]);
 
   useEffect(() => {
     if (!targetTime) return;
@@ -487,14 +506,6 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, [targetTime]);
 
-  useEffect(() => {
-    // Automatically show popup on mobile on page load
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      const timer = setTimeout(() => setShowWelcomePopup(true), 800);
-      return () => clearTimeout(timer);
-    }
-  }, []);
 
   const scrollToBottom = () => {
     if (scrollRef.current) {

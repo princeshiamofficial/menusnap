@@ -12,6 +12,7 @@ async function ensureTimerTable() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         whatsapp_number VARCHAR(20) NOT NULL UNIQUE,
         target_time TIMESTAMP NOT NULL,
+        has_seen TINYINT(1) DEFAULT 0,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_whatsapp (whatsapp_number)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -28,14 +29,14 @@ export async function getClientTimer(whatsappNumber: string) {
   try {
     await ensureTimerTable();
     const [rows]: any = await pool.execute(
-      'SELECT DATE_FORMAT(target_time, "%Y-%m-%dT%H:%i:%sZ") as target_time FROM client_timers WHERE whatsapp_number = ? LIMIT 1',
+      'SELECT DATE_FORMAT(target_time, "%Y-%m-%dT%H:%i:%sZ") as target_time, has_seen FROM client_timers WHERE whatsapp_number = ? LIMIT 1',
       [whatsappNumber]
     );
 
     if (rows.length > 0) {
-      return { success: true, targetTime: rows[0].target_time };
+      return { success: true, targetTime: rows[0].target_time, hasSeen: Boolean(rows[0].has_seen) };
     }
-    return { success: true, targetTime: null };
+    return { success: true, targetTime: null, hasSeen: false };
   } catch (error) {
     console.error("Database Error fetching client timer:", error);
     return { success: false, error: "Failed to fetch timer" };
@@ -59,5 +60,21 @@ export async function saveClientTimer(whatsappNumber: string, targetTime: string
   } catch (error) {
     console.error("Database Error saving client timer:", error);
     return { success: false, error: "Failed to save timer" };
+  }
+}
+
+/**
+ * Marks the timer as seen so the popup doesn't show again.
+ */
+export async function markTimerAsSeen(whatsappNumber: string) {
+  try {
+    await pool.execute(
+      'UPDATE client_timers SET has_seen = 1 WHERE whatsapp_number = ?',
+      [whatsappNumber]
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("Database Error marking timer as seen:", error);
+    return { success: false, error: "Failed to mark timer as seen" };
   }
 }
