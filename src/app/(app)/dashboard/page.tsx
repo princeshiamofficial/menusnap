@@ -449,25 +449,21 @@ export default function DashboardPage() {
     async function syncTimer() {
       if (!showWelcomePopup || !clientUser?.whatsappNumber) return;
 
-      try {
-        const res = await getClientTimer(clientUser.whatsappNumber);
-        let target: Date;
+      const res = await getClientTimer(clientUser.whatsappNumber);
+      let target: Date;
 
-        if (res.success && res.targetTime) {
-          // res.targetTime is already a Date object (serialized to string by Next.js if needed, then parsed)
-          target = new Date(res.targetTime);
-          console.log("Timer loaded from DB:", target);
-        } else {
-          // Create new 24h timer only if not found
-          target = new Date();
-          target.setHours(target.getHours() + 23, 59, 59);
-          await saveClientTimer(clientUser.whatsappNumber, target);
-          console.log("New timer created and saved:", target);
-        }
-        setTargetTime(target);
-      } catch (err) {
-        console.error("Timer sync error:", err);
+      if (res.success && res.targetTime) {
+        // Use the saved UTC timestamp (Unix ms)
+        target = new Date(res.targetTime);
+      } else {
+        // First time initialization: create a fresh 24h target based on NOW
+        target = new Date();
+        target.setHours(target.getHours() + 23, 59, 59);
+        
+        // Save the numeric timestamp to avoid all timezone issues
+        await saveClientTimer(clientUser.whatsappNumber, target.getTime());
       }
+      setTargetTime(target);
     }
     syncTimer();
   }, [showWelcomePopup, clientUser?.whatsappNumber]);

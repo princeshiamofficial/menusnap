@@ -11,11 +11,18 @@ async function ensureTimerTable() {
       CREATE TABLE IF NOT EXISTS client_timers (
         id INT AUTO_INCREMENT PRIMARY KEY,
         whatsapp_number VARCHAR(20) NOT NULL UNIQUE,
-        target_time TIMESTAMP NOT NULL,
+        target_time BIGINT NOT NULL,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_whatsapp (whatsapp_number)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Migration check: If target_time is not BIGINT (old TIMESTAMP), drop and recreate or alter
+    // For simplicity in this dev environment and to ensure no errors, we'll check the type
+    const [cols]: any = await pool.execute("SHOW COLUMNS FROM client_timers LIKE 'target_time'");
+    if (cols.length > 0 && cols[0].Type.toLowerCase().includes('timestamp')) {
+       await pool.execute("ALTER TABLE client_timers MODIFY target_time BIGINT NOT NULL");
+    }
   } catch (err) {
     console.error("Database initialization error (client_timers):", err);
   }
@@ -33,8 +40,7 @@ export async function getClientTimer(whatsappNumber: string) {
     );
 
     if (rows.length > 0) {
-      // mysql2 returns Date objects for TIMESTAMP/DATETIME columns
-      return { success: true, targetTime: rows[0].target_time };
+      return { success: true, targetTime: Number(rows[0].target_time) };
     }
     return { success: true, targetTime: null };
   } catch (error) {
@@ -43,19 +49,18 @@ export async function getClientTimer(whatsappNumber: string) {
   }
 }
 
-export async function saveClientTimer(whatsappNumber: string, targetTime: any) {
+/**
+ * Saves or updates the target time for a WhatsApp number.
+ */
+export async function saveClientTimer(whatsappNumber: string, targetTime: number) {
   try {
     await ensureTimerTable();
     
-    // Ensure targetTime is a Date object if it's a string
-    const dateToSave = targetTime instanceof Date ? targetTime : new Date(targetTime);
-
     await pool.execute(
       'INSERT INTO client_timers (whatsapp_number, target_time) VALUES (?, ?) ON DUPLICATE KEY UPDATE target_time = VALUES(target_time)',
-      [whatsappNumber, dateToSave]
+      [whatsappNumber, targetTime]
     );
 
-    console.log(`Saved timer for ${whatsappNumber}:`, dateToSave);
     return { success: true };
   } catch (error) {
     console.error("Database Error saving client timer:", error);
