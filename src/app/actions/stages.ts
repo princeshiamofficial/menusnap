@@ -23,6 +23,9 @@ async function ensureStagesTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // Set AUTO_INCREMENT to 1,000,000 to ensure 7-digit IDs for new entries
+    await pool.execute('ALTER TABLE client_stages AUTO_INCREMENT = 1000000');
+
     // Check if table is empty, if so, insert defaults
     const [rows]: any = await pool.execute('SELECT COUNT(*) as count FROM client_stages');
     if (rows[0].count === 0) {
