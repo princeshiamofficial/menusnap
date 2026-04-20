@@ -750,7 +750,7 @@ export default function DashboardPage() {
                   />
                 </div>
                 
-                <div className="px-6 pb-6 flex flex-col items-center justify-end h-full text-center relative z-10">
+                <div className="px-6 pb-3 flex flex-col items-center justify-end h-full text-center relative z-10">
                   <div className="flex flex-col items-center w-full">
                     <div className="flex items-center gap-1.5">
                       <div className="flex flex-col items-center gap-1">
