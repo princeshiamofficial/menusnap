@@ -14,17 +14,25 @@ function PageTitleManager() {
   useEffect(() => {
     if (!pathname) return;
 
+    const segments = pathname.split('/').filter(Boolean);
+    const isMagicDoc = pathname.includes('/magic-docs/') || pathname.includes('/docs/edit/') || pathname.includes('/docs/view/');
+    
     if (
       pathname.match(/\/manage-orders\/[^/]+/) ||
       pathname.match(/^\/share\/[^/]+/) ||
-      pathname.match(/^\/editor\/[^/]+/)
+      pathname.match(/^\/editor\/[^/]+/) ||
+      (isMagicDoc && segments.length > segments.indexOf('magic-docs') + 1) ||
+      (pathname.includes('/docs/edit/') && segments.length > segments.indexOf('edit') + 1) ||
+      (pathname.includes('/docs/view/') && segments.length > segments.indexOf('view') + 1)
     ) {
+      // For dynamic doc pages, if we haven't set a title yet, set a placeholder
+      if (isMagicDoc && (document.title === 'MenuSnap' || document.title === '')) {
+          document.title = 'Magic Doc | MenuSnap';
+      }
       return;
     }
 
-    const segments = pathname.split('/').filter(Boolean);
     let pageName = 'Home';
-
     if (segments.length > 0) {
       pageName = segments[segments.length - 1];
     }

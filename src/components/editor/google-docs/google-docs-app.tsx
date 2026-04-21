@@ -152,12 +152,12 @@ export default function GoogleDocsApp({
 
   // Set initial browser tab title and update on title change
   useEffect(() => {
-    document.title = `${title} - Magic Docs`
+    document.title = `${title} | MenuSnap`
   }, [title])
 
   const handleTitleChange = useCallback((newTitle: string) => {
     setTitle(newTitle)
-    document.title = `${newTitle} - Magic Docs`
+    document.title = `${newTitle} | MenuSnap`
     if (onTitleChange) onTitleChange(newTitle)
   }, [onUpdateText, onTitleChange])
 
