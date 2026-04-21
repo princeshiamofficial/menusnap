@@ -14,6 +14,7 @@ interface HeaderProps {
     onlineUsers?: any[]
     isConnected?: boolean
     customActions?: React.ReactNode
+    onShare?: (mode: 'editor' | 'viewer') => void
 }
 
 export default function Header({ 
@@ -24,7 +25,8 @@ export default function Header({
     docId, 
     onlineUsers = [],
     isConnected = false,
-    customActions
+    customActions,
+    onShare
 }: HeaderProps) {
     const [isStarred, setIsStarred] = useState(false)
     const [showShareMenu, setShowShareMenu] = useState(false)
@@ -50,7 +52,13 @@ export default function Header({
     }
 
     const copyLink = (type: 'editor' | 'viewer') => {
-        if (!docId) return
+        if (onShare) {
+            onShare(type);
+            setCopiedType(type);
+            setTimeout(() => setCopiedType(null), 2000);
+            return;
+        }
+        if (!docId) return;
         const path = type === 'editor' ? `/docs/edit/${docId}` : `/docs/view/${docId}`
         const url = `${getBaseUrl()}${path}`
         navigator.clipboard.writeText(url).then(() => {
@@ -64,7 +72,7 @@ export default function Header({
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="flex flex-col bg-[#f9fbfd] border-b border-[#dadce0] z-[60]"
+            className="flex flex-col bg-[#f9fbfd] border-b border-[#dadce0] z-40"
         >
             <div className="flex items-center justify-between px-2 sm:px-4 py-1 sm:py-2">
                 <div className="flex items-center gap-1 sm:gap-2 overflow-hidden">

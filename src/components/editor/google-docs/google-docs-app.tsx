@@ -44,8 +44,10 @@ export default function GoogleDocsApp({
   customPaperHeader,
   isVibeMode = false,
   customActions,
-  onUpdateText,
+  onUpdateContent,
   onTitleChange,
+  hideRuler = false,
+  onShare,
 }: {
   initialTitle?: string;
   initialContent?: string;
@@ -57,8 +59,10 @@ export default function GoogleDocsApp({
   customPaperHeader?: React.ReactNode;
   isVibeMode?: boolean;
   customActions?: React.ReactNode;
-  onUpdateText?: (text: string) => void;
+  onUpdateContent?: (html: string) => void;
   onTitleChange?: (title: string) => void;
+  hideRuler?: boolean;
+  onShare?: (mode: 'editor' | 'viewer') => void;
 }) {
   const [title, setTitle] = useState(initialTitle)
   const [content, setContent] = useState(initialContent)
@@ -159,7 +163,7 @@ export default function GoogleDocsApp({
     setTitle(newTitle)
     document.title = `${newTitle} | MenuSnap`
     if (onTitleChange) onTitleChange(newTitle)
-  }, [onUpdateText, onTitleChange])
+  }, [onTitleChange])
 
   return (
     <div
@@ -171,7 +175,7 @@ export default function GoogleDocsApp({
       } as React.CSSProperties}
     >
       {!hideHeader && (
-        <div className="flex flex-col bg-white border-b border-[#dadce0] shadow-sm z-[60] shrink-0">
+        <div className="flex flex-col bg-white border-b border-[#dadce0] shadow-sm z-40 shrink-0">
           <Header
             title={title}
             onTitleChange={handleTitleChange}
@@ -181,11 +185,12 @@ export default function GoogleDocsApp({
             onlineUsers={onlineUsers}
             isConnected={isConnected}
             customActions={customActions}
+            onShare={onShare}
           />
           {!readOnly && (
             <div className="flex flex-col">
               <Toolbar editor={editor} title={title} isVibeMode={isVibeMode} />
-              <Ruler onMarginsChange={setMargins} />
+              {!hideRuler && <Ruler onMarginsChange={setMargins} />}
             </div>
           )}
         </div>
@@ -204,7 +209,7 @@ export default function GoogleDocsApp({
             docId={docId}
             socket={socket}
             onlineUsers={onlineUsers}
-            onUpdateText={onUpdateText}
+            onUpdateContent={onUpdateContent}
           />
         </div>
       </main>
@@ -304,9 +309,9 @@ export default function GoogleDocsApp({
           margin-bottom: 0;
         }
 
-        .ProseMirror h1 { font-size: 24pt; font-weight: bold; margin-bottom: 24px; transition: color 0.2s; }
-        .ProseMirror h2 { font-size: 18pt; font-weight: bold; margin-bottom: 18px; transition: color 0.2s; }
-        .ProseMirror h3 { font-size: 14pt; font-weight: bold; margin-bottom: 14px; transition: color 0.2s; }
+        .ProseMirror h1 { font-size: 18pt; font-weight: bold; margin-bottom: 12px; transition: color 0.2s; color: #ea4335; }
+        .ProseMirror h2 { font-size: 14pt; font-weight: bold; margin-bottom: 8px; transition: color 0.2s; color: #ea4335; }
+        .ProseMirror h3 { font-size: 12pt; font-weight: bold; margin-bottom: 6px; transition: color 0.2s; color: #ea4335; }
 
         .ProseMirror ul {
           list-style-type: disc;

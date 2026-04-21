@@ -223,6 +223,36 @@ export const TextCase = Extension.create({
                 }
 })
 
+export const CategoryAutodetect = Extension.create({
+    name: 'categoryAutodetect',
+    addOptions() {
+        return {
+            levels: [2],
+        }
+    },
+    onUpdate() {
+        const { state } = this.editor
+        const { selection } = state
+        const { $from } = selection
+        const node = $from.parent
+
+        if (node.type.name === 'paragraph') {
+            const text = node.textContent?.trim()
+            // Detect all-caps categories (at least 4 chars, no digits, no dashes/prices)
+            if (text && text === text.toUpperCase() && text.length >= 4 && !text.includes('-') && !text.includes(':') && !text.match(/\d/)) {
+                // Use setTimeout to avoid conflict with the current update cycle
+                setTimeout(() => {
+                    if (this.editor.isDestroyed) return
+                    const { state: currentState } = this.editor
+                    if (currentState.selection.$from.parent.textContent.trim() === text) {
+                        this.editor.commands.setNode('heading', { level: 2 })
+                    }
+                }, 10)
+            }
+        }
+    }
+})
+
 
 export const MultiSelection = Extension.create({
     name: 'multiSelection',
@@ -307,7 +337,7 @@ interface EditorProps {
     docId?: string;
     socket?: Socket | null;
     onlineUsers?: any[];
-    onUpdateText?: (text: string) => void;
+    onUpdateContent?: (html: string) => void;
 }
 
 export default function GoogleDocsEditor(props: EditorProps) {
@@ -326,7 +356,7 @@ function GoogleDocsEditorInner({
     docId,
     socket,
     onlineUsers,
-    onUpdateText
+    onUpdateContent
 }: EditorProps & { socket: Socket | null, onlineUsers: any[] }) {
     const isRemoteUpdate = useRef(false)
 
@@ -360,6 +390,7 @@ function GoogleDocsEditorInner({
             TabNode,
             TextCase,
             MultiSelection,
+            CategoryAutodetect,
             Extension.create({
                 name: 'tabKey',
                 priority: 1000,
@@ -492,7 +523,7 @@ function GoogleDocsEditorInner({
         onUpdate: ({ editor }) => {
             const html = editor.getHTML()
             onChange(html)
-            if (onUpdateText) onUpdateText(editor.getText())
+            if (onUpdateContent) onUpdateContent(html)
             if (!isRemoteUpdate.current && socket && docId) {
                 socket.emit('content-change', { docId, content: html })
             }

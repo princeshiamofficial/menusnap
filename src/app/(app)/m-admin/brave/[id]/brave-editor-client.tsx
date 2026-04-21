@@ -68,7 +68,7 @@ import Image from 'next/image';
 
 const GoogleDocsApp = dynamic(() => import("@/components/editor/google-docs/google-docs-app"), {
     ssr: false,
-    loading: () => <div className="h-screen w-full bg-[#f8f9fa] flex items-center justify-center animate-pulse text-gray-500 font-medium font-sans text-xl">Loading Vibe Editor...</div>
+    loading: () => <div className="h-screen w-full bg-[#f8f9fa] flex items-center justify-center animate-pulse text-gray-500 font-medium font-sans text-xl">Loading Brave Docs Editor...</div>
 });
 
 
@@ -276,7 +276,18 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                                                     />
                                                     <div className="flex-1">
                                                         <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
-                                                        {item.description && <p className="text-xs text-muted-foreground">{decodeHtmlEntities(item.description)}</p>}
+                                                        {item.description && <p className="text-xs text-muted-foreground leading-relaxed">{decodeHtmlEntities(item.description)}</p>}
+                                                        {item.subItems && item.subItems.length > 0 && (
+                                                            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                                                                {item.subItems.map((si, idx) => (
+                                                                    <div key={idx} className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1.5 bg-muted/50 px-2 py-0.5 rounded-full border border-border/50">
+                                                                        <span className="w-1 h-1 rounded-full bg-primary/40 shrink-0" />
+                                                                        <span className="font-medium">{decodeHtmlEntities(si.name)}</span>
+                                                                        {si.price ? <span className="opacity-70">৳{si.price}</span> : null}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div className="text-right">
                                                         <p className="font-semibold text-sm text-foreground">৳{item.price.toLocaleString()}</p>
@@ -317,7 +328,7 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
 
 type SaveStatus = "unsaved" | "saving" | "saved";
 
-export default function VibeModePage() {
+export default function BraveModePage() {
     const params = useParams();
     const router = useRouter();
     const { toast } = useToast();
@@ -334,23 +345,28 @@ export default function VibeModePage() {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [searchFilterType, setSearchFilterType] = useState<'items' | 'categories'>('items');
 
-    const handleBulkInputUpdate = useCallback((text: string) => {
-        if (!text) return;
+    const handleBulkInputUpdate = useCallback((html: string) => {
+        if (!html) return;
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const nodes = doc.body.querySelectorAll('p, h1, h2, h3');
         
         const currentData = JSON.stringify(order?.items);
-        const lines = text.split('\n');
         const newItems: OrderItemDetail[] = [];
         let currentCategory: { id: string, name: string } | null = null;
         
-        lines.forEach((line, index) => {
-            const trimmed = line.trim();
+        nodes.forEach((node, index) => {
+            const trimmed = node.textContent?.trim();
             if (!trimmed) return;
 
-            // Category matching
-            const catMatch = trimmed.match(/^#+\s*(.*)$/) || (trimmed === trimmed.toUpperCase() && trimmed.length > 3 && !trimmed.includes('-') ? [null, trimmed] : null);
+            // 1. Category matching
+            const isHeading = ['H1', 'H2', 'H3'].includes(node.tagName);
+            const catMatch = trimmed.match(/^#+\s*(.*)$/);
+            const isAllCaps = trimmed === trimmed.toUpperCase() && trimmed.length > 3 && !trimmed.includes('-') && !trimmed.match(/\d/);
             
-            if (catMatch) {
-                const catName = (catMatch[1] || catMatch[0]).trim();
+            if (catMatch || isHeading || isAllCaps) {
+                const catName = (catMatch ? catMatch[1].trim() : trimmed).replace(/^#+/, '').trim();
                 const existingCat = allCategories.find(c => c.name.toLowerCase() === catName.toLowerCase());
                 currentCategory = {
                     id: existingCat ? String(existingCat.id) : `new-${index}`,
@@ -359,37 +375,52 @@ export default function VibeModePage() {
                 return;
             }
 
-            // Item matching (e.g., "Item Name - 100")
-            const priceMatch = trimmed.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*$/);
-            if (priceMatch && !trimmed.includes('\n')) {
-                const itemName = priceMatch[1].trim();
-                const price = parseFloat(priceMatch[2]);
+            // 2. Sub-item matching (starts with -)
+            if (trimmed.startsWith('-') && newItems.length > 0) {
+                const subItemText = trimmed.replace(/^-/, '').trim();
+                const siPriceMatch = subItemText.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*(?:\/-)?\s*$/);
                 
-                if (trimmed.startsWith('-') && newItems.length > 0) {
-                    const lastItem = newItems[newItems.length - 1];
-                    if (!lastItem.subItems) lastItem.subItems = [];
+                const lastItem = newItems[newItems.length - 1];
+                if (!lastItem.subItems) lastItem.subItems = [];
+                
+                if (siPriceMatch) {
                     lastItem.subItems.push({
                         id: `si-${index}`,
-                        name: itemName.replace(/^-/, '').trim(),
-                        price: price
+                        name: siPriceMatch[1].trim(),
+                        price: parseFloat(siPriceMatch[2])
                     });
                 } else {
-                    newItems.push({
-                        id: `item-${index}`,
-                        name: itemName,
-                        price: price,
-                        quantity: 1,
-                        categoryId: currentCategory?.id || 'uncategorized',
-                        categoryName: currentCategory?.name || 'Uncategorized',
-                        description: '',
-                        subItems: []
+                    lastItem.subItems.push({
+                        id: `si-${index}`,
+                        name: subItemText,
+                        price: 0
                     });
                 }
                 return;
             }
 
-            // Description logic
-            if (newItems.length > 0 && !trimmed.startsWith('-') && !trimmed.startsWith('#')) {
+            // 3. Item matching (has a price)
+            const priceMatch = trimmed.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*(?:\/-)?\s*$/);
+            if (priceMatch) {
+                const itemName = priceMatch[1].trim();
+                const priceMatchValue = priceMatch[2];
+                const price = parseFloat(priceMatchValue);
+                
+                newItems.push({
+                    id: `item-${index}`,
+                    name: itemName,
+                    price: price,
+                    quantity: 1,
+                    categoryId: currentCategory?.id || 'uncategorized',
+                    categoryName: currentCategory?.name || 'Uncategorized',
+                    description: '',
+                    subItems: []
+                });
+                return;
+            }
+
+            // 4. Description logic (everything else following an item)
+            if (newItems.length > 0) {
                 const lastItem = newItems[newItems.length - 1];
                 if (!lastItem.description) {
                     lastItem.description = trimmed;
@@ -399,7 +430,6 @@ export default function VibeModePage() {
             }
         });
 
-        // Only update if things actually changed to avoid cycles
         if (JSON.stringify(newItems) === currentData) return;
 
         setOrder(prev => {
@@ -411,7 +441,7 @@ export default function VibeModePage() {
 
     const initialEditorContent = useMemo(() => {
         if (!order?.items) return "";
-        let text = "";
+        let html = "";
         const categoryMap = new Map<string, OrderItemDetail[]>();
         
         order.items.forEach(item => {
@@ -420,23 +450,24 @@ export default function VibeModePage() {
             categoryMap.get(catName)!.push(item);
         });
 
+        let index = 0;
         categoryMap.forEach((items, catName) => {
-            text += `# ${catName}\n`;
+            if (index > 0) html += "<p></p><p></p>";
+            html += `<h2>${catName}</h2>`;
+            index++;
             items.forEach(item => {
-                text += `${decodeHtmlEntities(item.name)}${item.price ? ` - ${item.price}` : ''}\n`;
+                html += `<p>${decodeHtmlEntities(item.name)}${item.price ? ` ${item.price}/-` : ''}</p>`;
                 if (item.description) {
-                    text += `${decodeHtmlEntities(item.description)}\n`;
+                    html += `<p><em>${decodeHtmlEntities(item.description)}</em></p>`;
                 }
                 if (item.subItems && item.subItems.length > 0) {
                     item.subItems.forEach(si => {
-                        text += `- ${decodeHtmlEntities(si.name)}${si.price ? ` - ${si.price}` : ''}\n`;
+                        html += `<p>- ${decodeHtmlEntities(si.name)}${si.price ? ` ${si.price}/-` : ''}</p>`;
                     });
                 }
-                text += "\n";
             });
-            text += "\n";
         });
-        return text.trim();
+        return html;
     }, [order?.id]);
 
     const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
@@ -527,7 +558,7 @@ export default function VibeModePage() {
             setSaveStatus("saving");
             
             try {
-                console.log("Auto-saving Vibe document:", order.orderId);
+                console.log("Auto-saving Brave document:", order.orderId);
                 const result = await updateOrderInMySql(order);
                 
                 if (!result.success) {
@@ -536,7 +567,7 @@ export default function VibeModePage() {
 
                 lastSavedDataRef.current = JSON.stringify(order);
                 setSaveStatus("saved");
-                console.log("Vibe Auto-save successful.");
+                console.log("Brave Auto-save successful.");
             } catch (e: any) {
                 console.error("Save error:", e);
                 setSaveStatus("unsaved");
@@ -607,7 +638,7 @@ export default function VibeModePage() {
             });
 
             const blob = await generateMenuDocx(menuItemsForDocx, categoriesForDocx, order.customer?.restaurant || "Menu Selection");
-            saveAs(blob, `${order.customer?.restaurant || 'menu'}_${order.orderId}_vibe.docx`);
+            saveAs(blob, `${order.customer?.restaurant || 'menu'}_${order.orderId}_brave.docx`);
 
         } catch (error) {
             console.error("Failed to generate DOCX file:", error);
@@ -749,29 +780,18 @@ export default function VibeModePage() {
     }
 
     if (!isAdminLoggedIn) return <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 sm:p-6 md:p-8"><AdminLoginForm /></div>;
-    if (error) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Vibe</h2><p className="text-muted-foreground max-w-md">{error}</p><Button variant="outline" onClick={() => router.back()} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go Back</Button></div>;
-    if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Vibe Order Not Found</h2><p className="text-muted-foreground max-w-md">The requested vibe document could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Documents History</Button></div>;
+    if (error) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><AlertTriangle className="h-12 w-12 text-destructive mb-4" /><h2 className="text-xl font-semibold text-destructive mb-2">Error Loading Brave Docs</h2><p className="text-muted-foreground max-w-md">{error}</p><Button variant="outline" onClick={() => router.back()} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go Back</Button></div>;
+    if (!order) return <div className="bg-muted min-h-screen p-8 flex flex-col items-center justify-center text-center"><FileTextIcon className="h-12 w-12 text-muted-foreground mb-4" /><h2 className="text-xl font-semibold mb-2">Brave Docs Not Found</h2><p className="text-muted-foreground max-w-md">The requested document could not be found.</p><Button variant="outline" onClick={() => router.push('/m-admin/manage-orders')} className="mt-6"><ArrowLeft className="mr-2 h-4 w-4" /> Go to Documents History</Button></div>;
 
-    const SaveStatusIndicator = () => {
-        switch (saveStatus) {
-            case 'saving':
-                return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Saving...</div>;
-            case 'saved':
-                return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Check className="h-4 w-4" />Saved</div>;
-            case 'unsaved':
-                return <div className="flex items-center gap-2 text-sm text-yellow-600">Unsaved changes</div>;
-            default:
-                return null;
-        }
-    };
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-[#f8f9fa]">
             <GoogleDocsApp
                 key={order.id}
                 initialTitle={order.customer?.restaurant || "New Menu Document"}
-                initialContent={initialEditorContent ? `<p>${initialEditorContent.replace(/\n/g, '</p><p>')}</p>` : ''}
-                onUpdateText={handleBulkInputUpdate}
+                initialContent={initialEditorContent}
+                onUpdateContent={handleBulkInputUpdate}
+                hideRuler={true}
                 onTitleChange={(newTitle) => {
                     if (order && order.customer) {
                         handleOrderUpdate({
@@ -782,6 +802,7 @@ export default function VibeModePage() {
                 }}
                 docId={order.id}
                 isVibeMode={true}
+                onShare={handleShare}
                 customActions={
                     <Button 
                         onClick={() => setIsPreviewOpen(true)}
@@ -807,3 +828,4 @@ export default function VibeModePage() {
         </div>
     );
 }
+

@@ -1073,10 +1073,10 @@ export default function OrderDetailsClient() {
                                         Share with editor
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => {
-                                        router.push(`/m-admin/vibe/${order.id}`);
+                                        router.push(`/m-admin/brave/${order.id}`);
                                     }}>
                                         <Sparkles className="mr-2 h-4 w-4 text-primary" />
-                                        Vibe Mode
+                                        Brave Docs
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
