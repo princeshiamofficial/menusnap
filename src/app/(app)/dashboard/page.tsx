@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, AlertTriangle, X, ListOrdered, Layers, FileEdit, History, TrendingUp, ChevronDown } from "lucide-react";
 import { motion, animate, AnimatePresence } from "framer-motion";
 import { useClientAuth } from '@/hooks/use-client-auth';
+import { useRouter } from 'next/navigation';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
 import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
@@ -427,7 +428,29 @@ function MobileDashboardHeader({ businessName, type }: { businessName?: string |
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkIsDesktop = window.innerWidth >= 768;
+    setIsDesktop(checkIsDesktop);
+    
+    if (checkIsDesktop) {
+      window.location.replace('/magictab');
+    }
+
+    setIsMounted(true);
+
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        window.location.replace('/magictab');
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [topRatedTemplates, setTopRatedTemplates] = useState<ApiTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
@@ -572,6 +595,11 @@ export default function DashboardPage() {
 
 
   const showTemplateSkeletons = isLoadingTemplates || clientLoading;
+
+  // While checking or if desktop, show nothing to prevent flickering
+  if (!isMounted || isDesktop === true || isDesktop === null) {
+    return <div className="min-h-screen bg-background" />;
+  }
 
   return (
     <div className="min-h-screen max-w-[100vw] overflow-x-hidden flex flex-col bg-background">
