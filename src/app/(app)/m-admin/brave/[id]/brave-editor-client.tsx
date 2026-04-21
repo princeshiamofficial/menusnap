@@ -276,7 +276,7 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
                                                     />
                                                     <div className="flex-1">
                                                         <p className="font-medium text-sm text-foreground">{decodeHtmlEntities(item.name)}</p>
-                                                        {item.description && <p className="text-xs text-muted-foreground leading-relaxed">{decodeHtmlEntities(item.description)}</p>}
+                                                        {item.description && <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">{decodeHtmlEntities(item.description)}</p>}
                                                         {item.subItems && item.subItems.length > 0 && (
                                                             <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
                                                                 {item.subItems.map((si, idx) => (
@@ -399,35 +399,35 @@ export default function BraveModePage() {
                 return;
             }
 
-            // 3. Item matching (has a price)
-            const priceMatch = trimmed.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*(?:\/-)?\s*$/);
-            if (priceMatch) {
-                const itemName = priceMatch[1].trim();
-                const priceMatchValue = priceMatch[2];
-                const price = parseFloat(priceMatchValue);
-                
-                newItems.push({
-                    id: `item-${index}`,
-                    name: itemName,
-                    price: price,
-                    quantity: 1,
-                    categoryId: currentCategory?.id || 'uncategorized',
-                    categoryName: currentCategory?.name || 'Uncategorized',
-                    description: '',
-                    subItems: []
-                });
+            // 3. Description logic (has <em> tag or italic formatting)
+            const hasItalic = node.querySelector('em, i') !== null || (node instanceof HTMLElement && node.style.fontStyle === 'italic');
+            if (hasItalic) {
+                if (newItems.length > 0) {
+                    const lastItem = newItems[newItems.length - 1];
+                    if (!lastItem.description) {
+                        lastItem.description = trimmed;
+                    } else {
+                        lastItem.description += '\n' + trimmed;
+                    }
+                }
                 return;
             }
 
-            // 4. Description logic (everything else following an item)
-            if (newItems.length > 0) {
-                const lastItem = newItems[newItems.length - 1];
-                if (!lastItem.description) {
-                    lastItem.description = trimmed;
-                } else {
-                    lastItem.description += ' ' + trimmed;
-                }
-            }
+            // 4. Item matching (Everything else)
+            const priceMatch = trimmed.match(/^(.*?)\s*[-:]?\s*(\d+(\.\d+)?)\s*(?:\/-)?\s*$/);
+            const itemName = priceMatch ? priceMatch[1].trim() : trimmed;
+            const price = priceMatch ? parseFloat(priceMatch[2]) : 0;
+            
+            newItems.push({
+                id: `item-${index}`,
+                name: itemName,
+                price: price,
+                quantity: 1,
+                categoryId: currentCategory?.id || 'uncategorized',
+                categoryName: currentCategory?.name || 'Uncategorized',
+                description: '',
+                subItems: []
+            });
         });
 
         if (JSON.stringify(newItems) === currentData) return;
@@ -458,7 +458,10 @@ export default function BraveModePage() {
             items.forEach(item => {
                 html += `<p>${decodeHtmlEntities(item.name)}${item.price ? ` ${item.price}/-` : ''}</p>`;
                 if (item.description) {
-                    html += `<p><em>${decodeHtmlEntities(item.description)}</em></p>`;
+                    const descLines = item.description.split('\n');
+                    descLines.forEach(line => {
+                        html += `<p><em>${decodeHtmlEntities(line)}</em></p>`;
+                    });
                 }
                 if (item.subItems && item.subItems.length > 0) {
                     item.subItems.forEach(si => {

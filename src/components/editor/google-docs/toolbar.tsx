@@ -1,6 +1,7 @@
 "use client"
 
 import { Editor } from '@tiptap/react'
+import { cn, decodeHtmlEntities } from '@/lib/utils'
 import {
     Bold, Italic, Underline, Undo, Redo, List, ListOrdered, Type,
     AlignLeft, AlignCenter, AlignRight, AlignJustify,
@@ -181,7 +182,22 @@ export default function Toolbar({ editor, title, isVibeMode = false }: ToolbarPr
                         <ToolbarButton
                             onClick={() => {
                                 if (isSelectionEmpty) return;
-                                editor.chain().focus().toggleHeading({ level: 2 }).run()
+                                const { state } = editor;
+                                const { selection } = state;
+                                const text = state.doc.textBetween(selection.from, selection.to, '\n');
+                                const lines = text.split('\n');
+                                const formattedHtml = lines
+                                    .map(line => {
+                                        const trimmed = line.trim().replace(/^- /, '').trim();
+                                        if (!trimmed) return '';
+                                        return `<h2>${decodeHtmlEntities(trimmed)}</h2>`;
+                                    })
+                                    .filter(html => html !== '')
+                                    .join('');
+                                
+                                if (formattedHtml) {
+                                    editor.chain().focus().insertContent(formattedHtml).run();
+                                }
                             }}
                             disabled={isSelectionEmpty}
                             active={editor.isActive('heading', { level: 2 })}
@@ -191,7 +207,22 @@ export default function Toolbar({ editor, title, isVibeMode = false }: ToolbarPr
                         <ToolbarButton
                             onClick={() => {
                                 if (isSelectionEmpty) return;
-                                editor.chain().focus().setParagraph().run()
+                                const { state } = editor;
+                                const { selection } = state;
+                                const text = state.doc.textBetween(selection.from, selection.to, '\n');
+                                const lines = text.split('\n');
+                                const formattedHtml = lines
+                                    .map(line => {
+                                        const trimmed = line.trim().replace(/^- /, '').trim();
+                                        if (!trimmed) return '';
+                                        return `<p>${decodeHtmlEntities(trimmed)}</p>`;
+                                    })
+                                    .filter(html => html !== '')
+                                    .join('');
+                                
+                                if (formattedHtml) {
+                                    editor.chain().focus().insertContent(formattedHtml).run();
+                                }
                             }}
                             disabled={isSelectionEmpty}
                             active={editor.isActive('paragraph') && !editor.isActive('heading')}
@@ -201,7 +232,22 @@ export default function Toolbar({ editor, title, isVibeMode = false }: ToolbarPr
                         <ToolbarButton
                             onClick={() => {
                                 if (isSelectionEmpty) return;
-                                editor.chain().focus().setParagraph().toggleItalic().run()
+                                const { state } = editor;
+                                const { selection } = state;
+                                const text = state.doc.textBetween(selection.from, selection.to, '\n');
+                                const lines = text.split('\n');
+                                const formattedHtml = lines
+                                    .map(line => {
+                                        const trimmed = line.trim().replace(/^- /, '').trim();
+                                        if (!trimmed) return '';
+                                        return `<p><em>${decodeHtmlEntities(trimmed)}</em></p>`;
+                                    })
+                                    .filter(html => html !== '')
+                                    .join('');
+                                
+                                if (formattedHtml) {
+                                    editor.chain().focus().insertContent(formattedHtml).run();
+                                }
                             }}
                             disabled={isSelectionEmpty}
                             active={editor.isActive('italic')}
@@ -213,10 +259,21 @@ export default function Toolbar({ editor, title, isVibeMode = false }: ToolbarPr
                                 if (isSelectionEmpty) return;
                                 const { state } = editor;
                                 const { selection } = state;
-                                const text = state.doc.textBetween(selection.from, selection.to);
+                                const text = state.doc.textBetween(selection.from, selection.to, '\n');
+                                const lines = text.split('\n');
+                                const formattedHtml = lines
+                                    .map(line => {
+                                        const trimmed = line.trim();
+                                        if (!trimmed) return '';
+                                        const content = trimmed.startsWith('-') ? trimmed : `- ${trimmed}`;
+                                        return `<p>${decodeHtmlEntities(content)}</p>`;
+                                    })
+                                    .filter(html => html !== '')
+                                    .join('');
                                 
-                                const formattedText = text.trim().startsWith('-') ? text : `- ${text}`;
-                                editor.chain().focus().setParagraph().insertContent(formattedText).run();
+                                if (formattedHtml) {
+                                    editor.chain().focus().insertContent(formattedHtml).run();
+                                }
                             }}
                             disabled={isSelectionEmpty}
                             icon={<ListIcon className="w-5 h-5" />}
