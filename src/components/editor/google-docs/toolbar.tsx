@@ -283,7 +283,6 @@ export default function Toolbar({ editor, title, isVibeMode = false }: ToolbarPr
                 </div>
             ) : (
                 <>
-                    {/* Standard Full Toolbar (Hidden in Brave Mode) */}
                     <div className="flex items-center gap-0.5">
                         <ToolbarButton
                             onClick={() => editor.chain().focus().undo().run()}
@@ -306,8 +305,286 @@ export default function Toolbar({ editor, title, isVibeMode = false }: ToolbarPr
 
                     <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
 
-                    {/* All other standard tools... (Existing logic remains for normal mode) */}
-                    {/* ... (truncated for brevity in this replace call, but I will maintain full state) */}
+                    {/* Heading Selector */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Button variant="ghost" size="sm" className="h-8 px-2 flex items-center gap-2 text-sm font-medium hover:bg-white transition-all duration-200 shadow-none border border-transparent hover:border-[#dadce0]">
+                                    {HEADINGS.find(h => h.value === (editor.getAttributes('heading').level || 0))?.label || 'Normal text'}
+                                    <ChevronDown className="w-3 h-3 text-gray-500" />
+                                </Button>
+                            </motion.div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="p-1 min-w-[150px] animate-in slide-in-from-top-2 duration-200">
+                            {HEADINGS.map(h => (
+                                <DropdownMenuItem
+                                    key={h.value}
+                                    onClick={() => {
+                                        if (h.value === 0) executeCommand('setParagraph')
+                                        else executeCommand('toggleHeading', { level: h.value as any })
+                                    }}
+                                    className={`p-2 rounded-sm cursor-pointer hover:bg-[#f1f3f4] ${h.value === 0 ? 'text-base' : `text-${h.value + 1}xl font-bold`}`}
+                                >
+                                    {h.label}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
+
+                    {/* Font Selector */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Button variant="ghost" size="sm" className="h-7 sm:h-8 px-1.5 sm:px-2 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-medium hover:bg-white transition-all duration-200 shadow-none border border-transparent hover:border-[#dadce0] min-w-[80px] sm:min-w-[100px] justify-between">
+                                    <span className="truncate">{editor.getAttributes('textStyle').fontFamily || 'Arial'}</span>
+                                    <ChevronDown className="w-3 h-3 text-gray-500" />
+                                </Button>
+                            </motion.div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="p-1 max-h-[300px] overflow-y-auto animate-in slide-in-from-top-2 duration-200 no-scrollbar">
+                            {FONTS.map(f => (
+                                <DropdownMenuItem
+                                    key={f.value}
+                                    onClick={() => executeCommand('setFontFamily', f.value)}
+                                    style={{ fontFamily: f.value }}
+                                    className="p-2 rounded-sm cursor-pointer hover:bg-[#f1f3f4]"
+                                >
+                                    {f.label}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
+
+                    {/* Font Size */}
+                    <div className="flex items-center bg-white border border-[#dadce0] rounded-md px-0.5 sm:px-1 h-7 sm:h-8 shadow-sm">
+                        <ToolbarButton onClick={decrementFontSize} icon={<Minus className="w-3 h-3" />} transparent />
+                        <input
+                            type="text"
+                            value={fontSize}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '')
+                                if (val === '') setFontSize(0)
+                                else setFontSize(parseInt(val))
+                            }}
+                            onBlur={() => {
+                                if (fontSize > 0) {
+                                    executeCommand('setFontSize', `${fontSize}pt`)
+                                } else {
+                                    setFontSize(11)
+                                }
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.currentTarget.blur()
+                                }
+                            }}
+                            className="w-[28px] sm:w-[36px] h-full text-xs sm:text-sm font-medium text-center focus:outline-none bg-transparent"
+                        />
+                        <ToolbarButton onClick={incrementFontSize} icon={<Plus className="w-3 h-3" />} transparent />
+                    </div>
+
+                    <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
+
+                    {/* Formatting Group */}
+                    <div className="flex items-center gap-0.5">
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleBold')}
+                            active={editor.isActive('bold')}
+                            icon={<Bold className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleItalic')}
+                            active={editor.isActive('italic')}
+                            icon={<Italic className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleUnderline')}
+                            active={editor.isActive('underline')}
+                            icon={<Underline className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleHighlight')}
+                            active={editor.isActive('highlight')}
+                            icon={<Highlighter className="w-4 h-4" />}
+                        />
+
+                        {/* Text Color */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md hover:bg-white border border-transparent hover:border-[#dadce0] hover:shadow-sm flex flex-col items-center justify-center gap-0">
+                                        <Baseline className="w-4 h-4 text-gray-600" />
+                                        <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: editor.getAttributes('textStyle').color || '#000000' }} />
+                                    </Button>
+                                </motion.div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                align="start"
+                                sideOffset={8}
+                                className="p-2 min-w-[140px] grid grid-cols-4 gap-2 animate-in slide-in-from-top-2 duration-200 z-[100] shadow-xl border border-[#dadce0] bg-white"
+                            >
+                                {COLORS.map(c => (
+                                    <DropdownMenuItem
+                                        key={c.value}
+                                        onClick={() => executeCommand('setColor', c.value)}
+                                        className="p-0 flex items-center justify-center w-7 h-7 rounded-full cursor-pointer hover:scale-110 transition-transform border border-gray-100"
+                                        style={{ backgroundColor: c.value }}
+                                        title={c.label}
+                                    >
+                                        {editor.getAttributes('textStyle').color === c.value && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm border border-black/10" />
+                                        )}
+                                    </DropdownMenuItem>
+                                ))}
+                                <DropdownMenuItem
+                                    onClick={() => {
+                                        executeCommand('unsetColor')
+                                        editor.chain().focus().run()
+                                    }}
+                                    className="col-span-4 mt-1 p-1.5 text-[11px] font-medium text-center justify-center hover:bg-[#f1f3f4] rounded-md transition-colors border-t border-gray-100"
+                                >
+                                    Reset color
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {/* Text Case */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md hover:bg-white border border-transparent hover:border-[#dadce0] hover:shadow-sm">
+                                        <CaseSensitive className="w-4 h-4 text-gray-600" />
+                                    </Button>
+                                </motion.div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                align="start"
+                                sideOffset={8}
+                                className="p-1 min-w-[150px] animate-in slide-in-from-top-2 duration-200 z-[100] shadow-xl border border-[#dadce0] bg-white"
+                            >
+                                {TEXT_CASES.map(tc => (
+                                    <DropdownMenuItem
+                                        key={tc.value}
+                                        onClick={() => executeCommand('setTextCase', tc.value)}
+                                        className="p-2 text-xs font-medium rounded-sm cursor-pointer hover:bg-[#f1f3f4] transition-colors"
+                                    >
+                                        {tc.label}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+
+                    <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
+
+                    <div className="flex items-center gap-0.5">
+                        <ToolbarButton
+                            onClick={setLink}
+                            active={editor.isActive('link')}
+                            icon={<LinkIcon className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={addImage}
+                            icon={<ImageIcon className="w-4 h-4" />}
+                        />
+                    </div>
+
+                    <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
+
+                    <div className="flex items-center gap-0.5">
+                        <ToolbarButton
+                            onClick={() => executeCommand('setTextAlign', 'left')}
+                            active={editor.isActive({ textAlign: 'left' })}
+                            icon={<AlignLeft className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('setTextAlign', 'center')}
+                            active={editor.isActive({ textAlign: 'center' })}
+                            icon={<AlignCenter className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('setTextAlign', 'right')}
+                            active={editor.isActive({ textAlign: 'right' })}
+                            icon={<AlignRight className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('setTextAlign', 'justify')}
+                            active={editor.isActive({ textAlign: 'justify' })}
+                            icon={<AlignJustify className="w-4 h-4" />}
+                        />
+
+                        {/* Line Spacing */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md hover:bg-white border border-transparent hover:border-[#dadce0] hover:shadow-sm">
+                                        <LineHeightIcon className="w-4 h-4 text-gray-600" />
+                                    </Button>
+                                </motion.div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                align="start"
+                                sideOffset={8}
+                                className="p-1 min-w-[120px] animate-in slide-in-from-top-2 duration-200 z-[100] shadow-xl border border-[#dadce0] bg-white"
+                            >
+                                {LINE_HEIGHTS.map(lh => (
+                                    <DropdownMenuItem
+                                        key={lh.value}
+                                        onClick={() => executeCommand('setLineHeight', lh.value)}
+                                        className="p-2 text-xs font-medium rounded-sm cursor-pointer hover:bg-[#f1f3f4] transition-colors"
+                                    >
+                                        {lh.label}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+
+                    <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
+
+                    <div className="flex items-center gap-0.5">
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleBulletList')}
+                            active={editor.isActive('bulletList')}
+                            icon={<List className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleOrderedList')}
+                            active={editor.isActive('orderedList')}
+                            icon={<ListOrdered className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleTaskList')}
+                            active={editor.isActive('taskList')}
+                            icon={<CheckSquare className="w-4 h-4" />}
+                        />
+                    </div>
+
+                    <Separator orientation="vertical" className="hidden sm:block mx-1 sm:mx-2 h-6 bg-[#dadce0]" />
+
+                    <div className="flex items-center gap-0.5">
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleBlockquote')}
+                            active={editor.isActive('blockquote')}
+                            icon={<Quote className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => executeCommand('toggleCodeBlock')}
+                            active={editor.isActive('codeBlock')}
+                            icon={<Code className="w-4 h-4" />}
+                        />
+                        <ToolbarButton
+                            onClick={() => {
+                                executeCommand('unsetAllMarks')
+                                executeCommand('clearNodes')
+                            }}
+                            icon={<RemoveFormatting className="w-4 h-4" />}
+                        />
+                    </div>
                 </>
             )}
         </motion.div>
