@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { submitEbookLead } from '@/app/actions/ebook';
+import { useRouter } from 'next/navigation';
 
 const chapters = [
   {
@@ -61,6 +62,7 @@ const chapters = [
 
 export default function EBookPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
@@ -247,16 +249,14 @@ export default function EBookPage() {
                   // Still capture lead but don't wait for email sending
                   submitEbookLead(email);
                   
-                  toast({
-                    title: "ধন্যবাদ!",
-                    description: "ইবুকটি ডাউনলোড হচ্ছে...",
-                  });
-                  
-                  // Direct download
+                  // Trigger download
                   const link = document.createElement('a');
                   link.href = '/Business Growth Guide By Color Hut.pdf';
                   link.download = 'Business Growth Guide By Color Hut.pdf';
                   link.click();
+
+                  // Redirect to success page
+                  router.push('/ebook/success');
                 } catch (err) {
                   toast({
                     variant: "destructive",
