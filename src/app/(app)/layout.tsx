@@ -58,6 +58,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const isAdminRoute = pathname.startsWith('/m-admin') || pathname.startsWith('/panel');
   const isStandaloneRoute = pathname.startsWith('/marketing-consultation') || 
                             pathname.startsWith('/free-design') || 
+                            pathname.startsWith('/ebook') || 
                             pathname.startsWith('/team-tracker');
 
   if (isStandaloneRoute) {
@@ -76,7 +77,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <SidebarNav />
         </Sidebar>
         <SidebarInset className="bg-background">
-          <ScrollArea className={cn("h-screen", (pathname === "/magictab" || pathname === "/magictab/") ? "pb-0" : "pb-16 md:pb-0")}> 
+          <ScrollArea className={cn("h-screen", (pathname === "/magictab" || pathname === "/magictab/" || pathname === "/ebook" || pathname === "/ebook/") ? "pb-0" : "pb-16 md:pb-0")}> 
             <main className={cn(
               "flex-1",
               (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6 sm:p-8 md:p-10"
