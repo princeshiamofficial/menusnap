@@ -244,20 +244,19 @@ export default function EBookPage() {
                 const email = formData.get('email') as string;
 
                 try {
-                  const res = await submitEbookLead(email);
+                  // Still capture lead but don't wait for email sending
+                  submitEbookLead(email);
                   
-                  if (res.success) {
-                    toast({
-                      title: "সফলভাবে পাঠানো হয়েছে!",
-                      description: res.message,
-                    });
-                  } else {
-                    toast({
-                      variant: "destructive",
-                      title: "Error",
-                      description: res.error,
-                    });
-                  }
+                  toast({
+                    title: "ধন্যবাদ!",
+                    description: "ইবুকটি ডাউনলোড হচ্ছে...",
+                  });
+                  
+                  // Direct download
+                  const link = document.createElement('a');
+                  link.href = '/Business Growth Guide By Color Hut.pdf';
+                  link.download = 'Business Growth Guide By Color Hut.pdf';
+                  link.click();
                 } catch (err) {
                   toast({
                     variant: "destructive",
