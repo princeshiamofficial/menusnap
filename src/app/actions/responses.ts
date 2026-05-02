@@ -14,11 +14,22 @@ async function ensureResponseTables() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         business_name VARCHAR(255) NOT NULL,
         whatsapp_number VARCHAR(20) NOT NULL,
-        department VARCHAR(100),
+        designation VARCHAR(100),
         requirement TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Migration: Rename department to designation if it exists
+    try {
+      const [cols]: any = await pool.execute("SHOW COLUMNS FROM responses_hiring LIKE 'department'");
+      if (cols.length > 0) {
+        await pool.execute("ALTER TABLE responses_hiring CHANGE department designation VARCHAR(100)");
+        console.log("Migrated responses_hiring: department -> designation");
+      }
+    } catch (migErr) {
+      console.error("Migration error (Hiring):", migErr);
+    }
 
     // 2. Free Design Responses
     await pool.execute(`
@@ -55,14 +66,14 @@ async function ensureResponseTables() {
 export async function saveHiringRequest(data: { 
   businessName: string; 
   whatsappNumber: string; 
-  department?: string; 
+  designation?: string; 
   requirement?: string; 
 }) {
   try {
     await ensureResponseTables();
     const [result]: any = await pool.execute(
-      'INSERT INTO responses_hiring (business_name, whatsapp_number, department, requirement) VALUES (?, ?, ?, ?)',
-      [data.businessName, data.whatsappNumber, data.department || null, data.requirement || null]
+      'INSERT INTO responses_hiring (business_name, whatsapp_number, designation, requirement) VALUES (?, ?, ?, ?)',
+      [data.businessName, data.whatsappNumber, data.designation || null, data.requirement || null]
     );
     return { success: true, id: result.insertId };
   } catch (error) {

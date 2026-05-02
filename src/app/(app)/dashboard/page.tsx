@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, AlertTriangle, X, ListOrdered, Layers, FileEdit, History, TrendingUp, ChevronDown } from "lucide-react";
 import { motion, animate, AnimatePresence } from "framer-motion";
 import { useClientAuth } from '@/hooks/use-client-auth';
+import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
@@ -1101,8 +1102,8 @@ export default function DashboardPage() {
                               const res = await saveHiringRequest({
                                 businessName: hiringBusinessName,
                                 whatsappNumber: hiringPhone,
-                                department: selectedHiringService?.category,
-                                requirement: `${selectedHiringService?.title}: ${hiringRequirements}`
+                                designation: selectedHiringService?.title,
+                                requirement: hiringRequirements
                               });
 
                               if (res.success) {
