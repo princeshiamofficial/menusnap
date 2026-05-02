@@ -18,7 +18,18 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!clientLoading && !isClientLoggedIn) {
-      router.push('/login');
+      // Ensure we redirect to the login page with a trailing slash
+      const loginPath = '/login/';
+      if (window.location.pathname !== loginPath) {
+        router.push(loginPath);
+        // Fallback to hard redirect if router.push doesn't trigger
+        const timeout = setTimeout(() => {
+          if (window.location.pathname !== loginPath) {
+            window.location.href = loginPath;
+          }
+        }, 2000);
+        return () => clearTimeout(timeout);
+      }
     }
   }, [isClientLoggedIn, clientLoading, router]);
 
