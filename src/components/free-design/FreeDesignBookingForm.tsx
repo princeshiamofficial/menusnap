@@ -1,8 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useClientAuth } from "@/hooks/use-client-auth";
+import { useToast } from "@/hooks/use-toast";
+import { saveFreeDesignRequest } from "@/app/actions/responses";
 import { 
   Select, 
   SelectContent, 
@@ -12,6 +16,63 @@ import {
 } from "@/components/ui/select";
 
 export function FreeDesignBookingForm() {
+  const { clientUser } = useClientAuth();
+  const { toast } = useToast();
+  const [businessName, setBusinessName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [businessType, setBusinessType] = useState("");
+  const [requiredDesign, setRequiredDesign] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (clientUser) {
+      if (clientUser.businessName) setBusinessName(clientUser.businessName);
+      if (clientUser.whatsappNumber) setPhone(clientUser.whatsappNumber);
+      if (clientUser.type) setBusinessType(clientUser.type);
+    }
+  }, [clientUser]);
+
+  const handleSubmit = async () => {
+    if (!businessName || !phone || !businessType || !requiredDesign) {
+      toast({
+        title: "Information Required",
+        description: "Please fill in all fields to book your slot.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await saveFreeDesignRequest({
+        businessName,
+        whatsappNumber: phone,
+        businessType,
+        requiredDesign
+      });
+
+      if (res.success) {
+        toast({
+          title: "Slot Booked!",
+          description: "We have received your request. Our team will contact you soon.",
+          variant: "success"
+        });
+        // Optional: Reset non-auth fields
+        setRequiredDesign("");
+      } else {
+        throw new Error(res.error);
+      }
+    } catch (error) {
+      toast({
+        title: "Booking Failed",
+        description: "Something went wrong. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section id="booking-form" className="bg-white py-6 md:py-24 px-6 md:px-12 lg:px-24 font-bengali">
       <div className="max-w-4xl mx-auto text-center">
@@ -57,27 +118,30 @@ export function FreeDesignBookingForm() {
         {/* Form */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left mb-8">
           <div className="space-y-2">
-            <label className="text-slate-500 font-bold ml-2">আপনার নাম</label>
+            <label className="text-slate-500 font-bold ml-2">বিজনেসের নাম</label>
             <Input 
-              placeholder="পুরো নাম লিখুন" 
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              placeholder="আপনার রেস্টুরেন্ট বা শপের নাম লিখুন" 
               className="h-16 rounded-2xl border-slate-200 focus:ring-[#F07C22] focus:border-[#F07C22] text-lg"
             />
           </div>
           <div className="space-y-2">
             <label className="text-slate-500 font-bold ml-2">ফোন নম্বর</label>
             <Input 
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               placeholder="01X-XXXXXXXX" 
               className="h-16 rounded-2xl border-slate-200 focus:ring-[#F07C22] focus:border-[#F07C22] text-lg"
             />
           </div>
           <div className="space-y-2">
             <label className="text-slate-500 font-bold ml-2">বিজনেসের ধরন</label>
-            <Select>
+            <Select onValueChange={setBusinessType} value={businessType}>
               <SelectTrigger className="h-16 rounded-2xl border-slate-200 text-lg">
                 <SelectValue placeholder="বেছে নিন" />
               </SelectTrigger>
               <SelectContent className="font-bengali">
-                <SelectItem value="none">বেছে নিন</SelectItem>
                 <SelectItem value="restaurant">রেস্টুরেন্ট</SelectItem>
                 <SelectItem value="parlour">পার্লার</SelectItem>
                 <SelectItem value="mens_salon">মেনস সেলুন</SelectItem>
@@ -88,12 +152,11 @@ export function FreeDesignBookingForm() {
           </div>
           <div className="space-y-2">
             <label className="text-slate-500 font-bold ml-2">কী ডিজাইন চান?</label>
-            <Select>
+            <Select onValueChange={setRequiredDesign} value={requiredDesign}>
               <SelectTrigger className="h-16 rounded-2xl border-slate-200 text-lg">
                 <SelectValue placeholder="বেছে নিন" />
               </SelectTrigger>
               <SelectContent className="font-bengali">
-                <SelectItem value="none">বেছে নিন</SelectItem>
                 <SelectItem value="menu_card">মেনু কার্ড</SelectItem>
                 <SelectItem value="brochure">ব্রোশার</SelectItem>
                 <SelectItem value="price_list">প্রাইস লিস্ট</SelectItem>
@@ -104,8 +167,12 @@ export function FreeDesignBookingForm() {
           </div>
         </div>
 
-        <Button className="w-full max-w-[280px] mx-auto bg-[#F07C22] hover:bg-[#D96B19] text-white h-14 rounded-2xl text-lg font-bold shadow-lg shadow-[#F07C22]/20 mb-12 flex items-center justify-center">
-          স্লট বুক করুন
+        <Button 
+          disabled={isSubmitting}
+          onClick={handleSubmit}
+          className="w-full max-w-[280px] mx-auto bg-[#F07C22] hover:bg-[#D96B19] text-white h-14 rounded-2xl text-lg font-bold shadow-lg shadow-[#F07C22]/20 mb-12 flex items-center justify-center active:scale-95 transition-all"
+        >
+          {isSubmitting ? "বুকিং হচ্ছে..." : "স্লট বুক করুন"}
         </Button>
 
       </div>

@@ -15,7 +15,8 @@ import {
   Layers, 
   Package, 
   FolderOpen,
-  Zap
+  Zap,
+  MessageSquare
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -31,6 +32,7 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/quick-manager', label: 'Quick Manager', icon: Zap, hasChevron: true },
   { href: '/m-admin/contacts', label: 'Contacts', icon: Users, hasChevron: true },
   { href: '/m-admin/manage-orders', label: 'Orders', icon: ShoppingCart, hasChevron: true },
+  { href: '/m-admin/responses', label: 'Responses', icon: MessageSquare, hasChevron: true },
   { href: '/m-admin/manage-categories', label: 'Categories', icon: LayoutList, hasChevron: true },
   { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers, hasChevron: true },

@@ -15,6 +15,7 @@ import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
 import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
 import { getClientTimer, saveClientTimer } from '@/app/actions/client-timer';
+import { saveHiringRequest } from '@/app/actions/responses';
 
 
 
@@ -345,6 +346,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                         e.preventDefault();
                         e.stopPropagation();
                         setIsHiringOpen(true);
+                        window.location.hash = 'hiring';
                       }}
                       className="flex-1 bg-red-50/50 border border-red-100 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group cursor-pointer active:scale-95 transition-all z-30"
                     >
@@ -431,6 +433,20 @@ export default function DashboardPage() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+  const { clientUser, clientLoading } = useClientAuth();
+  const { toast } = useToast();
+
+  const [hiringBusinessName, setHiringBusinessName] = useState("");
+  const [hiringPhone, setHiringPhone] = useState("");
+  const [hiringRequirements, setHiringRequirements] = useState("");
+  const [hiringIsSubmitting, setHiringIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (clientUser) {
+      if (clientUser.businessName) setHiringBusinessName(clientUser.businessName);
+      if (clientUser.whatsappNumber) setHiringPhone(clientUser.whatsappNumber);
+    }
+  }, [clientUser]);
 
   useEffect(() => {
     const checkIsDesktop = window.innerWidth >= 768;
@@ -449,19 +465,27 @@ export default function DashboardPage() {
     };
     
     window.addEventListener('resize', handleResize);
+
+    // Deep link support for hiring
+    if (window.location.hash === '#hiring') {
+      setIsHiringOpen(true);
+    }
+
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   const [topRatedTemplates, setTopRatedTemplates] = useState<ApiTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
 
-  const { clientUser, clientLoading } = useClientAuth();
+
   const [activeOfferTab, setActiveOfferTab] = useState("All");
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
   const [currentSpotlightIndex, setCurrentSpotlightIndex] = useState(-1);
   const [spotlights, setSpotlights] = useState<any[]>([]);
   const [exclusiveOffers, setExclusiveOffers] = useState<any[]>([]);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
+  const [isHiringFormView, setIsHiringFormView] = useState(false);
+  const [selectedHiringService, setSelectedHiringService] = useState<any>(null);
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
   const [timeLeft, setTimeLeft] = useState({ hours: 24, minutes: 0, seconds: 0 });
   const [targetTime, setTargetTime] = useState<Date | null>(null);
@@ -893,8 +917,6 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-
-
               {/* Bottom Interactivity */}
               <div className="absolute bottom-0 left-0 right-0 p-8 z-20 flex flex-col items-center gap-4">
                 <div
@@ -915,7 +937,7 @@ export default function DashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* Hiring Career Overlay (All Services Style) */}
+        {/* Hiring Career Overlay */}
         <AnimatePresence>
           {isHiringOpen && (
             <motion.div
@@ -923,7 +945,12 @@ export default function DashboardPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-[2px] flex items-end justify-center md:hidden"
-              onClick={() => setIsHiringOpen(false)}
+              onClick={() => {
+                setIsHiringOpen(false);
+                setIsHiringFormView(false);
+                setSelectedHiringService(null);
+                window.history.replaceState(null, '', window.location.pathname);
+              }}
             >
               <motion.div
                 initial={{ y: "100%" }}
@@ -937,10 +964,26 @@ export default function DashboardPage() {
                 <div className="flex flex-col items-center pt-2 pb-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
                   <div className="w-10 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mb-4" />
                   <div className="w-full px-6 flex justify-between items-center">
-                    <div className="w-8" /> {/* Spacer */}
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Hiring Services</h2>
+                    <div className="w-8">
+                      {isHiringFormView && (
+                        <button 
+                          onClick={() => setIsHiringFormView(false)}
+                          className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 active:scale-90 transition-transform"
+                        >
+                          <ChevronDown className="w-5 h-5 rotate-90" />
+                        </button>
+                      )}
+                    </div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {isHiringFormView ? `Hire ${selectedHiringService?.title}` : "Hiring Services"}
+                    </h2>
                     <button
-                      onClick={() => setIsHiringOpen(false)}
+                      onClick={() => {
+                        setIsHiringOpen(false);
+                        setIsHiringFormView(false);
+                        setSelectedHiringService(null);
+                        window.history.replaceState(null, '', window.location.pathname);
+                      }}
                       className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 active:scale-90 transition-transform"
                     >
                       <X className="w-5 h-5" />
@@ -948,7 +991,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Grid Content */}
+                {/* Content */}
                 <div
                   ref={scrollRef}
                   onScroll={(e) => {
@@ -959,128 +1002,148 @@ export default function DashboardPage() {
                       setShowSeeMore(true);
                     }
                   }}
-                  className="flex-1 overflow-y-auto p-4 bg-slate-50/50 dark:bg-slate-950/20"
+                  className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/20"
                 >
-                  <div className="grid grid-cols-2 gap-3 pb-20">
-                    {[
-                      {
-                        title: "Manager",
-                        category: "RESTAURANT",
-                        desc: "Expert hospitality admin & team coordination",
-                        img: "/restaurant_manager_3d.png",
-                        badge: "PRO",
-                        badgeColor: "bg-blue-500"
-                      },
-                      {
-                        title: "Beautician",
-                        category: "PARLOR",
-                        desc: "Premium salon & aesthetic care professional",
-                        img: "/beautician_3d.png",
-                        badge: "NEW",
-                        badgeColor: "bg-red-500"
-                      },
-                      {
-                        title: "Chef",
-                        category: "RESTAURANT",
-                        desc: "Master culinary speed & kitchen operation",
-                        img: "/chef_3d.png",
-                        badge: "HOT",
-                        badgeColor: "bg-orange-500"
-                      },
-                      {
-                        title: "Makeup Artist",
-                        category: "PARLOR",
-                        desc: "Creative artistry for events and shoots",
-                        img: "/makeup_artist_3d.png"
-                      },
-                      {
-                        title: "Waiter",
-                        category: "RESTAURANT",
-                        desc: "Top-tier guest serving & floor management",
-                        img: "/waiter_3d.png"
-                      },
-                      {
-                        title: "Manager",
-                        category: "PARLOR",
-                        desc: "Strategic parlor operations & staff lead",
-                        img: "/parlor_manager_3d.png"
-                      },
-                      {
-                        title: "Cashier",
-                        category: "RESTAURANT",
-                        desc: "Secure billing & merchant payment control",
-                        img: "/cashier_3d.png",
-                        badge: "NEW",
-                        badgeColor: "bg-red-500"
-                      },
-                      {
-                        title: "Receptionist",
-                        category: "PARLOR",
-                        desc: "Front desk booking & client coordination",
-                        img: "/receptionist_3d.png"
-                      }
-                    ].map((service, idx) => (
-                      <motion.div
-                        key={`${service.title}-${idx}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 h-[140px] relative shadow-sm hover:shadow-md transition-shadow overflow-hidden group"
-                      >
-                        <div className="flex flex-col h-full relative z-10 max-w-[65%]">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
-                              {service.title}
-                            </h3>
-                            {service.badge && (
-                              <span className={cn("text-[8px] font-black text-white px-1.5 py-0.5 rounded-[4px]", service.badgeColor)}>
-                                {service.badge}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug line-clamp-3">
-                            {service.desc}
-                          </p>
-                          {service.promo && (
-                            <div className={cn("mt-auto self-start text-[10px] font-black px-2 py-1 rounded-lg border", service.promoColor)}>
-                              {service.promo}
+                  {!isHiringFormView ? (
+                    <div className="grid grid-cols-2 gap-3 p-4 pb-20">
+                      {[
+                        { title: "Manager", category: "RESTAURANT", desc: "Expert hospitality admin & team coordination", img: "/restaurant_manager_3d.png", badge: "PRO", badgeColor: "bg-blue-500" },
+                        { title: "Beautician", category: "PARLOR", desc: "Premium salon & aesthetic care professional", img: "/beautician_3d.png", badge: "NEW", badgeColor: "bg-red-500" },
+                        { title: "Chef", category: "RESTAURANT", desc: "Master culinary speed & kitchen operation", img: "/chef_3d.png", badge: "HOT", badgeColor: "bg-orange-500" },
+                        { title: "Makeup Artist", category: "PARLOR", desc: "Creative artistry for events and shoots", img: "/makeup_artist_3d.png" },
+                        { title: "Waiter", category: "RESTAURANT", desc: "Top-tier guest serving & floor management", img: "/waiter_3d.png" },
+                        { title: "Manager", category: "PARLOR", desc: "Strategic parlor operations & staff lead", img: "/parlor_manager_3d.png" },
+                        { title: "Cashier", category: "RESTAURANT", desc: "Secure billing & merchant payment control", img: "/cashier_3d.png", badge: "NEW", badgeColor: "bg-red-500" },
+                        { title: "Receptionist", category: "PARLOR", desc: "Front desk booking & client coordination", img: "/receptionist_3d.png" }
+                      ].map((service, idx) => (
+                        <motion.div
+                          key={`${service.title}-${idx}`}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            setSelectedHiringService(service);
+                            setIsHiringFormView(true);
+                          }}
+                          className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 h-[140px] relative shadow-sm hover:shadow-md transition-shadow overflow-hidden group cursor-pointer"
+                        >
+                          <div className="flex flex-col h-full relative z-10 max-w-[65%]">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">{service.title}</h3>
+                              {service.badge && (
+                                <span className={cn("text-[8px] font-black text-white px-1.5 py-0.5 rounded-[4px]", service.badgeColor)}>{service.badge}</span>
+                              )}
                             </div>
-                          )}
+                            <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug line-clamp-3">{service.desc}</p>
+                          </div>
+                          <div className="absolute -right-2 bottom-1 w-[95px] h-[95px] pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                            <img src={service.img} alt={service.title} className="w-full h-full object-contain drop-shadow-xl" />
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 bg-white dark:bg-slate-900 min-h-full">
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="space-y-6 pb-20"
+                      >
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Business Name</label>
+                          <input 
+                            type="text" 
+                            value={hiringBusinessName}
+                            onChange={(e) => setHiringBusinessName(e.target.value)}
+                            placeholder="Enter your restaurant/shop name"
+                            className="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                          />
                         </div>
 
-                        <div className="absolute -right-2 bottom-1 w-[95px] h-[95px] pointer-events-none group-hover:scale-110 transition-transform duration-500">
-                          <img src={service.img} alt={service.title} className="w-full h-full object-contain drop-shadow-xl" />
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">WhatsApp Number</label>
+                          <input 
+                            type="tel" 
+                            value={hiringPhone}
+                            onChange={(e) => setHiringPhone(e.target.value)}
+                            placeholder="e.g. 017XXXXXXXX"
+                            className="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                          />
                         </div>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Requirements</label>
+                          <textarea 
+                            value={hiringRequirements}
+                            onChange={(e) => setHiringRequirements(e.target.value)}
+                            placeholder="Tell us what kind of person you are looking for..."
+                            rows={4}
+                            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm resize-none"
+                          />
+                        </div>
+
+                        <Button 
+                          disabled={hiringIsSubmitting}
+                          className="w-full h-14 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-600/20 active:scale-[0.98] transition-all"
+                          onClick={async () => {
+                            if (!hiringBusinessName || !hiringPhone || !hiringRequirements) {
+                              toast({
+                                title: "Required Info",
+                                description: "Please provide all details.",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+
+                            setHiringIsSubmitting(true);
+                            try {
+                              const res = await saveHiringRequest({
+                                businessName: hiringBusinessName,
+                                whatsappNumber: hiringPhone,
+                                department: selectedHiringService?.category,
+                                requirement: `${selectedHiringService?.title}: ${hiringRequirements}`
+                              });
+
+                              if (res.success) {
+                                toast({
+                                  title: "Request Received",
+                                  description: "We'll help you find the right candidate.",
+                                  variant: "success"
+                                });
+                                setIsHiringOpen(false);
+                                setIsHiringFormView(false);
+                                setSelectedHiringService(null);
+                                setHiringRequirements("");
+                                window.history.replaceState(null, '', window.location.pathname);
+                              } else {
+                                throw new Error(res.error);
+                              }
+                            } catch (err) {
+                              toast({
+                                title: "Submission Failed",
+                                description: "Something went wrong.",
+                                variant: "destructive"
+                              });
+                            } finally {
+                              setHiringIsSubmitting(false);
+                            }
+                          }}
+                        >
+                          {hiringIsSubmitting ? "Submitting..." : "Submit Request"}
+                        </Button>
                       </motion.div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Floating Action Area */}
-                <AnimatePresence>
-                  {showSeeMore && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 20 }}
-                      className="absolute bottom-6 left-0 right-0 flex justify-center z-20 pointer-events-none"
-                    >
-                      <button
-                        onClick={scrollToBottom}
-                        className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-xl flex items-center gap-2 pointer-events-auto active:scale-95 transition-transform"
-                      >
-                        See More <ChevronDown className="w-4 h-4" />
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* Floating See More */}
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
     </div>
   );
 }
+
