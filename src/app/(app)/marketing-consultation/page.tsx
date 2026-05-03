@@ -10,7 +10,10 @@ import {
   Star
 } from "lucide-react";
 import { motion, useScroll, useSpring } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { Hind_Siliguri, Tiro_Bangla } from "next/font/google";
+import { useClientAuth } from "@/hooks/use-client-auth";
+import { useEffect } from "react";
 
 const hindSiliguri = Hind_Siliguri({
   subsets: ["latin", "bengali"],
@@ -25,7 +28,7 @@ const tiroBangla = Tiro_Bangla({
 });
 
 export default function MarketingConsultationPage() {
-  const [formSubmitted, setFormSubmitted] = useState(false);
+  const { clientUser } = useClientAuth();
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -33,13 +36,26 @@ export default function MarketingConsultationPage() {
     problem: ""
   });
 
+  useEffect(() => {
+    if (clientUser) {
+      setFormData(prev => ({
+        ...prev,
+        name: clientUser.businessName || prev.name,
+        phone: clientUser.whatsappNumber || prev.phone,
+        bizType: clientUser.type || prev.bizType
+      }));
+    }
+  }, [clientUser]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.bizType || !formData.problem) {
       alert("অনুগ্রহ করে সকল প্রয়োজনীয় তথ্য পূরণ করুন।");
       return;
     }
-    setFormSubmitted(true);
+    
+    // In a real app, you'd call a server action here
+    router.push('/success?type=consultation');
   };
 
   const scrollToSection = (id: string) => {
@@ -233,63 +249,18 @@ export default function MarketingConsultationPage() {
 
       {/* CTA */}
       <section className="py-20 px-[5%] bg-white" id="cta">
-        <div className="max-w-[700px] mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">আপনার সফলতার যাত্রা শুরু হোক</h2>
-          <p className="text-[#666] mb-12">একটি ফ্রি মিটিং করার মাধ্যমে আজকের দিনটি আপনার বিজনেসের জন্য টার্নিং পয়েন্ট হতে পারে।</p>
-          
-          <div className="bg-[#F9F7F5] p-8 sm:p-12 rounded-[32px] border border-[#E8E4DE] text-left">
-            {formSubmitted ? (
-               <div className="text-center py-10">
-                 <div className="w-16 h-16 bg-[#22c55e] text-white rounded-full flex items-center justify-center mx-auto mb-6">
-                   <Check />
-                 </div>
-                 <h3 className="text-2xl font-bold mb-2">সফলভাবে পাঠানো হয়েছে!</h3>
-                 <p className="text-[#666]">আমরা খুব শীঘ্রই আপনার সাথে যোগাযোগ করব।</p>
-               </div>
-            ) : (
+          <div className="max-w-[700px] mx-auto text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-6">আপনার সফলতার যাত্রা শুরু হোক</h2>
+            <p className="text-[#666] mb-12">একটি ফ্রি মিটিং করার মাধ্যমে আজকের দিনটি আপনার বিজনেসের জন্য টার্নিং পয়েন্ট হতে পারে।</p>
+            
+            <div className="text-left">
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#1A1A1A]">আপনার নাম</label>
-                    <input 
-                      type="text" 
-                      placeholder="আপনার নাম"
-                      className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors"
-                      required
-                      value={formData.name}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#1A1A1A]">ফোন নম্বর</label>
-                    <input 
-                      type="tel" 
-                      placeholder="ফোন নম্বর"
-                      className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors"
-                      required
-                      value={formData.phone}
-                      onChange={e => setFormData({...formData, phone: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#1A1A1A]">বিজনেসের ধরন</label>
+              {clientUser ? (
+                <div className="flex flex-col md:flex-row gap-6 items-end text-left mb-6 max-w-2xl mx-auto">
+                  <div className="flex-1 w-full space-y-2">
+                    <label className="text-sm font-bold text-[#1A1A1A] ml-1">প্রধান লক্ষ্য</label>
                     <select 
-                       className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors"
-                       required
-                       value={formData.bizType}
-                       onChange={e => setFormData({...formData, bizType: e.target.value})}
-                    >
-                      <option value="">নির্বাচন করুন</option>
-                      <option>রেস্টুরেন্ট / ক্যাফে</option>
-                      <option>বিউটি পার্লার / সেলুন</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#1A1A1A]">প্রধান লক্ষ্য</label>
-                    <select 
-                       className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors"
+                       className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors shadow-sm"
                        required
                        value={formData.problem}
                        onChange={e => setFormData({...formData, problem: e.target.value})}
@@ -299,17 +270,78 @@ export default function MarketingConsultationPage() {
                       <option>ব্র্যান্ড পরিচিতি</option>
                     </select>
                   </div>
-                </div>
-                <div className="flex justify-center pt-4">
                   <button 
                     type="submit"
-                    className="w-full sm:w-[280px] bg-[#D85A30] text-white py-4 rounded-xl font-bold hover:bg-[#993C1D] transition-colors shadow-lg shadow-[#D85A30]/20"
+                    className="w-full md:w-auto md:px-12 bg-[#D85A30] text-white py-4 rounded-xl font-bold hover:bg-[#993C1D] transition-colors shadow-lg shadow-[#D85A30]/20 shrink-0"
                   >
                     বুকিং নিশ্চিত করুন
                   </button>
                 </div>
+              ) : (
+                <div className="bg-[#F9F7F5] p-8 sm:p-12 rounded-[32px] border border-[#E8E4DE]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-[#1A1A1A]">আপনার নাম</label>
+                      <input 
+                        type="text" 
+                        placeholder="আপনার নাম"
+                        className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors"
+                        required
+                        value={formData.name}
+                        onChange={e => setFormData({...formData, name: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-[#1A1A1A]">ফোন নম্বর</label>
+                      <input 
+                        type="tel" 
+                        placeholder="ফোন নম্বর"
+                        className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors"
+                        required
+                        value={formData.phone}
+                        onChange={e => setFormData({...formData, phone: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-[#1A1A1A]">বিজনেসের ধরন</label>
+                      <select 
+                         className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors"
+                         required
+                         value={formData.bizType}
+                         onChange={e => setFormData({...formData, bizType: e.target.value})}
+                      >
+                        <option value="">নির্বাচন করুন</option>
+                        <option value="restaurant">রেস্টুরেন্ট / ক্যাফে</option>
+                        <option value="parlour">বিউটি পার্লার / সেলুন</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-[#1A1A1A]">প্রধান লক্ষ্য</label>
+                      <select 
+                         className="w-full px-5 py-3.5 bg-white border border-[#E8E4DE] rounded-xl outline-none focus:border-[#D85A30] transition-colors"
+                         required
+                         value={formData.problem}
+                         onChange={e => setFormData({...formData, problem: e.target.value})}
+                      >
+                        <option value="">নির্বাচন করুন</option>
+                        <option>কাস্টমার বাড়ানো</option>
+                        <option>ব্র্যান্ড পরিচিতি</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex justify-center pt-8">
+                    <button 
+                      type="submit"
+                      className="w-full sm:w-[280px] bg-[#D85A30] text-white py-4 rounded-xl font-bold hover:bg-[#993C1D] transition-colors shadow-lg shadow-[#D85A30]/20"
+                    >
+                      বুকিং নিশ্চিত করুন
+                    </button>
+                  </div>
+                </div>
+              )}
               </form>
-            )}
           </div>
         </div>
       </section>

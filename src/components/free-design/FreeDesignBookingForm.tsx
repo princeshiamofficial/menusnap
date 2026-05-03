@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useClientAuth } from "@/hooks/use-client-auth";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 import { saveFreeDesignRequest } from "@/app/actions/responses";
 import { 
   Select, 
@@ -18,6 +19,7 @@ import {
 export function FreeDesignBookingForm() {
   const { clientUser } = useClientAuth();
   const { toast } = useToast();
+  const router = useRouter();
   const [businessName, setBusinessName] = useState("");
   const [phone, setPhone] = useState("");
   const [businessType, setBusinessType] = useState("");
@@ -52,13 +54,7 @@ export function FreeDesignBookingForm() {
       });
 
       if (res.success) {
-        toast({
-          title: "Slot Booked!",
-          description: "We have received your request. Our team will contact you soon.",
-          variant: "success"
-        });
-        // Optional: Reset non-auth fields
-        setRequiredDesign("");
+        router.push('/success?type=free-design');
       } else {
         throw new Error(res.error);
       }
@@ -116,64 +112,95 @@ export function FreeDesignBookingForm() {
         </motion.div>
 
         {/* Form */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left mb-8">
-          <div className="space-y-2">
-            <label className="text-slate-500 font-bold ml-2">বিজনেসের নাম</label>
-            <Input 
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-              placeholder="আপনার রেস্টুরেন্ট বা শপের নাম লিখুন" 
-              className="h-16 rounded-2xl border-slate-200 focus:ring-[#F07C22] focus:border-[#F07C22] text-lg"
-            />
+        {clientUser ? (
+          <div className="flex flex-col md:flex-row gap-6 items-end text-left mb-12 max-w-3xl mx-auto">
+            <div className="flex-1 w-full space-y-2">
+              <label className="text-slate-500 font-bold ml-2">কী ডিজাইন চান?</label>
+              <Select onValueChange={setRequiredDesign} value={requiredDesign}>
+                <SelectTrigger className="h-16 rounded-2xl border-slate-200 text-lg bg-white shadow-sm">
+                  <SelectValue placeholder="বেছে নিন" />
+                </SelectTrigger>
+                <SelectContent className="font-bengali">
+                  <SelectItem value="menu_card">মেনু কার্ড</SelectItem>
+                  <SelectItem value="brochure">ব্রোশার</SelectItem>
+                  <SelectItem value="price_list">প্রাইস লিস্ট</SelectItem>
+                  <SelectItem value="visiting_card">ভিজিটিং কার্ড</SelectItem>
+                  <SelectItem value="banner">ব্যানার</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button 
+              disabled={isSubmitting}
+              onClick={handleSubmit}
+              className="w-full md:w-auto md:px-12 bg-[#F07C22] hover:bg-[#D96B19] text-white h-16 rounded-2xl text-lg font-bold shadow-lg shadow-[#F07C22]/20 transition-all active:scale-95 shrink-0"
+            >
+              {isSubmitting ? "..." : "স্লট বুক করুন"}
+            </Button>
           </div>
-          <div className="space-y-2">
-            <label className="text-slate-500 font-bold ml-2">ফোন নম্বর</label>
-            <Input 
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="01X-XXXXXXXX" 
-              className="h-16 rounded-2xl border-slate-200 focus:ring-[#F07C22] focus:border-[#F07C22] text-lg"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-slate-500 font-bold ml-2">বিজনেসের ধরন</label>
-            <Select onValueChange={setBusinessType} value={businessType}>
-              <SelectTrigger className="h-16 rounded-2xl border-slate-200 text-lg">
-                <SelectValue placeholder="বেছে নিন" />
-              </SelectTrigger>
-              <SelectContent className="font-bengali">
-                <SelectItem value="restaurant">রেস্টুরেন্ট</SelectItem>
-                <SelectItem value="parlour">পার্লার</SelectItem>
-                <SelectItem value="mens_salon">মেনস সেলুন</SelectItem>
-                <SelectItem value="cafe">ক্যাফে</SelectItem>
-                <SelectItem value="other">অন্যান্য</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-slate-500 font-bold ml-2">কী ডিজাইন চান?</label>
-            <Select onValueChange={setRequiredDesign} value={requiredDesign}>
-              <SelectTrigger className="h-16 rounded-2xl border-slate-200 text-lg">
-                <SelectValue placeholder="বেছে নিন" />
-              </SelectTrigger>
-              <SelectContent className="font-bengali">
-                <SelectItem value="menu_card">মেনু কার্ড</SelectItem>
-                <SelectItem value="brochure">ব্রোশার</SelectItem>
-                <SelectItem value="price_list">প্রাইস লিস্ট</SelectItem>
-                <SelectItem value="visiting_card">ভিজিটিং কার্ড</SelectItem>
-                <SelectItem value="banner">ব্যানার</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        ) : (
+          <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left mb-8">
+              <div className="space-y-2">
+                <label className="text-slate-500 font-bold ml-2">বিজনেসের নাম</label>
+                <Input 
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="আপনার রেস্টুরেন্ট বা শপের নাম লিখুন" 
+                  className="h-16 rounded-2xl border-slate-200 focus:ring-[#F07C22] focus:border-[#F07C22] text-lg"
+                />
+              </div>
 
-        <Button 
-          disabled={isSubmitting}
-          onClick={handleSubmit}
-          className="w-full max-w-[280px] mx-auto bg-[#F07C22] hover:bg-[#D96B19] text-white h-14 rounded-2xl text-lg font-bold shadow-lg shadow-[#F07C22]/20 mb-12 flex items-center justify-center active:scale-95 transition-all"
-        >
-          {isSubmitting ? "বুকিং হচ্ছে..." : "স্লট বুক করুন"}
-        </Button>
+              <div className="space-y-2">
+                <label className="text-slate-500 font-bold ml-2">ফোন নম্বর</label>
+                <Input 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="01X-XXXXXXXX" 
+                  className="h-16 rounded-2xl border-slate-200 focus:ring-[#F07C22] focus:border-[#F07C22] text-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-slate-500 font-bold ml-2">বিজনেসের ধরন</label>
+                <Select onValueChange={setBusinessType} value={businessType}>
+                  <SelectTrigger className="h-16 rounded-2xl border-slate-200 text-lg">
+                    <SelectValue placeholder="বেছে নিন" />
+                  </SelectTrigger>
+                  <SelectContent className="font-bengali">
+                    <SelectItem value="restaurant">রেস্টুরেন্ট</SelectItem>
+                    <SelectItem value="parlour">পার্লার</SelectItem>
+                    <SelectItem value="mens_salon">মেনস সেলুন</SelectItem>
+                    <SelectItem value="cafe">ক্যাফে</SelectItem>
+                    <SelectItem value="other">অন্যান্য</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-slate-500 font-bold ml-2">কী ডিজাইন চান?</label>
+                <Select onValueChange={setRequiredDesign} value={requiredDesign}>
+                  <SelectTrigger className="h-16 rounded-2xl border-slate-200 text-lg">
+                    <SelectValue placeholder="বেছে নিন" />
+                  </SelectTrigger>
+                  <SelectContent className="font-bengali">
+                    <SelectItem value="menu_card">মেনু কার্ড</SelectItem>
+                    <SelectItem value="brochure">ব্রোশার</SelectItem>
+                    <SelectItem value="price_list">প্রাইস লিস্ট</SelectItem>
+                    <SelectItem value="visiting_card">ভিজিটিং কার্ড</SelectItem>
+                    <SelectItem value="banner">ব্যানার</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button 
+              disabled={isSubmitting}
+              onClick={handleSubmit}
+              className="w-full max-w-[280px] mx-auto bg-[#F07C22] hover:bg-[#D96B19] text-white h-14 rounded-2xl text-lg font-bold shadow-lg shadow-[#F07C22]/20 mb-12 flex items-center justify-center active:scale-95 transition-all"
+            >
+              {isSubmitting ? "বukিং হচ্ছে..." : "স্লট বুক করুন"}
+            </Button>
+          </div>
+        )}
 
       </div>
 

@@ -1051,88 +1051,135 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, x: 0 }}
                         className="space-y-6 pb-20"
                       >
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Business Name</label>
-                          <input 
-                            type="text" 
-                            value={hiringBusinessName}
-                            onChange={(e) => setHiringBusinessName(e.target.value)}
-                            placeholder="Enter your restaurant/shop name"
-                            className="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                          />
-                        </div>
+                        {clientUser ? (
+                          <div className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Requirements</label>
+                              <textarea 
+                                value={hiringRequirements}
+                                onChange={(e) => setHiringRequirements(e.target.value)}
+                                placeholder="What kind of person are you looking for?"
+                                className="w-full h-32 p-4 rounded-xl bg-white dark:bg-slate-900 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm resize-none"
+                              />
+                            </div>
+                            <Button 
+                              disabled={hiringIsSubmitting}
+                              className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-600/20 active:scale-[0.98] transition-all"
+                              onClick={async () => {
+                                if (!hiringBusinessName || !hiringPhone || !hiringRequirements) {
+                                  toast({
+                                    title: "Required Info",
+                                    description: "Please provide all details.",
+                                    variant: "destructive"
+                                  });
+                                  return;
+                                }
 
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">WhatsApp Number</label>
-                          <input 
-                            type="tel" 
-                            value={hiringPhone}
-                            onChange={(e) => setHiringPhone(e.target.value)}
-                            placeholder="e.g. 017XXXXXXXX"
-                            className="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                          />
-                        </div>
+                                setHiringIsSubmitting(true);
+                                try {
+                                  const res = await saveHiringRequest({
+                                    businessName: hiringBusinessName,
+                                    whatsappNumber: hiringPhone,
+                                    designation: selectedHiringService?.title,
+                                    requirement: hiringRequirements
+                                  });
 
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Requirements</label>
-                          <textarea 
-                            value={hiringRequirements}
-                            onChange={(e) => setHiringRequirements(e.target.value)}
-                            placeholder="Tell us what kind of person you are looking for..."
-                            rows={4}
-                            className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm resize-none"
-                          />
-                        </div>
+                                  if (res.success) {
+                                    router.push('/success?type=hiring');
+                                  } else {
+                                    throw new Error(res.error);
+                                  }
+                                } catch (err) {
+                                  toast({
+                                    title: "Submission Failed",
+                                    description: "Something went wrong.",
+                                    variant: "destructive"
+                                  });
+                                } finally {
+                                  setHiringIsSubmitting(false);
+                                }
+                              }}
+                            >
+                              {hiringIsSubmitting ? "..." : "Hire Now"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Business Name</label>
+                              <input 
+                                type="text" 
+                                value={hiringBusinessName}
+                                onChange={(e) => setHiringBusinessName(e.target.value)}
+                                placeholder="Enter your restaurant/shop name"
+                                className="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                              />
+                            </div>
 
-                        <Button 
-                          disabled={hiringIsSubmitting}
-                          className="w-full h-14 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-600/20 active:scale-[0.98] transition-all"
-                          onClick={async () => {
-                            if (!hiringBusinessName || !hiringPhone || !hiringRequirements) {
-                              toast({
-                                title: "Required Info",
-                                description: "Please provide all details.",
-                                variant: "destructive"
-                              });
-                              return;
-                            }
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">WhatsApp Number</label>
+                              <input 
+                                type="tel" 
+                                value={hiringPhone}
+                                onChange={(e) => setHiringPhone(e.target.value)}
+                                placeholder="e.g. 017XXXXXXXX"
+                                className="w-full h-12 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                              />
+                            </div>
 
-                            setHiringIsSubmitting(true);
-                            try {
-                              const res = await saveHiringRequest({
-                                businessName: hiringBusinessName,
-                                whatsappNumber: hiringPhone,
-                                designation: selectedHiringService?.title,
-                                requirement: hiringRequirements
-                              });
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Requirements</label>
+                              <textarea 
+                                value={hiringRequirements}
+                                onChange={(e) => setHiringRequirements(e.target.value)}
+                                placeholder="Tell us what kind of person you are looking for..."
+                                rows={4}
+                                className="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 transition-all text-sm resize-none"
+                              />
+                            </div>
 
-                              if (res.success) {
-                                toast({
-                                  title: "Request Received",
-                                  description: "We'll help you find the right candidate.",
-                                  variant: "success"
-                                });
-                                setIsHiringOpen(false);
-                                setIsHiringFormView(false);
-                                setSelectedHiringService(null);
-                                setHiringRequirements("");
-                                window.history.replaceState(null, '', window.location.pathname);
-                              } else {
-                                throw new Error(res.error);
-                              }
-                            } catch (err) {
-                              toast({
-                                title: "Submission Failed",
-                                description: "Something went wrong.",
-                                variant: "destructive"
-                              });
-                            } finally {
-                              setHiringIsSubmitting(false);
-                            }
-                          }}
-                        >
-                          {hiringIsSubmitting ? "Submitting..." : "Submit Request"}
-                        </Button>
+                            <Button 
+                              disabled={hiringIsSubmitting}
+                              className="w-full h-14 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg shadow-red-600/20 active:scale-[0.98] transition-all"
+                              onClick={async () => {
+                                if (!hiringBusinessName || !hiringPhone || !hiringRequirements) {
+                                  toast({
+                                    title: "Required Info",
+                                    description: "Please provide all details.",
+                                    variant: "destructive"
+                                  });
+                                  return;
+                                }
+
+                                setHiringIsSubmitting(true);
+                                try {
+                                  const res = await saveHiringRequest({
+                                    businessName: hiringBusinessName,
+                                    whatsappNumber: hiringPhone,
+                                    designation: selectedHiringService?.title,
+                                    requirement: hiringRequirements
+                                  });
+
+                                  if (res.success) {
+                                    router.push('/success?type=hiring');
+                                  } else {
+                                    throw new Error(res.error);
+                                  }
+                                } catch (err) {
+                                  toast({
+                                    title: "Submission Failed",
+                                    description: "Something went wrong.",
+                                    variant: "destructive"
+                                  });
+                                } finally {
+                                  setHiringIsSubmitting(false);
+                                }
+                              }}
+                            >
+                              {hiringIsSubmitting ? "Submitting..." : "Submit Request"}
+                            </Button>
+                          </>
+                        )}
                       </motion.div>
                     </div>
                   )}
