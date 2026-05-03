@@ -72,6 +72,7 @@
     "@uiw/react-md-editor": "^4.0.4",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "bcryptjs": "^3.0.3",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -108,6 +109,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^20",
     "@types/react": "^19.2.14",

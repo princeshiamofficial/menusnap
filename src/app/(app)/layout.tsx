@@ -99,7 +99,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </ScrollArea>
         </SidebarInset>
 
-        {pathname !== "/dashboard" && pathname !== "/dashboard/" && pathname !== "/magictab" && pathname !== "/magictab/" && pathname !== "/ebook" && pathname !== "/ebook/" && <SpeedDialFAB />}
+        {pathname !== "/dashboard" && pathname !== "/dashboard/" && pathname !== "/magictab" && pathname !== "/magictab/" && pathname !== "/ebook" && pathname !== "/ebook/" && !pathname.startsWith("/success") && <SpeedDialFAB />}
         {pathname !== "/ebook" && pathname !== "/ebook/" && <BottomNavigation />}
 
       </SidebarProvider>
