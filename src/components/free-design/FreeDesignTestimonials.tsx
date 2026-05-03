@@ -71,18 +71,7 @@ export function FreeDesignTestimonials() {
           ))}
         </div>
 
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mt-20 text-center"
-        >
-          <a href="#booking-form">
-            <Button className="bg-[#F07C22] hover:bg-[#D96B19] text-white px-8 py-6 rounded-xl text-lg font-bold shadow-lg shadow-[#F07C22]/20 transition-all active:scale-95">
-              স্লট বুক করুন
-            </Button>
-          </a>
-        </motion.div>
+
       </div>
 
       <style jsx global>{`

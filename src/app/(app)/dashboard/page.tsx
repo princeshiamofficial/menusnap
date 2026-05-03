@@ -206,7 +206,7 @@ function MobileImageSlider() {
   }
 
   return (
-    <div className="md:hidden w-full aspect-[3/1] relative rounded-[1.5rem] overflow-hidden shadow-2xl group ring-1 ring-white/10 bg-slate-100 dark:bg-slate-900/50">
+    <div className="md:hidden w-full aspect-[3/1] relative rounded-[1.5rem] overflow-hidden group ring-1 ring-white/10 bg-slate-100 dark:bg-slate-900/50">
       {/* Hidden preloader for all slider images */}
       <div className="hidden" aria-hidden="true">
         {slides.map((img, i) => (
@@ -318,7 +318,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
             >
               {action.isWidget ? (
                 <div className="flex flex-col gap-2 w-full h-full cursor-default relative z-10">
-                  <div className="flex-[0.6] bg-card border border-border/50 rounded-2xl p-3 flex flex-row items-center justify-between shadow-sm relative overflow-hidden group">
+                  <div className="flex-[0.6] bg-card border border-slate-200 rounded-2xl p-3 flex flex-row items-center justify-between shadow-sm relative overflow-hidden group">
                     <div className="flex flex-col relative z-20 max-w-[60%]">
                       <span className="text-sm font-black text-foreground leading-tight tracking-tight">Free Design</span>
                       <p className="text-[9px] font-medium text-muted-foreground leading-tight mt-0.5 line-clamp-1">Pay after satisfaction</p>
@@ -333,7 +333,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                     </div>
                   </div>
                   <div className="flex-1 flex flex-row gap-1.5 w-full">
-                    <div className="flex-1 bg-white border border-border/50 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
+                    <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
                       <div className="flex flex-row items-center gap-1 text-foreground/90 font-black text-xs relative z-10 whitespace-nowrap">
                         MagicTab
                       </div>
@@ -541,8 +541,8 @@ export default function DashboardPage() {
     // Automatically show popup on mobile on page load
     const isMobile = window.innerWidth < 768;
     if (isMobile) {
-      const timer = setTimeout(() => setShowWelcomePopup(true), 800);
-      return () => clearTimeout(timer);
+      // const timer = setTimeout(() => setShowWelcomePopup(true), 800);
+      // return () => clearTimeout(timer);
     }
   }, []);
 
@@ -627,7 +627,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen max-w-[100vw] overflow-x-hidden flex flex-col bg-background">
+    <div className="min-h-screen max-w-[100vw] overflow-x-hidden flex flex-col bg-slate-50 dark:bg-slate-950">
       <div className="flex-1 space-y-0 pb-12 transition-all pt-4">
         <div className="px-4 md:px-10 space-y-4 max-w-full overflow-hidden">
           <MobileImageSlider />
