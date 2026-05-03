@@ -509,37 +509,39 @@ export default function ContactsPage() {
       <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-in fade-in duration-500 w-full max-w-full overflow-x-hidden">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1.5 min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
-            <div className="p-2 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 shrink-0">
-              <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+        <div className="space-y-1.5 min-w-0 flex-1">          
+          <div className="flex flex-row items-center justify-between gap-2 flex-nowrap">
+            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2 shrink-0">
+              <div className="p-1.5 sm:p-2 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-200 shrink-0">
+                <Users className="h-4 w-4 sm:h-6 sm:w-6" />
+              </div>
+              <span className="truncate">Contacts</span>
+            </h1>
+
+            <div className="flex flex-row items-center gap-1.5 w-auto shrink-0">
+                <div className="flex items-center gap-2">
+                    {timezone && (
+                        <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 shadow-inner shrink-0">
+                            <Globe className="h-3 w-3" />
+                            Viewing in {timezone}
+                        </div>
+                    )}
+                    <div 
+                      onDoubleClick={() => setIsStageManagerOpen(true)}
+                      className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] sm:text-sm font-bold shadow-lg shadow-slate-200 whitespace-nowrap cursor-pointer select-none h-9"
+                    >
+                        {totalContacts} Total
+                    </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="gap-2 rounded-full h-9 px-4 border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all font-semibold text-[10px] sm:text-sm whitespace-nowrap">
+                    <RefreshCw className={cn("h-3.5 w-3.5 shrink-0", loading && "animate-spin")} />
+                    Sync Data
+                </Button>
             </div>
-            <span className="truncate">Contacts</span>
-          </h1>
+          </div>
           <p className="text-slate-500 font-medium text-sm sm:text-base leading-relaxed">
             Manage your customer base and track interactions.
           </p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-            <div className="flex items-center gap-3 flex-1 sm:flex-none">
-                {timezone && (
-                    <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 shadow-inner shrink-0">
-                        <Globe className="h-3 w-3" />
-                        Viewing in {timezone}
-                    </div>
-                )}
-                <div 
-                  onDoubleClick={() => setIsStageManagerOpen(true)}
-                  className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-slate-200 flex-1 sm:flex-none whitespace-nowrap cursor-pointer select-none"
-                >
-                    {totalContacts} Total
-                </div>
-            </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="gap-2 rounded-full h-10 px-5 border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all font-semibold text-xs sm:text-sm flex-1 sm:flex-none whitespace-nowrap">
-                <RefreshCw className={cn("h-4 w-4 shrink-0", loading && "animate-spin")} />
-                Sync Data
-            </Button>
         </div>
       </div>
 
@@ -550,10 +552,10 @@ export default function ContactsPage() {
               <CardTitle className="text-xl font-bold text-slate-800 truncate">Customer Directory</CardTitle>
               <CardDescription className="text-slate-400 font-medium break-words text-sm sm:text-base">Real-time client synchronization with WhatsApp validation.</CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+            <div className="flex flex-row items-center gap-2 w-full lg:w-auto">
               {/* Stage Filter */}
               <Select value={filterStage} onValueChange={setFilterStage}>
-                <SelectTrigger className="w-full sm:w-44 h-11 rounded-2xl bg-slate-50/50 border-slate-200 focus:ring-0 focus:border-slate-300 transition-all font-bold text-[10px] uppercase tracking-widest text-slate-500 shrink-0">
+                <SelectTrigger className="w-[140px] lg:w-44 h-11 rounded-2xl bg-slate-50/50 border-slate-200 focus:ring-0 focus:border-slate-300 transition-all font-bold text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 shrink-0 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <Filter className="h-3.5 w-3.5" />
                     <SelectValue placeholder="All Stages" />
@@ -582,7 +584,7 @@ export default function ContactsPage() {
               </Select>
 
               {/* Search Input */}
-              <div className="relative w-full lg:w-72 group shrink-0">
+              <div className="relative flex-1 lg:w-72 group shrink-0">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-slate-900 transition-colors" />
                 <Input 
                   placeholder="Search clients..." 
