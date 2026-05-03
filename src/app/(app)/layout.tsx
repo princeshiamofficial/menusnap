@@ -71,7 +71,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                             pathname.startsWith('/free-design') || 
                             pathname.startsWith('/ebook') || 
                             pathname.startsWith('/ebook/success') || 
-                            pathname.startsWith('/team-tracker');
+                            pathname.startsWith('/team-tracker') ||
+                            pathname.startsWith('/success');
 
   if (isStandaloneRoute) {
     return <>{children}</>;
