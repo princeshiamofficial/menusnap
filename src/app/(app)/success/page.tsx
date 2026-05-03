@@ -3,11 +3,11 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { 
-  CheckCircle2, 
-  ArrowRight, 
-  Home, 
-  MessageCircle, 
+import {
+  CheckCircle2,
+  ArrowRight,
+  Home,
+  MessageCircle,
   Zap,
   Users,
   Palette
@@ -94,7 +94,7 @@ function SuccessContent() {
     <div className="min-h-screen bg-white flex items-center justify-center p-6 relative overflow-hidden">
       {/* Subtle Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl aspect-square bg-slate-50 rounded-full blur-[100px] -z-10" />
-      
+
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -120,17 +120,17 @@ function SuccessContent() {
 
         {/* Action Buttons */}
         <div className="flex flex-row items-center justify-center gap-3 pt-2 w-full max-w-sm mx-auto">
-          <Button 
+          <Button
             onClick={() => router.push('/dashboard')}
             className="flex-1 h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-slate-200"
           >
             <ArrowRight className="h-4 w-4" />
             See More
           </Button>
-          
-          <Button 
+
+          <Button
             variant="outline"
-            onClick={() => window.open('https://wa.me/8801682328830', '_blank')}
+            onClick={() => window.open('https://wa.me/8801805561171', '_blank')}
             className="flex-1 h-11 rounded-xl border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-sm flex items-center justify-center gap-2 transition-all bg-white"
           >
             <MessageCircle className="h-4 w-4 text-[#25D366]" />

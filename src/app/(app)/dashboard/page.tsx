@@ -683,7 +683,7 @@ export default function DashboardPage() {
                 <div className="absolute -right-2 -bottom-2 w-[55px] h-[55px] opacity-100 group-hover:scale-110 transition-transform duration-500 z-0">
                   <img src="/dashboard/cs-man-orange.png" alt="Expert Support" className="w-full h-full object-contain drop-shadow-md" />
                 </div>
-                <Link href="/marketing-consultation" className="absolute inset-0 z-20" />
+                <a href="tel:+8801919760626" className="absolute inset-0 z-20" />
               </motion.div>
             </div>
           </div>

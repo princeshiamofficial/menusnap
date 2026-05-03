@@ -18,27 +18,27 @@ interface ContactOption {
 }
 
 const contactOptionsList: ContactOption[] = [
-  { 
-    name: 'WhatsApp', 
-    IconComponent: MessageCircle, 
-    iconColor: 'text-white', 
-    bgColor: 'bg-green-500 hover:bg-green-600', 
-    action: () => { console.log('WhatsApp clicked'); window.open('https://wa.me/8801919760626', '_blank'); },
+  {
+    name: 'WhatsApp',
+    IconComponent: MessageCircle,
+    iconColor: 'text-white',
+    bgColor: 'bg-green-500 hover:bg-green-600',
+    action: () => { console.log('WhatsApp clicked'); window.open('https://wa.me/8801805561171', '_blank'); },
     ariaLabel: 'Chat on WhatsApp'
   },
-  { 
-    name: 'Messenger', 
+  {
+    name: 'Messenger',
     IconComponent: MessagesSquare,
-    iconColor: 'text-white', 
-    bgColor: 'bg-blue-500 hover:bg-blue-600', 
+    iconColor: 'text-white',
+    bgColor: 'bg-blue-500 hover:bg-blue-600',
     action: () => { console.log('Messenger clicked'); window.open('https://www.facebook.com/messages/t/100335266150128', '_blank'); },
-    ariaLabel: 'Chat on Messenger' 
+    ariaLabel: 'Chat on Messenger'
   },
-  { 
-    name: 'Call Us', 
-    IconComponent: Phone, 
-    iconColor: 'text-white', 
-    bgColor: 'bg-orange-500 hover:bg-orange-600', 
+  {
+    name: 'Call Us',
+    IconComponent: Phone,
+    iconColor: 'text-white',
+    bgColor: 'bg-orange-500 hover:bg-orange-600',
     action: () => { console.log('Call Us clicked'); window.location.href = 'tel:+8801919760626'; },
     ariaLabel: 'Call us'
   },
@@ -92,9 +92,9 @@ export function SpeedDialFAB(): ReactNode {
       await fabControls.start({ // Base breathing animation
         scale: [1, 1.05, 1],
         y: [0, -4, 0], // Adding a subtle y-axis movement for bobbing
-        transition: { 
-            scale: {duration: 1.8, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
-            y: {duration: 1.8, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }
+        transition: {
+          scale: { duration: 1.8, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" },
+          y: { duration: 1.8, ease: "easeInOut", repeat: Infinity, repeatType: "mirror" }
         }
       });
     };
@@ -102,8 +102,8 @@ export function SpeedDialFAB(): ReactNode {
 
     if (fabIntervalRef.current) clearInterval(fabIntervalRef.current);
     fabIntervalRef.current = setInterval(async () => {
-      if (!isOpen) { 
-        await fabControls.start({ 
+      if (!isOpen) {
+        await fabControls.start({
           scale: [1, 1.15, 1],
           transition: { duration: 0.6, ease: "easeInOut" }
         });
@@ -114,23 +114,23 @@ export function SpeedDialFAB(): ReactNode {
       if (fabIntervalRef.current) clearInterval(fabIntervalRef.current);
       fabControls.stop();
     };
-  }, [fabControls, isOpen]); 
+  }, [fabControls, isOpen]);
 
   useEffect(() => {
     if (helpTextCycleTimers.current.visible) clearTimeout(helpTextCycleTimers.current.visible);
     if (helpTextCycleTimers.current.hidden) clearTimeout(helpTextCycleTimers.current.hidden);
 
     if (isOpen) {
-      setShowHelpTextVisual(false); 
+      setShowHelpTextVisual(false);
     } else {
       if (showHelpTextVisual) {
         helpTextCycleTimers.current.visible = setTimeout(() => {
           setShowHelpTextVisual(false);
-        }, 10000); 
+        }, 10000);
       } else {
         helpTextCycleTimers.current.hidden = setTimeout(() => {
           setShowHelpTextVisual(true);
-        }, 15000); 
+        }, 15000);
       }
     }
 
@@ -139,26 +139,26 @@ export function SpeedDialFAB(): ReactNode {
       if (helpTextCycleTimers.current.hidden) clearTimeout(helpTextCycleTimers.current.hidden);
     };
   }, [isOpen, showHelpTextVisual]);
-  
+
   // Effect to cycle the main FAB icon
   useEffect(() => {
     if (iconCycleIntervalRef.current) {
-        clearInterval(iconCycleIntervalRef.current);
+      clearInterval(iconCycleIntervalRef.current);
     }
 
     if (!isOpen) {
-        // Reset to default icon immediately when closed
-        setShowHelpImage(false);
-        // Start the timer to cycle icons
-        iconCycleIntervalRef.current = setInterval(() => {
-            setShowHelpImage(prev => !prev);
-        }, 3000); // Toggle every 3 seconds
+      // Reset to default icon immediately when closed
+      setShowHelpImage(false);
+      // Start the timer to cycle icons
+      iconCycleIntervalRef.current = setInterval(() => {
+        setShowHelpImage(prev => !prev);
+      }, 3000); // Toggle every 3 seconds
     }
 
     return () => {
-        if (iconCycleIntervalRef.current) {
-            clearInterval(iconCycleIntervalRef.current);
-        }
+      if (iconCycleIntervalRef.current) {
+        clearInterval(iconCycleIntervalRef.current);
+      }
     };
   }, [isOpen]);
 
@@ -181,13 +181,13 @@ export function SpeedDialFAB(): ReactNode {
                 variants={characterVariants}
                 className="inline-block"
               >
-                {char === " " ? " " : char} 
+                {char === " " ? " " : char}
               </motion.span>
             ))}
           </motion.div>
         )}
       </AnimatePresence>
-      <motion.div 
+      <motion.div
         className={`flex flex-col-reverse items-end space-y-2 space-y-reverse overflow-hidden mb-2`}
         initial={{ opacity: 0, height: 0 }}
         animate={{ opacity: isOpen ? 1 : 0, height: isOpen ? 'auto' : 0 }}
@@ -203,7 +203,7 @@ export function SpeedDialFAB(): ReactNode {
           >
             <Button
               onClick={option.action}
-              variant="default" 
+              variant="default"
               className="flex items-center justify-between w-40 h-10 md:w-48 md:h-12 rounded-full shadow-lg bg-card text-card-foreground hover:bg-muted focus-visible:ring-1 focus-visible:ring-ring pl-6 pr-2 py-2"
               aria-label={option.ariaLabel}
               tabIndex={isOpen ? 0 : -1}
@@ -225,28 +225,28 @@ export function SpeedDialFAB(): ReactNode {
                     ${isOpen ? 'bg-gray-700 hover:bg-gray-800 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'}`}
         aria-expanded={isOpen}
         aria-label={isOpen ? "Close contact options" : "Open contact options"}
-        animate={fabControls} 
+        animate={fabControls}
       >
         <AnimatePresence mode="wait">
-            {isOpen ? (
-                <motion.div key="close-icon" initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 45 }}>
-                    <X className="h-6 w-6 md:h-7 md:w-7" />
-                </motion.div>
-            ) : showHelpImage ? (
-                <motion.div key="help-image" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="h-full w-full relative">
-                    <Image
-                        src="https://colorhutbd.xyz/help.png"
-                        alt="Help"
-                        fill
-                        sizes="(max-width: 768px) 48px, 56px"
-                        className="object-contain"
-                    />
-                </motion.div>
-            ) : (
-                <motion.div key="message-icon" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-                    <MessagesSquare className="h-6 w-6 md:h-7 md:w-7" />
-                </motion.div>
-            )}
+          {isOpen ? (
+            <motion.div key="close-icon" initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0, rotate: 45 }}>
+              <X className="h-6 w-6 md:h-7 md:w-7" />
+            </motion.div>
+          ) : showHelpImage ? (
+            <motion.div key="help-image" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="h-full w-full relative">
+              <Image
+                src="https://colorhutbd.xyz/help.png"
+                alt="Help"
+                fill
+                sizes="(max-width: 768px) 48px, 56px"
+                className="object-contain"
+              />
+            </motion.div>
+          ) : (
+            <motion.div key="message-icon" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
+              <MessagesSquare className="h-6 w-6 md:h-7 md:w-7" />
+            </motion.div>
+          )}
         </AnimatePresence>
       </motion.button>
     </div>

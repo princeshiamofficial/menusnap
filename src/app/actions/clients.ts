@@ -112,7 +112,7 @@ export async function saveClientLogin(businessName: string, businessType: string
       }
       // -----------------------------
 
-      return { success: true, clientId: result.insertId, action: 'created' };
+      return { success: true, clientId: Number(result.insertId), action: 'created' };
     }
   } catch (error) {
     console.error("Database Error saving client login:", error);
@@ -139,7 +139,7 @@ export async function getLeads(page: number = 1, limit: number = 20) {
     
     // Get total count for pagination info
     const [countRows]: any = await pool.execute('SELECT COUNT(*) as total FROM clients');
-    const total = countRows[0].total;
+    const total = Number(countRows[0].total);
     
     const leads = (Array.isArray(rows) ? rows : []).map((lead: any) => {
       let stage = (lead.stage || '').trim();

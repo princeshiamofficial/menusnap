@@ -75,7 +75,7 @@ export async function saveHiringRequest(data: {
       'INSERT INTO responses_hiring (business_name, whatsapp_number, designation, requirement) VALUES (?, ?, ?, ?)',
       [data.businessName, data.whatsappNumber, data.designation || null, data.requirement || null]
     );
-    return { success: true, id: result.insertId };
+    return { success: true, id: Number(result.insertId) };
   } catch (error) {
     console.error("Error saving hiring request:", error);
     return { success: false, error: "Failed to save request" };
@@ -97,7 +97,7 @@ export async function saveFreeDesignRequest(data: {
       'INSERT INTO responses_free_design (business_name, whatsapp_number, business_type, required_design) VALUES (?, ?, ?, ?)',
       [data.businessName, data.whatsappNumber, data.businessType || null, data.requiredDesign || null]
     );
-    return { success: true, id: result.insertId };
+    return { success: true, id: Number(result.insertId) };
   } catch (error) {
     console.error("Error saving free design request:", error);
     return { success: false, error: "Failed to save request" };
@@ -119,7 +119,7 @@ export async function saveTeamTrackerRequest(data: {
       'INSERT INTO responses_team_tracker (business_name, whatsapp_number, business_type, goal) VALUES (?, ?, ?, ?)',
       [data.businessName, data.whatsappNumber, data.businessType || null, data.goal || null]
     );
-    return { success: true, id: result.insertId };
+    return { success: true, id: Number(result.insertId) };
   } catch (error) {
     console.error("Error saving team tracker request:", error);
     return { success: false, error: "Failed to save request" };
