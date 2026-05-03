@@ -127,7 +127,7 @@ export async function getLeads(page: number = 1, limit: number = 20) {
   try {
     await ensureClientsTable();
     const offset = (page - 1) * limit;
-    
+
     const [rows]: any = await pool.execute(
       `SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.stage, c.division, c.district,
        (SELECT note FROM client_notes WHERE client_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_note,
@@ -136,11 +136,11 @@ export async function getLeads(page: number = 1, limit: number = 20) {
        FROM clients c ORDER BY c.created_at DESC LIMIT ? OFFSET ?`,
       [limit, offset]
     );
-    
+
     // Get total count for pagination info
     const [countRows]: any = await pool.execute('SELECT COUNT(*) as total FROM clients');
     const total = Number(countRows[0].total);
-    
+
     const leads = (Array.isArray(rows) ? rows : []).map((lead: any) => {
       let stage = (lead.stage || '').trim();
       if (!stage || stage === '' || stage === 'null' || stage === 'undefined') {
@@ -156,15 +156,15 @@ export async function getLeads(page: number = 1, limit: number = 20) {
       if (stage === 'Not Interested') stage = 'not-interested';
       if (stage === 'Exiting') stage = 'exiting';
       if (stage === 'Fake') stage = 'fake';
-      
+
       return { ...lead, stage };
     });
-    
-    return { 
-      success: true, 
-      leads, 
-      total, 
-      hasMore: (offset + rows.length) < total 
+
+    return {
+      success: true,
+      leads,
+      total,
+      hasMore: (offset + rows.length) < total
     };
   } catch (error) {
     console.error("Database Error fetching leads:", error);
@@ -178,10 +178,10 @@ export async function getLeads(page: number = 1, limit: number = 20) {
 export async function updateClientStage(clientId: number, stage: string, note?: string) {
   try {
     await ensureClientsTable();
-    
+
     // 1. Update the client's current stage
     await pool.execute('UPDATE clients SET stage = ? WHERE id = ?', [stage, clientId]);
-    
+
     // 2. If a note is provided, insert it into the history table
     if (note && note.trim()) {
       await pool.execute(
@@ -189,7 +189,7 @@ export async function updateClientStage(clientId: number, stage: string, note?: 
         [clientId, stage, note]
       );
     }
-    
+
     return { success: true };
   } catch (error: any) {
     console.error("Database Error updating client stage:", error);
@@ -205,7 +205,7 @@ export async function getClientHistory(clientId: number) {
     const [rows]: any = await pool.execute(
       `SELECT id, stage, note, 
        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at 
-       FROM client_notes WHERE client_id = ? ORDER BY created_at DESC`,
+       FROM client_notes WHERE client_id = ? ORDER BY created_at ASC`,
       [clientId]
     );
     return { success: true, history: rows };
@@ -227,13 +227,13 @@ export async function updateClientNote(clientId: number, note: string) {
       'UPDATE clients SET note = ? WHERE id = ?',
       [note, clientId]
     );
-    
+
     return { success: true };
   } catch (error: any) {
     console.error("Database Error updating client note:", error);
-    return { 
-      success: false, 
-      error: error?.message || "Failed to update note" 
+    return {
+      success: false,
+      error: error?.message || "Failed to update note"
     };
   }
 }
@@ -244,10 +244,10 @@ export async function updateClientNote(clientId: number, note: string) {
 export async function deleteClient(clientId: number) {
   try {
     await ensureClientsTable();
-    
+
     // Note: client_notes has ON DELETE CASCADE, so they will be deleted automatically.
     await pool.execute('DELETE FROM clients WHERE id = ?', [clientId]);
-    
+
     return { success: true };
   } catch (error: any) {
     console.error("Database Error deleting client:", error);
@@ -270,7 +270,7 @@ export async function getLeadsTrend() {
       GROUP BY DATE_FORMAT(created_at, '%m'), DATE_FORMAT(created_at, '%b')
       ORDER BY MIN(created_at) ASC
     `);
-    
+
     // Ensure all 12 months are represented if necessary, or just return what we have
     return { success: true, data: rows };
   } catch (error) {

@@ -216,10 +216,24 @@ export default function ContactsPage() {
   const [historyClientId, setHistoryClientId] = useState<number | null>(null);
   const [clientHistory, setClientHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [newHistoryNote, setNewHistoryNote] = useState('');
+  const [isAddingHistoryNote, setIsAddingHistoryNote] = useState(false);
 
   // Delete State
   const [deleteClientId, setDeleteClientId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom when history changes
+  useEffect(() => {
+    if (scrollRef.current) {
+      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    }
+  }, [clientHistory, loadingHistory]);
 
 
   const { toast } = useToast();
@@ -380,6 +394,33 @@ export default function ContactsPage() {
       console.error("Failed to fetch history:", err);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const handleAddHistoryNote = async () => {
+    if (!historyClientId || !newHistoryNote.trim()) return;
+    
+    const client = contacts.find(c => c.id === historyClientId);
+    if (!client) return;
+
+    setIsAddingHistoryNote(true);
+    try {
+      const result = await updateClientStage(historyClientId, client.stage, newHistoryNote);
+      if (result.success) {
+        setNewHistoryNote('');
+        // Refresh history
+        fetchHistory(historyClientId);
+        // Refresh contacts list to show latest note
+        setContacts(prev => prev.map(c => c.id === historyClientId ? { ...c, latest_note: newHistoryNote } : c));
+        toast({ title: "Note added to history" });
+      } else {
+        toast({ title: "Failed to add note", description: result.error, variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Failed to add history note:", err);
+      toast({ title: "Error", description: "Something went wrong", variant: "destructive" });
+    } finally {
+      setIsAddingHistoryNote(false);
     }
   };
 
@@ -790,70 +831,102 @@ export default function ContactsPage() {
 
         {/* History Dialog */}
         <Dialog open={!!historyClientId} onOpenChange={(open) => !open && setHistoryClientId(null)}>
-          <DialogContent className="sm:max-w-lg rounded-3xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
-            <DialogHeader className="p-6 pb-2">
-              <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                Interaction History
-              </DialogTitle>
-              <DialogDescription className="font-medium text-slate-500">
-                Tracking all status changes and updates for {contacts.find(c => c.id === historyClientId)?.business_name}.
-              </DialogDescription>
+          <DialogContent className="sm:max-w-md rounded-[2.5rem] h-[85vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl bg-white">
+            <DialogHeader className="p-6 px-8 flex flex-row items-center justify-between border-b border-slate-50 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-sm shadow-inner">
+                    {contacts.find(c => c.id === historyClientId)?.business_name?.substring(0, 2).toUpperCase()}
+                </div>
+                <div className="space-y-0.5">
+                  <DialogTitle className="text-base font-black text-slate-900 tracking-tight">
+                    {contacts.find(c => c.id === historyClientId)?.business_name}
+                  </DialogTitle>
+                  <DialogDescription className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Active Log
+                  </DialogDescription>
+                </div>
+              </div>
             </DialogHeader>
             
-            <ScrollArea className="h-[450px] px-6 py-4">
+            <ScrollArea ref={scrollRef} className="flex-1 px-6 py-6 bg-slate-50/30">
               {loadingHistory ? (
-                <div className="flex flex-col gap-4 py-4">
+                <div className="flex flex-col gap-6 py-4">
                   {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+                    <div key={i} className="flex gap-4">
+                       <Skeleton className="h-8 w-8 rounded-full shrink-0" />
+                       <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-1/3" />
+                          <Skeleton className="h-12 w-full rounded-xl" />
+                       </div>
+                    </div>
                   ))}
                 </div>
               ) : clientHistory.length === 0 ? (
-                <div className="text-center py-12 space-y-3">
-                  <div className="p-3 bg-slate-50 rounded-full w-fit mx-auto text-slate-300">
-                    <StickyNote className="h-6 w-6" />
-                  </div>
-                  <p className="text-slate-400 font-medium text-sm">No history found for this client.</p>
+                <div className="text-center py-16">
+                  <p className="text-slate-300 font-bold text-sm tracking-tight">No activity recorded yet.</p>
                 </div>
               ) : (
-                <div className="space-y-6 pb-4">
-                  {clientHistory.map((item, idx) => {
-                    const stageInfo = stages.find(s => s.value === item.stage) || stages[0];
-                    const Icon = getIcon(stageInfo.iconName || 'HelpCircle');
-                    
-                    return (
-                      <div key={item.id} className="relative flex gap-4 group">
-                        {/* Timeline Line */}
-                        {idx !== clientHistory.length - 1 && (
-                          <div className="absolute left-[21px] top-10 bottom-[-24px] w-[1px] bg-slate-100 group-last:hidden" />
-                        )}
-                        
-                        <div className={cn(
-                          "h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm border z-10",
-                          stageInfo.color
-                        )}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        
-                        <div className="flex-1 space-y-1 pb-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-sm text-slate-900 tracking-tight">{item.stage}</h4>
-                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest tabular-nums">
-                              {formatDate(item.created_at, true)}
-                            </span>
-                          </div>
-                          <div className="py-1">
-                            <p className="text-[13px] text-slate-500 font-medium leading-relaxed">
-                              {item.note}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="space-y-6 pb-8">
+                  {(() => {
+                    const groups: any[] = [];
+                    clientHistory.forEach((item) => {
+                      if (groups.length > 0 && groups[groups.length - 1].stage === item.stage) {
+                        groups[groups.length - 1].items.push(item);
+                      } else {
+                        groups.push({ stage: item.stage, items: [item] });
+                      }
+                    });
+
+                    return groups.map((group, gIdx) => (
+                      <HistoryGroup 
+                        key={`${group.stage}-${gIdx}`} 
+                        group={group} 
+                        stages={stages} 
+                        formatDate={formatDate}
+                        isLast={gIdx === groups.length - 1}
+                      />
+                    ));
+                  })()}
                 </div>
               )}
             </ScrollArea>
+
+            {/* Chat-style Input Bar */}
+            {!loadingHistory && (
+              <div className="p-4 px-6 bg-white border-t border-slate-100">
+                <div className="flex items-end gap-3">
+                  <div className="flex-1 relative group">
+                    <Textarea 
+                      placeholder="Send a note..."
+                      className="min-h-[48px] max-h-[120px] rounded-2xl border-slate-100 bg-slate-50 focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 font-medium py-3 px-4 pr-10 transition-all placeholder:text-slate-300 resize-none"
+                      value={newHistoryNote}
+                      onChange={(e) => setNewHistoryNote(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddHistoryNote();
+                        }
+                      }}
+                    />
+                    <div className="absolute right-3 bottom-3 opacity-30">
+                        <Zap className="h-4 w-4 text-slate-400" />
+                    </div>
+                  </div>
+                  <Button 
+                    onClick={handleAddHistoryNote}
+                    disabled={isAddingHistoryNote || !newHistoryNote.trim()}
+                    className="h-11 w-11 rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 transition-all active:scale-90 disabled:opacity-50 shrink-0 p-0 flex items-center justify-center"
+                  >
+                    {isAddingHistoryNote ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                        <MessageSquare className="h-5 w-5" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
@@ -1445,6 +1518,49 @@ function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
       </AlertDialogContent>
     </AlertDialog>
     </>
+  );
+}
+
+function HistoryGroup({ group, stages, formatDate, isLast }: any) {
+  const stageInfo = stages.find((s: any) => s.value === group.stage) || stages[0];
+  const Icon = getIcon(stageInfo.iconName || 'HelpCircle');
+
+  return (
+    <div className="space-y-6">
+      {/* System Message / Stage Divider */}
+      <div className="flex items-center justify-center gap-4 py-2">
+        <div className="h-px bg-slate-100 flex-1" />
+        <div className={cn(
+            "flex items-center gap-2 px-4 py-1.5 rounded-full border shadow-sm",
+            stageInfo.color.replace('border-', 'border-transparent bg-opacity-10 bg-')
+        )}>
+            <Icon className="h-3 w-3" />
+            <span className="text-[10px] font-black uppercase tracking-widest">{group.stage}</span>
+        </div>
+        <div className="h-px bg-slate-100 flex-1" />
+      </div>
+
+      <div className="space-y-3">
+        {group.items.map((item: any, idx: number) => (
+          <motion.div 
+            key={item.id} 
+            initial={{ opacity: 0, scale: 0.9, x: -10 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ delay: idx * 0.1, type: "spring", damping: 20 }}
+            className="flex flex-col items-start gap-1 max-w-[85%]"
+          >
+            <div className="bg-white border border-slate-100 p-3.5 px-4 rounded-2xl rounded-tl-none shadow-sm shadow-slate-100/50">
+              <p className="text-[14px] text-slate-700 font-medium leading-relaxed break-words tracking-tight">
+                {item.note}
+              </p>
+            </div>
+            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest pl-1 tabular-nums">
+              {formatDate(item.created_at, true)}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
   );
 }
 
