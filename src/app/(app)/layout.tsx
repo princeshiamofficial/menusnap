@@ -72,6 +72,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                             pathname.startsWith('/ebook') || 
                             pathname.startsWith('/ebook/success') || 
                             pathname.startsWith('/team-tracker') ||
+                            pathname.startsWith('/magictab') ||
+                            pathname.startsWith('/templates') ||
                             pathname.startsWith('/success');
 
   if (isStandaloneRoute) {

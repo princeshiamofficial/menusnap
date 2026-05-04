@@ -183,6 +183,8 @@ function TemplateSkeletonCard(): ReactNode {
 }
 
 
+import { ClientGate } from '@/components/auth/ClientGate';
+
 export default function TemplatesPage(): ReactNode {
   const [templates, setTemplates] = useState<ApiTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -366,80 +368,82 @@ export default function TemplatesPage(): ReactNode {
   const isSelectionAllowed = !!pendingOrderId;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background pb-10">
+    <ClientGate>
+      <div className="flex flex-col min-h-screen bg-background pb-10">
 
 
-      <main className="w-full py-0">
-        {isLoading || clientLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-6">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <TemplateSkeletonCard key={index} />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
-            <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-            <h2 className="text-xl font-semibold text-destructive mb-2">Oops! Something went wrong.</h2>
-            <p className="text-muted-foreground max-w-md">{error}</p>
-            <Button variant="outline" onClick={() => window.location.reload()} className="mt-6">
-              Try Again
-            </Button>
-          </div>
-        ) : filteredTemplates.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground text-lg">
-                {searchTerm ? "No published templates match your search." : "No published templates available for your business type."}
-              </p>
+        <main className="w-full py-0">
+          {isLoading || clientLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-6">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <TemplateSkeletonCard key={index} />
+              ))}
             </div>
-        ) : (
-          <motion.div 
-            className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {filteredTemplates.map((template) => (
-              <motion.div key={template.id} variants={itemVariants}>
-                <TemplateCard
-                  template={template}
-                  onPreview={setPreviewImageUrl}
-                  onSelect={handleSelectTemplate}
-                  isSelectionAllowed={isSelectionAllowed}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center text-center py-10 bg-card border border-destructive/50 rounded-lg shadow-md">
+              <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+              <h2 className="text-xl font-semibold text-destructive mb-2">Oops! Something went wrong.</h2>
+              <p className="text-muted-foreground max-w-md">{error}</p>
+              <Button variant="outline" onClick={() => window.location.reload()} className="mt-6">
+                Try Again
+              </Button>
+            </div>
+          ) : filteredTemplates.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-muted-foreground text-lg">
+                  {searchTerm ? "No published templates match your search." : "No published templates available for your business type."}
+                </p>
+              </div>
+          ) : (
+            <motion.div 
+              className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-8"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {filteredTemplates.map((template) => (
+                <motion.div key={template.id} variants={itemVariants}>
+                  <TemplateCard
+                    template={template}
+                    onPreview={setPreviewImageUrl}
+                    onSelect={handleSelectTemplate}
+                    isSelectionAllowed={isSelectionAllowed}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </main>
+
+        <AlertDialog open={!!templateToConfirm} onOpenChange={(open) => !open && setTemplateToConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Template Selection</AlertDialogTitle>
+              <AlertDialogDescription>
+                Apply the "{decodeHtmlEntities(templateToConfirm?.name)}" template to your recent order #{pendingOrderId}?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setTemplateToConfirm(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmSelection}>
+                Confirm & Apply
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {showConfetti && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
+            <BubbleConfetti onComplete={() => setShowConfetti(false)} />
+          </div>
         )}
-      </main>
 
-      <AlertDialog open={!!templateToConfirm} onOpenChange={(open) => !open && setTemplateToConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Template Selection</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apply the "{decodeHtmlEntities(templateToConfirm?.name)}" template to your recent order #{pendingOrderId}?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setTemplateToConfirm(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSelection}>
-              Confirm & Apply
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {showConfetti && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
-          <BubbleConfetti onComplete={() => setShowConfetti(false)} />
-        </div>
-      )}
-
-      <TemplatePreviewDialog
-        imageUrl={previewImageUrl}
-        isOpen={!!previewImageUrl}
-        onOpenChange={() => setPreviewImageUrl(null)}
-      />
-    </div>
+        <TemplatePreviewDialog
+          imageUrl={previewImageUrl}
+          isOpen={!!previewImageUrl}
+          onOpenChange={() => setPreviewImageUrl(null)}
+        />
+      </div>
+    </ClientGate>
   );
 }
