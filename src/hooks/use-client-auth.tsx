@@ -22,7 +22,7 @@ export interface ClientAuthContextType {
   clientUser: ClientUser | null;
   isClientLoggedIn: boolean;
   clientLoading: boolean;
-  login: (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string) => Promise<boolean>;
+  login: (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string, redirectTo?: string | null) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -48,7 +48,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string) => {
+  const login = useCallback(async (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string, redirectTo?: string | null) => {
     setClientLoading(true);
     
     // 1. WhatsApp Presence Check using Green API (with Bypass & Cache)
@@ -130,7 +130,9 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         /* Silence creation errors */
       }
 
-      router.push('/dashboard');
+      if (redirectTo !== null) {
+        router.push(redirectTo || '/dashboard');
+      }
       setClientLoading(false);
       return true;
     } else {

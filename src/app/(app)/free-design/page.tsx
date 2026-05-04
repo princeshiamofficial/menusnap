@@ -8,30 +8,34 @@ import { FreeDesignComparison } from "@/components/free-design/FreeDesignCompari
 import { FreeDesignTestimonials } from "@/components/free-design/FreeDesignTestimonials";
 import { FreeDesignBookingForm } from "@/components/free-design/FreeDesignBookingForm";
 
+import { ClientGate } from "@/components/auth/ClientGate";
+
 export default function FreeDesignPage() {
   return (
-    <main className="min-h-screen bg-white overflow-hidden">
-      {/* Hero Section */}
-      <FreeDesignHero />
+    <ClientGate>
+      <main className="min-h-screen bg-white overflow-hidden">
+        {/* Hero Section */}
+        <FreeDesignHero />
 
-      {/* Features Section */}
-      <FreeDesignFeatures />
+        {/* Features Section */}
+        <FreeDesignFeatures />
 
-      {/* Solution Section */}
-      <FreeDesignSolution />
+        {/* Solution Section */}
+        <FreeDesignSolution />
 
-      {/* Services Section */}
-      <FreeDesignServices />
+        {/* Services Section */}
+        <FreeDesignServices />
 
-      {/* Comparison Section */}
-      <FreeDesignComparison />
+        {/* Comparison Section */}
+        <FreeDesignComparison />
 
-      {/* Testimonials Section */}
-      <FreeDesignTestimonials />
+        {/* Testimonials Section */}
+        <FreeDesignTestimonials />
 
-      {/* Booking Form Section */}
-      <FreeDesignBookingForm />
-    </main>
+        {/* Booking Form Section */}
+        <FreeDesignBookingForm />
+      </main>
+    </ClientGate>
   );
 }
 
