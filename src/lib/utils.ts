@@ -61,6 +61,11 @@ export function isValidWhatsApp(number: string): boolean {
 export async function compressImage(base64: string, maxWidth = 1200, quality = 0.7): Promise<string> {
   // If not on the client, just return the original
   if (typeof window === 'undefined') return base64;
+
+  // Skip compression for GIFs to preserve animation
+  if (base64.startsWith('data:image/gif')) {
+    return base64;
+  }
   
   return new Promise((resolve) => {
     const img = new Image();
