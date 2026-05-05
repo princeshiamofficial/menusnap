@@ -429,7 +429,7 @@ export default function DraftPage(): ReactNode {
   }, [drafts, searchTerm]);
 
   return (
-    <div className="container mx-auto p-2 sm:p-3 lg:p-4 space-y-4">
+    <div className="container mx-auto p-2 sm:p-3 lg:p-4 space-y-4 pb-24 md:pb-10">
 
       <main className="space-y-6">
         {isLoading || isLoadingCategories ? (

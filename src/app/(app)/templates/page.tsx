@@ -384,7 +384,7 @@ export default function TemplatesPage(): ReactNode {
 
   return (
     <ClientGate>
-      <div className="flex flex-col min-h-screen bg-background pb-10">
+      <div className="flex flex-col min-h-screen bg-background pb-24 md:pb-10">
 
 
         <main className="w-full pt-2 md:pt-5 px-1.5 md:px-5">
