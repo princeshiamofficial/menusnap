@@ -37,27 +37,7 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
 
 
   if (clientLoading || !isClientLoggedIn) {
-    // Show a full-page loading skeleton while checking auth or redirecting
-    return (
-      <div className="flex h-screen w-full">
-        <div className="hidden md:flex flex-col space-y-2 p-4 border-r bg-sidebar">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-8 w-full mt-4" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-8 w-full" />
-        </div>
-        <div className="flex-1 p-8 space-y-6">
-          <Skeleton className="h-12 w-1/3" />
-          <Skeleton className="h-48 w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return <>{children}</>;
@@ -67,17 +47,31 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/m-admin') || pathname.startsWith('/panel');
-  const isStandaloneRoute = pathname.startsWith('/marketing-consultation') || 
-                            pathname.startsWith('/free-design') || 
-                            pathname.startsWith('/ebook') || 
-                            pathname.startsWith('/ebook/success') || 
-                            pathname.startsWith('/team-tracker') ||
-                            pathname.startsWith('/magictab') ||
-                            pathname.startsWith('/templates') ||
-                            pathname.startsWith('/success');
+  const isMarketingStandalone = pathname.startsWith('/marketing-consultation') || 
+                                pathname.startsWith('/free-design') || 
+                                pathname.startsWith('/ebook') || 
+                                pathname.startsWith('/ebook/success') || 
+                                pathname.startsWith('/team-tracker') ||
+                                pathname.startsWith('/success');
 
-  if (isStandaloneRoute) {
+  const isAppStandalone = pathname.startsWith('/magictab') || 
+                          pathname.startsWith('/templates');
+
+  const { isClientLoggedIn, clientLoading } = useClientAuth();
+
+  if (isMarketingStandalone) {
     return <>{children}</>;
+  }
+
+  // Only show as standalone (no sidebar) if not logged in
+  if (isAppStandalone && !isClientLoggedIn) {
+    if (clientLoading) return null;
+    return (
+      <>
+        {children}
+        <BottomNavigation />
+      </>
+    );
   }
 
   if (isAdminRoute) {
@@ -92,17 +86,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <SidebarNav />
         </Sidebar>
         <SidebarInset className="bg-background">
-          <ScrollArea className={cn("h-screen", (pathname === "/magictab" || pathname === "/magictab/" || pathname === "/ebook" || pathname === "/ebook/") ? "pb-0" : "pb-16 md:pb-0")}> 
+          <ScrollArea className={cn("h-screen", (pathname === "/magictab" || pathname === "/magictab/" || pathname === "/templates" || pathname === "/templates/" || pathname === "/draft" || pathname === "/draft/" || pathname === "/ebook" || pathname === "/ebook/") ? "pb-0" : "pb-16 md:pb-0")}> 
             <main className={cn(
               "flex-1",
-              (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6 sm:p-8 md:p-10"
+              (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/templates" || pathname === "/templates/" || pathname === "/draft" || pathname === "/draft/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6 sm:p-8 md:p-10"
             )}>
               {children}
             </main>
           </ScrollArea>
         </SidebarInset>
 
-        {pathname !== "/dashboard" && pathname !== "/dashboard/" && pathname !== "/magictab" && pathname !== "/magictab/" && pathname !== "/ebook" && pathname !== "/ebook/" && !pathname.startsWith("/success") && <SpeedDialFAB />}
+        {pathname !== "/dashboard" && pathname !== "/dashboard/" && pathname !== "/magictab" && pathname !== "/magictab/" && pathname !== "/templates" && pathname !== "/templates/" && pathname !== "/draft" && pathname !== "/draft/" && pathname !== "/ebook" && pathname !== "/ebook/" && !pathname.startsWith("/success") && <SpeedDialFAB />}
         {pathname !== "/ebook" && pathname !== "/ebook/" && <BottomNavigation />}
 
       </SidebarProvider>

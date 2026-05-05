@@ -145,33 +145,33 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
 
   return (
     <Card className="shadow-lg rounded-xl overflow-hidden bg-card border border-border transition-all hover:shadow-xl">
-      <CardHeader className="pb-3 pt-4 px-5">
+      <CardHeader className="p-2 pb-1">
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-semibold text-primary">{`${decodeHtmlEntities(draft.name)}`}</h3>
-            <div className="flex items-center space-x-3 text-xs text-muted-foreground mt-1">
-              <span className="flex items-center"><Clock className="h-3.5 w-3.5 mr-1" /> {relativeTime}</span>
-              <span className="flex items-center"><ListChecks className="h-3.5 w-3.5 mr-1" /> {draft.itemCount} items</span>
+            <h3 className="text-sm font-bold text-primary truncate max-w-[200px]">{`${decodeHtmlEntities(draft.name)}`}</h3>
+            <div className="flex items-center space-x-2 text-[10px] text-muted-foreground mt-0.5">
+              <span className="flex items-center"><Clock className="h-3 w-3 mr-1" /> {relativeTime}</span>
+              <span className="flex items-center"><ListChecks className="h-3 w-3 mr-1" /> {draft.itemCount} items</span>
             </div>
           </div>
-          <div className="flex items-center space-x-1.5">
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary" onClick={() => console.log("Redo draft:", draft.id)} aria-label="Redo draft">
-              <RotateCcw className="h-4 w-4" />
+          <div className="flex items-center space-x-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary" onClick={() => console.log("Redo draft:", draft.id)} aria-label="Redo draft">
+              <RotateCcw className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => onDelete(draft.id)} aria-label="Delete draft">
-              <Trash2 className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(draft.id)} aria-label="Delete draft">
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-5 pt-2 pb-4">
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Badge variant="default" className="bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-700/20 dark:text-orange-400 dark:border-orange-600 font-normal py-1 px-2.5 text-xs">
-            <MenuTypeIcon className="h-3 w-3 mr-1.5 opacity-80" />
+      <CardContent className="px-2 pb-2 pt-0">
+        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+          <Badge variant="default" className="bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-700/20 dark:text-orange-400 dark:border-orange-600 font-normal py-0.5 px-2 text-[9px]">
+            <MenuTypeIcon className="h-2.5 w-2.5 mr-1 opacity-80" />
             {menuTypeDisplay}
           </Badge>
-          <Badge variant="outline" className="border-border text-muted-foreground font-medium py-1 px-2.5 text-xs">
-            <CalendarDays className="h-3 w-3 mr-1.5 opacity-70" />
+          <Badge variant="outline" className="border-border text-muted-foreground font-medium py-0.5 px-2 text-[9px]">
+            <CalendarDays className="h-2.5 w-2.5 mr-1 opacity-70" />
             {formattedShortDateBadge}
           </Badge>
         </div>
@@ -243,15 +243,15 @@ function DraftCard({ draft, isExpanded, onRestore, onDelete, onToggleExpand, mas
           </div>
         )}
       </CardContent>
-      <CardFooter className="bg-muted/30 px-5 py-3 flex justify-between items-center border-t border-border">
-        <p className="text-xs text-muted-foreground">Created on {formattedCreationDate}</p>
+      <CardFooter className="bg-muted/20 px-2 py-1.5 flex justify-between items-center border-t border-border/50">
+        <p className="text-[9px] text-muted-foreground opacity-70">Saved {formattedCreationDate}</p>
         <Button
           variant="default"
           size="sm"
-          className="bg-foreground text-background hover:bg-foreground/80"
+          className="h-7 text-[10px] bg-foreground text-background hover:bg-foreground/80 font-bold px-3"
           onClick={() => onRestore(draft.id)}
         >
-          Restore Selection
+          Restore
         </Button>
       </CardFooter>
     </Card>
@@ -429,29 +429,7 @@ export default function DraftPage(): ReactNode {
   }, [drafts, searchTerm]);
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center">
-            <FileText className="h-8 w-8 mr-3 text-primary" />
-            Saved Drafts
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
-            Recover your previously selected menu items.
-          </p>
-        </div>
-        <div className="relative w-full sm:w-auto sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search drafts..."
-            className="pl-10 w-full text-sm h-10"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Search saved drafts"
-          />
-        </div>
-      </header>
+    <div className="container mx-auto p-2 sm:p-3 lg:p-4 space-y-4">
 
       <main className="space-y-6">
         {isLoading || isLoadingCategories ? (

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Star, Maximize, AlertTriangle, X } from "lucide-react"; 
+import { Star, Maximize, AlertTriangle, X, MessageCircle } from "lucide-react"; 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
@@ -105,12 +105,12 @@ function TemplateCard({
     >
       <Card className="overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl flex flex-col h-full border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader className="p-0 relative">
-          <div className="aspect-[4/3] relative group">
+          <div className="aspect-[4/3] relative group overflow-hidden">
             <Image
               src={actualImageUrl}
               alt=""
               fill
-              className="object-cover blur-xl opacity-95"
+              className="object-cover blur-xl opacity-95 transition-transform duration-500 group-hover:scale-110"
               priority={false}
               aria-hidden="true"
             />
@@ -119,7 +119,7 @@ function TemplateCard({
               alt={decodeHtmlEntities(title)}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              className="object-contain relative z-10 transition-all duration-500 group-hover:scale-105 drop-shadow-xl group-hover:drop-shadow-2xl"
+              className="object-contain relative z-10 transition-all duration-500 group-hover:scale-110 drop-shadow-xl group-hover:drop-shadow-2xl"
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
             />
             <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.15)] pointer-events-none z-20 group-hover:shadow-[inset_0_0_60px_rgba(0,0,0,0.2)] transition-shadow duration-500" />
@@ -132,28 +132,43 @@ function TemplateCard({
             )}
             <Button
               variant="secondary"
+              className="absolute bottom-2 left-2 h-6 md:h-8 w-auto px-2 md:px-3 bg-emerald-500/80 backdrop-blur-md text-white border border-emerald-400/30 hover:bg-emerald-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-full shadow-lg z-30 flex items-center gap-1.5"
+              aria-label="Chat on WhatsApp"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(`https://wa.me/8801805561171?text=Hi, I am interested in the ${decodeHtmlEntities(title)} template.`, '_blank');
+              }}
+            >
+              <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="text-[10px] md:text-xs font-bold tracking-wider">Chat</span>
+            </Button>
+            <Button
+              variant="secondary"
               size="icon"
-              className="absolute bottom-2 right-2 h-7 w-7 md:h-9 md:w-9 bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-full shadow-lg z-30"
+              className="absolute bottom-2 right-2 h-6 w-6 md:h-8 md:w-8 bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all rounded-full shadow-lg z-30"
               aria-label="Maximize template preview"
-              onClick={() => onPreview(actualImageUrl)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreview(actualImageUrl);
+              }}
             >
               <Maximize className="h-3.5 w-3.5 md:h-4 md:w-4" />
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="px-4 py-4 md:py-5 flex-grow bg-card transition-colors duration-300">
-          <CardTitle className="text-lg md:text-xl font-bold tracking-tight mb-1.5 md:mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-1">
+        <CardContent className="p-2 md:p-3 flex-grow bg-card transition-colors duration-300">
+          <CardTitle className="text-sm md:text-base font-bold tracking-tight mb-0.5 md:mb-1 group-hover:text-primary transition-colors duration-300 line-clamp-1">
             {decodeHtmlEntities(title)}
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm text-muted-foreground line-clamp-2 leading-relaxed min-h-[40px]">
+          <CardDescription className="text-[10px] md:text-xs text-muted-foreground line-clamp-2 leading-tight md:leading-snug">
             {decodeHtmlEntities(description)}
           </CardDescription>
         </CardContent>
         {isSelectionAllowed && (
-          <CardFooter className="p-2 md:p-4 border-t border-border/50 bg-muted/20">
+          <CardFooter className="p-2 md:p-2.5 border-t border-border/50 bg-muted/20">
             <Button
               variant="default"
-              className="w-full h-8 md:h-11 text-[10px] md:text-sm font-semibold shadow-sm transition-all active:scale-[0.98] rounded-lg md:rounded-xl"
+              className="w-full h-8 md:h-9 text-[10px] md:text-xs font-semibold shadow-sm transition-all active:scale-[0.98] rounded-lg md:rounded-xl"
               onClick={() => onSelect(template)}
             >
               Select
@@ -372,7 +387,7 @@ export default function TemplatesPage(): ReactNode {
       <div className="flex flex-col min-h-screen bg-background pb-10">
 
 
-        <main className="w-full py-0">
+        <main className="w-full pt-2 md:pt-5 px-1.5 md:px-5">
           {isLoading || clientLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-6">
               {Array.from({ length: 8 }).map((_, index) => (
@@ -396,7 +411,7 @@ export default function TemplatesPage(): ReactNode {
               </div>
           ) : (
             <motion.div 
-              className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-8"
+              className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1 md:gap-4"
               variants={containerVariants}
               initial="hidden"
               animate="visible"

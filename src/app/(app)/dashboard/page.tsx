@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 
 import { Star, AlertTriangle, X, ListOrdered, Layers, FileEdit, History, TrendingUp, ChevronDown } from "lucide-react";
 import { motion, animate, AnimatePresence } from "framer-motion";
@@ -85,22 +84,6 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
   );
 }
 
-function TemplateSkeletonCard() {
-  return (
-    <Card className="shadow-xl rounded-xl overflow-hidden w-full max-w-md mx-auto sm:max-w-sm">
-      <CardHeader className="p-0 relative">
-        <Skeleton className="w-full aspect-[4/3]" />
-      </CardHeader>
-      <CardContent className="p-4">
-        <Skeleton className="h-6 w-3/4 mb-2" />
-        <Skeleton className="h-4 w-full mb-1" />
-        <Skeleton className="h-4 w-5/6 mb-3" />
-
-      </CardContent>
-
-    </Card>
-  );
-}
 
 const getImageHint = (name: string): string => {
   return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
@@ -200,9 +183,7 @@ function MobileImageSlider() {
   }, [slides.length]);
 
   if (isLoading || slides.length === 0) {
-    return (
-      <div className="md:hidden w-full aspect-[3/1] relative rounded-3xl overflow-hidden bg-muted/20 animate-pulse" />
-    );
+    return null;
   }
 
   return (
@@ -619,7 +600,6 @@ export default function DashboardPage() {
 
 
 
-  const showTemplateSkeletons = isLoadingTemplates || clientLoading;
 
   // While checking or if desktop, show nothing to prevent flickering
   if (!isMounted || isDesktop === true || isDesktop === null) {
