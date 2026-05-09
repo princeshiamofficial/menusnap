@@ -4,6 +4,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowDown, Star, Heart, ShoppingCart } from 'lucide-react';
 
+
+
+
 export default function OsoPage() {
   return (
     <main className="min-h-screen bg-white">
@@ -78,7 +81,6 @@ export default function OsoPage() {
               </div>
             </motion.div>
 
-            {/* Social Proof & Footer Row */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -231,6 +233,7 @@ export default function OsoPage() {
           ))}
         </div>
       </section>
+
       {/* Women Gallery Section */}
       <section className="py-24 bg-[#f0f0f0]">
         <div className="max-w-[1500px] mx-auto px-6">
@@ -363,7 +366,7 @@ export default function OsoPage() {
                 </div>
               </div>
 
-              {/* Product Info - Condensed for short height */}
+              {/* Product Info */}
               <div className="p-4 space-y-2.5">
                 {/* Color Swatches */}
                 <div className="flex items-center gap-2">
@@ -410,7 +413,7 @@ export default function OsoPage() {
                   )}
                 </div>
 
-                {/* Action Buttons - Slimmed down */}
+                {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-1">
                   <button className="flex-1 bg-[#f5f5f5] text-black font-bold py-2.5 rounded-full text-[13px] hover:bg-gray-200 transition-colors">
                     Details
@@ -426,9 +429,7 @@ export default function OsoPage() {
         </div>
         </div>
       </section>
+
     </main>
-
-
-
   );
 }

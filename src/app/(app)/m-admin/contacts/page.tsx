@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/components/ui/sidebar";
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { 
   Table, 
   TableHeader, 
@@ -83,6 +83,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
 
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -121,6 +123,7 @@ interface Contact {
   stage: string;
   last_login: string;
   created_at: string;
+  _createdAtTimestamp?: number;
 }
 
 const DEFAULT_STAGES = [
@@ -205,7 +208,16 @@ export default function ContactsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterStage, setFilterStage] = useState<string>('All');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date())
+  });
   const [timezone, setTimezone] = useState<string>('');
+
+  // Performance Optimization: Defer heavy state changes
+  const deferredSearchTerm = React.useDeferredValue(searchTerm);
+  const deferredDateRange = React.useDeferredValue(dateRange);
+  const deferredFilterStage = React.useDeferredValue(filterStage);
   
   // Pending Stage Change State
   const [pendingStage, setPendingStage] = useState<{ id: number; stage: string; currentNote: string } | null>(null);
@@ -272,9 +284,16 @@ export default function ContactsPage() {
             let stageVal = (lead.stage || 'new-lead').trim();
             // Final defensive fix for legacy names
             if (stageVal === 'New Lead' || stageVal === 'Lead') stageVal = 'new-lead';
+            
+            // Pre-calculate timestamp for performance
+            const cleanString = lead.created_at.replace('T', ' ').replace(/\..*$/, '').replace('Z', '');
+            const localParsingString = cleanString.replace(/-/g, '/');
+            const timestamp = new Date(localParsingString).getTime();
+
             return {
               ...lead,
-              stage: stageVal
+              stage: stageVal,
+              _createdAtTimestamp: isNaN(timestamp) ? 0 : timestamp
             };
           });
         
@@ -490,8 +509,8 @@ export default function ContactsPage() {
 
   const filteredContacts = useMemo(() => {
     // 1. Prepare normalized filter values
-    const searchStr = (searchTerm || "").trim().toLowerCase();
-    const filterVal = (filterStage || "All"); // Slug-based filter
+    const searchStr = (deferredSearchTerm || "").trim().toLowerCase();
+    const filterVal = (deferredFilterStage || "All"); // Slug-based filter
 
     return (contacts || [])
       .filter(contact => {
@@ -505,17 +524,31 @@ export default function ContactsPage() {
         if (!matchesSearch) return false;
 
         // Stage Match (Using slugs)
-        if (filterVal === 'All') return true;
-        
         const cStage = contact.stage || 'new-lead';
-        return cStage.toLowerCase().trim() === filterVal.toLowerCase().trim();
+        const matchesStage = filterVal === 'All' || cStage.toLowerCase().trim() === filterVal.toLowerCase().trim();
+        if (!matchesStage) return false;
+
+        // Date Range Match
+        if (deferredDateRange?.from && contact._createdAtTimestamp) {
+          const contactDate = contact._createdAtTimestamp;
+          const fromDate = new Date(deferredDateRange.from).setHours(0, 0, 0, 0);
+          
+          if (contactDate < fromDate) return false;
+          
+          if (deferredDateRange.to) {
+            const toDate = new Date(deferredDateRange.to).setHours(23, 59, 59, 999);
+            if (contactDate > toDate) return false;
+          }
+        }
+
+        return true;
       })
       .sort((a, b) => {
-        const dateA = new Date(a.created_at || 0).getTime();
-        const dateB = new Date(b.created_at || 0).getTime();
+        const dateA = a._createdAtTimestamp || 0;
+        const dateB = b._createdAtTimestamp || 0;
         return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
       });
-  }, [contacts, searchTerm, filterStage, sortOrder]);
+  }, [contacts, deferredSearchTerm, deferredFilterStage, sortOrder, deferredDateRange]);
 
   const formatDate = (dateString: string, includeTime = false) => {
     try {
@@ -593,10 +626,10 @@ export default function ContactsPage() {
               <CardTitle className="text-xl font-bold text-slate-800 truncate">Customer Directory</CardTitle>
               <CardDescription className="text-slate-400 font-medium break-words text-sm sm:text-base">Real-time client synchronization with WhatsApp validation.</CardDescription>
             </div>
-            <div className="flex flex-row items-center gap-2 w-full lg:w-auto">
+            <div className="flex flex-wrap lg:flex-nowrap items-center gap-3 w-full lg:w-auto">
               {/* Stage Filter */}
               <Select value={filterStage} onValueChange={setFilterStage}>
-                <SelectTrigger className="w-[140px] lg:w-44 h-11 rounded-2xl bg-slate-50/50 border-slate-200 focus:ring-0 focus:border-slate-300 transition-all font-bold text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 shrink-0 whitespace-nowrap">
+                <SelectTrigger className="w-full sm:w-[140px] lg:w-44 h-11 rounded-2xl bg-slate-50/50 border-slate-200 focus:ring-0 focus:border-slate-300 transition-all font-bold text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 shrink-0 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <Filter className="h-3.5 w-3.5" />
                     <SelectValue placeholder="All Stages" />
@@ -624,8 +657,15 @@ export default function ContactsPage() {
                 </SelectContent>
               </Select>
 
+              {/* Date Range Picker */}
+              <DateRangePicker 
+                date={dateRange} 
+                setDate={setDateRange} 
+                className="w-full sm:w-[220px] lg:w-64 shrink-0"
+              />
+
               {/* Search Input */}
-              <div className="relative flex-1 lg:w-72 group shrink-0">
+              <div className="relative flex-1 min-w-[200px] lg:w-72 group shrink-0">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 group-focus-within:text-slate-900 transition-colors" />
                 <Input 
                   placeholder="Search clients..." 
@@ -980,7 +1020,7 @@ export default function ContactsPage() {
 }
 
 // Sub-components for better organization and performance
-function ContactRow({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
+const ContactRow = React.memo(function ContactRow({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
   const currentStageInfo = stages.find((s: any) => s.value === contact.stage) || stages[0];
 
   return (
@@ -1090,18 +1130,17 @@ function ContactRow({ contact, index, stages, onStageChange, onViewHistory, onDe
       </TableCell>
     </TableRow>
   );
-}
+});
 
-function MobileContactCard({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick }: any) {
+const MobileContactCard = React.memo(function MobileContactCard({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick }: any) {
   const stageInfo = stages.find((s: any) => s.value === contact.stage) || stages[0];
   const initials = contact.business_name.substring(0, 2).toUpperCase();
 
   return (
     <motion.div
-        layout
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ delay: index * 0.05, type: "spring", damping: 25, stiffness: 200 }}
+        transition={{ delay: Math.min(index * 0.05, 0.5), type: "spring", damping: 25, stiffness: 200 }}
         className="group bg-white rounded-[2rem] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all active:scale-[0.98] select-none"
         onDoubleClick={onDeleteTrigger}
     >
@@ -1196,7 +1235,7 @@ function MobileContactCard({ contact, index, stages, onStageChange, onViewHistor
         </div>
     </motion.div>
   );
-}
+});
 
 const COLOR_THEMES = [
   { name: 'Slate', color: '#64748b', classes: 'bg-slate-50 text-slate-600 border-slate-100', dot: 'bg-slate-400' },
