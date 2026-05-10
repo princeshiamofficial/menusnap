@@ -188,6 +188,7 @@ export async function addDashboardSlide(imageUrl: string) {
  */
 export async function deleteDashboardSlide(slideId: number) {
   try {
+    console.log("Attempting to delete slide ID:", slideId);
     await ensureSlidesTable();
     
     // Get image URL before deletion
