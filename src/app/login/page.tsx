@@ -42,28 +42,33 @@ export default function LoginPage() {
   const [type, setType] = useState<'restaurant' | 'parlour' | ''>('');
   const [division, setDivision] = useState<string>('');
   const [district, setDistrict] = useState<string>('');
+  const [loggingIn, setLoggingIn] = useState(false);
   const { login, clientLoading, isClientLoggedIn } = useClientAuth();
   const { setTheme } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
-    if (isClientLoggedIn) {
+    if (isClientLoggedIn && !loggingIn) {
       router.push('/dashboard');
     }
-  }, [isClientLoggedIn, router]);
+  }, [isClientLoggedIn, router, loggingIn]);
 
   const handleTypeChange = (value: 'restaurant' | 'parlour') => {
     setType(value);
     setTheme(value === 'parlour' ? 'parlour' : 'default');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (businessName && type && whatsapp && division && district) {
       if (!isValidWhatsApp(whatsapp)) {
         return;
       }
-      login(businessName, type, whatsapp, division, district);
+      setLoggingIn(true);
+      const success = await login(businessName, type, whatsapp, division, district, '/login/success');
+      if (!success) {
+        setLoggingIn(false);
+      }
     }
   };
   
