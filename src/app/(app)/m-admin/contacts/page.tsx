@@ -278,7 +278,15 @@ export default function ContactsPage() {
     else setLoadingMore(true);
 
     try {
-      const result = await getLeads(pageNum, 20); 
+      // Prepare filters for server-side
+      const filterParams = {
+        search: deferredSearchTerm,
+        stage: deferredFilterStage,
+        dateFrom: deferredDateRange?.from ? format(deferredDateRange.from, 'yyyy-MM-dd') : undefined,
+        dateTo: deferredDateRange?.to ? format(deferredDateRange.to, 'yyyy-MM-dd') : undefined
+      };
+
+      const result = await getLeads(pageNum, 20, filterParams); 
       if (result.success && Array.isArray(result.leads)) {
           const leads = result.leads.map(lead => {
             let stageVal = (lead.stage || 'new-lead').trim();
@@ -326,11 +334,12 @@ export default function ContactsPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [toast]);
+  }, [toast, deferredSearchTerm, deferredFilterStage, deferredDateRange]);
 
-  // Initial load
+  // Filter-aware initial load and reset
   useEffect(() => {
     if (isAdminLoggedIn) {
+      setPage(1);
       fetchContacts(1);
     }
   }, [isAdminLoggedIn, fetchContacts]);
@@ -508,47 +517,14 @@ export default function ContactsPage() {
 
 
   const filteredContacts = useMemo(() => {
-    // 1. Prepare normalized filter values
-    const searchStr = (deferredSearchTerm || "").trim().toLowerCase();
-    const filterVal = (deferredFilterStage || "All"); // Slug-based filter
-
-    return (contacts || [])
-      .filter(contact => {
-        // Defensive check for contact existence
-        if (!contact) return false;
-
-        // Search Match (Check Business Name and WhatsApp Number)
-        const name = (contact.business_name || "").toLowerCase();
-        const phone = (contact.whatsapp_number || "");
-        const matchesSearch = !searchStr || name.includes(searchStr) || phone.includes(searchStr);
-        if (!matchesSearch) return false;
-
-        // Stage Match (Using slugs)
-        const cStage = contact.stage || 'new-lead';
-        const matchesStage = filterVal === 'All' || cStage.toLowerCase().trim() === filterVal.toLowerCase().trim();
-        if (!matchesStage) return false;
-
-        // Date Range Match
-        if (deferredDateRange?.from && contact._createdAtTimestamp) {
-          const contactDate = contact._createdAtTimestamp;
-          const fromDate = new Date(deferredDateRange.from).setHours(0, 0, 0, 0);
-          
-          if (contactDate < fromDate) return false;
-          
-          if (deferredDateRange.to) {
-            const toDate = new Date(deferredDateRange.to).setHours(23, 59, 59, 999);
-            if (contactDate > toDate) return false;
-          }
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        const dateA = a._createdAtTimestamp || 0;
-        const dateB = b._createdAtTimestamp || 0;
-        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-      });
-  }, [contacts, deferredSearchTerm, deferredFilterStage, sortOrder, deferredDateRange]);
+    // Sorting is still handled client-side for immediate responsiveness, 
+    // but filtering is now primarily server-side.
+    return [...contacts].sort((a, b) => {
+      const dateA = a._createdAtTimestamp || 0;
+      const dateB = b._createdAtTimestamp || 0;
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+  }, [contacts, sortOrder]);
 
   const formatDate = (dateString: string, includeTime = false) => {
     try {

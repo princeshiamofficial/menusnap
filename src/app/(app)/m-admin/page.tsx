@@ -22,7 +22,9 @@ import {
   FolderHeart,
   AlertTriangle,
   Menu,
-  Users
+  Users,
+  Image as ImageIcon,
+  Tag
 } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
@@ -52,6 +54,7 @@ import {
 } from 'date-fns';
 import { getOrdersFromMySql, getTemplatesFromMySql, getCategoriesFromMySql, getMenuItemsFromMySql } from '@/app/actions/orders';
 import { getLeads, getLeadsTrend } from '@/app/actions/clients';
+import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
 import { AdminSendNotification } from '@/components/admin/admin-send-notification';
 
 interface StatCardAdminProps {
@@ -98,6 +101,9 @@ const adminStatConfigs: (Omit<StatCardAdminProps, 'value'> & { id: string })[] =
   { id: "totalParlourItems", title: "Total Parlour Items", icon: Sparkles, iconBgClass: "bg-indigo-500" },
   { id: "totalRestaurantCategories", title: "Total Restaurant Categories", icon: LayoutList, iconBgClass: "bg-emerald-500" },
   { id: "totalParlourCategories", title: "Total Parlour Categories", icon: FolderHeart, iconBgClass: "bg-rose-500" },
+  { id: "totalSlides", title: "Slide Images", icon: ImageIcon, iconBgClass: "bg-blue-400" },
+  { id: "totalSpotlights", title: "Spotlight Stories", icon: Sparkles, iconBgClass: "bg-red-500" },
+  { id: "totalOffers", title: "Exclusive Offers", icon: Tag, iconBgClass: "bg-indigo-600" },
 ];
 
 interface ChartDataItem {
@@ -143,6 +149,9 @@ export default function MAdminDashboardPage() {
   const [allApiCategories, setAllApiCategories] = useState<any[]>([]);
   const [allApiItems, setAllApiItems] = useState<any[]>([]);
   const [allApiTemplates, setAllApiTemplates] = useState<any[]>([]);
+  const [allApiSlides, setAllApiSlides] = useState<any[]>([]);
+  const [allApiSpotlights, setAllApiSpotlights] = useState<any[]>([]);
+  const [allApiOffers, setAllApiOffers] = useState<any[]>([]);
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [leadsChartData, setLeadsChartData] = useState<any[]>([]);
 
@@ -175,35 +184,30 @@ export default function MAdminDashboardPage() {
           templateResult,
           orderResult,
           leadsResult,
-          leadsTrendResult
+          leadsTrendResult,
+          slidesResult,
+          spotlightsResult,
+          offersResult
         ] = await Promise.all([
           getCategoriesFromMySql(),
           getMenuItemsFromMySql(),
           getTemplatesFromMySql(),
           getOrdersFromMySql(),
           getLeads(1, 5000),
+          getLeadsTrend('all_time'),
+          getDashboardSlides(),
+          getDashboardSpotlights(),
+          getExclusiveOffers(),
         ]);
 
-        if (catResult.success) {
-            setAllApiCategories(catResult.data as any[]);
-        }
-
-        if (itemResult.success) {
-            setAllApiItems(itemResult.data as any[]);
-        }
-
-        if (templateResult.success) {
-            setAllApiTemplates(templateResult.data as any[]);
-        }
-
-        if (orderResult.success) {
-            const orders = orderResult.data as any[];
-            setAllApiOrders(orders);
-        }
-
-        if (leadsResult.success) {
-            setAllApiLeads(leadsResult.leads);
-        }
+        if (catResult.success) setAllApiCategories(catResult.data as any[]);
+        if (itemResult.success) setAllApiItems(itemResult.data as any[]);
+        if (templateResult.success) setAllApiTemplates(templateResult.data as any[]);
+        if (orderResult.success) setAllApiOrders(orderResult.data as any[]);
+        if (leadsResult.success) setAllApiLeads(leadsResult.leads);
+        if (slidesResult.success) setAllApiSlides(slidesResult.slides);
+        if (spotlightsResult.success) setAllApiSpotlights(spotlightsResult.spotlights);
+        if (offersResult.success) setAllApiOffers(offersResult.offers);
 
         // We don't need to put anything else in combinedStatsData here,
         // because setStatsData is now handled in the main processing useEffect.
@@ -413,9 +417,13 @@ export default function MAdminDashboardPage() {
     dynamicStats.totalRestaurantItems = itemData.filter((i: any) => i.type === 'restaurant').length;
     dynamicStats.totalParlourItems = itemData.filter((i: any) => i.type === 'parlour').length;
 
+    dynamicStats.totalSlides = (allApiSlides || []).length;
+    dynamicStats.totalSpotlights = (allApiSpotlights || []).length;
+    dynamicStats.totalOffers = (allApiOffers || []).length;
+
     setStatsData(dynamicStats);
 
-  }, [allApiOrders, allApiLeads, allApiCategories, allApiItems, allApiTemplates, selectedDateRange, isLoadingStats]);
+  }, [allApiOrders, allApiLeads, allApiCategories, allApiItems, allApiTemplates, allApiSlides, allApiSpotlights, allApiOffers, selectedDateRange, isLoadingStats]);
 
 
   // No local auth checks needed anymore, handled by layout
@@ -453,7 +461,7 @@ export default function MAdminDashboardPage() {
                   value={option.value}
                   disabled={option.disabled}
                   hideIndicator={true}
-                  className="text-sm font-medium rounded-lg py-2.5 px-3 my-0.5 focus:bg-orange-500 focus:text-white data-[state=checked]:bg-orange-500 data-[state=checked]:text-white cursor-pointer transition-colors"
+                  className="text-sm font-medium rounded-lg py-1.5 px-3 my-0.5 focus:bg-orange-500 focus:text-white data-[state=checked]:bg-orange-500 data-[state=checked]:text-white cursor-pointer transition-colors"
                 >
                   {option.label}
                 </SelectItem>
@@ -462,7 +470,7 @@ export default function MAdminDashboardPage() {
               <SelectItem 
                 value="all_time"
                 hideIndicator={true}
-                className="text-sm font-medium rounded-lg py-2.5 px-3 my-0.5 focus:bg-orange-500 focus:text-white data-[state=checked]:bg-orange-500 data-[state=checked]:text-white cursor-pointer transition-colors"
+                className="text-sm font-medium rounded-lg py-1.5 px-3 my-0.5 focus:bg-orange-500 focus:text-white data-[state=checked]:bg-orange-500 data-[state=checked]:text-white cursor-pointer transition-colors"
               >
                 All Time
               </SelectItem>
@@ -473,7 +481,7 @@ export default function MAdminDashboardPage() {
                 value="custom"
                 disabled={true}
                 hideIndicator={true}
-                className="text-sm font-medium rounded-lg py-2.5 px-3 my-0.5 focus:bg-orange-500 focus:text-white data-[state=checked]:bg-orange-500 data-[state=checked]:text-white cursor-pointer transition-colors"
+                className="text-sm font-medium rounded-lg py-1.5 px-3 my-0.5 focus:bg-orange-500 focus:text-white data-[state=checked]:bg-orange-500 data-[state=checked]:text-white cursor-pointer transition-colors"
               >
                 Custom Range
               </SelectItem>

@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
-import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
+import { getDashboardSlides, getDashboardSpotlights, getSpotlightCategories, getExclusiveOffers } from '@/app/actions/storefront';
 import { getClientTimer, saveClientTimer } from '@/app/actions/client-timer';
 import { saveHiringRequest } from '@/app/actions/responses';
 
@@ -463,7 +463,9 @@ export default function DashboardPage() {
   const [activeOfferTab, setActiveOfferTab] = useState("All");
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
   const [currentSpotlightIndex, setCurrentSpotlightIndex] = useState(-1);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [spotlights, setSpotlights] = useState<any[]>([]);
+  const [groupedSpotlights, setGroupedSpotlights] = useState<any[]>([]);
   const [exclusiveOffers, setExclusiveOffers] = useState<any[]>([]);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
   const [isHiringFormView, setIsHiringFormView] = useState(false);
@@ -537,8 +539,32 @@ export default function DashboardPage() {
   };
 
   const fetchSpotlights = useCallback(async () => {
-    const res = await getDashboardSpotlights();
-    if (res.success) setSpotlights(res.spotlights);
+    const [spotRes, catRes] = await Promise.all([
+      getDashboardSpotlights(),
+      getSpotlightCategories()
+    ]);
+    
+    if (spotRes.success) {
+      setSpotlights(spotRes.spotlights);
+      
+      const categoriesData = catRes.success ? catRes.categories : [];
+      const catMap = new Map(categoriesData.map((c: any) => [c.name, c.image_url]));
+      
+      // Group spotlights by group_name
+      const groups: { [key: string]: any } = {};
+      spotRes.spotlights.forEach((s: any) => {
+        const name = s.group_name || 'General';
+        if (!groups[name]) {
+          groups[name] = {
+            name: name,
+            image: catMap.get(name) || s.group_image || s.image_url,
+            slides: []
+          };
+        }
+        groups[name].slides.push(s);
+      });
+      setGroupedSpotlights(Object.values(groups));
+    }
   }, []);
 
   const fetchExclusiveOffers = useCallback(async () => {
@@ -669,25 +695,34 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* MenuSnap Spotlight Section (MOBILE ONLY) */}
+        {/* MenuSnap Spotlight Section (MOBILE ONLY) - Grouped Stories */}
         <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
           <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">MenuSnap Spotlight</h2>
           <div className="w-full overflow-hidden">
-            <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-3 pb-6">
-              {spotlights.map((item, idx) => (
-                <motion.div
-                  key={item.id}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setCurrentSpotlightIndex(idx)}
-                  className="min-w-[105px] aspect-[3/5] snap-center relative rounded-[1.25rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform"
-                >
-                  <img
-                    src={item.image_url}
-                    alt={item.title}
-                    className="w-full h-full object-cover absolute inset-0"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-                </motion.div>
+            <div className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-6 px-1">
+              {groupedSpotlights.map((group, idx) => (
+                <div key={group.name} className="flex flex-col items-center gap-2 snap-center">
+                  <motion.div
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => {
+                      setCurrentSpotlightIndex(idx);
+                      setActiveSlideIndex(0);
+                    }}
+                    className="relative"
+                  >
+                    {/* Story Ring */}
+                    <div className="absolute -inset-1 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 animate-spin-slow" style={{ animationDuration: '3s' }} />
+                    
+                    <div className="relative w-16 h-16 rounded-full border-[3px] border-background overflow-hidden bg-white shadow-md">
+                      <img
+                        src={group.image}
+                        alt={group.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </motion.div>
+                  <span className="text-[10px] font-bold text-foreground/80 truncate w-20 text-center">{group.name}</span>
+                </div>
               ))}
             </div>
           </div>
@@ -825,49 +860,83 @@ export default function DashboardPage() {
         </AnimatePresence>
 
 
-        {/* Immersive Spotlight Story View */}
+        {/* Immersive Spotlight Story View (Grouped) */}
         <AnimatePresence>
-          {currentSpotlightIndex !== -1 && spotlights.length > 0 && (
+          {currentSpotlightIndex !== -1 && groupedSpotlights.length > 0 && (
             <motion.div
-              initial={{ opacity: 0, y: "100%" }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: "100%" }}
+              initial={{ opacity: 0, scale: 0.9, y: 100 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 100 }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-between md:hidden"
+              className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-between md:hidden"
             >
-              {/* Main Full Image Content (Full Screen Edge-to-Edge) */}
+              {/* Main Full Image Content */}
               <div className="absolute inset-0 z-0 overflow-hidden">
-                <motion.div
-                  key={currentSpotlightIndex}
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="w-full h-full relative"
-                >
-                  <img
-                    src={spotlights[currentSpotlightIndex].image_url}
-                    alt={spotlights[currentSpotlightIndex].title}
-                    className="w-full h-full object-cover absolute inset-0"
-                  />
-                  {/* Subtle dark overlay for readability */}
-                  <div className="absolute inset-0 bg-black/40" />
-                </motion.div>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`${currentSpotlightIndex}-${activeSlideIndex}`}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="w-full h-full relative"
+                  >
+                    <img
+                      src={groupedSpotlights[currentSpotlightIndex].slides[activeSlideIndex].image_url}
+                      alt={groupedSpotlights[currentSpotlightIndex].slides[activeSlideIndex].title}
+                      className="w-full h-full object-cover absolute inset-0"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
-              {/* Multiple Progress Bars (Facebook Style) */}
+              {/* Navigation Tap Areas */}
+              <div className="absolute inset-0 z-20 flex">
+                <div 
+                  className="w-1/3 h-full cursor-pointer" 
+                  onClick={() => {
+                    if (activeSlideIndex > 0) {
+                      setActiveSlideIndex(prev => prev - 1);
+                    } else if (currentSpotlightIndex > 0) {
+                      setCurrentSpotlightIndex(prev => prev - 1);
+                      setActiveSlideIndex(groupedSpotlights[currentSpotlightIndex - 1].slides.length - 1);
+                    }
+                  }}
+                />
+                <div 
+                  className="w-2/3 h-full cursor-pointer" 
+                  onClick={() => {
+                    if (activeSlideIndex < groupedSpotlights[currentSpotlightIndex].slides.length - 1) {
+                      setActiveSlideIndex(prev => prev + 1);
+                    } else if (currentSpotlightIndex < groupedSpotlights.length - 1) {
+                      setCurrentSpotlightIndex(prev => prev + 1);
+                      setActiveSlideIndex(0);
+                    } else {
+                      setCurrentSpotlightIndex(-1);
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Multiple Progress Bars (Group Specific) */}
               <div className="absolute top-4 left-4 right-4 z-50 flex gap-1.5 h-[2.5px]">
-                {spotlights.map((_, i) => (
+                {groupedSpotlights[currentSpotlightIndex].slides.map((_, i) => (
                   <div key={i} className="flex-1 bg-white/20 rounded-full overflow-hidden">
                     <motion.div
-                      initial={{ width: i < currentSpotlightIndex ? "100%" : "0%" }}
-                      animate={{ width: i === currentSpotlightIndex ? "100%" : i < currentSpotlightIndex ? "100%" : "0%" }}
+                      key={`${currentSpotlightIndex}-${i}`}
+                      initial={{ width: i < activeSlideIndex ? "100%" : "0%" }}
+                      animate={{ width: i === activeSlideIndex ? "100%" : i < activeSlideIndex ? "100%" : "0%" }}
                       transition={{
-                        duration: i === currentSpotlightIndex ? 5 : 0,
+                        duration: i === activeSlideIndex ? 5 : 0,
                         ease: "linear"
                       }}
                       onAnimationComplete={() => {
-                        if (i === currentSpotlightIndex) {
-                          if (currentSpotlightIndex < spotlights.length - 1) {
+                        if (i === activeSlideIndex) {
+                          if (activeSlideIndex < groupedSpotlights[currentSpotlightIndex].slides.length - 1) {
+                            setActiveSlideIndex(prev => prev + 1);
+                          } else if (currentSpotlightIndex < groupedSpotlights.length - 1) {
                             setCurrentSpotlightIndex(prev => prev + 1);
+                            setActiveSlideIndex(0);
                           } else {
                             setCurrentSpotlightIndex(-1);
                           }
@@ -880,39 +949,50 @@ export default function DashboardPage() {
               </div>
 
               {/* Header / Profile Area */}
-              <div className="w-full flex justify-between items-center z-10 mt-8 px-6">
+              <div className="w-full flex justify-between items-center z-30 mt-8 px-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-red-600 p-0.5 bg-white overflow-hidden">
-                    <img src="/menusnap_avatar_3d.png" alt="Logo" width={40} height={40} className="object-contain" />
+                  <div className="w-10 h-10 rounded-full border-2 border-white/50 p-0.5 bg-white/20 backdrop-blur-md overflow-hidden">
+                    <img 
+                      src={groupedSpotlights[currentSpotlightIndex].image} 
+                      alt={groupedSpotlights[currentSpotlightIndex].name} 
+                      className="w-full h-full object-cover rounded-full" 
+                    />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-white font-black text-sm tracking-tight">MenuSnap</span>
-                    <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest leading-none">Sponsored</span>
+                    <span className="text-white font-black text-sm tracking-tight">
+                      {groupedSpotlights[currentSpotlightIndex].slides[activeSlideIndex].title}
+                    </span>
+                    <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest leading-none">
+                      {groupedSpotlights[currentSpotlightIndex].name}
+                    </span>
                   </div>
                 </div>
                 <button
                   onClick={() => setCurrentSpotlightIndex(-1)}
-                  className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-90 transition-transform"
+                  className="w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-90 transition-transform"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Bottom Interactivity */}
-              <div className="absolute bottom-0 left-0 right-0 p-8 z-20 flex flex-col items-center gap-4">
-                <div
+              <div className="absolute bottom-10 left-0 right-0 p-8 z-30 flex flex-col items-center gap-4">
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  key={activeSlideIndex}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const url = spotlights[currentSpotlightIndex]?.link_url;
-                    if (url) window.location.href = url;
+                    const url = groupedSpotlights[currentSpotlightIndex].slides[activeSlideIndex]?.link_url;
+                    if (url) window.open(url, '_blank');
                   }}
-                  className="flex flex-col items-center gap-1 opacity-70 cursor-pointer active:scale-95 transition-transform pointer-events-auto"
+                  className="flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition-transform"
                 >
-                  <ChevronDown className="h-5 w-5 text-white rotate-180 animate-bounce" />
-                  <span className="text-white font-black text-[10px] uppercase tracking-widest">
-                    {spotlights[currentSpotlightIndex]?.cta_text || 'Swipe up'}
+                  <ChevronDown className="h-6 w-6 text-white rotate-180 animate-bounce" />
+                  <span className="text-white font-black text-xs uppercase tracking-[0.2em] drop-shadow-md">
+                    {groupedSpotlights[currentSpotlightIndex].slides[activeSlideIndex]?.cta_text || 'Swipe up'}
                   </span>
-                </div>
+                </motion.div>
               </div>
             </motion.div>
           )}

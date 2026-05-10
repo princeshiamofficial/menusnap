@@ -121,24 +121,68 @@ export async function saveClientLogin(businessName: string, businessType: string
 }
 
 /**
- * Fetches leads (clients) from the database with pagination.
+ * Fetches leads (clients) from the database with pagination and filtering.
  */
-export async function getLeads(page: number = 1, limit: number = 20) {
+export async function getLeads(
+  page: number = 1, 
+  limit: number = 20, 
+  filters?: { 
+    search?: string; 
+    stage?: string; 
+    dateFrom?: string; 
+    dateTo?: string; 
+  }
+) {
   try {
     await ensureClientsTable();
     const offset = (page - 1) * limit;
+    
+    let whereClause = '';
+    const params: any[] = [];
 
-    const [rows]: any = await pool.execute(
-      `SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.stage, c.division, c.district,
-       (SELECT note FROM client_notes WHERE client_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_note,
-       DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i:%s') as last_login,
-       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at
-       FROM clients c ORDER BY c.created_at DESC LIMIT ? OFFSET ?`,
-      [limit, offset]
-    );
+    if (filters) {
+      const conditions: string[] = [];
+      
+      if (filters.search) {
+        conditions.push('(c.business_name LIKE ? OR c.whatsapp_number LIKE ?)');
+        params.push(`%${filters.search}%`, `%${filters.search}%`);
+      }
+      
+      if (filters.stage && filters.stage !== 'All') {
+        conditions.push('c.stage = ?');
+        params.push(filters.stage);
+      }
+      
+      if (filters.dateFrom) {
+        conditions.push('c.created_at >= ?');
+        params.push(filters.dateFrom);
+      }
+      
+      if (filters.dateTo) {
+        conditions.push('c.created_at <= ?');
+        params.push(filters.dateTo);
+      }
 
-    // Get total count for pagination info
-    const [countRows]: any = await pool.execute('SELECT COUNT(*) as total FROM clients');
+      if (conditions.length > 0) {
+        whereClause = ' WHERE ' + conditions.join(' AND ');
+      }
+    }
+
+    const query = `
+      SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.stage, c.division, c.district,
+      (SELECT note FROM client_notes WHERE client_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_note,
+      DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i:%s') as last_login,
+      DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at
+      FROM clients c 
+      ${whereClause}
+      ORDER BY c.created_at DESC LIMIT ? OFFSET ?
+    `;
+    
+    const [rows]: any = await pool.execute(query, [...params, limit, offset]);
+
+    // Get total count for pagination info with same filters
+    const countQuery = `SELECT COUNT(*) as total FROM clients c ${whereClause}`;
+    const [countRows]: any = await pool.execute(countQuery, params);
     const total = Number(countRows[0].total);
 
     const leads = (Array.isArray(rows) ? rows : []).map((lead: any) => {

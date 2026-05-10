@@ -53,14 +53,46 @@ async function ensureSpotlightsTable() {
         link_url TEXT,
         offer VARCHAR(100),
         cta_text VARCHAR(100) DEFAULT 'Swipe up',
+        group_name VARCHAR(255) DEFAULT 'General',
+        group_image TEXT,
         sort_order INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    // Ensure columns exist for existing tables
+    const [columns]: any = await pool.execute("SHOW COLUMNS FROM dashboard_spotlights");
+    const columnNames = columns.map((c: any) => c.Field);
+    
+    if (!columnNames.includes('group_name')) {
+      await pool.execute("ALTER TABLE dashboard_spotlights ADD COLUMN group_name VARCHAR(255) DEFAULT 'General'");
+    }
+    if (!columnNames.includes('group_image')) {
+      await pool.execute("ALTER TABLE dashboard_spotlights ADD COLUMN group_image TEXT");
+    }
+
     // Table created successfully. No dummy data added.
   } catch (err) {
     console.error("Database initialization error (spotlights):", err);
+    throw err;
+  }
+}
+
+/**
+ * Ensures the dashboard_spotlight_categories table exists.
+ */
+async function ensureSpotlightCategoriesTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS dashboard_spotlight_categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        image_url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+  } catch (err) {
+    console.error("Database initialization error (spotlight categories):", err);
     throw err;
   }
 }
@@ -189,9 +221,95 @@ export async function getDashboardSpotlights() {
 }
 
 /**
+ * Fetches all spotlight categories.
+ */
+export async function getSpotlightCategories() {
+  try {
+    await ensureSpotlightCategoriesTable();
+    const [rows]: any = await pool.execute('SELECT * FROM dashboard_spotlight_categories ORDER BY name ASC');
+    return { success: true, categories: rows };
+  } catch (error: any) {
+    console.error("Database Error fetching spotlight categories:", error);
+    return { success: false, error: error?.message || "Failed to fetch categories", categories: [] };
+  }
+}
+
+/**
+ * Adds a new spotlight category.
+ */
+export async function addSpotlightCategory(name: string, imageUrl?: string) {
+  try {
+    await ensureSpotlightCategoriesTable();
+
+    let finalImageUrl = imageUrl || '';
+
+    if (imageUrl && imageUrl.startsWith('data:image')) {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights', 'categories');
+      
+      try {
+        await fs.access(uploadDir);
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
+
+      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
+      const fileName = `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = path.join(uploadDir, fileName);
+      
+      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      await fs.writeFile(filePath, buffer);
+      finalImageUrl = `/uploads/spotlights/categories/${fileName}`;
+    }
+
+    const [result]: any = await pool.execute(
+      'INSERT INTO dashboard_spotlight_categories (name, image_url) VALUES (?, ?)',
+      [name, finalImageUrl]
+    );
+
+    revalidatePath('/m-admin/quick-manager');
+    return { success: true, categoryId: result.insertId, path: finalImageUrl };
+  } catch (error: any) {
+    console.error("Database Error adding spotlight category:", error);
+    return { success: false, error: error?.message || "Failed to add category" };
+  }
+}
+
+/**
+ * Deletes a spotlight category.
+ */
+export async function deleteSpotlightCategory(id: number) {
+  try {
+    await ensureSpotlightCategoriesTable();
+
+    // Get image URL before deletion
+    const [rows]: any = await pool.execute('SELECT image_url FROM dashboard_spotlight_categories WHERE id = ?', [id]);
+    if (rows.length > 0 && rows[0].image_url) {
+      await deleteFileIfExists(rows[0].image_url);
+    }
+
+    await pool.execute('DELETE FROM dashboard_spotlight_categories WHERE id = ?', [id]);
+    revalidatePath('/m-admin/quick-manager');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error deleting spotlight category:", error);
+    return { success: false, error: error?.message || "Failed to delete category" };
+  }
+}
+
+/**
  * Adds a new spotlight to the database.
  */
-export async function addDashboardSpotlight(data: { title: string, imageUrl: string, linkUrl?: string, offer?: string, ctaText?: string }) {
+export async function addDashboardSpotlight(data: { 
+  title: string, 
+  imageUrl: string, 
+  linkUrl?: string, 
+  offer?: string, 
+  ctaText?: string,
+  groupName?: string,
+  groupImage?: string 
+}) {
   try {
     await ensureSpotlightsTable();
 
@@ -218,8 +336,16 @@ export async function addDashboardSpotlight(data: { title: string, imageUrl: str
     }
 
     const [result]: any = await pool.execute(
-      'INSERT INTO dashboard_spotlights (title, image_url, link_url, offer, cta_text) VALUES (?, ?, ?, ?, ?)',
-      [data.title, finalImageUrl, data.linkUrl || '', data.offer || '', data.ctaText || 'Swipe up']
+      'INSERT INTO dashboard_spotlights (title, image_url, link_url, offer, cta_text, group_name, group_image) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [
+        data.title, 
+        finalImageUrl, 
+        data.linkUrl || '', 
+        data.offer || '', 
+        data.ctaText || 'Swipe up',
+        data.groupName || 'General',
+        data.groupImage || finalImageUrl // Default group image to the slide image if not provided
+      ]
     );
 
     // Invalidate cache so new spotlight appears without PM2 restart
