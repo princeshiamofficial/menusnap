@@ -934,8 +934,8 @@ export default function DashboardPage() {
                             alt={spotlights[currentSpotlightIndex].title}
                             className="w-full h-full object-cover absolute inset-0"
                           />
-                          {/* Subtle dark overlay for readability */}
-                          <div className="absolute inset-0 bg-black/40" />
+                          {/* Subtle overlay removed for clarity */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/20 pointer-events-none" />
 
                           {/* Navigation Tap Areas */}
                           <div className="absolute inset-0 z-10 flex">
