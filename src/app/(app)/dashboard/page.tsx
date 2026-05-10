@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql } from '@/app/actions/orders';
-import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
+import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers, getSpotlightCategories } from '@/app/actions/storefront';
 import { getClientTimer, saveClientTimer } from '@/app/actions/client-timer';
 import { saveHiringRequest } from '@/app/actions/responses';
 
@@ -466,6 +466,7 @@ export default function DashboardPage() {
   const [isStoryPaused, setIsStoryPaused] = useState(false);
   const [storyProgress, setStoryProgress] = useState(0);
   const [spotlights, setSpotlights] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [exclusiveOffers, setExclusiveOffers] = useState<any[]>([]);
   const [isHiringOpen, setIsHiringOpen] = useState(false);
   const [isHiringFormView, setIsHiringFormView] = useState(false);
@@ -541,6 +542,9 @@ export default function DashboardPage() {
   const fetchSpotlights = useCallback(async () => {
     const res = await getDashboardSpotlights();
     if (res.success) setSpotlights(res.spotlights);
+    
+    const catRes = await getSpotlightCategories();
+    if (catRes.success) setCategories(catRes.categories);
   }, []);
 
   const fetchExclusiveOffers = useCallback(async () => {
@@ -732,7 +736,7 @@ export default function DashboardPage() {
         <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
           <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">MenuSnap Spotlight</h2>
           <div className="w-full overflow-hidden">
-            <div className="grid grid-cols-4 gap-3 pb-6">
+            <div className="flex overflow-x-auto gap-2 pb-6 scrollbar-hide snap-x snap-mandatory px-1">
               {spotlights.reduce((acc: any[], spot) => {
                 const category = spot.group_name || 'General';
                 if (!acc.find(item => (item.group_name || 'General') === category)) {
@@ -748,12 +752,12 @@ export default function DashboardPage() {
                     const actualIdx = spotlights.findIndex(s => s.id === item.id);
                     setCurrentSpotlightIndex(actualIdx);
                   }}
-                  className="aspect-[3/4] relative rounded-[1rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform p-[2px] bg-white dark:bg-slate-900"
+                  className="flex-shrink-0 w-[25.5vw] aspect-[3/4] snap-center relative rounded-[1rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform bg-white dark:bg-slate-900 p-[1px]"
                 >
                   <img
-                    src={item.image_url}
+                    src={categories.find(c => c.name === (item.group_name || 'General'))?.image_url || item.image_url}
                     alt={item.title}
-                    className="w-full h-full object-cover relative z-10 rounded-[0.75rem]"
+                    className="w-full h-full object-cover relative z-10 rounded-[0.95rem]"
                   />
                 </motion.div>
               ))}
@@ -799,12 +803,12 @@ export default function DashboardPage() {
                   <motion.div
                     key={offer.id}
                     whileTap={{ scale: 0.98 }}
-                    className="min-w-[85vw] aspect-[2.2/1] snap-center relative rounded-[1.25rem] overflow-hidden shadow-2xl"
+                    className="min-w-[85vw] aspect-video snap-center relative rounded-[1.25rem] overflow-hidden shadow-2xl bg-white dark:bg-slate-900 p-[1px]"
                   >
                     <img 
                       src={offer.image_url} 
                       alt="Special Offer"
-                      className="w-full h-full object-cover absolute inset-0"
+                      className="w-full h-full object-cover rounded-[1.2rem] bg-slate-50 dark:bg-slate-950"
                     />
                   </motion.div>
                 ))}

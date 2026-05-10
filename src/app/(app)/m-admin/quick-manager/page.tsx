@@ -15,7 +15,10 @@ import {
   deleteSpotlightCategory,
   getExclusiveOffers,
   addExclusiveOffer,
-  deleteExclusiveOffer
+  deleteExclusiveOffer,
+  updateSpotlightCategory,
+  updateDashboardSpotlight,
+  updateExclusiveOffer
 } from "@/app/actions/storefront";
 import { 
   Plus, 
@@ -30,7 +33,8 @@ import {
   Sparkles,
   Link,
   Tag,
-  LayoutGrid
+  LayoutGrid,
+  ChevronDown
 } from "lucide-react";
 import { compressImage, cn } from "@/lib/utils";
 import {
@@ -45,6 +49,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function QuickManagerPage() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -56,6 +67,10 @@ export default function QuickManagerPage() {
   const [isSpotlightUploadOpen, setIsSpotlightUploadOpen] = useState(false);
   const [isCategoryUploadOpen, setIsCategoryUploadOpen] = useState(false);
   const [isOfferUploadOpen, setIsOfferUploadOpen] = useState(false);
+  const [editingSlideId, setEditingSlideId] = useState<number | null>(null);
+  const [editingSpotlightId, setEditingSpotlightId] = useState<number | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
   const [spotlightForm, setSpotlightForm] = useState({ link: '', cta: '', category: '' });
   const [categoryForm, setCategoryForm] = useState({ name: '' });
   const [offerForm, setOfferForm] = useState({ category: 'Offer' });
@@ -138,19 +153,28 @@ export default function QuickManagerPage() {
     setIsUploading(true);
     
     try {
-      // Compress locally first
-      const compressedImage = await compressImage(previewImage, 1080, 0.75);
-      const result = await addDashboardSpotlight({
-        title: '', 
-        offer: '', 
-        linkUrl: spotlightForm.link,
-        ctaText: spotlightForm.cta,
-        groupName: spotlightForm.category,
-        imageUrl: compressedImage
-      });
+      const compressedImage = previewImage.startsWith('data:image')
+        ? await compressImage(previewImage, 1080, 0.75)
+        : previewImage;
+
+      const formData = new FormData();
+      formData.append('imageUrl', compressedImage);
+      formData.append('linkUrl', spotlightForm.link);
+      formData.append('ctaText', spotlightForm.cta);
+      formData.append('groupName', spotlightForm.category);
+
+      let result;
+      if (editingSpotlightId) {
+        formData.append('id', editingSpotlightId.toString());
+        result = await updateDashboardSpotlight(formData);
+      } else {
+        result = await addDashboardSpotlight(formData);
+      }
+
       if (result.success) {
-        toast({ title: "Success", description: "Spotlight added." });
+        toast({ title: "Success", description: editingSpotlightId ? "Spotlight updated." : "Spotlight added." });
         setIsSpotlightUploadOpen(false);
+        setEditingSpotlightId(null);
         setSpotlightForm({ link: '', cta: '', category: '' });
         setPreviewImage(null);
         fetchData();
@@ -205,19 +229,38 @@ export default function QuickManagerPage() {
     setIsUploading(true);
     
     try {
-      const compressedImage = await compressImage(previewImage, 500, 0.7);
-      const result = await addSpotlightCategory(categoryForm.name, compressedImage);
+      const compressedImage = previewImage.startsWith('data:image') 
+        ? await compressImage(previewImage, 500, 0.7) 
+        : previewImage;
+
+      const formData = new FormData();
+      formData.append('name', categoryForm.name);
+      formData.append('imageUrl', compressedImage);
+
+      let result;
+      if (editingCategoryId) {
+        formData.append('id', editingCategoryId.toString());
+        result = await updateSpotlightCategory(formData);
+      } else {
+        result = await addSpotlightCategory(formData);
+      }
+
       if (result.success) {
-        toast({ title: "Success", description: "Category added." });
+        toast({ title: "Success", description: editingCategoryId ? "Category updated." : "Category added." });
         setIsCategoryUploadOpen(false);
+        setEditingCategoryId(null);
         setCategoryForm({ name: '' });
         setPreviewImage(null);
         fetchData();
       } else {
         toast({ title: "Failed", description: result.error, variant: "destructive" });
       }
-    } catch (err) {
-      toast({ title: "Error", description: "Failed to save category.", variant: "destructive" });
+    } catch (err: any) {
+      toast({ 
+        title: "Error", 
+        description: err.message || "Failed to save category. Please check if the file is too large.", 
+        variant: "destructive" 
+      });
     } finally { setIsUploading(false); }
   };
 
@@ -232,15 +275,28 @@ export default function QuickManagerPage() {
     setIsUploading(true);
     
     try {
-      const compressedImage = await compressImage(previewImage, 1080, 0.75);
-      const result = await addExclusiveOffer({
-        category: offerForm.category,
-        imageUrl: compressedImage
-      });
+      const compressedImage = previewImage.startsWith('data:image')
+        ? await compressImage(previewImage, 1080, 0.75)
+        : previewImage;
+
+      let result;
+      if (editingOfferId) {
+        result = await updateExclusiveOffer(editingOfferId, {
+          category: offerForm.category,
+          imageUrl: compressedImage
+        });
+      } else {
+        result = await addExclusiveOffer({
+          category: offerForm.category,
+          imageUrl: compressedImage
+        });
+      }
+
       if (result.success) {
-        toast({ title: "Success", description: "Exclusive offer added." });
+        toast({ title: "Success", description: editingOfferId ? "Offer updated." : "Offer added." });
         setIsOfferUploadOpen(false);
-        setOfferForm({ category: 'Food' });
+        setEditingOfferId(null);
+        setOfferForm({ category: 'Offer' });
         setPreviewImage(null);
         fetchData();
       } else {
@@ -274,7 +330,7 @@ export default function QuickManagerPage() {
       <div className="fixed -top-60 -right-60 w-[800px] h-[800px] bg-blue-500/5 blur-[160px] pointer-events-none rounded-full -z-10" />
 
       <Tabs defaultValue="slides" className="w-full space-y-8">
-        <div className="flex justify-center md:justify-start">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <TabsList className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border border-border/40 p-1 rounded-2xl shadow-sm h-auto flex-wrap">
             <TabsTrigger value="slides" className="rounded-xl px-6 py-2.5 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
               <ImageIcon className="h-4 w-4 mr-2" />
@@ -289,6 +345,130 @@ export default function QuickManagerPage() {
               Offers
             </TabsTrigger>
           </TabsList>
+
+          {/* Manage Categories Button & Dialog */}
+          <Dialog open={isCategoryUploadOpen} onOpenChange={(open) => {
+            setIsCategoryUploadOpen(open);
+            if (!open) { 
+              setPreviewImage(null); 
+              setCategoryForm({ name: '' }); 
+              setEditingCategoryId(null);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="rounded-2xl h-11 px-6 border-border/40 bg-white/50 backdrop-blur-xl hover:bg-black hover:text-white transition-all shadow-sm font-black text-xs uppercase tracking-widest">
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Manage Groups
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[450px] border-border/40 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
+              <DialogHeader className="p-6 pb-2">
+                <DialogTitle className="text-xl font-black tracking-tight flex items-center gap-3">
+                  <LayoutGrid className="h-5 w-5 text-amber-600" />
+                  Spotlight Groups
+                </DialogTitle>
+                <DialogDescription className="text-xs font-medium opacity-70">
+                  Manage categories for your dashboard story bubbles.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="p-6 space-y-6">
+                {/* Current Groups List */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">EXISTING GROUPS</h4>
+                  <div className="grid grid-cols-1 gap-2 max-h-[220px] overflow-y-auto pr-2 scrollbar-hide">
+                    {categories.length === 0 ? (
+                      <div className="text-center py-8 bg-slate-50/50 rounded-2xl border border-dashed">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No groups created yet</p>
+                      </div>
+                    ) : (
+                      categories.map(cat => (
+                        <div key={cat.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-white/50 border border-slate-100 group hover:border-amber-200 transition-all">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm bg-slate-100">
+                              <img src={cat.image_url} className="w-full h-full object-cover" />
+                            </div>
+                            <span className="text-sm font-bold text-slate-700">{cat.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => {
+                                setEditingCategoryId(cat.id);
+                                setCategoryForm({ name: cat.name });
+                                setPreviewImage(cat.image_url);
+                              }} 
+                              className="h-8 w-8 text-blue-500 hover:bg-blue-50 rounded-full"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleCategoryDelete(cat.id)} className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Add New Group Section */}
+                <div className="pt-6 border-t border-border/40 space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                    {editingCategoryId ? 'EDIT SELECTED GROUP' : 'CREATE NEW GROUP'}
+                  </h4>
+                  <div className={cn(
+                    "flex gap-4 items-start p-4 rounded-[1.5rem] border transition-all",
+                    editingCategoryId ? "bg-blue-50/50 border-blue-100 shadow-inner" : "bg-slate-50/50 border-slate-100"
+                  )}>
+                    <div 
+                      onClick={() => categoryFileInputRef.current?.click()}
+                      className="relative cursor-pointer border-2 border-dashed border-slate-200 rounded-full h-16 w-16 flex items-center justify-center overflow-hidden bg-white hover:border-amber-500/40 transition-all shrink-0"
+                    >
+                      {previewImage ? (
+                        <img src={previewImage} className="absolute inset-0 w-full h-full object-cover" />
+                      ) : <Upload className="h-5 w-5 text-slate-300" />}
+                      <input type="file" ref={categoryFileInputRef} className="hidden" accept="image/*,.gif" onChange={handleFileChange} />
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <Input 
+                        value={categoryForm.name} 
+                        onChange={(e) => setCategoryForm({...categoryForm, name: e.target.value})}
+                        placeholder="e.g. Recommended" 
+                        className="rounded-xl bg-white border-slate-200 h-10 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        {editingCategoryId && (
+                          <Button 
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingCategoryId(null);
+                              setCategoryForm({ name: '' });
+                              setPreviewImage(null);
+                            }}
+                            className="rounded-xl h-10 text-xs font-bold uppercase tracking-widest"
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                        <Button 
+                          disabled={!previewImage || !categoryForm.name || isUploading} 
+                          onClick={handleCategoryUpload}
+                          className={cn(
+                            "flex-1 rounded-xl h-10 font-bold text-xs uppercase tracking-widest shadow-lg",
+                            editingCategoryId ? "bg-blue-600 text-white shadow-blue-600/10" : "bg-black text-white shadow-black/10"
+                          )}
+                        >
+                          {isUploading ? "Processing..." : (editingCategoryId ? "Update Group" : "Add Group")}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <TabsContent value="slides" className="space-y-8 outline-none">
@@ -296,7 +476,7 @@ export default function QuickManagerPage() {
           <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
 
         {/* Pixel-Perfect Slide Images Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 w-full">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4 w-full">
           {/* Upload Card - Direct Action */}
           <div 
             onClick={() => !isUploading && fileInputRef.current?.click()}
@@ -324,7 +504,7 @@ export default function QuickManagerPage() {
               type="file" 
               ref={fileInputRef} 
               className="hidden" 
-              accept="image/*" 
+              accept="image/*,.gif" 
               onChange={(e) => handleFileChange(e, true)} 
             />
           </div>
@@ -342,15 +522,14 @@ export default function QuickManagerPage() {
             const isFirst = index === 0;
 
             return (
-              <div key={slide.id} className="group space-y-2 animate-in fade-in zoom-in duration-500">
-                <div className="relative aspect-[2/1] rounded-xl overflow-hidden bg-slate-100 shadow-sm transition-all group-hover:shadow-md">
+              <div key={slide.id} className="group space-y-2">
+                <div className="relative aspect-[2/1] rounded-xl overflow-hidden bg-slate-100 shadow-sm">
                   <img 
                     src={slide.image_url} 
                     alt=""
-                    className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                    className="object-cover w-full h-full"
                   />
                   
-
                   {/* Delete Button - Top Right */}
                   <button 
                     type="button"
@@ -358,7 +537,7 @@ export default function QuickManagerPage() {
                       e.stopPropagation();
                       handleDelete(slide.id);
                     }}
-                    className="absolute top-2 right-2 h-7 w-7 bg-red-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg hover:bg-red-600 active:scale-90 z-20"
+                    className="absolute top-2 right-2 h-7 w-7 bg-red-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 shadow-lg hover:bg-red-600 z-20"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -374,14 +553,18 @@ export default function QuickManagerPage() {
 
 
       <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
           {/* Add Story Card */}
           <Dialog open={isSpotlightUploadOpen} onOpenChange={(open) => {
             setIsSpotlightUploadOpen(open);
-            if (!open) { setPreviewImage(null); setSpotlightForm({ link: '', cta: '', category: '' }); }
+            if (!open) { 
+              setPreviewImage(null); 
+              setSpotlightForm({ link: '', cta: '', category: '' }); 
+              setEditingSpotlightId(null);
+            }
           }}>
             <DialogTrigger asChild>
-              <div className="group relative flex flex-col items-center justify-center aspect-[3/5] rounded-[2.5rem] bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer p-4 border-2 border-dashed border-slate-200 hover:border-red-500/40">
+              <div className="group relative flex flex-col items-center justify-center aspect-[3/5] rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer p-4 border-2 border-dashed border-slate-200 hover:border-red-500/40">
                 <div className="flex flex-col items-center gap-2 text-center">
                   <div className="p-3 bg-red-500/10 rounded-full text-red-600 group-hover:scale-110 transition-transform">
                     <Sparkles className="h-5 w-5" />
@@ -390,7 +573,7 @@ export default function QuickManagerPage() {
                 </div>
               </div>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px] border-border/40 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-0 overflow-hidden">
+            <DialogContent className="sm:max-w-[450px] border-border/40 bg-white/80 backdrop-blur-2xl rounded-2xl p-0 overflow-hidden">
               <DialogHeader className="p-6 pb-2">
                 <DialogTitle className="text-xl font-semibold tracking-tight flex items-center gap-3">
                   <Sparkles className="h-5 w-5 text-red-600" />
@@ -408,17 +591,32 @@ export default function QuickManagerPage() {
                   {previewImage ? (
                     <img src={previewImage} className="absolute inset-0 w-full h-full object-cover" />
                   ) : <ImageIcon className="h-8 w-8 text-slate-300" />}
-                  <input type="file" ref={spotlightFileInputRef} className="hidden" accept="image/*" onChange={handleFileChange} />
+                  <input type="file" ref={spotlightFileInputRef} className="hidden" accept="image/*,.gif" onChange={handleFileChange} />
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">CATEGORY</Label>
-                    <Input 
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">SELECT GROUP</Label>
+                    <Select 
                       value={spotlightForm.category} 
-                      onChange={(e) => setSpotlightForm({...spotlightForm, category: e.target.value})}
-                      placeholder="e.g. General, MagicAI" 
-                      className="rounded-xl border-border/40" 
-                    />
+                      onValueChange={(val) => setSpotlightForm({...spotlightForm, category: val})}
+                    >
+                      <SelectTrigger className="rounded-xl border-border/40 bg-white cursor-pointer">
+                        <SelectValue placeholder="Select a Category" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-border/40 bg-white/80 backdrop-blur-xl">
+                        <SelectItem value="General" className="rounded-xl cursor-pointer">General</SelectItem>
+                        {categories.map(cat => (
+                          <SelectItem key={cat.id} value={cat.name} className="rounded-xl cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              {cat.image_url && (
+                                <img src={cat.image_url} className="w-4 h-4 rounded-full object-cover" />
+                              )}
+                              {cat.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2 col-span-2">
@@ -433,35 +631,46 @@ export default function QuickManagerPage() {
                 </div>
               </div>
               <DialogFooter className="p-6 pt-2">
-                <Button disabled={!previewImage || isUploading} onClick={handleSpotlightUpload} className="w-full rounded-xl bg-red-600 text-white font-semibold h-12 shadow-lg shadow-red-600/20">
-                  {isUploading ? "Uploading..." : "Save Spotlight"}
+                <Button disabled={!previewImage || isUploading || !spotlightForm.category} onClick={handleSpotlightUpload} className="w-full rounded-xl bg-red-600 text-white font-semibold h-12 shadow-lg shadow-red-600/20">
+                  {isUploading ? "Processing..." : (editingSpotlightId ? "Update Spotlight" : "Save Spotlight")}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
           {spotlights.map((spot) => (
-            <Card key={spot.id} className="min-w-[150px] md:min-w-0 group relative rounded-[2.5rem] overflow-hidden border-2 border-red-500 shadow-xl transition-all hover:scale-[1.02] active:scale-95 duration-300">
-              <div className="aspect-[3/5] relative">
-                <img src={spot.image_url} className="object-cover w-full h-full transition-transform group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 p-4 flex flex-col justify-between">
-                   <div className="flex flex-col items-center text-center">
-                     <p className="text-[10px] md:text-[12px] font-black text-white leading-tight uppercase tracking-tighter drop-shadow-lg">
+            <Card key={spot.id} className="min-w-[150px] md:min-w-0 group relative rounded-2xl overflow-hidden border border-border/40 shadow-sm p-[1px] bg-white dark:bg-slate-900">
+              <div className="aspect-[3/5] relative overflow-hidden rounded-[0.9rem]">
+                <img src={spot.image_url} className="object-cover w-full h-full bg-slate-50 dark:bg-slate-900" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30 p-2 flex flex-col justify-end">
+                   <div className="flex justify-start">
+                     <div className="px-1.5 py-0.5 bg-orange-600 text-white text-[8px] font-black rounded-full border border-orange-500 uppercase tracking-tighter shadow-sm flex items-center gap-1.5">
+                       {categories.find(c => c.name === spot.group_name)?.image_url && (
+                         <img 
+                           src={categories.find(c => c.name === spot.group_name)?.image_url} 
+                           className="w-4 h-4 rounded-full object-cover border border-white/40 shadow-sm"
+                         />
+                       )}
                        {spot.group_name || 'General'}
-                     </p>
-                     <p className="text-[14px] md:text-[16px] font-black text-white leading-tight uppercase tracking-tighter drop-shadow-lg">
-                       {spot.cta_text || 'VIEW NOW'}
-                     </p>
-                   </div>
-                   <div className="flex justify-center">
-                     {/* Empty for now to match reference clean bottom or pedestal look */}
+                     </div>
                    </div>
                 </div>
+                 <button 
+                  onClick={() => {
+                    setEditingSpotlightId(spot.id);
+                    setSpotlightForm({ link: spot.link_url || '', cta: spot.cta_text || '', category: spot.group_name || '' });
+                    setPreviewImage(spot.image_url);
+                    setIsSpotlightUploadOpen(true);
+                  }}
+                  className="absolute top-1.5 left-1.5 h-5 w-5 bg-slate-800/80 text-white rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 cursor-pointer"
+                >
+                  <Edit2 className="h-2.5 w-2.5" />
+                </button>
                 <button 
                   onClick={() => handleSpotlightDelete(spot.id)}
-                  className="absolute top-2 right-2 h-7 w-7 bg-red-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-1.5 right-1.5 h-5 w-5 bg-red-500/90 text-white rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 cursor-pointer"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-2.5 w-2.5" />
                 </button>
               </div>
             </Card>
@@ -474,14 +683,18 @@ export default function QuickManagerPage() {
     <TabsContent value="offers" className="space-y-8 outline-none">
       {/* Exclusive Offers Section */}
       <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
-        <div className="flex overflow-x-auto pb-4 scrollbar-hide md:grid md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="flex overflow-x-auto pb-4 scrollbar-hide md:grid md:grid-cols-4 lg:grid-cols-6 gap-3">
           {/* Add Offer Card */}
           <Dialog open={isOfferUploadOpen} onOpenChange={(open) => {
             setIsOfferUploadOpen(open);
-            if (!open) { setPreviewImage(null); setOfferForm({ category: 'Food' }); }
+            if (!open) { 
+              setPreviewImage(null); 
+              setOfferForm({ category: 'Offer' }); 
+              setEditingOfferId(null);
+            }
           }}>
             <DialogTrigger asChild>
-              <div className="group relative flex flex-col items-center justify-center aspect-[2/1] rounded-[2rem] bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer p-4 border-2 border-dashed border-slate-200 hover:border-indigo-500/40">
+              <div className="group relative flex flex-col items-center justify-center aspect-[2/1] rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer p-4 border-2 border-dashed border-slate-200 hover:border-indigo-500/40">
                 <div className="flex flex-col items-center gap-2 text-center">
                   <div className="p-3 bg-indigo-500/10 rounded-full text-indigo-600 group-hover:scale-110 transition-transform">
                     <Tag className="h-5 w-5" />
@@ -490,7 +703,7 @@ export default function QuickManagerPage() {
                 </div>
               </div>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px] border-border/40 bg-white/80 backdrop-blur-2xl rounded-[2.5rem] p-0 overflow-hidden">
+            <DialogContent className="sm:max-w-[450px] border-border/40 bg-white/80 backdrop-blur-2xl rounded-2xl p-0 overflow-hidden">
               <DialogHeader className="p-6 pb-2">
                 <DialogTitle className="text-xl font-semibold tracking-tight flex items-center gap-3">
                   <Tag className="h-5 w-5 text-indigo-600" />
@@ -512,35 +725,55 @@ export default function QuickManagerPage() {
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">CATEGORY</Label>
-                    <Input 
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">SELECT CATEGORY</Label>
+                    <Select 
                       value={offerForm.category} 
-                      onChange={(e) => setOfferForm({...offerForm, category: e.target.value})}
-                      placeholder="e.g. Food, MagicAI, Summer" 
-                      className="rounded-xl border-border/40" 
-                    />
+                      onValueChange={(val) => setOfferForm({...offerForm, category: val})}
+                    >
+                      <SelectTrigger className="rounded-xl border-border/40 bg-white cursor-pointer">
+                        <SelectValue placeholder="Select a Category" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-2xl border-border/40 bg-white/80 backdrop-blur-xl">
+                        <SelectItem value="Offer" className="rounded-xl cursor-pointer">Offer</SelectItem>
+                        <SelectItem value="Food" className="rounded-xl cursor-pointer">Food</SelectItem>
+                        <SelectItem value="Drink" className="rounded-xl cursor-pointer">Drink</SelectItem>
+                        <SelectItem value="Desert" className="rounded-xl cursor-pointer">Desert</SelectItem>
+                        <SelectItem value="Special" className="rounded-xl cursor-pointer">Special</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
               <DialogFooter className="p-6 pt-2">
-                <Button disabled={!previewImage || isUploading} onClick={handleOfferUpload} className="w-full rounded-xl bg-indigo-600 text-white font-semibold h-12 shadow-lg shadow-indigo-600/20">
-                  {isUploading ? "Uploading..." : "Save Offer"}
+                <Button disabled={!previewImage || isUploading || !offerForm.category} onClick={handleOfferUpload} className="w-full rounded-xl bg-indigo-600 text-white font-semibold h-12 shadow-lg shadow-indigo-600/20">
+                  {isUploading ? "Processing..." : (editingOfferId ? "Update Offer" : "Save Offer")}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
           {offers.map((offer) => (
-            <Card key={offer.id} className="min-w-[200px] md:min-w-0 group relative rounded-2xl overflow-hidden border-border/20 shadow-sm hover:shadow-md transition-all border-2 hover:border-indigo-500/20">
-              <div className="aspect-[2.2/1] relative">
-                <img src={offer.image_url} className="object-cover w-full h-full transition-transform group-hover:scale-105" />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Card key={offer.id} className="min-w-[200px] md:min-w-0 group relative rounded-2xl overflow-hidden border-border/20 shadow-sm border-2 p-[1px] bg-white dark:bg-slate-900">
+              <div className="aspect-[2.2/1] relative overflow-hidden rounded-[0.9rem]">
+                <img src={offer.image_url} className="object-cover w-full h-full bg-slate-50 dark:bg-slate-900" />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100" />
                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-md shadow-lg">
                   {offer.category}
                 </div>
+                 <button 
+                  onClick={() => {
+                    setEditingOfferId(offer.id);
+                    setOfferForm({ category: offer.category });
+                    setPreviewImage(offer.image_url);
+                    setIsOfferUploadOpen(true);
+                  }}
+                  className="absolute top-2 right-2 mr-9 h-7 w-7 bg-blue-500 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-30 cursor-pointer"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </button>
                 <button 
                   onClick={() => handleOfferDelete(offer.id)}
-                  className="absolute top-2 right-2 h-7 w-7 bg-red-500 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                  className="absolute top-2 right-2 h-7 w-7 bg-red-500 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-30 cursor-pointer"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

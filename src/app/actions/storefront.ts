@@ -238,9 +238,11 @@ export async function getSpotlightCategories() {
 /**
  * Adds a new spotlight category.
  */
-export async function addSpotlightCategory(name: string, imageUrl?: string) {
+export async function addSpotlightCategory(formData: FormData) {
   try {
     await ensureSpotlightCategoriesTable();
+    const name = formData.get('name') as string;
+    const imageUrl = formData.get('imageUrl') as string;
 
     let finalImageUrl = imageUrl || '';
 
@@ -300,23 +302,80 @@ export async function deleteSpotlightCategory(id: number) {
 }
 
 /**
+ * Updates a spotlight category.
+ */
+export async function updateSpotlightCategory(formData: FormData) {
+  try {
+    await ensureSpotlightCategoriesTable();
+    const id = parseInt(formData.get('id') as string);
+    const name = formData.get('name') as string;
+    const imageUrl = formData.get('imageUrl') as string;
+
+    let finalImageUrl = imageUrl;
+
+    if (imageUrl && imageUrl.startsWith('data:image')) {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights', 'categories');
+      
+      try {
+        await fs.access(uploadDir);
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
+
+      // Delete old image if it exists
+      const [oldRows]: any = await pool.execute('SELECT image_url FROM dashboard_spotlight_categories WHERE id = ?', [id]);
+      if (oldRows.length > 0 && oldRows[0].image_url) {
+        await deleteFileIfExists(oldRows[0].image_url);
+      }
+
+      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
+      const fileName = `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = path.join(uploadDir, fileName);
+      
+      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      await fs.writeFile(filePath, buffer);
+      finalImageUrl = `/uploads/spotlights/categories/${fileName}`;
+    }
+
+    if (finalImageUrl) {
+      await pool.execute(
+        'UPDATE dashboard_spotlight_categories SET name = ?, image_url = ? WHERE id = ?',
+        [name, finalImageUrl, id]
+      );
+    } else {
+      await pool.execute(
+        'UPDATE dashboard_spotlight_categories SET name = ? WHERE id = ?',
+        [name, id]
+      );
+    }
+
+    revalidatePath('/m-admin/quick-manager');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error updating spotlight category:", error);
+    return { success: false, error: error?.message || "Failed to update category" };
+  }
+}
+
+/**
  * Adds a new spotlight to the database.
  */
-export async function addDashboardSpotlight(data: { 
-  title: string, 
-  imageUrl: string, 
-  linkUrl?: string, 
-  offer?: string, 
-  ctaText?: string,
-  groupName?: string,
-  groupImage?: string 
-}) {
+export async function addDashboardSpotlight(formData: FormData) {
   try {
     await ensureSpotlightsTable();
+    const title = formData.get('title') as string || '';
+    const imageUrl = formData.get('imageUrl') as string;
+    const linkUrl = formData.get('linkUrl') as string || '';
+    const offer = formData.get('offer') as string || '';
+    const ctaText = formData.get('ctaText') as string || 'Swipe up';
+    const groupName = formData.get('groupName') as string || 'General';
+    const groupImage = formData.get('groupImage') as string;
 
-    let finalImageUrl = data.imageUrl;
+    let finalImageUrl = imageUrl;
 
-    if (data.imageUrl.startsWith('data:image')) {
+    if (imageUrl.startsWith('data:image')) {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights');
       
       try {
@@ -325,11 +384,11 @@ export async function addDashboardSpotlight(data: {
         await fs.mkdir(uploadDir, { recursive: true });
       }
 
-      const fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
+      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
       const fileName = `spotlight-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
       const filePath = path.join(uploadDir, fileName);
       
-      const base64Data = data.imageUrl.replace(/^data:image\/\w+;base64,/, "");
+      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(base64Data, 'base64');
       
       await fs.writeFile(filePath, buffer);
@@ -339,13 +398,13 @@ export async function addDashboardSpotlight(data: {
     const [result]: any = await pool.execute(
       'INSERT INTO dashboard_spotlights (title, image_url, link_url, offer, cta_text, group_name, group_image) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
-        data.title, 
+        title, 
         finalImageUrl, 
-        data.linkUrl || '', 
-        data.offer || '', 
-        data.ctaText || 'Swipe up',
-        data.groupName || 'General',
-        data.groupImage || finalImageUrl // Default group image to the slide image if not provided
+        linkUrl, 
+        offer, 
+        ctaText,
+        groupName,
+        groupImage || finalImageUrl // Default group image to the slide image if not provided
       ]
     );
 
@@ -377,8 +436,69 @@ export async function deleteDashboardSpotlight(id: number) {
     revalidatePath('/m-admin/quick-manager');
     return { success: true };
   } catch (error: any) {
-    console.error("Database Error deleting spotlight:", error);
+    console.error("Database Error deleting spotlight spotlight:", error);
     return { success: false, error: error?.message || "Failed to delete spotlight" };
+  }
+}
+
+/**
+ * Updates a spotlight in the database.
+ */
+export async function updateDashboardSpotlight(formData: FormData) {
+  try {
+    await ensureSpotlightsTable();
+    const id = parseInt(formData.get('id') as string);
+    const title = formData.get('title') as string || '';
+    const imageUrl = formData.get('imageUrl') as string;
+    const linkUrl = formData.get('linkUrl') as string || '';
+    const ctaText = formData.get('ctaText') as string || 'Swipe up';
+    const groupName = formData.get('groupName') as string || 'General';
+
+    let finalImageUrl = imageUrl;
+
+    if (imageUrl && imageUrl.startsWith('data:image')) {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights');
+      
+      try {
+        await fs.access(uploadDir);
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
+
+      // Delete old image
+      const [oldRows]: any = await pool.execute('SELECT image_url FROM dashboard_spotlights WHERE id = ?', [id]);
+      if (oldRows.length > 0) {
+        await deleteFileIfExists(oldRows[0].image_url);
+      }
+
+      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
+      const fileName = `spotlight-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = path.join(uploadDir, fileName);
+      
+      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      await fs.writeFile(filePath, buffer);
+      finalImageUrl = `/uploads/spotlights/${fileName}`;
+    }
+
+    if (finalImageUrl) {
+      await pool.execute(
+        'UPDATE dashboard_spotlights SET title = ?, image_url = ?, link_url = ?, cta_text = ?, group_name = ? WHERE id = ?',
+        [title, finalImageUrl, linkUrl, ctaText, groupName, id]
+      );
+    } else {
+      await pool.execute(
+        'UPDATE dashboard_spotlights SET title = ?, link_url = ?, cta_text = ?, group_name = ? WHERE id = ?',
+        [title, linkUrl, ctaText, groupName, id]
+      );
+    }
+
+    revalidatePath('/m-admin/quick-manager');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error updating spotlight:", error);
+    return { success: false, error: error?.message || "Failed to update spotlight" };
   }
 }
 
@@ -460,5 +580,61 @@ export async function deleteExclusiveOffer(id: number) {
   } catch (error: any) {
     console.error("Database Error deleting exclusive offer:", error);
     return { success: false, error: error?.message || "Failed to delete exclusive offer" };
+  }
+}
+
+/**
+ * Updates an exclusive offer in the database.
+ */
+export async function updateExclusiveOffer(id: number, data: { category: string, imageUrl?: string }) {
+  try {
+    await ensureExclusiveOffersTable();
+
+    let finalImageUrl = data.imageUrl;
+
+    if (data.imageUrl && data.imageUrl.startsWith('data:image')) {
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'offers');
+      
+      try {
+        await fs.access(uploadDir);
+      } catch {
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
+
+      // Delete old image
+      const [oldRows]: any = await pool.execute('SELECT image_url FROM dashboard_exclusive_offers WHERE id = ?', [id]);
+      if (oldRows.length > 0) {
+        await deleteFileIfExists(oldRows[0].image_url);
+      }
+
+      const fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
+      const fileName = `offer-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      const filePath = path.join(uploadDir, fileName);
+      
+      const base64Data = data.imageUrl.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      await fs.writeFile(filePath, buffer);
+      finalImageUrl = `/uploads/offers/${fileName}`;
+    }
+
+    if (finalImageUrl) {
+      await pool.execute(
+        'UPDATE dashboard_exclusive_offers SET category = ?, image_url = ? WHERE id = ?',
+        [data.category, finalImageUrl, id]
+      );
+    } else {
+      await pool.execute(
+        'UPDATE dashboard_exclusive_offers SET category = ? WHERE id = ?',
+        [data.category, id]
+      );
+    }
+
+    revalidatePath('/m-admin/quick-manager');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error updating exclusive offer:", error);
+    return { success: false, error: error?.message || "Failed to update exclusive offer" };
   }
 }
