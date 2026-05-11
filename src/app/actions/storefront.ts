@@ -88,9 +88,16 @@ async function ensureSpotlightCategoriesTable() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL UNIQUE,
         image_url TEXT,
+        sort_order INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Check if sort_order exists for existing tables
+    const [columns]: any = await pool.execute("SHOW COLUMNS FROM dashboard_spotlight_categories LIKE 'sort_order'");
+    if (columns.length === 0) {
+      await pool.execute("ALTER TABLE dashboard_spotlight_categories ADD COLUMN sort_order INT DEFAULT 0");
+    }
   } catch (err) {
     console.error("Database initialization error (spotlight categories):", err);
     throw err;
@@ -213,7 +220,13 @@ export async function deleteDashboardSlide(slideId: number) {
 export async function getDashboardSpotlights() {
   try {
     await ensureSpotlightsTable();
-    const [rows]: any = await pool.execute('SELECT * FROM dashboard_spotlights ORDER BY sort_order ASC, created_at DESC');
+    await ensureSpotlightCategoriesTable();
+    const [rows]: any = await pool.execute(`
+      SELECT s.*, COALESCE(c.sort_order, 9999) as cat_sort_order 
+      FROM dashboard_spotlights s 
+      LEFT JOIN dashboard_spotlight_categories c ON s.group_name = c.name 
+      ORDER BY cat_sort_order ASC, s.sort_order ASC, s.created_at DESC
+    `);
     return { success: true, spotlights: rows };
   } catch (error: any) {
     console.error("Database Error fetching spotlights:", error);
@@ -227,7 +240,7 @@ export async function getDashboardSpotlights() {
 export async function getSpotlightCategories() {
   try {
     await ensureSpotlightCategoriesTable();
-    const [rows]: any = await pool.execute('SELECT * FROM dashboard_spotlight_categories ORDER BY name ASC');
+    const [rows]: any = await pool.execute('SELECT * FROM dashboard_spotlight_categories ORDER BY sort_order ASC, name ASC');
     return { success: true, categories: rows };
   } catch (error: any) {
     console.error("Database Error fetching spotlight categories:", error);
@@ -636,5 +649,41 @@ export async function updateExclusiveOffer(id: number, data: { category: string,
   } catch (error: any) {
     console.error("Database Error updating exclusive offer:", error);
     return { success: false, error: error?.message || "Failed to update exclusive offer" };
+  }
+}
+
+/**
+ * Updates the order of spotlight categories.
+ */
+export async function updateSpotlightCategoriesOrder(categoryIds: number[]) {
+  try {
+    await ensureSpotlightCategoriesTable();
+    
+    // Perform updates in a transaction for safety
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      
+      for (let i = 0; i < categoryIds.length; i++) {
+        await connection.execute(
+          'UPDATE dashboard_spotlight_categories SET sort_order = ? WHERE id = ?',
+          [i, categoryIds[i]]
+        );
+      }
+      
+      await connection.commit();
+    } catch (err) {
+      await connection.rollback();
+      throw err;
+    } finally {
+      connection.release();
+    }
+
+    revalidatePath('/m-admin/quick-manager');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error updating categories order:", error);
+    return { success: false, error: error?.message || "Failed to update order" };
   }
 }

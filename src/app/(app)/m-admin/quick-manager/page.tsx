@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Reorder, useDragControls } from "framer-motion";
 import { 
   getDashboardSlides, 
   addDashboardSlide, 
@@ -18,7 +19,8 @@ import {
   deleteExclusiveOffer,
   updateSpotlightCategory,
   updateDashboardSpotlight,
-  updateExclusiveOffer
+  updateExclusiveOffer,
+  updateSpotlightCategoriesOrder
 } from "@/app/actions/storefront";
 import { 
   Plus, 
@@ -34,7 +36,9 @@ import {
   Link,
   Tag,
   LayoutGrid,
-  ChevronDown
+  ChevronDown,
+  ChevronUp,
+  GripVertical
 } from "lucide-react";
 import { compressImage, cn } from "@/lib/utils";
 import {
@@ -269,6 +273,32 @@ export default function QuickManagerPage() {
     const result = await deleteSpotlightCategory(id);
     if (result.success) fetchData();
   };
+  
+  const handleReorderCategories = async (newOrder: any[]) => {
+    setCategories(newOrder);
+    // Persist order to database
+    try {
+      const result = await updateSpotlightCategoriesOrder(newOrder.map(c => c.id));
+      if (!result.success) {
+        toast({ title: "Order Update Failed", description: result.error, variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("Failed to update order:", err);
+    }
+  };
+
+  const handleMoveCategory = async (index: number, direction: 'up' | 'down') => {
+    const newCategories = [...categories];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    if (targetIndex < 0 || targetIndex >= newCategories.length) return;
+    
+    // Swap elements
+    const [movedItem] = newCategories.splice(index, 1);
+    newCategories.splice(targetIndex, 0, movedItem);
+    
+    handleReorderCategories(newCategories);
+  };
 
   const handleOfferUpload = async () => {
     if (!previewImage) return;
@@ -376,15 +406,51 @@ export default function QuickManagerPage() {
                 {/* Current Groups List */}
                 <div className="space-y-3">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">EXISTING GROUPS</h4>
-                  <div className="grid grid-cols-1 gap-2 max-h-[220px] overflow-y-auto pr-2 scrollbar-hide">
+                  <Reorder.Group 
+                    axis="y" 
+                    values={categories} 
+                    onReorder={handleReorderCategories}
+                    className="grid grid-cols-1 gap-2 max-h-[280px] overflow-y-auto pr-2 scrollbar-hide py-1"
+                  >
                     {categories.length === 0 ? (
                       <div className="text-center py-8 bg-slate-50/50 rounded-2xl border border-dashed">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No groups created yet</p>
                       </div>
                     ) : (
-                      categories.map(cat => (
-                        <div key={cat.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-white/50 border border-slate-100 group hover:border-amber-200 transition-all">
+                      categories.map((cat, index) => (
+                        <Reorder.Item 
+                          key={cat.id} 
+                          value={cat}
+                          className="flex items-center justify-between p-2.5 rounded-2xl bg-white border border-slate-100 group hover:border-amber-200 transition-colors shadow-sm select-none cursor-grab active:cursor-grabbing"
+                        >
                           <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-center gap-0.5 opacity-40 group-hover:opacity-100 transition-opacity mr-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                disabled={index === 0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveCategory(index, 'up');
+                                }}
+                                className="h-4 w-4 p-0 hover:bg-slate-100 rounded-sm"
+                              >
+                                <ChevronUp className="h-3 w-3" />
+                              </Button>
+                              <GripVertical className="h-3 w-3 text-slate-400 cursor-grab" />
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                disabled={index === categories.length - 1}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMoveCategory(index, 'down');
+                                }}
+                                className="h-4 w-4 p-0 hover:bg-slate-100 rounded-sm"
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                            </div>
                             <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-sm bg-slate-100">
                               <img src={cat.image_url} className="w-full h-full object-cover" />
                             </div>
@@ -394,7 +460,8 @@ export default function QuickManagerPage() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setEditingCategoryId(cat.id);
                                 setCategoryForm({ name: cat.name });
                                 setPreviewImage(cat.image_url);
@@ -403,14 +470,22 @@ export default function QuickManagerPage() {
                             >
                               <Edit2 className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleCategoryDelete(cat.id)} className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCategoryDelete(cat.id);
+                              }} 
+                              className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-full"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        </div>
+                        </Reorder.Item>
                       ))
                     )}
-                  </div>
+                  </Reorder.Group>
                 </div>
 
                 {/* Add New Group Section */}

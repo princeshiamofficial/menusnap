@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -547,6 +547,23 @@ export default function DashboardPage() {
     if (catRes.success) setCategories(catRes.categories);
   }, []);
 
+  // Memoized grouped spotlights for the horizontal scroller (bubbles)
+  // Ensures categories are displayed according to their sort_order
+  const groupedSpotlights = useMemo(() => {
+    if (!spotlights.length) return [];
+    
+    // We rely on the SQL ORDER BY cat_sort_order ASC, s.sort_order ASC
+    // which already groups spotlights by category in the correct order.
+    // We just need to pick the representative (first) spotlight for each group.
+    return spotlights.reduce((acc: any[], spot) => {
+      const category = spot.group_name || 'General';
+      if (!acc.find(item => (item.group_name || 'General') === category)) {
+        acc.push(spot);
+      }
+      return acc;
+    }, []);
+  }, [spotlights]);
+
   const fetchExclusiveOffers = useCallback(async () => {
     const res = await getExclusiveOffers();
     if (res.success) setExclusiveOffers(res.offers);
@@ -577,12 +594,14 @@ export default function DashboardPage() {
             const actualIdx = spotlights.findIndex(s => s.id === nextInGroup.id);
             setCurrentSpotlightIndex(actualIdx);
           } else {
-            // Find the next group
-            const allGroups = Array.from(new Set(spotlights.map(s => s.group_name || 'General')));
-            const currentGroupIdx = allGroups.indexOf(activeCategory);
-            if (currentGroupIdx < allGroups.length - 1) {
-              const nextGroup = allGroups[currentGroupIdx + 1];
+            // Find the next group based on the ordered categories we show as bubbles
+            const currentGroupIdx = groupedSpotlights.findIndex(g => (g.group_name || 'General') === activeCategory);
+            
+            if (currentGroupIdx !== -1 && currentGroupIdx < groupedSpotlights.length - 1) {
+              const nextGroupRepresentative = groupedSpotlights[currentGroupIdx + 1];
+              const nextGroup = nextGroupRepresentative.group_name || 'General';
               const firstInNextGroup = spotlights.find(s => (s.group_name || 'General') === nextGroup);
+              
               if (firstInNextGroup) {
                 const actualIdx = spotlights.findIndex(s => s.id === firstInNextGroup.id);
                 setCurrentSpotlightIndex(actualIdx);
@@ -787,13 +806,7 @@ export default function DashboardPage() {
           <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">MenuSnap Spotlight</h2>
           <div className="w-full overflow-hidden">
             <div className="flex overflow-x-auto gap-2 pb-6 scrollbar-hide snap-x snap-mandatory px-1">
-              {spotlights.reduce((acc: any[], spot) => {
-                const category = spot.group_name || 'General';
-                if (!acc.find(item => (item.group_name || 'General') === category)) {
-                  acc.push(spot);
-                }
-                return acc;
-              }, []).map((item, idx) => (
+              {groupedSpotlights.map((item, idx) => (
                 <motion.div
                   key={item.id}
                   whileTap={{ scale: 0.97 }}
