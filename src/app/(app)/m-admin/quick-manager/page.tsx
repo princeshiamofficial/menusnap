@@ -475,13 +475,13 @@ export default function QuickManagerPage() {
           {/* Slide Images Section */}
           <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
 
-        {/* Pixel-Perfect Slide Images Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-3 md:gap-4 w-full">
+        {/* Pixel-Perfect Slide Images Flex Grid */}
+        <div className="flex flex-wrap gap-3 md:gap-4 w-full">
           {/* Upload Card - Direct Action */}
           <div 
             onClick={() => !isUploading && fileInputRef.current?.click()}
             className={cn(
-              "group relative flex flex-col items-center justify-center aspect-[2/1] rounded-xl border-2 border-dashed border-slate-200 hover:border-primary/40 bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer p-4 overflow-hidden",
+              "group relative flex flex-col items-center justify-center w-auto max-w-[200px] h-20 md:h-24 aspect-[2.2/1] rounded-xl border-2 border-dashed border-slate-200 hover:border-primary/40 bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer p-4 overflow-hidden",
               isUploading && "opacity-60 cursor-not-allowed"
             )}
           >
@@ -523,7 +523,7 @@ export default function QuickManagerPage() {
 
             return (
               <div key={slide.id} className="group space-y-2">
-                <div className="relative aspect-[2/1] rounded-xl overflow-hidden bg-slate-100 shadow-sm">
+                <div className="relative w-auto max-w-[200px] h-20 md:h-24 aspect-[2.2/1] rounded-xl overflow-hidden bg-slate-100 shadow-sm">
                   <img 
                     src={slide.image_url} 
                     alt=""
@@ -683,7 +683,7 @@ export default function QuickManagerPage() {
     <TabsContent value="offers" className="space-y-8 outline-none">
       {/* Exclusive Offers Section */}
       <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
-        <div className="flex overflow-x-auto pb-4 scrollbar-hide md:grid md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="flex flex-wrap gap-3 md:gap-4 w-full">
           {/* Add Offer Card */}
           <Dialog open={isOfferUploadOpen} onOpenChange={(open) => {
             setIsOfferUploadOpen(open);
@@ -694,7 +694,7 @@ export default function QuickManagerPage() {
             }
           }}>
             <DialogTrigger asChild>
-              <div className="group relative flex flex-col items-center justify-center aspect-[2/1] rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer p-4 border-2 border-dashed border-slate-200 hover:border-indigo-500/40">
+            <div className="group relative flex flex-col items-center justify-center w-auto max-w-[220px] h-24 md:h-28 aspect-[2.2/1] rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer p-4 border-2 border-dashed border-slate-200 hover:border-indigo-500/40">
                 <div className="flex flex-col items-center gap-2 text-center">
                   <div className="p-3 bg-indigo-500/10 rounded-full text-indigo-600 group-hover:scale-110 transition-transform">
                     <Tag className="h-5 w-5" />
@@ -753,8 +753,8 @@ export default function QuickManagerPage() {
           </Dialog>
 
           {offers.map((offer) => (
-            <Card key={offer.id} className="min-w-[200px] md:min-w-0 group relative rounded-2xl overflow-hidden border-border/20 shadow-sm border-2 p-[1px] bg-white dark:bg-slate-900">
-              <div className="aspect-[2.2/1] relative overflow-hidden rounded-[0.9rem]">
+            <Card key={offer.id} className="w-auto max-w-[220px] h-24 md:h-28 group relative rounded-2xl overflow-hidden border-border/20 shadow-sm border-2 p-[1px] bg-white dark:bg-slate-900">
+              <div className="aspect-[2.2/1] relative h-full overflow-hidden rounded-[0.9rem]">
                 <img src={offer.image_url} className="object-cover w-full h-full bg-slate-50 dark:bg-slate-900" />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100" />
                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-md shadow-lg">

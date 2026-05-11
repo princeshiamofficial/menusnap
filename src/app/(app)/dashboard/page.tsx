@@ -602,6 +602,56 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [currentSpotlightIndex, isStoryPaused, spotlights]);
 
+  // Fullscreen Management for Story View
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && currentSpotlightIndex !== -1) {
+        setCurrentSpotlightIndex(-1);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, [currentSpotlightIndex]);
+
+  useEffect(() => {
+    const triggerFullscreen = async () => {
+      if (currentSpotlightIndex !== -1) {
+        try {
+          const elem = document.documentElement;
+          if (elem.requestFullscreen && !document.fullscreenElement) {
+            await elem.requestFullscreen();
+          } else if ((elem as any).webkitRequestFullscreen && !(document as any).webkitFullscreenElement) {
+            await (elem as any).webkitRequestFullscreen();
+          }
+        } catch (err) {
+          console.warn("Fullscreen request failed:", err);
+        }
+      } else {
+        try {
+          if (document.fullscreenElement) {
+            if (document.exitFullscreen) {
+              await document.exitFullscreen();
+            }
+          } else if ((document as any).webkitFullscreenElement) {
+            if ((document as any).webkitExitFullscreen) {
+              await (document as any).webkitExitFullscreen();
+            }
+          }
+        } catch (err) {
+          // Ignore exit errors
+        }
+      }
+    };
+
+    triggerFullscreen();
+  }, [currentSpotlightIndex]);
+
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 100);
     fetchSpotlights();
@@ -732,8 +782,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* MenuSnap Spotlight Section (MOBILE ONLY) */}
-        <div className="md:hidden px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
+        {/* MenuSnap Spotlight Section */}
+        <div className="px-4 md:px-10 mb-10 w-full max-w-full overflow-hidden">
           <h2 className="text-xl font-black text-foreground mb-4 tracking-tight">MenuSnap Spotlight</h2>
           <div className="w-full overflow-hidden">
             <div className="flex overflow-x-auto gap-2 pb-6 scrollbar-hide snap-x snap-mandatory px-1">
@@ -752,7 +802,7 @@ export default function DashboardPage() {
                     const actualIdx = spotlights.findIndex(s => s.id === item.id);
                     setCurrentSpotlightIndex(actualIdx);
                   }}
-                  className="flex-shrink-0 w-[25.5vw] aspect-[3/4] snap-center relative rounded-[1rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform bg-white dark:bg-slate-900 p-[1px]"
+                  className="flex-shrink-0 w-[25.5vw] md:w-[120px] aspect-[3/4.4] snap-center relative rounded-[1rem] overflow-hidden border-2 border-red-600 shadow-lg shadow-red-600/10 active:scale-95 transition-transform bg-white dark:bg-slate-900 p-[1px] cursor-pointer"
                 >
                   <img
                     src={categories.find(c => c.name === (item.group_name || 'General'))?.image_url || item.image_url}
@@ -905,7 +955,7 @@ export default function DashboardPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-between md:hidden"
+              className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-between"
             >
               {(() => {
                 const activeCategory = spotlights[currentSpotlightIndex]?.group_name || 'General';
@@ -1042,7 +1092,7 @@ export default function DashboardPage() {
                           const url = spotlights[currentSpotlightIndex]?.link_url;
                           if (url) window.location.href = url;
                         }}
-                        className="flex flex-col items-center gap-1 opacity-70 cursor-pointer active:scale-95 transition-transform pointer-events-auto"
+                        className="flex flex-col items-center gap-1 opacity-100 cursor-pointer active:scale-95 transition-transform pointer-events-auto drop-shadow-[0_4px_12px_rgba(0,0,0,1)] drop-shadow-[0_2px_4px_rgba(0,0,0,1)]"
                       >
                         <ChevronDown className="h-5 w-5 text-white rotate-180 animate-bounce" />
                         <span className="text-white font-black text-[10px] uppercase tracking-widest">
