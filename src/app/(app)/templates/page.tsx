@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 import { BubbleConfetti } from '@/components/ui/bubble-confetti';
 import { useToast } from "@/hooks/use-toast";
 import { useClientAuth } from '@/hooks/use-client-auth';
-import { decodeHtmlEntities } from '@/lib/utils';
+import { decodeHtmlEntities, cn } from '@/lib/utils';
 import { getTemplatesFromMySql, updateOrderInMySql, getOrdersFromMySql } from '@/app/actions/orders';
 
 interface ApiTemplate {
