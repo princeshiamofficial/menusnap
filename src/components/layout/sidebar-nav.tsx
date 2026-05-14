@@ -52,8 +52,8 @@ export function SidebarNav() {
         >
           <div className="relative h-12 w-44 sm:w-48">
             <Image
-              src="https://erp.colorhutbd.xyz/file/uploads/68515c4146a92_Color%20hut%20logo.png"
-              alt="Color Hut Logo"
+              src="/menusnap-logo-white.png"
+              alt="MenuSnap Logo"
               fill
               sizes="(max-width: 640px) 176px, 192px"
               className="object-contain"
