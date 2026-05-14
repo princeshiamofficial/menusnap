@@ -38,6 +38,12 @@ interface TemplatePreviewDialogProps {
 }
 
 function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePreviewDialogProps) {
+  const [imgSrc, setImgSrc] = useState(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+
+  useEffect(() => {
+    if (imageUrl) setImgSrc(imageUrl);
+  }, [imageUrl]);
+
   if (!imageUrl) return null;
 
   return (
@@ -49,13 +55,14 @@ function TemplatePreviewDialog({ imageUrl, isOpen, onOpenChange }: TemplatePrevi
           </DialogHeader>
           <div className="relative w-full h-full bg-black/5 rounded-2xl overflow-hidden">
             <Image
-              src={imageUrl}
+              src={imgSrc}
               alt="Template Preview"
               fill
               className="object-contain"
               data-ai-hint="template full-view"
               sizes="(max-width: 768px) 95vw, (max-width: 1200px) 80vw, 1000px"
               priority
+              onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
             />
           </div>
           <DialogClose asChild>
@@ -81,7 +88,7 @@ interface TemplateCardProps {
   isSelectionAllowed: boolean;
 }
 
-const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
+const DEFAULT_TEMPLATE_IMAGE_URL = '/placeholder.svg';
 
 function TemplateCard({
   template,
@@ -90,8 +97,13 @@ function TemplateCard({
   isSelectionAllowed,
 }: TemplateCardProps): ReactNode {
   const { imageUrl, name: title, description, tags, isTopRated } = template;
-  const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
-  const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
+  const [imgSrc, setImgSrc] = useState(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+
+  useEffect(() => {
+    setImgSrc(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+  }, [imageUrl]);
+
+  const isUsingPlaceholder = imgSrc === DEFAULT_TEMPLATE_IMAGE_URL;
   
   const getImageHint = (name: string): string => {
     return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
@@ -106,21 +118,28 @@ function TemplateCard({
       <Card className="overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 rounded-2xl flex flex-col h-full border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader className="p-0 relative">
           <div className="aspect-[4/3] relative group overflow-hidden">
+            {!isUsingPlaceholder && (
+              <Image
+                src={imgSrc}
+                alt=""
+                fill
+                className="object-cover blur-xl opacity-95 transition-transform duration-500 group-hover:scale-110"
+                priority={false}
+                aria-hidden="true"
+                onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+              />
+            )}
             <Image
-              src={actualImageUrl}
-              alt=""
-              fill
-              className="object-cover blur-xl opacity-95 transition-transform duration-500 group-hover:scale-110"
-              priority={false}
-              aria-hidden="true"
-            />
-            <Image
-              src={actualImageUrl}
+              src={imgSrc}
               alt={decodeHtmlEntities(title)}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-              className="object-contain relative z-10 transition-all duration-500 group-hover:scale-110 drop-shadow-xl group-hover:drop-shadow-2xl"
+              className={cn(
+                "relative z-10 transition-all duration-500 group-hover:scale-110",
+                isUsingPlaceholder ? "object-cover" : "object-contain drop-shadow-xl group-hover:drop-shadow-2xl"
+              )}
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
+              onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
             />
             <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.15)] pointer-events-none z-20 group-hover:shadow-[inset_0_0_60px_rgba(0,0,0,0.2)] transition-shadow duration-500" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />

@@ -39,11 +39,16 @@ interface TemplateCardProps {
   imageHint?: string;
 }
 
-const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
+const DEFAULT_TEMPLATE_IMAGE_URL = '/placeholder.svg';
 
 function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHint }: TemplateCardProps) {
-  const actualImageUrl = imageUrl || DEFAULT_TEMPLATE_IMAGE_URL;
-  const isUsingPlaceholder = !imageUrl || imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
+  const [imgSrc, setImgSrc] = useState(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+
+  useEffect(() => {
+    setImgSrc(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+  }, [imageUrl]);
+
+  const isUsingPlaceholder = imgSrc === DEFAULT_TEMPLATE_IMAGE_URL;
 
   return (
     <motion.div
@@ -53,18 +58,25 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
     >
       <Card className="shadow-xl rounded-xl overflow-hidden w-full flex flex-col h-full">
         <CardHeader className="p-0 relative">
-          <div className="aspect-[4/3] relative">
+          <div className="aspect-[4/3] relative overflow-hidden">
+            {!isUsingPlaceholder && (
+              <img
+                src={imgSrc}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover blur-xl opacity-95"
+                aria-hidden="true"
+                onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+              />
+            )}
             <img
-              src={actualImageUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover blur-xl opacity-95"
-              aria-hidden="true"
-            />
-            <img
-              src={actualImageUrl}
+              src={imgSrc}
               alt={decodeHtmlEntities(title)}
-              className="w-full h-full object-contain relative z-10 drop-shadow-xl"
+              className={cn(
+                "w-full h-full relative z-10",
+                isUsingPlaceholder ? "object-cover" : "object-contain drop-shadow-xl"
+              )}
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : (imageHint || "template design")}
+              onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
             />
             <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.15)] pointer-events-none z-20" />
           </div>
@@ -212,6 +224,9 @@ function MobileImageSlider() {
             alt={slides[current].title}
             className="w-full h-full object-contain absolute inset-0"
             loading={current === 0 ? "eager" : "lazy"}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = DEFAULT_TEMPLATE_IMAGE_URL;
+            }}
           />
         </motion.div>
       </AnimatePresence>
@@ -356,6 +371,9 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                         alt={action.title}
                         style={{ width: action.imgWidth || '135px', height: action.imgHeight || '135px', objectFit: 'contain' }}
                         className="drop-shadow-2xl"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = DEFAULT_TEMPLATE_IMAGE_URL;
+                        }}
                       />
                     </div>
                   ) : (

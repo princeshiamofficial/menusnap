@@ -70,8 +70,9 @@ import {
   upsertTemplateToMySql, 
   deleteTemplateFromMySql 
 } from "@/app/actions/orders";
+import { uploadFileLocally } from "@/app/actions/uploads";
 
-const DEFAULT_TEMPLATE_IMAGE_URL = 'https://erp.colorhutbd.xyz/file/uploads/68502bf9cec52_placeholder.svg';
+const DEFAULT_TEMPLATE_IMAGE_URL = '/placeholder.svg';
 
 interface ApiAdminTemplate {
   id: string;
@@ -101,7 +102,12 @@ function AdminTemplateCard({
   onTogglePublish,
   onSetTopRated,
 }: AdminTemplateCardProps): ReactNode {
-  
+  const [imgSrc, setImgSrc] = useState(template.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+
+  useEffect(() => {
+    setImgSrc(template.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+  }, [template.imageUrl]);
+
   const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
     try {
@@ -117,27 +123,34 @@ function AdminTemplateCard({
     return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
   }
 
-  const isDefaultImage = template.imageUrl === DEFAULT_TEMPLATE_IMAGE_URL;
+  const isUsingPlaceholder = imgSrc === DEFAULT_TEMPLATE_IMAGE_URL;
 
   return (
     <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full bg-card">
       <CardHeader className="p-0 relative">
-        <div className="aspect-[4/3] relative group">
+        <div className="aspect-[4/3] relative group overflow-hidden">
+          {!isUsingPlaceholder && (
+            <Image
+              src={imgSrc}
+              alt=""
+              fill
+              className="object-cover blur-xl opacity-95"
+              priority={false}
+              aria-hidden="true"
+              onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+            />
+          )}
           <Image
-            src={template.imageUrl}
-            alt=""
-            fill
-            className="object-cover blur-xl opacity-95"
-            priority={false}
-            aria-hidden="true"
-          />
-          <Image
-            src={template.imageUrl} 
+            src={imgSrc} 
             alt={template.name}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-contain relative z-10 drop-shadow-xl"
-            data-ai-hint={isDefaultImage ? "placeholder abstract" : getImageHint(template.name)}
+            className={cn(
+              "relative z-10 transition-all duration-300",
+              isUsingPlaceholder ? "object-cover" : "object-contain drop-shadow-xl"
+            )}
+            data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(template.name)}
+            onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
           />
           <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.1)] pointer-events-none z-20" />
           {template.isTopRated && (
@@ -367,12 +380,8 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       imageFormData.append("file", imageFileToUpload);
 
       try {
-        const uploadResponse = await fetch("https://colorhutbd.xyz/vm/api/upload.php", {
-          method: "POST",
-          body: imageFormData,
-        });
-        const uploadResult = await uploadResponse.json();
-        if (!uploadResponse.ok || !uploadResult.success || !uploadResult.data.url) {
+        const uploadResult = await uploadFileLocally(imageFormData, 'templates');
+        if (!uploadResult.success || !uploadResult.data?.url) {
           throw new Error(uploadResult.message || "Image upload failed");
         }
         uploadedImageUrl = uploadResult.data.url;
@@ -655,12 +664,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       imageFormData.append("file", imageFileToUpload);
 
       try {
-        const uploadResponse = await fetch("https://colorhutbd.xyz/vm/api/upload.php", {
-          method: "POST",
-          body: imageFormData,
-        });
-        const uploadResult = await uploadResponse.json();
-        if (!uploadResponse.ok || !uploadResult.success || !uploadResult.data.url) {
+        const uploadResult = await uploadFileLocally(imageFormData, 'templates');
+        if (!uploadResult.success || !uploadResult.data?.url) {
           throw new Error(uploadResult.message || "New image upload failed");
         }
         finalImageUrl = uploadResult.data.url;
