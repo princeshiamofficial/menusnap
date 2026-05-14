@@ -293,7 +293,7 @@ export default function EBookPage() {
                 <Image src="/Ebook.png" alt="Ebook Mini" width={40} height={60} className="rounded-sm" />
                 <div className="text-left text-xs text-gray-400">
                   <p className="font-bold uppercase tracking-wider">Business Growth Guide</p>
-                  <p>By Color Hut • PDF • 1.6 MB</p>
+                  <p>By Color Hut • PDF • 10.7 MB</p>
                 </div>
               </div>
             </motion.div>

@@ -58,7 +58,7 @@ export default function EbookSuccessPage() {
             <div>
               <p className="text-xs font-bold text-orange-500 uppercase tracking-widest mb-1">Ebook Downloaded</p>
               <h3 className="text-xl font-bold leading-tight">Business Growth Guide <br/> By Color Hut</h3>
-              <p className="text-sm text-gray-400 mt-1">PDF • 1.6 MB</p>
+              <p className="text-sm text-gray-400 mt-1">PDF • 10.7 MB</p>
             </div>
           </div>
 
