@@ -59,6 +59,12 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const OrderCard = ({ order }: { order: ApiOrder }) => {
+    const [imgSrc, setImgSrc] = useState(order.templateImageUrl || '/placeholder.svg');
+
+    useEffect(() => {
+        setImgSrc(order.templateImageUrl || '/placeholder.svg');
+    }, [order.templateImageUrl]);
+
     const formattedDate = useMemo(() => {
         try {
             const date = parseISO(order.orderDate);
@@ -108,13 +114,14 @@ const OrderCard = ({ order }: { order: ApiOrder }) => {
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 flex-shrink-0 bg-primary/5 rounded-xl border border-primary/10 group-hover:scale-110 transition-transform overflow-hidden flex items-center justify-center">
                                 {order.templateImageUrl ? (
-                                    <Image 
-                                        src={order.templateImageUrl} 
-                                        alt="" 
-                                        width={40} 
-                                        height={40} 
-                                        className="h-full w-full object-cover"
-                                    />
+                                <Image 
+                                    src={imgSrc} 
+                                    alt="" 
+                                    width={40} 
+                                    height={40} 
+                                    className="h-full w-full object-cover"
+                                    onError={() => setImgSrc('/placeholder.svg')}
+                                />
                                 ) : (
                                     <FileTextIcon className="h-5 w-5 text-primary/40" />
                                 )}

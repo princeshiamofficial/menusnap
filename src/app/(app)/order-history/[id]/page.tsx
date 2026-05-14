@@ -140,6 +140,18 @@ export default function ClientOrderDetailsPage() {
     const [categoryMap, setCategoryMap] = useState<Map<string, string>>(new Map());
     const { toast } = useToast();
 
+    const [templateImgSrc, setTemplateImgSrc] = useState('/placeholder.svg');
+
+    useEffect(() => {
+        if (order?.templateImageUrl) {
+            setTemplateImgSrc(order.templateImageUrl);
+        } else {
+            setTemplateImgSrc('/placeholder.svg');
+        }
+    }, [order?.templateImageUrl]);
+
+    const isUsingPlaceholder = templateImgSrc === '/placeholder.svg';
+
     useEffect(() => {
         if (clientLoading) return;
         if (!clientUser) {
@@ -410,21 +422,28 @@ export default function ClientOrderDetailsPage() {
                             <SectionTitle>Selected Template</SectionTitle>
                             <Card className="overflow-hidden shadow-sm">
                                 <div className="flex flex-col md:flex-row">
-                                    <div className="md:w-1/3 relative aspect-[4/3] bg-muted">
-                                        <Image
-                                            src={order.templateImageUrl}
-                                            alt=""
-                                            fill
-                                            className="object-cover blur-xl opacity-95"
-                                            priority={false}
-                                            aria-hidden="true"
-                                        />
+                                    <div className="md:w-1/3 relative aspect-[4/3] bg-muted overflow-hidden">
+                                        {!isUsingPlaceholder && (
+                                            <Image
+                                                src={templateImgSrc}
+                                                alt=""
+                                                fill
+                                                className="object-cover blur-xl opacity-95"
+                                                priority={false}
+                                                aria-hidden="true"
+                                                onError={() => setTemplateImgSrc('/placeholder.svg')}
+                                            />
+                                        )}
                                         <Image 
-                                            src={order.templateImageUrl}
+                                            src={templateImgSrc}
                                             alt={decodeHtmlEntities(order.templateName) || 'Template Image'}
                                             fill
-                                            className="object-contain relative z-10 drop-shadow-lg"
+                                            className={cn(
+                                                "relative z-10 transition-all duration-300",
+                                                isUsingPlaceholder ? "object-cover" : "object-contain drop-shadow-lg"
+                                            )}
                                             sizes="(max-width: 768px) 100vw, 33vw"
+                                            onError={() => setTemplateImgSrc('/placeholder.svg')}
                                         />
                                         <div className="absolute inset-0 shadow-[inset_0_0_30px_rgba(0,0,0,0.1)] pointer-events-none z-20" />
                                     </div>
