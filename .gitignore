@@ -52,5 +52,6 @@ database-debug.log
 # WhatsApp session data
 auth_info_baileys/
 
-# Local uploads
+
+# User Uploads
 /public/uploads/
