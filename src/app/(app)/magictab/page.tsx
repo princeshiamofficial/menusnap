@@ -1030,7 +1030,7 @@ export default function MagicTabPage() {
 
     if (isSelected) {
       try {
-        const audio = new Audio('https://colorhutbd.xyz/audio/item-select.mp3');
+        const audio = new Audio('/audio/item-select.mp3');
         audio.play().catch(() => {
           /* Silence playback errors */
         });

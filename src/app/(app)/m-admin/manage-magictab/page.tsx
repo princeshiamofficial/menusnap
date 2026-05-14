@@ -130,7 +130,7 @@ interface MenuItemAdmin {
 }
 
 const SKELETON_ITEM_COUNT = 6;
-const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
+const STATIC_ITEM_IMAGE_URL = '/assets/image.svg';
 
 const menuItemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100, "Name must be 100 characters or less"),

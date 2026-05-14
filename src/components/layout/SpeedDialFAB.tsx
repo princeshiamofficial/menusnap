@@ -235,7 +235,7 @@ export function SpeedDialFAB(): ReactNode {
           ) : showHelpImage ? (
             <motion.div key="help-image" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="h-full w-full relative">
               <Image
-                src="https://colorhutbd.xyz/help.png"
+                src="/assets/help.png"
                 alt="Help"
                 fill
                 sizes="(max-width: 768px) 48px, 56px"

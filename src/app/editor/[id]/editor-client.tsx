@@ -320,7 +320,7 @@ interface OrderPreviewDialogProps {
     allCategories: any[];
     onSaveChanges: (newItems: OrderItemDetail[]) => void;
 }
-const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
+const STATIC_ITEM_IMAGE_URL = '/assets/image.svg';
 
 function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories, onSaveChanges }: OrderPreviewDialogProps) {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);

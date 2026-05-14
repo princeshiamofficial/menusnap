@@ -72,7 +72,7 @@ interface MenuPreviewDialogProps {
   clientUser: ClientUser | null;
 }
 
-const STATIC_ITEM_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
+const STATIC_ITEM_IMAGE_URL = '/assets/image.svg';
 
 export function MenuPreviewDialog({
   isOpen,

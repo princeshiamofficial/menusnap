@@ -33,7 +33,7 @@ import { format, formatDistanceToNowStrict, parseISO, isValid } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { getCategoriesFromMySql } from '@/app/actions/orders';
 
-const STATIC_AVATAR_IMAGE_URL = 'https://colorhutbd.xyz/image.svg';
+const STATIC_AVATAR_IMAGE_URL = '/assets/image.svg';
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 
 
