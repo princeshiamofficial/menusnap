@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,10 +16,19 @@ export function WhatsAppFloat({
   phoneNumber = "8801805561171",
   message = "Hello! I'm interested in your services."
 }: WhatsAppFloatProps) {
+  const pathname = usePathname();
   const handleClick = () => {
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
   };
+
+  // Hide on login and admin pages
+  const isHidden = pathname === '/login' || 
+                   pathname === '/login/' || 
+                   pathname.startsWith('/m-admin') || 
+                   pathname.startsWith('/panel');
+
+  if (isHidden) return null;
 
   return (
     <motion.div
