@@ -65,7 +65,7 @@ export default function LoginPage() {
         return;
       }
       setLoggingIn(true);
-      const success = await login(businessName, type, whatsapp, division, district, '/login/success');
+      const success = await login(businessName, type, whatsapp, division, district, '/dashboard');
       if (!success) {
         setLoggingIn(false);
       }
