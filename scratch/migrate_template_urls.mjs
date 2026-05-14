@@ -3,22 +3,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Load .env.local or .env
+// Load .env.local
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = [
-  path.resolve(__dirname, '../.env.local'),
-  path.resolve(__dirname, '../.env'),
-].find(p => {
-  try { return !!path.resolve(p); } catch (e) { return false; }
-});
-
-if (envPath) {
-  dotenv.config({ path: envPath });
-  console.log(`Loaded environment variables from: ${envPath}`);
-} else {
-  console.warn('No .env.local or .env file found. Using default/environment credentials.');
-}
+dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || 'localhost',
