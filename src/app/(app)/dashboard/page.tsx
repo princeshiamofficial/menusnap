@@ -888,14 +888,14 @@ export default function DashboardPage() {
           </div>
 
           {/* Banners Scroller */}
-          <div className="w-full overflow-hidden">
+          <div className="w-[calc(100%+2rem)] -mx-4 overflow-hidden">
              <div 
               onScroll={(e) => {
                 const target = e.target as HTMLDivElement;
                 const index = Math.round(target.scrollLeft / target.offsetWidth);
                 setCurrentOfferIndex(index);
               }}
-              className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-2"
+              className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-0 pb-2"
             >
               {exclusiveOffers
                 .filter(offer => activeOfferTab === "All" || offer.category === activeOfferTab)
@@ -903,7 +903,7 @@ export default function DashboardPage() {
                   <motion.div
                     key={offer.id}
                     whileTap={{ scale: 0.98 }}
-                    className="min-w-full aspect-[5/1] snap-center relative rounded-xl overflow-hidden cursor-pointer"
+                    className="min-w-full aspect-[5/1] snap-center relative rounded-none overflow-hidden cursor-pointer"
                   >
                     {offer.link_url && (
                       <Link href={offer.link_url} className="absolute inset-0 z-30" />
@@ -911,7 +911,7 @@ export default function DashboardPage() {
                     <img 
                       src={offer.image_url} 
                       alt="Special Offer"
-                      className="w-full h-full object-cover rounded-xl"
+                      className="w-full h-full object-cover rounded-none"
                     />
                   </motion.div>
                 ))}
