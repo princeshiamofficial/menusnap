@@ -44,6 +44,65 @@ function ClientAuthGuard({ children }: { children: ReactNode }) {
 }
 
 
+function GlobalLoginSuccessTracker() {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let timer: NodeJS.Timeout;
+
+    const checkAndManageHash = () => {
+      const loginSuccessUntilStr = localStorage.getItem('loginSuccessUntil');
+      if (!loginSuccessUntilStr) {
+        if (window.location.hash === '#login-success') {
+          const cleanUrl = window.location.pathname + window.location.search;
+          window.history.replaceState(null, '', cleanUrl);
+        }
+        return;
+      }
+
+      const loginSuccessUntil = parseInt(loginSuccessUntilStr, 10);
+      const now = Date.now();
+
+      if (now < loginSuccessUntil) {
+        // Within 2-minute window: enforce hash
+        if (window.location.hash !== '#login-success') {
+          const newUrl = window.location.pathname + window.location.search + '#login-success';
+          window.history.replaceState(null, '', newUrl);
+        }
+
+        // Set timer to auto-remove when the window expires
+        const remaining = loginSuccessUntil - now;
+        timer = setTimeout(() => {
+          if (window.location.hash === '#login-success') {
+            const cleanUrl = window.location.pathname + window.location.search;
+            window.history.replaceState(null, '', cleanUrl);
+          }
+        }, remaining);
+      } else {
+        // Outside window: clean hash
+        if (window.location.hash === '#login-success') {
+          const cleanUrl = window.location.pathname + window.location.search;
+          window.history.replaceState(null, '', cleanUrl);
+        }
+      }
+    };
+
+    checkAndManageHash();
+
+    // Check on navigation, back/forward, and hash modifications
+    window.addEventListener('hashchange', checkAndManageHash);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      window.removeEventListener('hashchange', checkAndManageHash);
+    };
+  }, [pathname]);
+
+  return null;
+}
+
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/m-admin') || pathname.startsWith('/panel');
@@ -60,7 +119,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { isClientLoggedIn, clientLoading } = useClientAuth();
 
   if (isMarketingStandalone) {
-    return <>{children}</>;
+    return (
+      <>
+        <GlobalLoginSuccessTracker />
+        {children}
+      </>
+    );
   }
 
   // Only show as standalone (no sidebar) if not logged in
@@ -68,6 +132,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     if (clientLoading) return null;
     return (
       <>
+        <GlobalLoginSuccessTracker />
         {children}
         <BottomNavigation />
       </>
@@ -81,6 +146,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   // For non-admin routes within the (app) group
   return (
     <ClientAuthGuard>
+      <GlobalLoginSuccessTracker />
       <SidebarProvider defaultOpen>
         <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r border-sidebar-border shadow-md bg-sidebar">
           <SidebarNav />

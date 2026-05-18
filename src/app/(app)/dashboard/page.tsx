@@ -199,7 +199,7 @@ function MobileImageSlider() {
   }
 
   return (
-    <div className="md:hidden w-full aspect-[3/1] relative rounded-[1.5rem] overflow-hidden group ring-1 ring-white/10 bg-slate-100 dark:bg-slate-900/50">
+    <div className="md:hidden w-full aspect-[3.75/1] relative rounded-[1.5rem] overflow-hidden group ring-1 ring-white/10 bg-slate-100 dark:bg-slate-900/50">
       {/* Hidden preloader for all slider images */}
       <div className="hidden" aria-hidden="true">
         {slides.map((img, i) => (
@@ -222,7 +222,7 @@ function MobileImageSlider() {
           <img
             src={slides[current].src}
             alt={slides[current].title}
-            className="w-full h-full object-contain absolute inset-0"
+            className="w-full h-[90%] object-contain absolute inset-x-0 top-[5%]"
             loading={current === 0 ? "eager" : "lazy"}
             onError={(e) => {
               (e.target as HTMLImageElement).src = DEFAULT_TEMPLATE_IMAGE_URL;
@@ -260,8 +260,10 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
       badge: "STRATEGIC",
       href: "/ebook",
       imageUrl: "/dashboard/ebook-premium-3d.png",
-      rightOffset: "-right-12",
-      bottomOffset: "-bottom-2",
+      rightOffset: "-right-4",
+      bottomOffset: "-bottom-1",
+      imgWidth: "100px",
+      imgHeight: "100px",
       icon: ListOrdered,
       color: "text-orange-500/20",
       badgeColor: "bg-orange-100 text-orange-700"
@@ -272,8 +274,10 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
       badge: "MONITORING",
       href: "/team-tracker",
       imageUrl: "/dashboard/clock-location-premium-3d.png",
-      rightOffset: "-right-10",
-      bottomOffset: "-bottom-3",
+      rightOffset: "-right-3",
+      bottomOffset: "-bottom-1",
+      imgWidth: "100px",
+      imgHeight: "100px",
       icon: Layers,
       color: "text-blue-500/20",
       badgeColor: "bg-blue-100 text-blue-700"
@@ -308,7 +312,8 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
             <motion.div
               whileTap={{ scale: 0.96 }}
               className={cn(
-                "relative border rounded-3xl flex flex-col items-start justify-between aspect-[1.15/1] transition-all duration-300 bg-card border-border/50 p-4 shadow-sm active:shadow-inner overflow-hidden",
+                "relative border rounded-3xl flex flex-col items-start justify-between transition-all duration-300 bg-card border-border/50 shadow-sm active:shadow-inner overflow-hidden",
+                (action.title === "eBook" || action.title === "Team Tracker") ? "aspect-[1.44/1] p-2" : "aspect-[1.15/1] p-4",
                 action.isWidget && "bg-transparent border-none p-0 overflow-hidden shadow-none"
               )}
             >
@@ -359,7 +364,10 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                   <Link href={action.href} className="absolute inset-0 z-30" />
                   <div className="relative z-10">
                     <h3 className="text-lg font-black text-foreground leading-tight">{action.title}</h3>
-                    <p className="text-[10px] font-medium text-muted-foreground leading-tight mt-1 max-w-[85%]">
+                    <p className={cn(
+                      "text-[10px] font-medium text-muted-foreground leading-tight mt-1",
+                      action.title === "eBook" ? "max-w-[80%]" : (action.title === "Team Tracker" ? "max-w-[68%]" : "max-w-[85%]")
+                    )}>
                       {action.description}
                     </p>
                   </div>
@@ -370,7 +378,7 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                         src={action.imageUrl}
                         alt={action.title}
                         style={{ width: action.imgWidth || '135px', height: action.imgHeight || '135px', objectFit: 'contain' }}
-                        className="drop-shadow-2xl"
+                        className="drop-shadow-2xl -translate-y-[3%] translate-x-[10%]"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = DEFAULT_TEMPLATE_IMAGE_URL;
                         }}
@@ -471,7 +479,18 @@ export default function DashboardPage() {
       setIsHiringOpen(true);
     }
 
-    return () => window.removeEventListener('resize', handleResize);
+    // Single-use Login Success Deep Link Check
+    if (window.location.hash === '#login-success' && localStorage.getItem('loginToastShown') !== 'true') {
+      localStorage.setItem('loginToastShown', 'true');
+      toast({
+        title: "Login Successful",
+        description: `Welcome back to ${clientUser?.businessName || "your"} MenuSnap Dashboard!`,
+      });
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
   const [topRatedTemplates, setTopRatedTemplates] = useState<ApiTemplate[]>([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
@@ -870,10 +889,10 @@ export default function DashboardPage() {
 
           {/* Banners Scroller */}
           <div className="w-full overflow-hidden">
-            <div 
+             <div 
               onScroll={(e) => {
                 const target = e.target as HTMLDivElement;
-                const index = Math.round(target.scrollLeft / (target.offsetWidth * 0.85));
+                const index = Math.round(target.scrollLeft / target.offsetWidth);
                 setCurrentOfferIndex(index);
               }}
               className="flex overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth gap-4 pb-2"
@@ -884,12 +903,15 @@ export default function DashboardPage() {
                   <motion.div
                     key={offer.id}
                     whileTap={{ scale: 0.98 }}
-                    className="min-w-[85vw] aspect-video snap-center relative rounded-[1.25rem] overflow-hidden shadow-2xl bg-white dark:bg-slate-900 p-[1px]"
+                    className="min-w-full aspect-[5/1] snap-center relative rounded-xl overflow-hidden cursor-pointer"
                   >
+                    {offer.link_url && (
+                      <Link href={offer.link_url} className="absolute inset-0 z-30" />
+                    )}
                     <img 
                       src={offer.image_url} 
                       alt="Special Offer"
-                      className="w-full h-full object-cover rounded-[1.2rem] bg-slate-50 dark:bg-slate-950"
+                      className="w-full h-full object-cover rounded-xl"
                     />
                   </motion.div>
                 ))}

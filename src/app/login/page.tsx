@@ -49,7 +49,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isClientLoggedIn && !loggingIn) {
-      router.push('/dashboard');
+      router.push('/dashboard#login-success');
     }
   }, [isClientLoggedIn, router, loggingIn]);
 
@@ -65,8 +65,13 @@ export default function LoginPage() {
         return;
       }
       setLoggingIn(true);
-      const success = await login(businessName, type, whatsapp, division, district, '/dashboard');
-      if (!success) {
+      const success = await login(businessName, type, whatsapp, division, district, '/dashboard#login-success');
+      if (success) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('loginSuccessUntil', (Date.now() + 120000).toString());
+          localStorage.setItem('loginToastShown', 'false');
+        }
+      } else {
         setLoggingIn(false);
       }
     }

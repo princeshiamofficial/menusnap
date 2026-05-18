@@ -7,17 +7,19 @@ import { ClientLoginForm } from './ClientLoginForm';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
 
 interface ClientGateProps {
   children: ReactNode;
 }
 
 export function ClientGate({ children }: ClientGateProps) {
-  const { isClientLoggedIn, clientLoading } = useClientAuth();
+  const { isClientLoggedIn, clientLoading, clientUser } = useClientAuth();
   const [showSuccess, setShowSuccess] = useState(false);
   const [isFullyAuthorized, setIsFullyAuthorized] = useState(false);
   const wasLoggedInOnMount = useRef(false);
   const mounted = useRef(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!mounted.current) {
@@ -36,11 +38,29 @@ export function ClientGate({ children }: ClientGateProps) {
     }
   }, [isClientLoggedIn, showSuccess, isFullyAuthorized]);
 
+  // One-time self-cleaning success handler
+  useEffect(() => {
+    if (isFullyAuthorized && typeof window !== 'undefined' && window.location.hash === '#login-success' && localStorage.getItem('loginToastShown') !== 'true') {
+      localStorage.setItem('loginToastShown', 'true');
+      toast({
+        title: "Login Successful",
+        description: `Welcome to ${clientUser?.businessName || "MenuSnap"}!`,
+      });
+    }
+  }, [isFullyAuthorized, clientUser, toast]);
+
   const handleLoginSuccess = () => {
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
       setIsFullyAuthorized(true);
+      
+      // Store 2 minutes window and toast shown state
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('loginSuccessUntil', (Date.now() + 120000).toString());
+        localStorage.setItem('loginToastShown', 'false');
+        window.location.hash = 'login-success';
+      }
     }, 2500);
   };
 

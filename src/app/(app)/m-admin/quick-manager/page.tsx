@@ -77,7 +77,7 @@ export default function QuickManagerPage() {
   const [editingOfferId, setEditingOfferId] = useState<number | null>(null);
   const [spotlightForm, setSpotlightForm] = useState({ link: '', cta: '', category: '' });
   const [categoryForm, setCategoryForm] = useState({ name: '' });
-  const [offerForm, setOfferForm] = useState({ category: 'Offer' });
+  const [offerForm, setOfferForm] = useState({ category: 'Offer', linkUrl: '' });
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -313,12 +313,14 @@ export default function QuickManagerPage() {
       if (editingOfferId) {
         result = await updateExclusiveOffer(editingOfferId, {
           category: offerForm.category,
-          imageUrl: compressedImage
+          imageUrl: compressedImage,
+          linkUrl: offerForm.linkUrl
         });
       } else {
         result = await addExclusiveOffer({
           category: offerForm.category,
-          imageUrl: compressedImage
+          imageUrl: compressedImage,
+          linkUrl: offerForm.linkUrl
         });
       }
 
@@ -326,7 +328,7 @@ export default function QuickManagerPage() {
         toast({ title: "Success", description: editingOfferId ? "Offer updated." : "Offer added." });
         setIsOfferUploadOpen(false);
         setEditingOfferId(null);
-        setOfferForm({ category: 'Offer' });
+        setOfferForm({ category: 'Offer', linkUrl: '' });
         setPreviewImage(null);
         fetchData();
       } else {
@@ -764,7 +766,7 @@ export default function QuickManagerPage() {
             setIsOfferUploadOpen(open);
             if (!open) { 
               setPreviewImage(null); 
-              setOfferForm({ category: 'Offer' }); 
+              setOfferForm({ category: 'Offer', linkUrl: '' }); 
               setEditingOfferId(null);
             }
           }}>
@@ -785,7 +787,7 @@ export default function QuickManagerPage() {
                   New Exclusive Offer
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground font-medium opacity-70">
-                  Upload a deal banner and select a category.
+                  Upload a deal banner, select a category, and optionally add a link.
                 </DialogDescription>
               </DialogHeader>
               <div className="px-6 py-4 space-y-4">
@@ -817,6 +819,15 @@ export default function QuickManagerPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">LINK URL (OPTIONAL)</Label>
+                    <Input 
+                      value={offerForm.linkUrl} 
+                      onChange={(e) => setOfferForm({...offerForm, linkUrl: e.target.value})} 
+                      placeholder="e.g. /ebook or https://example.com" 
+                      className="rounded-xl border-border/40" 
+                    />
+                  </div>
                 </div>
               </div>
               <DialogFooter className="p-6 pt-2">
@@ -826,7 +837,7 @@ export default function QuickManagerPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-
+ 
           {offers.map((offer) => (
             <Card key={offer.id} className="w-auto max-w-[220px] h-24 md:h-28 group relative rounded-2xl overflow-hidden border-border/20 shadow-sm border-2 p-[1px] bg-white dark:bg-slate-900">
               <div className="aspect-[2.2/1] relative h-full overflow-hidden rounded-[0.9rem]">
@@ -838,7 +849,7 @@ export default function QuickManagerPage() {
                  <button 
                   onClick={() => {
                     setEditingOfferId(offer.id);
-                    setOfferForm({ category: offer.category });
+                    setOfferForm({ category: offer.category, linkUrl: offer.link_url || '' });
                     setPreviewImage(offer.image_url);
                     setIsOfferUploadOpen(true);
                   }}

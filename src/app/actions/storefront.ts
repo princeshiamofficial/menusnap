@@ -114,9 +114,17 @@ async function ensureExclusiveOffersTable() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         category VARCHAR(100) NOT NULL,
         image_url TEXT NOT NULL,
+        link_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Ensure columns exist for existing tables
+    const [columns]: any = await pool.execute("SHOW COLUMNS FROM dashboard_exclusive_offers");
+    const columnNames = columns.map((c: any) => c.Field);
+    if (!columnNames.includes('link_url')) {
+      await pool.execute("ALTER TABLE dashboard_exclusive_offers ADD COLUMN link_url TEXT");
+    }
   } catch (err) {
     console.error("Database initialization error (exclusive offers):", err);
     throw err;
@@ -532,7 +540,7 @@ export async function getExclusiveOffers() {
 /**
  * Adds a new exclusive offer to the database.
  */
-export async function addExclusiveOffer(data: { category: string, imageUrl: string }) {
+export async function addExclusiveOffer(data: { category: string, imageUrl: string, linkUrl?: string }) {
   try {
     await ensureExclusiveOffersTable();
 
@@ -559,8 +567,8 @@ export async function addExclusiveOffer(data: { category: string, imageUrl: stri
     }
 
     const [result]: any = await pool.execute(
-      'INSERT INTO dashboard_exclusive_offers (category, image_url) VALUES (?, ?)',
-      [data.category, finalImageUrl]
+      'INSERT INTO dashboard_exclusive_offers (category, image_url, link_url) VALUES (?, ?, ?)',
+      [data.category, finalImageUrl, data.linkUrl || '']
     );
 
     revalidatePath('/m-admin/quick-manager');
@@ -599,7 +607,7 @@ export async function deleteExclusiveOffer(id: number) {
 /**
  * Updates an exclusive offer in the database.
  */
-export async function updateExclusiveOffer(id: number, data: { category: string, imageUrl?: string }) {
+export async function updateExclusiveOffer(id: number, data: { category: string, imageUrl?: string, linkUrl?: string }) {
   try {
     await ensureExclusiveOffersTable();
 
@@ -633,13 +641,13 @@ export async function updateExclusiveOffer(id: number, data: { category: string,
 
     if (finalImageUrl) {
       await pool.execute(
-        'UPDATE dashboard_exclusive_offers SET category = ?, image_url = ? WHERE id = ?',
-        [data.category, finalImageUrl, id]
+        'UPDATE dashboard_exclusive_offers SET category = ?, image_url = ?, link_url = ? WHERE id = ?',
+        [data.category, finalImageUrl, data.linkUrl || '', id]
       );
     } else {
       await pool.execute(
-        'UPDATE dashboard_exclusive_offers SET category = ? WHERE id = ?',
-        [data.category, id]
+        'UPDATE dashboard_exclusive_offers SET category = ?, link_url = ? WHERE id = ?',
+        [data.category, data.linkUrl || '', id]
       );
     }
 
