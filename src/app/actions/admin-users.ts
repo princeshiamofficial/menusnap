@@ -92,6 +92,9 @@ export async function checkAdminPermission(pageKey: string, action: string): Pro
 
     if (role === 'Admin') return true;
 
+    // Non-admins cannot access manage-users page
+    if (pageKey === 'manage-users') return false;
+
     if (role === 'User') {
       // Default permissions for User: view access to most, no settings or manage-users
       const defaultUserPermissions: Record<string, string[]> = {

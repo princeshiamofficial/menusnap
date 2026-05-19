@@ -31,6 +31,9 @@ export function checkClientPermission(
   // Admin has all permissions
   if (adminUser.role === 'Admin') return true;
 
+  // Non-admins cannot access manage-users
+  if (pageKey === 'manage-users') return false;
+
   // Default permissions for normal User role
   if (adminUser.role === 'User') {
     const defaultUserPermissions: Record<string, string[]> = {
