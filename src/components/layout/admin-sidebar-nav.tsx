@@ -56,21 +56,53 @@ export function AdminSidebarNav() {
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       <div className={cn(
-        "flex flex-col items-center justify-center border-b border-sidebar-border py-8 px-4 relative min-h-[100px]",
-        "group-data-[collapsible=icon]:h-[60px] group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:min-h-0"
+        "flex flex-col border-b border-sidebar-border relative transition-all duration-300",
+        "p-4 group-data-[state=collapsed]:p-2 group-data-[state=collapsed]:items-center"
       )}>
-        <div className="flex flex-col items-center group-data-[collapsible=icon]:hidden transition-all duration-300">
-          <h1 className="text-lg font-black tracking-[0.15em] flex items-center justify-center gap-1.5 leading-none">
-            <span className="text-sidebar-primary">ADMIN</span>
-            <span className="text-sidebar-foreground">PANEL</span>
-          </h1>
-          <div className="h-0.5 w-6 bg-sidebar-primary/30 rounded-full mt-3" />
+        {/* Sidebar Trigger - Only visible when collapsed */}
+        <div className="hidden group-data-[state=collapsed]:block mb-2">
+          <SidebarTrigger className="text-sidebar-foreground/50 hover:text-sidebar-primary transition-all duration-300 h-8 w-8" />
         </div>
-        
-        {/* Sidebar Trigger - Positioned Absolutely to keep text centered */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 group-data-[state=collapsed]:static group-data-[state=collapsed]:translate-y-0">
-          <SidebarTrigger className="text-sidebar-foreground/40 hover:text-sidebar-primary transition-all duration-300" />
-        </div>
+
+        {/* User Profile Card Section */}
+        {adminUser && (
+          <div className={cn(
+            "flex items-center gap-3 p-2.5 rounded-2xl bg-sidebar-accent/30 border border-sidebar-border/55 transition-all duration-300 w-full",
+            "group-data-[state=collapsed]:p-1 group-data-[state=collapsed]:bg-transparent group-data-[state=collapsed]:border-none group-data-[state=collapsed]:w-auto"
+          )}>
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              {adminUser.avatar_url ? (
+                <img 
+                  src={adminUser.avatar_url} 
+                  alt={adminUser.name || adminUser.email} 
+                  className="h-10 w-10 group-data-[state=collapsed]:h-8 group-data-[state=collapsed]:w-8 rounded-xl object-cover border border-sidebar-border shadow-sm" 
+                />
+              ) : (
+                <div className="h-10 w-10 group-data-[state=collapsed]:h-8 group-data-[state=collapsed]:w-8 rounded-xl bg-sidebar-accent border border-sidebar-border flex items-center justify-center text-sidebar-foreground font-black text-xs uppercase">
+                  {(adminUser.name || adminUser.email).substring(0, 2)}
+                </div>
+              )}
+              {/* Online Indicator Badge */}
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-sidebar shadow" />
+            </div>
+
+            {/* User Info (Hidden when collapsed) */}
+            <div className="flex flex-col min-w-0 group-data-[state=collapsed]:hidden flex-1">
+              <span className="font-bold text-xs text-sidebar-foreground truncate leading-tight">
+                {adminUser.name || adminUser.email.split('@')[0]}
+              </span>
+              <span className="text-[10px] text-sidebar-primary/80 font-bold tracking-wider uppercase mt-0.5">
+                {adminUser.role || 'User'}
+              </span>
+            </div>
+
+            {/* Sidebar Trigger - Only visible when expanded */}
+            <div className="group-data-[state=collapsed]:hidden shrink-0">
+              <SidebarTrigger className="text-sidebar-foreground/50 hover:text-sidebar-primary transition-all duration-300 h-8 w-8" />
+            </div>
+          </div>
+        )}
       </div>
       <nav className="flex-1 p-2 overflow-y-auto">
         {filteredNavItems.length > 0 ? (

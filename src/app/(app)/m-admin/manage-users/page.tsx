@@ -278,7 +278,10 @@ export default function ManageUsersPage() {
 
   // Check if a permission checkbox should be disabled
   const isPermissionDisabled = (): boolean => {
-    return false; // Always allow check/uncheck (will auto-switch to Custom role)
+    if (isEditOpen && selectedUser && adminUser?.id === selectedUser.id) {
+      return true;
+    }
+    return false;
   };
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -318,13 +321,15 @@ export default function ManageUsersPage() {
     }
 
     // Safety checks
-    if (adminUser?.id === selectedUser.id && role !== 'Admin' && selectedUser.role === 'Admin') {
-      toast({
-        title: 'Safety Check',
-        description: 'You cannot change your own role from Admin to prevent locking yourself out.',
-        variant: 'destructive'
-      });
-      return;
+    if (adminUser?.id === selectedUser.id) {
+      if (role !== selectedUser.role || JSON.stringify(customPermissions) !== JSON.stringify(selectedUser.permissions || {})) {
+        toast({
+          title: 'Safety Check',
+          description: 'You cannot change your own role or access permissions.',
+          variant: 'destructive'
+        });
+        return;
+      }
     }
 
     startTransition(async () => {
@@ -880,7 +885,7 @@ export default function ManageUsersPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-role" className="font-bold text-xs uppercase tracking-wider text-slate-500">Access Level / Role</Label>
-                  <Select value={role} onValueChange={(val: any) => setRole(val)}>
+                  <Select disabled={selectedUser ? adminUser?.id === selectedUser.id : false} value={role} onValueChange={(val: any) => setRole(val)}>
                     <SelectTrigger id="edit-role" className="h-11 rounded-xl bg-slate-50/50 border-slate-200">
                       <SelectValue placeholder="Select Role" />
                     </SelectTrigger>

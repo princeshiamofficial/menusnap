@@ -231,11 +231,30 @@ export async function updateAdminUserAction(
     }
 
     const session = await getAdminSessionAction();
-    if (session?.id === id && role && role !== 'Admin') {
-      // Prevent self-demotion from Admin
-      const [currentUser]: any = await pool.execute('SELECT role FROM admins WHERE id = ? LIMIT 1', [id]);
-      if (currentUser.length && currentUser[0].role === 'Admin') {
-        return { success: false, error: 'You cannot change your own role from Admin to prevent lockout.' };
+    if (session?.id === id) {
+      // Prevent self-modification of role or permissions
+      const [currentUser]: any = await pool.execute('SELECT role, permissions FROM admins WHERE id = ? LIMIT 1', [id]);
+      if (currentUser.length) {
+        const dbRole = currentUser[0].role;
+        const dbPerms = currentUser[0].permissions;
+
+        if (role && role !== dbRole) {
+          return { success: false, error: 'You cannot change your own role.' };
+        }
+
+        let dbPermsParsed = null;
+        if (dbPerms) {
+          try {
+            dbPermsParsed = JSON.parse(dbPerms);
+          } catch (e) {
+            dbPermsParsed = null;
+          }
+        }
+        const dbPermsStr = dbPermsParsed ? JSON.stringify(dbPermsParsed) : null;
+        const newPermsStr = permissions ? JSON.stringify(permissions) : null;
+        if (permissions !== undefined && newPermsStr !== dbPermsStr) {
+          return { success: false, error: 'You cannot change your own permissions.' };
+        }
       }
     }
 

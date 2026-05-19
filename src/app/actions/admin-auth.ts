@@ -101,7 +101,7 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
     await ensureAdminsSchema();
 
     const [rows]: any = await pool.execute(
-      `SELECT s.admin_id as id, s.email, a.role, a.permissions, a.avatar_url 
+      `SELECT s.admin_id as id, s.email, a.role, a.permissions, a.avatar_url, a.name 
        FROM admin_sessions s 
        JOIN admins a ON s.admin_id = a.id 
        WHERE s.token = ? AND s.expires_at > NOW() LIMIT 1`,
@@ -132,7 +132,8 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
       email: admin.email,
       role: admin.role || 'User',
       permissions: parsedPermissions,
-      avatar_url: admin.avatar_url
+      avatar_url: admin.avatar_url,
+      name: admin.name
     };
   } catch (e) {
     console.error('Session check error:', e);

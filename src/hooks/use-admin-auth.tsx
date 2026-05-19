@@ -18,6 +18,8 @@ export interface AdminUser {
   id: number;
   role?: string;
   permissions?: Record<string, string[]>;
+  avatar_url?: string | null;
+  name?: string | null;
 }
 
 interface AdminAuthContextType {
