@@ -138,7 +138,8 @@ export async function getDashboardSlides() {
   try {
     await ensureSlidesTable();
     const [rows]: any = await pool.execute('SELECT * FROM dashboard_slides ORDER BY created_at DESC');
-    return { success: true, slides: rows };
+    const plainSlides = (rows as any[]).map((row: any) => ({ ...row }));
+    return { success: true, slides: plainSlides };
   } catch (error: any) {
     console.error("Database Error fetching slides:", error);
     return { success: false, error: error?.message || "Failed to fetch slides", slides: [] };
@@ -235,7 +236,8 @@ export async function getDashboardSpotlights() {
       LEFT JOIN dashboard_spotlight_categories c ON s.group_name = c.name 
       ORDER BY cat_sort_order ASC, s.sort_order ASC, s.created_at DESC
     `);
-    return { success: true, spotlights: rows };
+    const plainSpotlights = (rows as any[]).map((row: any) => ({ ...row }));
+    return { success: true, spotlights: plainSpotlights };
   } catch (error: any) {
     console.error("Database Error fetching spotlights:", error);
     return { success: false, error: error?.message || "Failed to fetch spotlights", spotlights: [] };
@@ -249,7 +251,8 @@ export async function getSpotlightCategories() {
   try {
     await ensureSpotlightCategoriesTable();
     const [rows]: any = await pool.execute('SELECT * FROM dashboard_spotlight_categories ORDER BY sort_order ASC, name ASC');
-    return { success: true, categories: rows };
+    const plainCategories = (rows as any[]).map((row: any) => ({ ...row }));
+    return { success: true, categories: plainCategories };
   } catch (error: any) {
     console.error("Database Error fetching spotlight categories:", error);
     return { success: false, error: error?.message || "Failed to fetch categories", categories: [] };
@@ -530,7 +533,8 @@ export async function getExclusiveOffers() {
   try {
     await ensureExclusiveOffersTable();
     const [rows]: any = await pool.execute('SELECT * FROM dashboard_exclusive_offers ORDER BY created_at DESC');
-    return { success: true, offers: rows };
+    const plainOffers = (rows as any[]).map((row: any) => ({ ...row }));
+    return { success: true, offers: plainOffers };
   } catch (error: any) {
     console.error("Database Error fetching exclusive offers:", error);
     return { success: false, error: error?.message || "Failed to fetch exclusive offers", offers: [] };

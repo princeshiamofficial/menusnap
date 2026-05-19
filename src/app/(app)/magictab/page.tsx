@@ -672,8 +672,12 @@ export default function MagicTabPage() {
   }, []);
 
   useEffect(() => {
-    if (!clientLoading && clientUser?.type) {
-      setSelectedMenuType(clientUser.type);
+    if (!clientLoading) {
+      if (clientUser?.type) {
+        setSelectedMenuType(clientUser.type);
+      } else {
+        setSelectedMenuType('restaurant');
+      }
     }
   }, [clientUser, clientLoading]);
 

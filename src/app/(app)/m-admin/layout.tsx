@@ -11,6 +11,12 @@ import { Menu } from 'lucide-react';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { AdminNotificationPopup } from '@/components/admin/admin-notification-popup';
 
+import { usePathname } from 'next/navigation';
+import { checkClientPermission, getPermissionKey } from '@/lib/admin-permissions';
+import { ShieldAlert } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+
 function MobileSidebarTrigger() {
   const { setOpenMobile } = useSidebar();
   return (
@@ -29,7 +35,8 @@ function MobileSidebarTrigger() {
 
 // Inner component to access admin auth context after AdminAuthProvider is mounted
 function AdminLayoutContent({ children }: { children: ReactNode }) {
-  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+  const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
+  const pathname = usePathname();
 
   if (adminLoading) {
     return (
@@ -51,6 +58,10 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
     );
   }
 
+  // Permission Check
+  const pageKey = getPermissionKey(pathname);
+  const hasAccess = pageKey ? checkClientPermission(adminUser, pageKey, 'view') : true;
+
   return (
     <SidebarProvider defaultOpen={false}>
       <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r border-sidebar-border shadow-md bg-sidebar">
@@ -59,7 +70,26 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
       <SidebarInset className="bg-background min-w-0 w-full max-w-full">
         <main className="flex-1 flex flex-col min-w-0 w-full max-w-full relative">
           <AdminNotificationPopup />
-          {children}
+          {hasAccess ? (
+            children
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center min-h-[70vh]">
+              <div className="max-w-md p-8 bg-card border border-border rounded-2xl shadow-xl space-y-6 flex flex-col items-center justify-center">
+                <div className="w-16 h-16 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
+                  <ShieldAlert className="w-8 h-8" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold tracking-tight">Access Denied</h2>
+                  <p className="text-muted-foreground text-sm">
+                    You do not have permission to access the page <strong>{pageKey}</strong>. Please contact a system administrator if you believe this is an error.
+                  </p>
+                </div>
+                <Link href="/m-admin" passHref>
+                  <Button variant="default">Return to Dashboard</Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </main>
       </SidebarInset>
       <MobileSidebarTrigger />

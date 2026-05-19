@@ -461,14 +461,14 @@ export default function DashboardPage() {
     setIsDesktop(checkIsDesktop);
     
     if (checkIsDesktop) {
-      window.location.replace('/magictab');
+      window.location.replace('/magictab/');
     }
 
     setIsMounted(true);
 
     const handleResize = () => {
       if (window.innerWidth >= 768) {
-        window.location.replace('/magictab');
+        window.location.replace('/magictab/');
       }
     };
     

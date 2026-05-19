@@ -90,14 +90,21 @@ export async function adminLogoutAction(): Promise<void> {
   }
 }
 
-export async function getAdminSessionAction(): Promise<{ email: string; id: number } | null> {
+export async function getAdminSessionAction(): Promise<{ email: string; id: number; role?: string; permissions?: Record<string, string[]>; avatar_url?: string | null } | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE)?.value;
     if (!token) return null;
 
+    // Dynamically import to avoid circular dependencies
+    const { ensureAdminsSchema } = await import('./admin-users');
+    await ensureAdminsSchema();
+
     const [rows]: any = await pool.execute(
-      'SELECT admin_id as id, email FROM admin_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1',
+      `SELECT s.admin_id as id, s.email, a.role, a.permissions, a.avatar_url 
+       FROM admin_sessions s 
+       JOIN admins a ON s.admin_id = a.id 
+       WHERE s.token = ? AND s.expires_at > NOW() LIMIT 1`,
       [token]
     );
 
@@ -110,7 +117,23 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
       [formatUtcDateTime(newExpiry), token]
     );
 
-    return rows[0];
+    const admin = rows[0];
+    let parsedPermissions = null;
+    if (admin.permissions) {
+      try {
+        parsedPermissions = JSON.parse(admin.permissions);
+      } catch {
+        parsedPermissions = null;
+      }
+    }
+
+    return {
+      id: admin.id,
+      email: admin.email,
+      role: admin.role || 'User',
+      permissions: parsedPermissions,
+      avatar_url: admin.avatar_url
+    };
   } catch (e) {
     console.error('Session check error:', e);
     return null;

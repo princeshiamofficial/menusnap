@@ -17,7 +17,8 @@ export async function getMagicDocsFromMySql() {
        FROM magic_docs ORDER BY last_updated DESC`
     );
 
-    return { success: true, data: rows };
+    const plainDocs = (rows as any[]).map((row: any) => ({ ...row }));
+    return { success: true, data: plainDocs };
   } catch (error: any) {
     console.error('MySQL Magic Docs Fetch Error:', error);
     // If table doesn't exist, return empty
@@ -40,7 +41,7 @@ export async function getMagicDocByIdFromMySql(id: string) {
     );
 
     if (rows.length === 0) return { success: false, message: 'Document not found' };
-    return { success: true, data: rows[0] };
+    return { success: true, data: { ...rows[0] } };
   } catch (error: any) {
     console.error('MySQL Magic Doc Get Error:', error);
     return { success: false, message: error.message };

@@ -16,7 +16,8 @@ import {
   Package, 
   FolderOpen,
   Zap,
-  MessageSquare
+  MessageSquare,
+  UserCog
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { checkClientPermission, getPermissionKey } from '@/lib/admin-permissions';
 
 const adminNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
   { href: '/m-admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,13 +39,19 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/m-admin/magic-docs', label: 'Magic Docs', icon: FolderOpen, hasChevron: true },
+  { href: '/m-admin/manage-users', label: 'Manage Users', icon: UserCog, hasChevron: true },
   { href: '/m-admin/settings', label: 'Settings', icon: Settings, hasChevron: true },
 ];
 
 export function AdminSidebarNav() {
   const pathname = usePathname();
   const normalizedPathname = pathname.replace(/^\/panel/, '/m-admin');
-  const { adminLogout } = useAdminAuth();
+  const { adminLogout, adminUser } = useAdminAuth();
+
+  const filteredNavItems = adminNavItems.filter(item => {
+    const key = getPermissionKey(item.href);
+    return checkClientPermission(adminUser, key, 'view');
+  });
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -65,9 +73,9 @@ export function AdminSidebarNav() {
         </div>
       </div>
       <nav className="flex-1 p-2 overflow-y-auto">
-        {adminNavItems.length > 0 ? (
+        {filteredNavItems.length > 0 ? (
           <SidebarMenu>
-            {adminNavItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton

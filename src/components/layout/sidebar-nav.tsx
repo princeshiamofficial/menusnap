@@ -28,10 +28,10 @@ import { useClientAuth } from '@/hooks/use-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const mainNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
-  { href: '/magictab', label: 'MagicTab', icon: ListOrdered, hasChevron: true },
-  { href: '/templates', label: 'Templates', icon: Layers, hasChevron: true },
-  { href: '/draft', label: 'Draft', icon: FileEdit, hasChevron: true },
-  { href: '/order-history', label: 'Order History', icon: HistoryIcon, hasChevron: true },
+  { href: '/magictab/', label: 'MagicTab', icon: ListOrdered, hasChevron: true },
+  { href: '/templates/', label: 'Templates', icon: Layers, hasChevron: true },
+  { href: '/draft/', label: 'Draft', icon: FileEdit, hasChevron: true },
+  { href: '/order-history/', label: 'Order History', icon: HistoryIcon, hasChevron: true },
   { href: 'https://store.colorhutbd.xyz', label: 'Store', icon: ShoppingBag },
 ];
 
@@ -47,7 +47,7 @@ export function SidebarNav() {
         "group-data-[state=expanded]:p-4 group-data-[state=expanded]:h-[80px]"
       )}>
         <Link 
-          href="/magictab" 
+          href="/magictab/" 
           className="group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded-sm flex items-center"
         >
           <div className="relative h-12 w-44 sm:w-48">

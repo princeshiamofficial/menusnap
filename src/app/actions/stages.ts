@@ -59,7 +59,8 @@ export async function getStages() {
   try {
     await ensureStagesTable();
     const [rows]: any = await pool.execute('SELECT * FROM client_stages ORDER BY sort_order ASC, created_at ASC');
-    return { success: true, data: rows };
+    const plainStages = (rows as any[]).map((row: any) => ({ ...row }));
+    return { success: true, data: plainStages };
   } catch (error: any) {
     console.error("Database Error fetching stages:", error);
     return { success: false, error: error?.message || "Failed to fetch stages" };

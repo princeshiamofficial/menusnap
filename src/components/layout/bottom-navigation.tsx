@@ -9,11 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef, useMemo } from 'react';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-  { href: '/magictab', label: 'MagicTab', icon: ListOrdered },
-  { href: '/templates', label: 'Templates', icon: Layers },
-  { href: '/draft', label: 'Drafts', icon: FileEdit },
-  { href: '/order-history', label: 'History', icon: History },
+  { href: '/dashboard/', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/magictab/', label: 'MagicTab', icon: ListOrdered },
+  { href: '/templates/', label: 'Templates', icon: Layers },
+  { href: '/draft/', label: 'Drafts', icon: FileEdit },
+  { href: '/order-history/', label: 'History', icon: History },
 ];
 
 export function BottomNavigation() {

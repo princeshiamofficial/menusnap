@@ -137,12 +137,16 @@ export async function getAllResponses() {
     const [freeDesign]: any = await pool.execute('SELECT *, "Free Design" as type FROM responses_free_design ORDER BY created_at DESC');
     const [teamTracker]: any = await pool.execute('SELECT *, "Team Tracker" as type FROM responses_team_tracker ORDER BY created_at DESC');
     
+    const plainHiring = (hiring as any[]).map((row: any) => ({ ...row }));
+    const plainFreeDesign = (freeDesign as any[]).map((row: any) => ({ ...row }));
+    const plainTeamTracker = (teamTracker as any[]).map((row: any) => ({ ...row }));
+
     return { 
       success: true, 
       data: {
-        hiring,
-        freeDesign,
-        teamTracker
+        hiring: plainHiring,
+        freeDesign: plainFreeDesign,
+        teamTracker: plainTeamTracker
       }
     };
   } catch (error) {

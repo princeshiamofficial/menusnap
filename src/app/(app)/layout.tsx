@@ -1,7 +1,7 @@
 
 "use client";
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
@@ -105,6 +105,15 @@ function GlobalLoginSuccessTracker() {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const isAdminRoute = pathname.startsWith('/m-admin') || pathname.startsWith('/panel');
   const isMarketingStandalone = pathname.startsWith('/marketing-consultation') || 
                                 pathname.startsWith('/free-design') || 
@@ -152,14 +161,32 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <SidebarNav />
         </Sidebar>
         <SidebarInset className="bg-background">
-          <ScrollArea className={cn("h-screen", (pathname === "/magictab" || pathname === "/magictab/" || pathname === "/ebook" || pathname === "/ebook/") ? "pb-0" : "pb-16 md:pb-0")}> 
-            <main className={cn(
-              "flex-1",
-              (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/templates" || pathname === "/templates/" || pathname === "/draft" || pathname === "/draft/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6 sm:p-8 md:p-10"
-            )}>
-              {children}
-            </main>
-          </ScrollArea>
+          {isMobile ? (
+            <div 
+              className={cn(
+                "h-[100dvh] w-full min-w-0 max-w-full",
+                (pathname === "/magictab" || pathname === "/magictab/" || pathname === "/ebook" || pathname === "/ebook/") 
+                  ? "overflow-hidden" 
+                  : "overflow-y-auto pb-16"
+              )}
+            >
+              <main className={cn(
+                "flex-grow min-w-0 w-full max-w-full",
+                (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/templates" || pathname === "/templates/" || pathname === "/draft" || pathname === "/draft/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6"
+              )}>
+                {children}
+              </main>
+            </div>
+          ) : (
+            <ScrollArea className={cn("h-screen", (pathname === "/magictab" || pathname === "/magictab/" || pathname === "/ebook" || pathname === "/ebook/") ? "pb-0" : "pb-16 md:pb-0")}> 
+              <main className={cn(
+                "flex-1",
+                (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/templates" || pathname === "/templates/" || pathname === "/draft" || pathname === "/draft/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-6 sm:p-8 md:p-10"
+              )}>
+                {children}
+              </main>
+            </ScrollArea>
+          )}
         </SidebarInset>
 
         {pathname !== "/dashboard" && pathname !== "/dashboard/" && pathname !== "/magictab" && pathname !== "/magictab/" && pathname !== "/templates" && pathname !== "/templates/" && pathname !== "/draft" && pathname !== "/draft/" && pathname !== "/ebook" && pathname !== "/ebook/" && pathname !== "/order-history" && pathname !== "/order-history/" && !pathname.startsWith("/success") && <SpeedDialFAB />}

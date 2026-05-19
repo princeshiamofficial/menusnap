@@ -205,7 +205,8 @@ export async function getCategoriesFromMySql(type?: 'restaurant' | 'parlour', vi
     query += ' ORDER BY sortOrder ASC';
     
     const [rows] = await pool.execute(query, params);
-    return { success: true, data: rows };
+    const plainCategories = (rows as any[]).map((cat: any) => ({ ...cat }));
+    return { success: true, data: plainCategories };
   } catch (error: any) {
     console.error('MySQL Categories Fetch Error:', error);
     return { success: false, message: error.message || 'Failed to fetch categories.' };

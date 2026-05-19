@@ -88,15 +88,17 @@ import { DateRange } from "react-day-picker";
 
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { getLeads, updateClientNote, updateClientStage, getClientHistory, deleteClient } from '@/app/actions/clients';
 import { getStages, addStage, updateStage, deleteStage } from '@/app/actions/stages';
+import { getAdminUsersAction } from '@/app/actions/admin-users';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 
 // Help map icon names to Lucide icons
 const IconMap: Record<string, React.ElementType> = {
   UserPlus, MessageCircle, Star, Heart, XCircle, DoorOpen, ShieldAlert, 
-  HelpCircle, MessageSquare, Zap, Tag, StickyNote, RefreshCw, Layers, ClipboardList, ShoppingCart, Users, LayoutDashboard, Globe, AlertCircle, CheckCircle2, ChevronDown, Package, FolderOpen, LogOut, Building2, Phone, Calendar, Clock, Filter, ArrowUpDown, ExternalLink, Trash2, Trash, ShieldAlert
+  HelpCircle, MessageSquare, Zap, Tag, StickyNote, RefreshCw, Layers, ClipboardList, ShoppingCart, Users, LayoutDashboard, Globe, AlertCircle, CheckCircle2, ChevronDown, Package, FolderOpen, LogOut, Building2, Phone, Calendar, Clock, Filter, ArrowUpDown, ExternalLink, Trash2, Trash
 };
 
 const getIcon = (iconName: string) => IconMap[iconName] || HelpCircle;
@@ -112,6 +114,101 @@ const toTitleCase = (str: string) => {
   return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
 
+const TAILWIND_COLOR_MAP: Record<string, { bg: string; text: string }> = {
+  slate: { bg: '#f1f5f9', text: '#334155' },
+  blue: { bg: '#dbeafe', text: '#1d4ed8' },
+  amber: { bg: '#fef3c7', text: '#92400e' },
+  rose: { bg: '#ffe4e6', text: '#be123c' },
+  emerald: { bg: '#d1fae5', text: '#047857' },
+  indigo: { bg: '#e0e7ff', text: '#4338ca' },
+  violet: { bg: '#ede9fe', text: '#6d28d9' },
+  orange: { bg: '#ffedd5', text: '#c2410c' },
+  cyan: { bg: '#ecfeff', text: '#0e7490' },
+  pink: { bg: '#fce7f3', text: '#be185d' },
+  lime: { bg: '#f7fee7', text: '#4d7c0f' },
+  sky: { bg: '#e0f2fe', text: '#0369a1' },
+  teal: { bg: '#ccfbf1', text: '#0f766e' },
+  fuchsia: { bg: '#fae8ff', text: '#a21caf' },
+  red: { bg: '#fee2e2', text: '#b91c1c' },
+  yellow: { bg: '#fef9c3', text: '#854d0e' },
+  gray: { bg: '#f3f4f6', text: '#374151' },
+  zinc: { bg: '#f4f4f5', text: '#3f3f46' },
+  neutral: { bg: '#f5f5f5', text: '#404040' },
+  stone: { bg: '#f5f5f4', text: '#44403c' },
+  green: { bg: '#dcfce7', text: '#15803d' },
+};
+
+const lightenColor = (hex: string, percent = 90): string => {
+  const cleanHex = hex.length === 3 ? hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2] : hex;
+  const r = parseInt(cleanHex.slice(0, 2), 16);
+  const g = parseInt(cleanHex.slice(2, 4), 16);
+  const b = parseInt(cleanHex.slice(4, 6), 16);
+  
+  const lr = Math.min(255, Math.max(0, Math.round(r + (255 - r) * (percent / 100))));
+  const lg = Math.min(255, Math.max(0, Math.round(g + (255 - g) * (percent / 100))));
+  const lb = Math.min(255, Math.max(0, Math.round(b + (255 - b) * (percent / 100))));
+  
+  return `#${lr.toString(16).padStart(2, '0')}${lg.toString(16).padStart(2, '0')}${lb.toString(16).padStart(2, '0')}`;
+};
+
+const darkenColor = (hex: string, percent = 45): string => {
+  const cleanHex = hex.length === 3 ? hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2] : hex;
+  const r = parseInt(cleanHex.slice(0, 2), 16);
+  const g = parseInt(cleanHex.slice(2, 4), 16);
+  const b = parseInt(cleanHex.slice(4, 6), 16);
+  
+  const dr = Math.min(255, Math.max(0, Math.round(r * (percent / 100))));
+  const dg = Math.min(255, Math.max(0, Math.round(g * (percent / 100))));
+  const db = Math.min(255, Math.max(0, Math.round(b * (percent / 100))));
+  
+  return `#${dr.toString(16).padStart(2, '0')}${dg.toString(16).padStart(2, '0')}${db.toString(16).padStart(2, '0')}`;
+};
+
+const getSolidBadgeStyle = (colorClasses: string): React.CSSProperties => {
+  const defaultStyle: React.CSSProperties = {
+    backgroundColor: '#f1f5f9',
+    color: '#334155',
+  };
+  
+  if (!colorClasses) return defaultStyle;
+  
+  const bgPart = colorClasses.split(' ').find(p => p.startsWith('bg-'));
+  if (!bgPart) return defaultStyle;
+
+  // Case 1: Custom hex background like bg-[#123456]
+  const hexMatch = bgPart.match(/^bg-\[#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\]/);
+  if (hexMatch) {
+    const hex = hexMatch[1];
+    return {
+      backgroundColor: lightenColor(hex, 88),
+      color: darkenColor(hex, 45),
+    };
+  }
+
+  // Case 2: Standard Tailwind class like bg-blue-50 or bg-emerald-500
+  const twMatch = bgPart.match(/^bg-([a-z]+)-([0-9]+)$/);
+  if (twMatch) {
+    const colorName = twMatch[1];
+    const colorHexes = TAILWIND_COLOR_MAP[colorName];
+    if (colorHexes) {
+      return {
+        backgroundColor: colorHexes.bg,
+        color: colorHexes.text,
+      };
+    }
+  }
+
+  if (bgPart === 'bg-white') {
+    return {
+      backgroundColor: '#ffffff',
+      color: '#0f172a',
+      border: '1px solid #e2e8f0',
+    };
+  }
+
+  return defaultStyle;
+};
+
 interface Contact {
   id: number;
   business_name: string;
@@ -120,6 +217,7 @@ interface Contact {
   division?: string;
   district?: string;
   latest_note: string | null;
+  updated_by_id?: number | null;
   stage: string;
   last_login: string;
   created_at: string;
@@ -196,7 +294,7 @@ const DEFAULT_STAGES = [
 
 export default function ContactsPage() {
 
-  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+  const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState<any[]>(DEFAULT_STAGES);
@@ -213,6 +311,7 @@ export default function ContactsPage() {
     to: endOfMonth(new Date())
   });
   const [timezone, setTimezone] = useState<string>('');
+  const [adminsList, setAdminsList] = useState<any[]>([]);
 
   // Performance Optimization: Defer heavy state changes
   const deferredSearchTerm = React.useDeferredValue(searchTerm);
@@ -255,8 +354,20 @@ export default function ContactsPage() {
     setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
     if (isAdminLoggedIn) {
       fetchStages();
+      fetchAdmins();
     }
   }, [isAdminLoggedIn]);
+
+  const fetchAdmins = async () => {
+    try {
+      const result = await getAdminUsersAction();
+      if (result.success && result.data) {
+        setAdminsList(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admins list:", err);
+    }
+  };
 
   const fetchStages = async () => {
     try {
@@ -383,9 +494,9 @@ export default function ContactsPage() {
 
     setIsUpdatingStage(true);
     try {
-      const result = await updateClientStage(clientId, stage, note);
+      const result = await updateClientStage(clientId, stage, note, adminUser?.id);
       if (result.success) {
-        setContacts(prev => prev.map(c => c.id === clientId ? { ...c, stage, latest_note: note } : c));
+        setContacts(prev => prev.map(c => c.id === clientId ? { ...c, stage, latest_note: note, updated_by_email: adminUser?.email } : c));
         toast({
           title: "Stage updated",
           description: `Moved to ${stage}.`,
@@ -433,13 +544,13 @@ export default function ContactsPage() {
 
     setIsAddingHistoryNote(true);
     try {
-      const result = await updateClientStage(historyClientId, client.stage, newHistoryNote);
+      const result = await updateClientStage(historyClientId, client.stage, newHistoryNote, adminUser?.id);
       if (result.success) {
         setNewHistoryNote('');
         // Refresh history
         fetchHistory(historyClientId);
         // Refresh contacts list to show latest note
-        setContacts(prev => prev.map(c => c.id === historyClientId ? { ...c, latest_note: newHistoryNote } : c));
+        setContacts(prev => prev.map(c => c.id === historyClientId ? { ...c, latest_note: newHistoryNote, updated_by_email: adminUser?.email } : c));
         toast({ title: "Note added to history" });
       } else {
         toast({ title: "Failed to add note", description: result.error, variant: "destructive" });
@@ -603,19 +714,19 @@ export default function ContactsPage() {
               <CardDescription className="text-slate-400 font-medium break-words text-sm sm:text-base">Real-time client synchronization with WhatsApp validation.</CardDescription>
             </div>
             <div className="flex flex-wrap lg:flex-nowrap items-center gap-3 w-full lg:w-auto">
-              {/* Stage Filter */}
+              {/* Status Filter */}
               <Select value={filterStage} onValueChange={setFilterStage}>
                 <SelectTrigger className="w-full sm:w-[140px] lg:w-44 h-11 rounded-2xl bg-slate-50/50 border-slate-200 focus:ring-0 focus:border-slate-300 transition-all font-bold text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 shrink-0 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <Filter className="h-3.5 w-3.5" />
-                    <SelectValue placeholder="All Stages" />
+                    <SelectValue placeholder="All Statuses" />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1 min-w-[200px]">
                   <SelectItem value="All" className="text-[12px] font-bold tracking-tight rounded-xl py-2 px-3 focus:bg-slate-50 transition-colors">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-slate-200" />
-                      All Stages
+                      All Statuses
                     </div>
                   </SelectItem>
                   {stages.map((stage) => (
@@ -659,23 +770,25 @@ export default function ContactsPage() {
               <Table className="hidden md:table">
                 <TableHeader className="bg-slate-50/80 backdrop-blur-md sticky top-0 z-30 shadow-sm">
                   <TableRow className="hover:bg-transparent border-slate-100">
-                    <TableHead className="w-[60px] text-center font-bold text-[11px] uppercase tracking-widest text-slate-400 pl-6">SL</TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 py-5">Client Name</TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Category</TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">WhatsApp</TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Address</TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}>
+                    <TableHead className="w-[60px] text-center font-semibold text-xs text-slate-500 pl-6">SL</TableHead>
+                    <TableHead className="font-semibold text-xs text-slate-500 py-5">Client Name</TableHead>
+                    <TableHead className="font-semibold text-xs text-slate-500">WhatsApp</TableHead>
+                    <TableHead className="font-semibold text-xs text-slate-500">Address</TableHead>
+                    <TableHead className="font-semibold text-xs text-slate-500 cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}>
                       <div className="flex items-center gap-1.5">
                         Joined
                         <ArrowUpDown className="h-3 w-3" />
                       </div>
                     </TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">
+                    <TableHead className="font-semibold text-xs text-slate-500">
                       Last Activity
                     </TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 w-44">Stage</TableHead>
-                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400 w-64">Updates</TableHead>
-                    <TableHead className="text-right font-bold text-[11px] uppercase tracking-widest text-slate-400 pr-6">Contact</TableHead>
+                    <TableHead className="font-semibold text-xs text-slate-500">
+                      Updated By
+                    </TableHead>
+                    <TableHead className="font-semibold text-xs text-slate-500 w-36">Status</TableHead>
+                    <TableHead className="font-semibold text-xs text-slate-500 w-64">Comments</TableHead>
+                    <TableHead className="text-right font-semibold text-xs text-slate-500 pr-6">Contact</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -683,11 +796,15 @@ export default function ContactsPage() {
                     Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i} className="border-slate-50">
                         <TableCell><Skeleton className="h-4 w-4 mx-auto" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-48 mb-1" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                        <TableCell>
+                          <Skeleton className="h-5 w-48 mb-1.5" />
+                          <Skeleton className="h-3.5 w-24" />
+                        </TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-28" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-6 w-36 rounded-full" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-52" /></TableCell>
                         <TableCell className="text-right pr-6"><Skeleton className="h-10 w-28 ml-auto rounded-full" /></TableCell>
@@ -695,7 +812,7 @@ export default function ContactsPage() {
                     ))
                   ) : filteredContacts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-64 text-center">
+                      <TableCell colSpan={10} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center gap-3 py-10">
                             <div className="p-4 bg-slate-50 rounded-full text-slate-300">
                                 <Search className="h-8 w-8" />
@@ -710,6 +827,7 @@ export default function ContactsPage() {
                         key={contact.id} 
                         contact={contact} 
                         stages={stages}
+                        adminsList={adminsList}
                         index={totalContacts - index}
                         onStageChange={(val: string) => {
                           setPendingStage({ id: contact.id, stage: val, currentNote: contact.latest_note || '' });
@@ -797,13 +915,13 @@ export default function ContactsPage() {
           </CardContent>
         </Card>
         
-        {/* Stage Change Note Dialog */}
+        {/* Status Change Note Dialog */}
         <Dialog open={!!pendingStage} onOpenChange={(open) => !open && setPendingStage(null)}>
           <DialogContent className="sm:max-w-md rounded-3xl">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <StickyNote className="h-5 w-5 text-primary" />
-                Change Stage to {pendingStage?.stage}
+                Change Status to {stages.find(s => s.value === pendingStage?.stage)?.label || ''}
               </DialogTitle>
               <DialogDescription className="font-medium text-slate-500">
                 {stages.find(s => s.value === pendingStage?.stage)?.hint}
@@ -900,6 +1018,7 @@ export default function ContactsPage() {
                         group={group} 
                         stages={stages} 
                         formatDate={formatDate}
+                        adminsList={adminsList}
                         isLast={gIdx === groups.length - 1}
                       />
                     ));
@@ -996,7 +1115,7 @@ export default function ContactsPage() {
 }
 
 // Sub-components for better organization and performance
-const ContactRow = React.memo(function ContactRow({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
+const ContactRow = React.memo(function ContactRow({ contact, index, stages, adminsList, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
   const currentStageInfo = stages.find((s: any) => s.value === contact.stage) || stages[0];
 
   return (
@@ -1004,16 +1123,14 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, onSt
       onDoubleClick={onDeleteTrigger}
       className="group border-slate-50 hover:bg-rose-50/30 transition-all duration-200 cursor-context-menu select-none active:bg-rose-50/50"
     >
-      <TableCell className="text-center font-mono text-xs text-slate-300 group-hover:text-slate-400 pl-6 transition-colors">
+      <TableCell className="text-center font-mono text-xs text-slate-400 group-hover:text-slate-500 pl-6 transition-colors">
         {index.toString().padStart(2, '0')}
       </TableCell>
       <TableCell>
-        <span className="font-bold text-slate-700 text-sm tracking-tight capitalize">{contact.business_name}</span>
-      </TableCell>
-      <TableCell>
-          <Badge variant="secondary" className="px-3 py-0.5 text-[10px] uppercase font-extrabold bg-slate-100 text-slate-500 border-none rounded-full whitespace-nowrap group-hover:bg-slate-200 transition-colors">
-              {contact.business_type}
-          </Badge>
+        <div className="flex flex-col">
+          <span className="font-bold text-slate-700 text-sm tracking-tight capitalize">{contact.business_name}</span>
+          <span className="text-[11px] text-slate-500 font-semibold capitalize mt-0.5 tracking-tight">{contact.business_type || '-'}</span>
+        </div>
       </TableCell>
       <TableCell>
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
@@ -1022,19 +1139,42 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, onSt
           </div>
       </TableCell>
       <TableCell>
-          <div className="flex items-center gap-1.5 text-[12px] font-bold text-slate-500 tracking-tight">
-              <Globe className="h-3.5 w-3.5 text-slate-300" />
+          <div className="text-[12px] font-bold text-slate-600 tracking-tight">
               {contact.district && contact.division ? `${toTitleCase(contact.district)}, ${toTitleCase(contact.division)}` : '-'}
           </div>
       </TableCell>
-      <TableCell className="text-[13px] text-slate-400 font-medium whitespace-nowrap">
-          <div className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-slate-300" />
-              {formatDate(contact.created_at)}
-          </div>
+      <TableCell className="text-[13px] text-slate-500 font-medium whitespace-nowrap">
+          {formatDate(contact.created_at)}
       </TableCell>
-      <TableCell className="text-[12px] text-slate-400 font-medium whitespace-nowrap">
+      <TableCell className="text-[12px] text-slate-500 font-medium whitespace-nowrap">
         {formatDate(contact.last_login, true)}
+      </TableCell>
+      <TableCell className="text-[12px] text-slate-500 font-bold whitespace-nowrap">
+        {(() => {
+          const updater = contact.updated_by_id ? adminsList.find(a => a.id === contact.updated_by_id) : null;
+          const updaterEmail = updater?.email || '';
+          const updaterAvatar = updater?.avatar_url || '';
+          const updaterName = updater?.name || '';
+
+          return contact.updated_by_id && updaterEmail ? (
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6 border border-slate-100 shadow-sm shrink-0">
+                <AvatarImage 
+                  src={updaterAvatar || `https://api.dicebear.com/7.x/initials/svg?seed=${updaterEmail}`} 
+                  alt={updaterEmail} 
+                />
+                <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-bold">
+                  {(updaterName || updaterEmail || 'A').substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className={`bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-lg text-[10px] max-w-[120px] truncate ${updaterName ? "font-sans font-semibold text-slate-700" : "font-mono font-medium text-slate-600"}`} title={updaterEmail}>
+                {updaterName || updaterEmail.split('@')[0]}
+              </span>
+            </div>
+          ) : (
+            <span className="text-slate-400 italic text-[11px] font-normal pl-2">Not updated</span>
+          );
+        })()}
       </TableCell>
       <TableCell>
         <Select 
@@ -1044,11 +1184,9 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, onSt
           <SelectTrigger 
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            className={cn(
-            "h-8 w-40 text-[11px] font-bold uppercase tracking-wider rounded-full border px-3 transition-all hover:shadow-md flex items-center gap-1.5",
-            currentStageInfo.color
-          )}>
-            {React.createElement(getIcon(currentStageInfo.iconName || 'HelpCircle'), { className: "h-3.5 w-3.5 shrink-0" })}
+            style={getSolidBadgeStyle(currentStageInfo.color)}
+            className="h-7 w-fit min-w-[105px] text-[11px] font-bold tracking-wide rounded-full border-none px-4 transition-all hover:shadow-md flex items-center justify-center text-center [&>svg]:hidden hover:opacity-90 shadow-sm"
+          >
             <span className="truncate">{currentStageInfo.label}</span>
           </SelectTrigger>
           <SelectContent className="rounded-2xl border-slate-100 shadow-2xl p-1">
@@ -1069,7 +1207,9 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, onSt
         </Select>
       </TableCell>
       <TableCell className="max-w-[250px]">
-          <div className="flex items-center gap-2.5 group/update cursor-pointer" 
+        {contact.latest_note ? (
+          <div 
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 border border-purple-100 rounded-full text-[11px] font-bold text-black shadow-sm hover:bg-purple-100 hover:shadow-md transition-all cursor-pointer max-w-full"
             title="Click to view history"
             onClick={(e) => {
               e.stopPropagation();
@@ -1078,13 +1218,24 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, onSt
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
           >
-              <div className="p-1.5 bg-slate-50 text-slate-400 rounded-lg group-hover/update:bg-primary/10 group-hover/update:text-primary group-hover/update:shadow-sm transition-all shrink-0">
-                  <Clock className="h-3.5 w-3.5" />
-              </div>
-              <span className="text-[13px] text-slate-500 font-medium truncate block leading-relaxed">
-                  {contact.latest_note || <span className="text-slate-300 italic font-normal text-xs">Waiting for first update...</span>}
-              </span>
+            <Clock className="h-3 w-3 text-black shrink-0" />
+            <span className="truncate max-w-[180px]">{contact.latest_note}</span>
           </div>
+        ) : (
+          <div 
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-50/30 border border-slate-100/50 rounded-full text-[11px] font-medium text-slate-400 hover:bg-slate-50 hover:text-slate-600 hover:border-slate-200 transition-all cursor-pointer max-w-full"
+            title="Click to view history"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewHistory();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
+            <Clock className="h-3 w-3 text-slate-300 shrink-0" />
+            <span className="truncate italic text-[10px]">Waiting for first update...</span>
+          </div>
+        )}
       </TableCell>
       <TableCell className="text-right pr-6">
         <div className="flex items-center justify-end gap-2 shrink-0">
@@ -1141,12 +1292,10 @@ const MobileContactCard = React.memo(function MobileContactCard({ contact, index
                         <SelectTrigger 
                             onMouseDown={(e) => e.stopPropagation()}
                             onTouchStart={(e) => e.stopPropagation()}
-                            className={cn(
-                            "h-6 w-fit text-[9px] font-black uppercase tracking-[0.1em] rounded-full border px-3 bg-opacity-10 shadow-none transition-all focus:ring-0 flex items-center gap-1.5",
-                            stageInfo.color
-                        )}>
-                            {React.createElement(getIcon(stageInfo.iconName || 'HelpCircle'), { className: "h-3 w-3 shrink-0" })}
-                            <span>{stageInfo.label}</span>
+                            style={getSolidBadgeStyle(stageInfo.color)}
+                            className="h-6 w-fit min-w-[85px] text-[10px] font-bold tracking-wide rounded-full border-none px-3 transition-all hover:shadow-md flex items-center justify-center text-center [&>svg]:hidden hover:opacity-90 shadow-sm"
+                        >
+                            <span className="truncate">{stageInfo.label}</span>
                         </SelectTrigger>
                         <SelectContent className="rounded-3xl border-slate-100 shadow-2xl p-2">
                             {stages.map((stage: any) => (
@@ -1536,7 +1685,7 @@ function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
   );
 }
 
-function HistoryGroup({ group, stages, formatDate, isLast }: any) {
+function HistoryGroup({ group, stages, formatDate, adminsList, isLast }: any) {
   const stageInfo = stages.find((s: any) => s.value === group.stage) || stages[0];
   const Icon = getIcon(stageInfo.iconName || 'HelpCircle');
 
@@ -1569,9 +1718,34 @@ function HistoryGroup({ group, stages, formatDate, isLast }: any) {
                 {item.note}
               </p>
             </div>
-            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest pl-1 tabular-nums">
-              {formatDate(item.created_at, true)}
-            </span>
+            <div className="flex items-center gap-2 pl-1 mt-0.5">
+              <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest tabular-nums">
+                {formatDate(item.created_at, true)}
+              </span>
+              {(() => {
+                const updater = item.updated_by_id ? adminsList.find((a: any) => a.id === item.updated_by_id) : null;
+                if (!updater) return null;
+                return (
+                  <>
+                    <span className="text-slate-200 text-[9px]">•</span>
+                    <div className="flex items-center gap-1">
+                      <Avatar className="h-4 w-4 border border-slate-100 shadow-sm shrink-0">
+                        <AvatarImage 
+                          src={updater.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${updater.email}`} 
+                          alt={updater.email} 
+                        />
+                        <AvatarFallback className="bg-primary/10 text-primary text-[6px] font-bold">
+                          {(updater.name || updater.email || 'A').substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-[9px] font-semibold text-slate-500 font-sans">
+                        {updater.name || updater.email.split('@')[0]}
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
           </motion.div>
         ))}
       </div>

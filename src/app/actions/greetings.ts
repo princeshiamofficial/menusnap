@@ -39,7 +39,8 @@ export async function getGreetings() {
     try {
         await ensureGreetingsTable();
         const [rows]: any = await pool.query('SELECT * FROM greetings ORDER BY created_at DESC');
-        return { success: true, data: rows };
+        const plainGreetings = (rows as any[]).map((row: any) => ({ ...row }));
+        return { success: true, data: plainGreetings };
     } catch (error) {
         console.error("Error fetching greetings:", error);
         return { success: false, error: "Failed to fetch greetings." };

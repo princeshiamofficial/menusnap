@@ -16,6 +16,8 @@ import {
 export interface AdminUser {
   email: string;
   id: number;
+  role?: string;
+  permissions?: Record<string, string[]>;
 }
 
 interface AdminAuthContextType {

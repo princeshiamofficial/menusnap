@@ -19,8 +19,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Enforce trailing slash for client pages
-  if (!pathname.endsWith('/')) {
+  // 2. Enforce trailing slash for client pages (GET requests only, ignore RSC/internal fetches)
+  if (request.method === 'GET' && !pathname.endsWith('/') && !request.nextUrl.searchParams.has('_rsc')) {
     const url = request.nextUrl.clone();
     url.pathname = pathname + '/';
     return NextResponse.redirect(url, 301); // Permanent redirect for SEO

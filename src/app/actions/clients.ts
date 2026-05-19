@@ -62,6 +62,13 @@ async function ensureClientsTable() {
         FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // 5. Check if the 'updated_by' column exists in client_notes
+    const [updatedByCol]: any = await pool.execute("SHOW COLUMNS FROM client_notes LIKE 'updated_by'");
+    if (updatedByCol.length === 0) {
+      console.log("Adding 'updated_by' column to client_notes table...");
+      await pool.execute("ALTER TABLE client_notes ADD COLUMN updated_by INT NULL");
+    }
   } catch (err) {
     console.error("Critical Database initialization error:", err);
     throw err; // Propagate error so calling functions know initialization failed
@@ -171,6 +178,7 @@ export async function getLeads(
     const query = `
       SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.stage, c.division, c.district,
       (SELECT note FROM client_notes WHERE client_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_note,
+      (SELECT a.id FROM client_notes cn JOIN admins a ON cn.updated_by = a.id WHERE cn.client_id = c.id ORDER BY cn.created_at DESC LIMIT 1) as updated_by_id,
       DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i:%s') as last_login,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') as created_at
       FROM clients c 
@@ -219,7 +227,7 @@ export async function getLeads(
 /**
  * Updates the stage for a specific client.
  */
-export async function updateClientStage(clientId: number, stage: string, note?: string) {
+export async function updateClientStage(clientId: number, stage: string, note?: string, adminId?: number) {
   try {
     await ensureClientsTable();
 
@@ -229,8 +237,8 @@ export async function updateClientStage(clientId: number, stage: string, note?: 
     // 2. If a note is provided, insert it into the history table
     if (note && note.trim()) {
       await pool.execute(
-        'INSERT INTO client_notes (client_id, stage, note) VALUES (?, ?, ?)',
-        [clientId, stage, note]
+        'INSERT INTO client_notes (client_id, stage, note, updated_by) VALUES (?, ?, ?, ?)',
+        [clientId, stage, note, adminId || null]
       );
     }
 
@@ -247,12 +255,14 @@ export async function updateClientStage(clientId: number, stage: string, note?: 
 export async function getClientHistory(clientId: number) {
   try {
     const [rows]: any = await pool.execute(
-      `SELECT id, stage, note, 
-       DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at 
-       FROM client_notes WHERE client_id = ? ORDER BY created_at ASC`,
+      `SELECT cn.id, cn.stage, cn.note, cn.updated_by as updated_by_id,
+       DATE_FORMAT(cn.created_at, '%Y-%m-%d %H:%i:%s') as created_at 
+       FROM client_notes cn
+       WHERE cn.client_id = ? ORDER BY cn.created_at ASC`,
       [clientId]
     );
-    return { success: true, history: rows };
+    const plainHistory = (rows as any[]).map((row: any) => ({ ...row }));
+    return { success: true, history: plainHistory };
   } catch (error: any) {
     console.error("Database Error fetching client history:", error);
     return { success: false, history: [], error: error?.message || "Failed to fetch history" };
@@ -316,7 +326,8 @@ export async function getLeadsTrend() {
     `);
 
     // Ensure all 12 months are represented if necessary, or just return what we have
-    return { success: true, data: rows };
+    const plainTrend = (rows as any[]).map((row: any) => ({ ...row }));
+    return { success: true, data: plainTrend };
   } catch (error) {
     console.error("Database Error fetching leads trend:", error);
     return { success: false, data: [] };
