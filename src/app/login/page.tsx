@@ -68,7 +68,7 @@ export default function LoginPage() {
       const success = await login(businessName, type, whatsapp, division, district, '/dashboard#login-success');
       if (success) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('loginSuccessUntil', (Date.now() + 120000).toString());
+          localStorage.setItem('loginSuccessUntil', (Date.now() + 20000).toString());
           localStorage.setItem('loginToastShown', 'false');
         }
       } else {

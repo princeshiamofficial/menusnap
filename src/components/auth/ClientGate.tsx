@@ -55,9 +55,9 @@ export function ClientGate({ children }: ClientGateProps) {
       setShowSuccess(false);
       setIsFullyAuthorized(true);
       
-      // Store 2 minutes window and toast shown state
+      // Store 20 seconds window and toast shown state
       if (typeof window !== 'undefined') {
-        localStorage.setItem('loginSuccessUntil', (Date.now() + 120000).toString());
+        localStorage.setItem('loginSuccessUntil', (Date.now() + 20000).toString());
         localStorage.setItem('loginToastShown', 'false');
         window.location.hash = 'login-success';
       }
