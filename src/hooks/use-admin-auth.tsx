@@ -2,8 +2,8 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, createContext, useContext, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import {
   adminLoginAction,
@@ -39,10 +39,35 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const [adminLoading, setAdminLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const adminUserRef = useRef(adminUser);
+  useEffect(() => {
+    adminUserRef.current = adminUser;
+  }, [adminUser]);
+
+  const checkSession = useCallback(async () => {
+    try {
+      const session = await getAdminSessionAction();
+      if (!session && adminUserRef.current) {
+        setAdminUser(null);
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive"
+        });
+        router.push('/m-admin');
+      } else if (session && JSON.stringify(session) !== JSON.stringify(adminUserRef.current)) {
+        setAdminUser(session);
+      }
+    } catch {
+      setAdminUser(null);
+    }
+  }, [toast, router]);
 
   // On mount, check if a valid session cookie exists
   useEffect(() => {
-    async function checkSession() {
+    async function checkSessionInitial() {
       try {
         const session = await getAdminSessionAction();
         setAdminUser(session);
@@ -52,8 +77,36 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setAdminLoading(false);
       }
     }
-    checkSession();
+    checkSessionInitial();
   }, []);
+
+  // Real-time checks: periodic, focus change
+  useEffect(() => {
+    if (!adminUser) return;
+
+    // Check every 15 seconds
+    const interval = setInterval(() => {
+      checkSession();
+    }, 15000);
+
+    // Check when window gets focus
+    const handleFocus = () => {
+      checkSession();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [adminUser, checkSession]);
+
+  // Check session status on navigation
+  useEffect(() => {
+    if (adminUser) {
+      checkSession();
+    }
+  }, [pathname]);
 
   const adminLogin = useCallback(async (email: string, pass: string) => {
     setAdminLoading(true);
