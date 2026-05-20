@@ -265,6 +265,15 @@ export async function updateAdminUserAction(
 
     await ensureAdminsSchema();
 
+    // Fetch current user details to check if email is changed
+    const [currentRows]: any = await pool.execute('SELECT email FROM admins WHERE id = ? LIMIT 1', [id]);
+    if (!currentRows.length) {
+      return { success: false, error: 'User not found.' };
+    }
+    const currentEmail = currentRows[0].email;
+    const isEmailChanged = currentEmail !== email;
+    const isPasswordChanged = !!(password && password.trim().length >= 6);
+
     // Check if email is taken by another user
     const [existing]: any = await pool.execute('SELECT id FROM admins WHERE email = ? AND id != ? LIMIT 1', [email, id]);
     if (existing.length > 0) {
@@ -273,7 +282,7 @@ export async function updateAdminUserAction(
 
     const permissionsStr = permissions ? JSON.stringify(permissions) : null;
 
-    if (password && password.trim().length >= 6) {
+    if (isPasswordChanged) {
       const passwordHash = await bcrypt.hash(password, 10);
       await pool.execute(
         'UPDATE admins SET email = ?, password_hash = ?, role = ?, permissions = ?, avatar_url = ?, name = ? WHERE id = ?',
@@ -286,18 +295,19 @@ export async function updateAdminUserAction(
       );
     }
 
-    // Invalidate sessions for edited user.
-    // If they updated themselves, delete all OTHER sessions. If they updated someone else, delete ALL sessions.
-    if (session?.id === id) {
-      const cookieStore = await cookies();
-      const currentToken = cookieStore.get('admin_session')?.value;
-      if (currentToken) {
-        await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ? AND token != ?', [id, currentToken]);
+    // Invalidate sessions ONLY if email or password was changed.
+    if (isEmailChanged || isPasswordChanged) {
+      if (session?.id === id) {
+        const cookieStore = await cookies();
+        const currentToken = cookieStore.get('admin_session')?.value;
+        if (currentToken) {
+          await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ? AND token != ?', [id, currentToken]);
+        } else {
+          await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ?', [id]);
+        }
       } else {
         await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ?', [id]);
       }
-    } else {
-      await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ?', [id]);
     }
 
     return { success: true };
