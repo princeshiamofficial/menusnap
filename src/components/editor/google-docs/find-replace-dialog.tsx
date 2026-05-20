@@ -62,12 +62,12 @@ export default function FindReplaceDialog({ isOpen, onClose, editor, initialSear
     }
 
     const handleReplace = () => {
-        editor?.commands.replace(replaceTerm)
+        (editor?.commands as any).replace(replaceTerm)
         updateCount()
     }
 
     const handleReplaceAll = () => {
-        editor?.commands.replaceAll(replaceTerm)
+        (editor?.commands as any).replaceAll(replaceTerm)
         updateCount()
     }
 

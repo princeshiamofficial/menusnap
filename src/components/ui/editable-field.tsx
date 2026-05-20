@@ -13,6 +13,7 @@ interface EditableFieldProps {
     multiline?: boolean;
     className?: string;
     inputClassName?: string;
+    disabled?: boolean;
 }
 
 export const EditableField = ({
@@ -21,7 +22,8 @@ export const EditableField = ({
     placeholder = "Click to edit",
     multiline = false,
     className = '',
-    inputClassName = ''
+    inputClassName = '',
+    disabled = false
 }: EditableFieldProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentValue, setCurrentValue] = useState(String(value || ''));
@@ -72,6 +74,14 @@ export const EditableField = ({
             <Textarea {...commonProps} rows={2} />
         ) : (
             <Input {...commonProps} type={typeof value === 'number' ? 'number' : 'text'} />
+        );
+    }
+
+    if (disabled) {
+        return (
+            <div className={cn("p-1 -m-1 rounded-md cursor-default min-h-[24px]", className)}>
+                {value || <span className="text-muted-foreground italic">{placeholder}</span>}
+            </div>
         );
     }
 

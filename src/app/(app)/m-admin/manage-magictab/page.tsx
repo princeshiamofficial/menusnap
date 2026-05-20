@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { checkClientPermission } from '@/lib/admin-permissions';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import {
   Button,
@@ -351,7 +352,16 @@ function MenuItemForm({ initialData, onSubmit, onOpenChange, isEditMode, categor
 
 
 export default function ManageMagicTabPage(): ReactNode {
-  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+  const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const canEdit = checkClientPermission(adminUser, 'manage-magictab', 'edit');
+  const canDelete = checkClientPermission(adminUser, 'manage-magictab', 'delete');
+  const canCreate = checkClientPermission(adminUser, 'manage-magictab', 'create');
   const [menuType, setMenuType] = useState<MenuType>("restaurant");
   const [allCategories, setAllCategories] = useState<CategoryAdmin[]>([]);
   const [orderedCategories, setOrderedCategories] = useState<CategoryAdmin[]>([]);
@@ -590,6 +600,17 @@ export default function ManageMagicTabPage(): ReactNode {
     }
   };
 
+  if (!mounted) {
+    return (
+      <div className="w-full max-w-[100vw] px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8 mx-auto min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 border-4 border-primary/30 border-t-primary animate-spin rounded-full" />
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">Loading MagicTab...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-full bg-background/30 w-full overflow-x-hidden relative">
       <div className="w-full h-full">
@@ -751,22 +772,24 @@ export default function ManageMagicTabPage(): ReactNode {
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              size="sm"
-              className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
-              onClick={() => {
-                if (selectedCategory && orderedCategories.length > 0) {
-                  setEditingItemData(null);
-                  setIsAddItemDialogOpen(true);
-                } else {
-                  toast({ title: "Cannot Add Item", description: "Please select a category first.", variant: "default" });
-                }
-              }}
-              disabled={!selectedCategory || orderedCategories.length === 0}
-            >
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Item
-            </Button>
+            {canCreate && (
+              <Button
+                size="sm"
+                className="h-9 bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={() => {
+                  if (selectedCategory && orderedCategories.length > 0) {
+                    setEditingItemData(null);
+                    setIsAddItemDialogOpen(true);
+                  } else {
+                    toast({ title: "Cannot Add Item", description: "Please select a category first.", variant: "default" });
+                  }
+                }}
+                disabled={!selectedCategory || orderedCategories.length === 0}
+              >
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add Item
+              </Button>
+            )}
           </div>
         </div>
 
@@ -858,12 +881,16 @@ export default function ManageMagicTabPage(): ReactNode {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditItemDialog(item)}>
-                                <Edit3 className="mr-2 h-4 w-4" /> Edit Item
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => openDeleteItemDialog(item)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Item
-                              </DropdownMenuItem>
+                              {canEdit && (
+                                <DropdownMenuItem onClick={() => openEditItemDialog(item)}>
+                                  <Edit3 className="mr-2 h-4 w-4" /> Edit Item
+                                </DropdownMenuItem>
+                              )}
+                              {canDelete && (
+                                <DropdownMenuItem onClick={() => openDeleteItemDialog(item)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete Item
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuSeparator />
                               <DropdownMenuItem disabled>Duplicate Item</DropdownMenuItem>
                             </DropdownMenuContent>

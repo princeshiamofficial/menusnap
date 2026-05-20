@@ -92,6 +92,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EditableField } from "@/components/ui/editable-field";
 import { getOrdersFromMySql, deleteOrderFromMySql, submitOrderToMySql, updateOrderInMySql, getCategoriesFromMySql } from "@/app/actions/orders";
 import { formatDisplayDate, parseMySqlDateAsUtc } from '@/lib/dateUtils';
+import { checkClientPermission } from '@/lib/admin-permissions';
 
 interface OrderItemDetailAdmin {
   id: string;
@@ -171,7 +172,9 @@ const OrderTableRow = memo(({
   totalCount, 
   onView, 
   onCopy, 
-  onDelete 
+  onDelete,
+  canCreate,
+  canDelete
 }: { 
   order: ApiOrder; 
   index: number; 
@@ -179,6 +182,8 @@ const OrderTableRow = memo(({
   onView: (o: ApiOrder) => void; 
   onCopy: (o: ApiOrder) => void; 
   onDelete: (o: ApiOrder) => void; 
+  canCreate: boolean;
+  canDelete: boolean;
 }) => {
   const router = useRouter();
 
@@ -222,16 +227,22 @@ const OrderTableRow = memo(({
             <DropdownMenuItem onSelect={() => setTimeout(() => onView(order), 100)}>
               <Eye className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setTimeout(() => onCopy(order), 100)}>
-              <Copy className="h-4 w-4 mr-2" /> Copy Docs
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onSelect={() => setTimeout(() => onDelete(order), 100)} 
-              className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
-            </DropdownMenuItem>
+            {canCreate && (
+              <DropdownMenuItem onSelect={() => setTimeout(() => onCopy(order), 100)}>
+                <Copy className="h-4 w-4 mr-2" /> Copy Docs
+              </DropdownMenuItem>
+            )}
+            {canDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onSelect={() => setTimeout(() => onDelete(order), 100)} 
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
@@ -264,7 +275,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 
-function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpdateOrder }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; allCategories: Category[]; onUpdateOrder: (updated: ApiOrder) => void; }) {
+function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpdateOrder, canEdit }: { order: ApiOrder | null; isOpen: boolean; onOpenChange: (open: boolean) => void; allCategories: Category[]; onUpdateOrder: (updated: ApiOrder) => void; canEdit: boolean; }) {
   const router = useRouter();
 
   const formatDate = (input: string | Date, includeTime: boolean = true): string => {
@@ -308,6 +319,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
                           onSave={(val: string) => onUpdateOrder({ ...order, customerName: val, customer: { ...order.customer, name: val } } as ApiOrder)}
                           placeholder="Customer Name"
                           className="font-medium text-foreground"
+                          disabled={!canEdit}
                         />
                         <p className="text-xs text-muted-foreground">Full Name</p>
                       </div>
@@ -342,6 +354,7 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
                           onSave={(val: string) => onUpdateOrder({ ...order, businessName: val, customer: { ...order.customer, restaurant: val } } as ApiOrder)}
                           placeholder="Business Name"
                           className="font-medium text-foreground"
+                          disabled={!canEdit}
                         />
                         <p className="text-xs text-muted-foreground">Business Name</p>
                       </div>
@@ -427,8 +440,17 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
                 onClick={() => router.push(`/m-admin/manage-orders/${order.id}`)}
                 className="w-full sm:w-auto"
               >
-                <Edit3 className="mr-2 h-4 w-4" />
-                View & Edit Items
+                {canEdit ? (
+                  <>
+                    <Edit3 className="mr-2 h-4 w-4" />
+                    View & Edit Items
+                  </>
+                ) : (
+                  <>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Items
+                  </>
+                )}
               </Button>
               <DialogClose asChild>
                 <Button variant="outline" className="w-full sm:w-auto">Close</Button>
@@ -443,7 +465,10 @@ function OrderDetailsDialog({ order, isOpen, onOpenChange, allCategories, onUpda
 
 
 export default function ManageOrdersPage(): React.ReactNode {
-  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+  const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
+  const canEdit = checkClientPermission(adminUser, 'manage-orders', 'edit');
+  const canDelete = checkClientPermission(adminUser, 'manage-orders', 'delete');
+  const canCreate = checkClientPermission(adminUser, 'manage-orders', 'create');
   const [allOrders, setAllOrders] = useState<ApiOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -894,6 +919,8 @@ export default function ManageOrdersPage(): React.ReactNode {
                         onView={handleViewDetails}
                         onCopy={handleCopyDocs}
                         onDelete={handleDeleteOrder}
+                        canCreate={canCreate}
+                        canDelete={canDelete}
                       />
                     ))}
                   </>
@@ -930,6 +957,7 @@ export default function ManageOrdersPage(): React.ReactNode {
         onOpenChange={setIsDetailsDialogOpen}
         allCategories={allCategories}
         onUpdateOrder={handleUpdateOrder}
+        canEdit={canEdit}
       />
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

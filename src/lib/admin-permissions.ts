@@ -38,14 +38,14 @@ export function checkClientPermission(
   if (adminUser.role === 'User') {
     const defaultUserPermissions: Record<string, string[]> = {
       'dashboard': ['view'],
-      'quick-manager': ['view'],
-      'contacts': ['view', 'edit'],
-      'manage-orders': ['view', 'edit'],
+      'quick-manager': ['view', 'create', 'edit', 'delete'],
+      'contacts': ['view', 'create', 'edit', 'delete'],
+      'manage-orders': ['view', 'create', 'edit', 'delete'],
       'responses': ['view', 'edit'],
-      'manage-categories': ['view', 'edit'],
-      'manage-magictab': ['view', 'edit'],
-      'manage-templates': ['view', 'edit'],
-      'magic-docs': ['view', 'edit'],
+      'manage-categories': ['view', 'create', 'edit', 'delete'],
+      'manage-magictab': ['view', 'create', 'edit', 'delete'],
+      'manage-templates': ['view', 'create', 'edit', 'delete'],
+      'magic-docs': ['view', 'create', 'edit', 'delete'],
       'settings': [],
       'manage-users': [],
     };

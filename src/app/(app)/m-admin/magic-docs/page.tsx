@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { checkClientPermission } from '@/lib/admin-permissions';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Plus, FileText, Trash2, Search, ArrowUpDown, MoreVertical, Eye, Edit3, RefreshCw, AlertTriangle, CalendarDays, Undo2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,10 @@ interface MagicDocument {
 
 export default function MagicDocsPage(): ReactNode {
     const router = useRouter();
-    const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+    const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
+    const canEdit = checkClientPermission(adminUser, 'magic-docs', 'edit');
+    const canDelete = checkClientPermission(adminUser, 'magic-docs', 'delete');
+    const canCreate = checkClientPermission(adminUser, 'magic-docs', 'create');
     const [docs, setDocs] = useState<MagicDocument[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -288,12 +292,14 @@ export default function MagicDocsPage(): ReactNode {
                             Trash ({trashDocs.length})
                         </Button>
                     </motion.div>
-                    <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-                        <Button variant="default" onClick={handleCreateNew}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            New Document
-                        </Button>
-                    </motion.div>
+                    {canCreate && (
+                        <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
+                            <Button variant="default" onClick={handleCreateNew}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                New Document
+                            </Button>
+                        </motion.div>
+                    )}
                 </div>
             </header>
 
@@ -396,9 +402,12 @@ export default function MagicDocsPage(): ReactNode {
                                                         <div className="p-1.5 bg-primary/10 rounded">
                                                             <FileText className="h-4 w-4 text-primary" />
                                                         </div>
-                                                        <span className="hover:underline cursor-pointer text-primary" onClick={() => router.push(`/m-admin/magic-docs/${doc.id}`)}>
-                                                            {doc.title}
-                                                        </span>
+                                                    <span 
+                                                        className="hover:underline cursor-pointer text-primary" 
+                                                        onClick={() => canEdit ? router.push(`/m-admin/magic-docs/${doc.id}`) : window.open(`/docs/view/${doc.id}`, '_blank')}
+                                                    >
+                                                        {doc.title}
+                                                    </span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-xs text-muted-foreground">
@@ -424,16 +433,22 @@ export default function MagicDocsPage(): ReactNode {
                                                             </Button>
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => router.push(`/m-admin/magic-docs/${doc.id}`)}>
-                                                                <Edit3 className="mr-2 h-4 w-4" /> Edit Content
-                                                            </DropdownMenuItem>
+                                                            {canEdit && (
+                                                                <DropdownMenuItem onClick={() => router.push(`/m-admin/magic-docs/${doc.id}`)}>
+                                                                    <Edit3 className="mr-2 h-4 w-4" /> Edit Content
+                                                                </DropdownMenuItem>
+                                                            )}
                                                             <DropdownMenuItem onClick={() => window.open(`/docs/view/${doc.id}`, '_blank')}>
                                                                 <Eye className="mr-2 h-4 w-4" /> View Read-Only
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem onClick={(e) => handleMoveToTrash(doc.id, e as any)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
-                                                            </DropdownMenuItem>
+                                                            {canDelete && (
+                                                                <>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem onClick={(e) => handleMoveToTrash(doc.id, e as any)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
+                                                                    </DropdownMenuItem>
+                                                                </>
+                                                            )}
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
                                                 </TableCell>
@@ -530,24 +545,28 @@ export default function MagicDocsPage(): ReactNode {
                                                 </div>
 
                                                 <div className="flex items-center gap-1.5 ml-4">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-9 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg font-medium transition-all"
-                                                        onClick={() => handleRestore(doc.id)}
-                                                    >
-                                                        <Undo2 className="h-4 w-4 mr-1.5" />
-                                                        Restore
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-9 w-9 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                        onClick={() => handlePermanentDelete(doc.id)}
-                                                        title="Delete permanently"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    {canEdit && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-9 px-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg font-medium transition-all"
+                                                            onClick={() => handleRestore(doc.id)}
+                                                        >
+                                                            <Undo2 className="h-4 w-4 mr-1.5" />
+                                                            Restore
+                                                        </Button>
+                                                    )}
+                                                    {canDelete && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-9 w-9 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                            onClick={() => handlePermanentDelete(doc.id)}
+                                                            title="Delete permanently"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </motion.div>
                                         ))}

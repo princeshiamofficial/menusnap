@@ -139,7 +139,7 @@ const dateRangeLabels: Record<string, string> = dateRangeFilterOptions.reduce((a
 
 
 export default function MAdminDashboardPage() {
-  const { adminLoading } = useAdminAuth();
+  const { adminUser, adminLoading } = useAdminAuth();
   const [statsData, setStatsData] = useState<Record<string, number | string>>({});
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -194,7 +194,7 @@ export default function MAdminDashboardPage() {
           getTemplatesFromMySql(),
           getOrdersFromMySql(),
           getLeads(1, 5000),
-          getLeadsTrend('all_time'),
+          getLeadsTrend(),
           getDashboardSlides(),
           getDashboardSpotlights(),
           getExclusiveOffers(),
@@ -437,17 +437,17 @@ export default function MAdminDashboardPage() {
             className="text-3xl font-bold flex items-center cursor-default select-none"
             onDoubleClick={() => setShowBroadcast(!showBroadcast)}
           >
-            Welcome Admin <Hand className="ml-2 h-8 w-8 text-yellow-400" />
+            Welcome {adminUser?.name ? adminUser.name.trim().split(/\s+/)[0] : 'Admin'} <Hand className="ml-2 h-8 w-8 text-yellow-400" />
           </h2>
           <p className="text-sm text-slate-200">
             Here's an overview of your business activity.
           </p>
         </div>
         
-        <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/20">
-          <CalendarDays className="h-4 w-4 ml-2 text-slate-200" />
+        <div className="flex items-center gap-3 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100/10">
+          <CalendarDays className="h-4 w-4 ml-2 text-slate-500" />
           <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
-            <SelectTrigger className="w-[180px] h-10 border-none bg-transparent hover:bg-white/10 text-white font-medium text-sm focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer">
+            <SelectTrigger className="w-[180px] h-10 border-none bg-transparent hover:bg-slate-50 text-slate-800 font-semibold text-sm focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer [&>svg]:text-slate-500 [&>svg]:opacity-100">
               <SelectValue placeholder="Select Range" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-200 shadow-xl p-1 min-w-[200px]">

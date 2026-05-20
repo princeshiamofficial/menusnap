@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { checkClientPermission } from '@/lib/admin-permissions';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -93,6 +94,8 @@ interface AdminTemplateCardProps {
   onDelete: (id: string, name: string) => void;
   onTogglePublish: (id: string) => void;
   onSetTopRated: (id: string) => void;
+  canEdit: boolean;
+  canDelete: boolean;
 }
 
 function AdminTemplateCard({
@@ -101,6 +104,8 @@ function AdminTemplateCard({
   onDelete,
   onTogglePublish,
   onSetTopRated,
+  canEdit,
+  canDelete,
 }: AdminTemplateCardProps): ReactNode {
   const [imgSrc, setImgSrc] = useState(template.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
 
@@ -175,18 +180,24 @@ function AdminTemplateCard({
           </Badge>
 
           <div className="absolute top-2 right-2 flex flex-col sm:flex-row space-y-1.5 sm:space-y-0 sm:space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-40">
-            <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onSetTopRated(template.id)} aria-label="Toggle Top Rated">
-              <Star className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onTogglePublish(template.id)} aria-label="Toggle Publish Status">
-              <Globe2 className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onEdit(template.id)} aria-label="Edit Template">
-              <FileEdit className="h-4 w-4" />
-            </Button>
-            <Button variant="destructive" size="icon" className="h-8 w-8 bg-red-600/70 text-white hover:bg-red-700/90 border-red-500/50" onClick={() => onDelete(template.id, template.name)} aria-label="Delete Template">
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canEdit && (
+              <>
+                <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onSetTopRated(template.id)} aria-label="Toggle Top Rated">
+                  <Star className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onTogglePublish(template.id)} aria-label="Toggle Publish Status">
+                  <Globe2 className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8 bg-black/40 text-white hover:bg-black/60 border-white/30" onClick={() => onEdit(template.id)} aria-label="Edit Template">
+                  <FileEdit className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            {canDelete && (
+              <Button variant="destructive" size="icon" className="h-8 w-8 bg-red-600/70 text-white hover:bg-red-700/90 border-red-500/50" onClick={() => onDelete(template.id, template.name)} aria-label="Delete Template">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
           </div>
            <Button
             variant="ghost"
@@ -813,7 +824,10 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
 
 export default function ManageTemplatesPage(): ReactNode {
-  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+  const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
+  const canEdit = checkClientPermission(adminUser, 'manage-templates', 'edit');
+  const canDelete = checkClientPermission(adminUser, 'manage-templates', 'delete');
+  const canCreate = checkClientPermission(adminUser, 'manage-templates', 'create');
   const [allTemplates, setAllTemplates] = useState<ApiAdminTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1069,10 +1083,12 @@ export default function ManageTemplatesPage(): ReactNode {
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Template
-            </Button>
+            {canCreate && (
+              <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Add Template
+              </Button>
+            )}
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-2 items-center">
@@ -1165,7 +1181,7 @@ export default function ManageTemplatesPage(): ReactNode {
               <p className="text-muted-foreground text-lg font-medium">
                 {searchTerm || activeFilter !== 'all' ? "No templates match your search or filter." : "No templates found."}
               </p>
-              { !searchTerm && activeFilter === 'all' && (
+              { !searchTerm && activeFilter === 'all' && canCreate && (
                 <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="mt-6 bg-primary hover:bg-primary/90 text-primary-foreground">
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Add Your First Template
@@ -1182,6 +1198,8 @@ export default function ManageTemplatesPage(): ReactNode {
                 onDelete={handleDeleteTemplate}
                 onTogglePublish={handleTogglePublish}
                 onSetTopRated={handleSetTopRated}
+                canEdit={canEdit}
+                canDelete={canDelete}
               />
             ))}
           </div>

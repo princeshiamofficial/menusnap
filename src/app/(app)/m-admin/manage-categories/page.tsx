@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { checkClientPermission } from '@/lib/admin-permissions';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import {
   Button,
@@ -255,7 +256,10 @@ const sortOptionsList: { value: SortOption; label: string }[] = [
 const ITEMS_PER_PAGE = 10;
 
 export default function ManageCategoriesPage(): ReactNode {
-  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+  const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
+  const canEdit = checkClientPermission(adminUser, 'manage-categories', 'edit');
+  const canDelete = checkClientPermission(adminUser, 'manage-categories', 'delete');
+  const canCreate = checkClientPermission(adminUser, 'manage-categories', 'create');
   const [categoryType, setCategoryType] = useState<CategoryType>("restaurant");
   const [allCategories, setAllCategories] = useState<ApiCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -605,10 +609,12 @@ export default function ManageCategoriesPage(): ReactNode {
               {lastUpdated && <span className="text-green-600 dark:text-green-400"> • Last updated: {lastUpdated}</span>}
             </p>
           </div>
-          <Button variant="default" onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground mt-3 sm:mt-0">
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add {categoryTypeName} Category
-          </Button>
+          {canCreate && (
+            <Button variant="default" onClick={() => setIsAddDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground mt-3 sm:mt-0">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add {categoryTypeName} Category
+            </Button>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-border">
           <div className="relative flex-grow sm:flex-grow-0 sm:w-72">
@@ -723,17 +729,25 @@ export default function ManageCategoriesPage(): ReactNode {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditDialog(category)}>
-                              <Edit3 className="mr-2 h-4 w-4" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleVisibility(category.id)}>
-                              {category.visibleToUsers ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                              {category.visibleToUsers ? "Set as Hidden" : "Set as Visible"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleDeleteCategory(category.id, category.name)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
-                            </DropdownMenuItem>
+                            {canEdit && (
+                              <>
+                                <DropdownMenuItem onClick={() => openEditDialog(category)}>
+                                  <Edit3 className="mr-2 h-4 w-4" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleToggleVisibility(category.id)}>
+                                  {category.visibleToUsers ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
+                                  {category.visibleToUsers ? "Set as Hidden" : "Set as Visible"}
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {canDelete && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleDeleteCategory(category.id, category.name)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

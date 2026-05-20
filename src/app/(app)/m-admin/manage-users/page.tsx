@@ -19,7 +19,9 @@ import {
   X,
   Plus,
   Info,
-  Upload
+  Upload,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -82,17 +84,17 @@ import { uploadFileLocally } from '@/app/actions/uploads';
 
 // Page configuration for the permissions matrix
 const APP_PAGES = [
-  { key: 'dashboard', label: 'Dashboard', desc: 'Main dashboard analytics & graphs' },
-  { key: 'quick-manager', label: 'Quick Manager', desc: 'Quick overview and action panel' },
-  { key: 'contacts', label: 'Contacts', desc: 'Client CRM & contact directory' },
-  { key: 'manage-orders', label: 'Orders', desc: 'Manage client orders & checkouts' },
-  { key: 'responses', label: 'Responses', desc: 'Track customer responses & feed' },
-  { key: 'manage-categories', label: 'Categories', desc: 'Organize items and categories' },
-  { key: 'manage-magictab', label: 'MagicTab', desc: 'Real-time collaborative builder' },
-  { key: 'manage-templates', label: 'Templates', desc: 'Layout & menu design templates' },
-  { key: 'magic-docs', label: 'Magic Docs', desc: 'Admin documents & manuals' },
-  { key: 'manage-users', label: 'Manage Users', desc: 'System users, roles, & access rights' },
-  { key: 'settings', label: 'Settings', desc: 'System configuration & preferences' }
+  { key: 'dashboard',       label: 'Dashboard',     desc: 'Main dashboard analytics & graphs',        actions: ['view'] },
+  { key: 'quick-manager',   label: 'Quick Manager', desc: 'Quick overview and action panel',            actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'contacts',        label: 'Contacts',      desc: 'Client CRM & contact directory',             actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'manage-orders',   label: 'Orders',        desc: 'Manage client orders & checkouts',           actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'responses',       label: 'Responses',     desc: 'Track customer responses & feed',            actions: ['view'] },
+  { key: 'manage-categories', label: 'Categories',  desc: 'Organize items and categories',              actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'manage-magictab', label: 'MagicTab',      desc: 'Real-time collaborative builder',            actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'manage-templates', label: 'Templates',    desc: 'Layout & menu design templates',             actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'magic-docs',      label: 'Magic Docs',    desc: 'Admin documents & manuals',                  actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'manage-users',    label: 'Manage Users',  desc: 'System users, roles, & access rights',       actions: ['view', 'create', 'edit', 'delete'] },
+  { key: 'settings',        label: 'Settings',      desc: 'System configuration & preferences',         actions: ['view', 'edit'] },
 ];
 
 const ACTIONS = [
@@ -151,6 +153,7 @@ export default function ManageUsersPage() {
   const [role, setRole] = useState<'Admin' | 'User' | 'Custom'>('User');
   const [customPermissions, setCustomPermissions] = useState<Record<string, string[]>>({});
   const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -208,6 +211,7 @@ export default function ManageUsersPage() {
     setRole('User');
     setCustomPermissions({});
     setAvatarUrl('');
+    setShowPassword(false);
     setIsCreateOpen(true);
   };
 
@@ -219,6 +223,7 @@ export default function ManageUsersPage() {
     setRole(user.role);
     setCustomPermissions(user.permissions || {});
     setAvatarUrl(user.avatar_url || '');
+    setShowPassword(false);
     setIsEditOpen(true);
   };
 
@@ -643,14 +648,22 @@ export default function ManageUsersPage() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input 
                       id="pass"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-9 h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-slate-900"
+                      className="pl-9 pr-10 h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-slate-900"
                       required
                       autoComplete="new-password"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      title={showPassword ? "Hide Password" : "Show Password"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -710,16 +723,21 @@ export default function ManageUsersPage() {
                             </div>
                           </TableCell>
                           {ACTIONS.map(act => {
+                            const supportsAction = page.actions.includes(act.key);
                             const isChecked = isPermissionChecked(page.key, act.key);
                             const isDisabled = isPermissionDisabled();
                             return (
                               <TableCell key={act.key} className="py-3 text-center">
-                                <Checkbox 
-                                  checked={isChecked}
-                                  disabled={isDisabled}
-                                  onCheckedChange={(checked) => handleTogglePermission(page.key, act.key, !!checked)}
-                                  className="mx-auto h-5 w-5 border-slate-300 rounded focus-visible:ring-slate-900"
-                                />
+                                {supportsAction ? (
+                                  <Checkbox 
+                                    checked={isChecked}
+                                    disabled={isDisabled}
+                                    onCheckedChange={(checked) => handleTogglePermission(page.key, act.key, !!checked)}
+                                    className="mx-auto h-5 w-5 border-slate-300 rounded focus-visible:ring-slate-900"
+                                  />
+                                ) : (
+                                  <span className="text-slate-200 text-base font-bold select-none">—</span>
+                                )}
                               </TableCell>
                             );
                           })}
@@ -870,13 +888,21 @@ export default function ManageUsersPage() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input 
                       id="edit-pass"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-9 h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-slate-900"
+                      className="pl-9 pr-10 h-11 rounded-xl bg-slate-50/50 border-slate-200 focus-visible:ring-slate-900"
                       autoComplete="new-password"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      title={showPassword ? "Hide Password" : "Show Password"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">
                     Leave blank to keep current password
@@ -939,16 +965,21 @@ export default function ManageUsersPage() {
                             </div>
                           </TableCell>
                           {ACTIONS.map(act => {
+                            const supportsAction = page.actions.includes(act.key);
                             const isChecked = isPermissionChecked(page.key, act.key);
                             const isDisabled = isPermissionDisabled();
                             return (
                               <TableCell key={act.key} className="py-3 text-center">
-                                <Checkbox 
-                                  checked={isChecked}
-                                  disabled={isDisabled}
-                                  onCheckedChange={(checked) => handleTogglePermission(page.key, act.key, !!checked)}
-                                  className="mx-auto h-5 w-5 border-slate-300 rounded focus-visible:ring-slate-900"
-                                />
+                                {supportsAction ? (
+                                  <Checkbox 
+                                    checked={isChecked}
+                                    disabled={isDisabled}
+                                    onCheckedChange={(checked) => handleTogglePermission(page.key, act.key, !!checked)}
+                                    className="mx-auto h-5 w-5 border-slate-300 rounded focus-visible:ring-slate-900"
+                                  />
+                                ) : (
+                                  <span className="text-slate-200 text-base font-bold select-none">—</span>
+                                )}
                               </TableCell>
                             );
                           })}

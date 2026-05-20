@@ -94,6 +94,7 @@ import { getLeads, updateClientNote, updateClientStage, getClientHistory, delete
 import { getStages, addStage, updateStage, deleteStage } from '@/app/actions/stages';
 import { getAdminUsersAction } from '@/app/actions/admin-users';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { checkClientPermission } from '@/lib/admin-permissions';
 
 // Help map icon names to Lucide icons
 const IconMap: Record<string, React.ElementType> = {
@@ -295,6 +296,8 @@ const DEFAULT_STAGES = [
 export default function ContactsPage() {
 
   const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
+  const canEdit = checkClientPermission(adminUser, 'contacts', 'edit');
+  const canDelete = checkClientPermission(adminUser, 'contacts', 'delete');
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState<any[]>(DEFAULT_STAGES);
@@ -496,7 +499,7 @@ export default function ContactsPage() {
     try {
       const result = await updateClientStage(clientId, stage, note, adminUser?.id);
       if (result.success) {
-        setContacts(prev => prev.map(c => c.id === clientId ? { ...c, stage, latest_note: note, updated_by_email: adminUser?.email } : c));
+        setContacts(prev => prev.map(c => c.id === clientId ? { ...c, stage, latest_note: note, updated_by_id: adminUser?.id } : c));
         toast({
           title: "Stage updated",
           description: `Moved to ${stage}.`,
@@ -550,7 +553,7 @@ export default function ContactsPage() {
         // Refresh history
         fetchHistory(historyClientId);
         // Refresh contacts list to show latest note
-        setContacts(prev => prev.map(c => c.id === historyClientId ? { ...c, latest_note: newHistoryNote, updated_by_email: adminUser?.email } : c));
+        setContacts(prev => prev.map(c => c.id === historyClientId ? { ...c, latest_note: newHistoryNote, updated_by_id: adminUser?.id } : c));
         toast({ title: "Note added to history" });
       } else {
         toast({ title: "Failed to add note", description: result.error, variant: "destructive" });
@@ -688,7 +691,7 @@ export default function ContactsPage() {
                         </div>
                     )}
                     <div 
-                      onDoubleClick={() => setIsStageManagerOpen(true)}
+                      onDoubleClick={() => canEdit && setIsStageManagerOpen(true)}
                       className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-full text-[10px] sm:text-sm font-bold shadow-lg shadow-slate-200 whitespace-nowrap cursor-pointer select-none h-9"
                     >
                         {totalContacts} Total
@@ -842,6 +845,8 @@ export default function ContactsPage() {
                         }}
                         onWhatsAppClick={() => openWhatsApp(contact.whatsapp_number)}
                         formatDate={formatDate}
+                        canEdit={canEdit}
+                        canDelete={canDelete}
                       />
                     ))
                   )}
@@ -901,6 +906,8 @@ export default function ContactsPage() {
                               setDeleteClientId(contact.id);
                             }}
                             onWhatsAppClick={() => openWhatsApp(contact.whatsapp_number)}
+                            canEdit={canEdit}
+                            canDelete={canDelete}
                           />
                         ))}
                     </div>
@@ -1028,7 +1035,7 @@ export default function ContactsPage() {
             </ScrollArea>
 
             {/* Chat-style Input Bar */}
-            {!loadingHistory && (
+            {!loadingHistory && canEdit && (
               <div className="p-4 px-6 bg-white border-t border-slate-100">
                 <div className="flex items-end gap-3">
                   <div className="flex-1 relative group">
@@ -1107,6 +1114,8 @@ export default function ContactsPage() {
           onOpenChange={setIsStageManagerOpen} 
           stages={stages} 
           onRefresh={fetchStages} 
+          canEdit={canEdit}
+          canDelete={canDelete}
         />
 
       </div>
@@ -1115,13 +1124,16 @@ export default function ContactsPage() {
 }
 
 // Sub-components for better organization and performance
-const ContactRow = React.memo(function ContactRow({ contact, index, stages, adminsList, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate }: any) {
+const ContactRow = React.memo(function ContactRow({ contact, index, stages, adminsList, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, formatDate, canEdit, canDelete }: any) {
   const currentStageInfo = stages.find((s: any) => s.value === contact.stage) || stages[0];
 
   return (
     <TableRow 
-      onDoubleClick={onDeleteTrigger}
-      className="group border-slate-50 hover:bg-rose-50/30 transition-all duration-200 cursor-context-menu select-none active:bg-rose-50/50"
+      onDoubleClick={canDelete ? onDeleteTrigger : undefined}
+      className={cn(
+        "group border-slate-50 hover:bg-rose-50/30 transition-all duration-200 select-none active:bg-rose-50/50",
+        canDelete ? "cursor-context-menu" : "cursor-default"
+      )}
     >
       <TableCell className="text-center font-mono text-xs text-slate-400 group-hover:text-slate-500 pl-6 transition-colors">
         {index.toString().padStart(2, '0')}
@@ -1151,7 +1163,7 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, admi
       </TableCell>
       <TableCell className="text-[12px] text-slate-500 font-bold whitespace-nowrap">
         {(() => {
-          const updater = contact.updated_by_id ? adminsList.find(a => a.id === contact.updated_by_id) : null;
+          const updater = contact.updated_by_id ? adminsList.find((a: any) => a.id === contact.updated_by_id) : null;
           const updaterEmail = updater?.email || '';
           const updaterAvatar = updater?.avatar_url || '';
           const updaterName = updater?.name || '';
@@ -1180,12 +1192,16 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, admi
         <Select 
           value={contact.stage} 
           onValueChange={onStageChange}
+          disabled={!canEdit}
         >
           <SelectTrigger 
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
             style={getSolidBadgeStyle(currentStageInfo.color)}
-            className="h-7 w-fit min-w-[105px] text-[11px] font-bold tracking-wide rounded-full border-none px-4 transition-all hover:shadow-md flex items-center justify-center text-center [&>svg]:hidden hover:opacity-90 shadow-sm"
+            className={cn(
+              "h-7 w-fit min-w-[105px] text-[11px] font-bold tracking-wide rounded-full border-none px-4 transition-all hover:shadow-md flex items-center justify-center text-center [&>svg]:hidden hover:opacity-90 shadow-sm",
+              !canEdit && "opacity-80 cursor-not-allowed hover:shadow-none"
+            )}
           >
             <span className="truncate">{currentStageInfo.label}</span>
           </SelectTrigger>
@@ -1259,7 +1275,7 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, admi
   );
 });
 
-const MobileContactCard = React.memo(function MobileContactCard({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick }: any) {
+const MobileContactCard = React.memo(function MobileContactCard({ contact, index, stages, onStageChange, onViewHistory, onDeleteTrigger, onWhatsAppClick, canEdit, canDelete }: any) {
   const stageInfo = stages.find((s: any) => s.value === contact.stage) || stages[0];
   const initials = contact.business_name.substring(0, 2).toUpperCase();
 
@@ -1269,7 +1285,7 @@ const MobileContactCard = React.memo(function MobileContactCard({ contact, index
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ delay: Math.min(index * 0.05, 0.5), type: "spring", damping: 25, stiffness: 200 }}
         className="group bg-white rounded-[2rem] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-100 hover:border-slate-200 transition-all active:scale-[0.98] select-none"
-        onDoubleClick={onDeleteTrigger}
+        onDoubleClick={canDelete ? onDeleteTrigger : undefined}
     >
         <div className="flex items-center gap-3 sm:gap-4 mb-4">
             <div className={cn(
@@ -1288,12 +1304,16 @@ const MobileContactCard = React.memo(function MobileContactCard({ contact, index
                     <Select 
                         value={contact.stage} 
                         onValueChange={onStageChange}
+                        disabled={!canEdit}
                     >
                         <SelectTrigger 
                             onMouseDown={(e) => e.stopPropagation()}
                             onTouchStart={(e) => e.stopPropagation()}
                             style={getSolidBadgeStyle(stageInfo.color)}
-                            className="h-6 w-fit min-w-[85px] text-[10px] font-bold tracking-wide rounded-full border-none px-3 transition-all hover:shadow-md flex items-center justify-center text-center [&>svg]:hidden hover:opacity-90 shadow-sm"
+                            className={cn(
+                              "h-6 w-fit min-w-[85px] text-[10px] font-bold tracking-wide rounded-full border-none px-3 transition-all hover:shadow-md flex items-center justify-center text-center [&>svg]:hidden hover:opacity-90 shadow-sm",
+                              !canEdit && "opacity-80 cursor-not-allowed hover:shadow-none"
+                            )}
                         >
                             <span className="truncate">{stageInfo.label}</span>
                         </SelectTrigger>
@@ -1381,7 +1401,7 @@ const COLOR_THEMES = [
   { name: 'Yellow', color: '#eab308', classes: 'bg-yellow-50 text-yellow-600 border-yellow-100', dot: 'bg-yellow-500' },
 ];
 
-function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
+function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh, canEdit, canDelete }: any) {
   const [editingStage, setEditingStage] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1508,7 +1528,14 @@ function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
             <ScrollArea className="flex-1 h-[400px]">
               <div className="space-y-2 pr-4">
                 {stages.map((stage: any) => (
-                  <div key={stage.id || stage.value} className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-100/50 shadow-sm hover:shadow-md hover:border-primary/20 transition-all group cursor-pointer" onClick={() => setEditingStage(stage)}>
+                  <div 
+                    key={stage.id || stage.value} 
+                    className={cn(
+                      "flex items-center justify-between p-2.5 bg-white rounded-xl border border-slate-100/50 shadow-sm hover:shadow-md transition-all group",
+                      canEdit ? "hover:border-primary/20 cursor-pointer" : "cursor-default"
+                    )}
+                    onClick={() => canEdit && setEditingStage(stage)}
+                  >
                     <div className="flex items-center gap-3">
                       <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center border shadow-inner transition-transform group-hover:scale-105", stage.color)}>
                         {React.createElement(getIcon(stage.iconName || 'HelpCircle'), { className: "h-4 w-4" })}
@@ -1519,18 +1546,20 @@ function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600" 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingStage(stage);
-                        }}
-                      >
-                        <FileEdit className="h-3.5 w-3.5" />
-                      </Button>
-                      {stage.id && (
+                      {canEdit && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600" 
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingStage(stage);
+                          }}
+                        >
+                          <FileEdit className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {stage.id && canDelete && (
                           <Button 
                             variant="ghost" 
                             size="icon" 
@@ -1549,13 +1578,15 @@ function StageManagerDialog({ isOpen, onOpenChange, stages, onRefresh }: any) {
                 ))}
               </div>
             </ScrollArea>
-            <Button 
-                className="mt-4 rounded-xl font-black h-11 border-2 border-dashed border-slate-200 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group font-glancyr text-xs" 
-                variant="outline"
-                onClick={() => setEditingStage({ label: '', value: '', iconName: 'Tag', color: 'bg-slate-50 text-slate-600 border-slate-100', dotColor: 'bg-slate-400', hint: '', placeholder: '' })}
-            >
-              <UserPlus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" /> Add New Stage
-            </Button>
+            {canEdit && (
+              <Button 
+                  className="mt-4 rounded-xl font-black h-11 border-2 border-dashed border-slate-200 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all group font-glancyr text-xs" 
+                  variant="outline"
+                  onClick={() => setEditingStage({ label: '', value: '', iconName: 'Tag', color: 'bg-slate-50 text-slate-600 border-slate-100', dotColor: 'bg-slate-400', hint: '', placeholder: '' })}
+              >
+                <UserPlus className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform" /> Add New Stage
+              </Button>
+            )}
           </div>
 
           {/* Edit Form */}

@@ -985,7 +985,7 @@ export default function MagicTabPage() {
         return;
     }
 
-    const newCategory: MenuCategory = {
+    const newCategory: Category = {
       id: `custom-category-${customSlugify(formattedName)}-${Date.now()}`,
       name: formattedName,
       icon: "📁",

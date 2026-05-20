@@ -168,7 +168,7 @@ function TemplateCard({
               aria-label="Maximize template preview"
               onClick={(e) => {
                 e.stopPropagation();
-                onPreview(actualImageUrl);
+                onPreview(imageUrl);
               }}
             >
               <Maximize className="h-3.5 w-3.5 md:h-4 md:w-4" />

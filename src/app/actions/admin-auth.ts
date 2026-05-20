@@ -90,7 +90,7 @@ export async function adminLogoutAction(): Promise<void> {
   }
 }
 
-export async function getAdminSessionAction(): Promise<{ email: string; id: number; role?: string; permissions?: Record<string, string[]>; avatar_url?: string | null } | null> {
+export async function getAdminSessionAction(): Promise<{ email: string; id: number; role?: string; permissions?: Record<string, string[]>; avatar_url?: string | null; name?: string | null } | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE)?.value;
@@ -110,12 +110,8 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
 
     if (!rows.length) return null;
 
-    // Refresh expiration on each check (sliding session)
-    const newExpiry = new Date(Date.now() + 60 * 60 * 24 * SESSION_EXPIRY_DAYS * 1000);
-    await pool.execute(
-      'UPDATE admin_sessions SET expires_at = ? WHERE token = ?',
-      [formatUtcDateTime(newExpiry), token]
-    );
+    // NOTE: We intentionally do NOT update expires_at on every check
+    // to prevent causing different return values each call (which caused infinite re-renders)
 
     const admin = rows[0];
     let parsedPermissions = null;

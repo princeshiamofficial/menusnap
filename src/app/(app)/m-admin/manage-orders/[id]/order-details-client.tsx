@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { checkClientPermission } from '@/lib/admin-permissions';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -129,7 +130,7 @@ interface ApiOrder {
     items?: OrderItemDetail[];
 }
 
-const EditableField = memo(({ value, onSave, placeholder = "Click to edit", multiline = false, className = '', inputClassName = '' }: { value?: string | number | null, onSave: (newValue: string) => void, placeholder?: string, multiline?: boolean, className?: string, inputClassName?: string }) => {
+const EditableField = memo(({ value, onSave, placeholder = "Click to edit", multiline = false, className = '', inputClassName = '', disabled = false }: { value?: string | number | null, onSave: (newValue: string) => void, placeholder?: string, multiline?: boolean, className?: string, inputClassName?: string, disabled?: boolean }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentValue, setCurrentValue] = useState(String(value || ''));
     const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -161,6 +162,14 @@ const EditableField = memo(({ value, onSave, placeholder = "Click to edit", mult
             setIsEditing(false);
         }
     };
+
+    if (disabled) {
+        return (
+            <div className={cn("p-1 -m-1 rounded-md cursor-default min-h-[24px]", className)}>
+                {value || <span className="text-muted-foreground italic">{placeholder}</span>}
+            </div>
+        );
+    }
 
     if (isEditing) {
         const commonProps = {
@@ -207,7 +216,8 @@ const CategorySection = memo(({
     onEditItem, 
     onRemoveItem, 
     onToggleSubItems,
-    expandedSubItems 
+    expandedSubItems,
+    canEdit
 }: { 
     category: any;
     onAddCategory: () => void;
@@ -218,6 +228,7 @@ const CategorySection = memo(({
     onRemoveItem: (id: string) => void;
     onToggleSubItems: (id: string) => void;
     expandedSubItems: Record<string, boolean>;
+    canEdit: boolean;
 }) => {
     return (
         <div className="mb-8 group/category">
@@ -229,10 +240,15 @@ const CategorySection = memo(({
                     placeholder="Category Name"
                     className="text-xl font-semibold text-primary"
                     inputClassName="text-xl font-semibold"
+                    disabled={!canEdit}
                 />
                 <Badge variant="secondary">{category.items.length}</Badge>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => onRemoveCategory(category.id)}><X className="h-4 w-4" /></Button>
-                <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => onAddItemToCategory(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+                {canEdit && (
+                    <>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive opacity-0 group-hover/category:opacity-100" onClick={() => onRemoveCategory(category.id)}><X className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="sm" className="ml-auto h-7" onClick={() => onAddItemToCategory(category.id)}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+                    </>
+                )}
             </div>
 
             <div className="space-y-3">
@@ -274,10 +290,12 @@ const CategorySection = memo(({
                                         </>
                                     )}
                                 </div>
-                                <div className="flex flex-col gap-1 shrink-0">
-                                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4" /></Button>
-                                    <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
-                                </div>
+                                {canEdit && (
+                                    <div className="flex flex-col gap-1 shrink-0">
+                                        <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onEditItem(item)}><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => onRemoveItem(item.id)}><X className="h-4 w-4" /></Button>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     ))}
@@ -602,7 +620,9 @@ export default function OrderDetailsClient() {
     const params = useParams();
     const router = useRouter();
     const { toast } = useToast();
-    const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+    const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
+    const canEdit = checkClientPermission(adminUser, 'manage-orders', 'edit');
+    const canDelete = checkClientPermission(adminUser, 'manage-orders', 'delete');
     const orderIdFromUrl = params.id as string;
 
     const [order, setOrder] = useState<ApiOrder | null>(null);
@@ -1035,6 +1055,7 @@ export default function OrderDetailsClient() {
                                     placeholder="Business Name"
                                     className="text-lg font-semibold text-foreground"
                                     inputClassName="text-lg font-semibold"
+                                    disabled={!canEdit}
                                 />
                                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 opacity-70">
                                     <CalendarDays className="h-3 w-3" />
@@ -1058,26 +1079,32 @@ export default function OrderDetailsClient() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuItem onSelect={() => {
-                                        setTimeout(() => setIsPreviewOpen(true), 100);
-                                    }}>
-                                        <Shuffle className="mr-2 h-4 w-4" />
-                                        Shuffle Menu
-                                    </DropdownMenuItem>
+                                    {canEdit && (
+                                        <DropdownMenuItem onSelect={() => {
+                                            setTimeout(() => setIsPreviewOpen(true), 100);
+                                        }}>
+                                            <Shuffle className="mr-2 h-4 w-4" />
+                                            Shuffle Menu
+                                        </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuItem onSelect={() => handleShare('viewer')}>
                                         <Users className="mr-2 h-4 w-4" />
                                         Share with viewer
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleShare('editor')}>
-                                        <PenSquare className="mr-2 h-4 w-4" />
-                                        Share with editor
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => {
-                                        router.push(`/m-admin/brave/${order.id}`);
-                                    }}>
-                                        <Sparkles className="mr-2 h-4 w-4 text-primary" />
-                                        Brave Docs
-                                    </DropdownMenuItem>
+                                    {canEdit && (
+                                        <>
+                                            <DropdownMenuItem onSelect={() => handleShare('editor')}>
+                                                <PenSquare className="mr-2 h-4 w-4" />
+                                                Share with editor
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => {
+                                                router.push(`/m-admin/brave/${order.id}`);
+                                            }}>
+                                                <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                                                Brave Docs
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
@@ -1133,6 +1160,7 @@ export default function OrderDetailsClient() {
                                             onRemoveItem={handleRemoveItem}
                                             onToggleSubItems={handleToggleSubItems}
                                             expandedSubItems={expandedSubItems}
+                                            canEdit={canEdit}
                                        />
                                     </div>
                                 ))}
@@ -1144,9 +1172,11 @@ export default function OrderDetailsClient() {
                                 )}
                             </div>
 
-                            <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
-                                <Plus className="mr-2 h-4 w-4" />Add Category
-                            </Button>
+                             {canEdit && (
+                                 <Button variant="ghost" onClick={handleAddCategory} className="rounded-full bg-muted hover:bg-muted/80 text-muted-foreground mt-4">
+                                     <Plus className="mr-2 h-4 w-4" />Add Category
+                                 </Button>
+                             )}
                         </section>
                     </main>
                 </div>

@@ -1,5 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { checkClientPermission } from '@/lib/admin-permissions';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +64,16 @@ import {
 } from "@/components/ui/select";
 
 export default function QuickManagerPage() {
+  const { adminUser } = useAdminAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const canEdit = checkClientPermission(adminUser, 'quick-manager', 'edit');
+  const canDelete = checkClientPermission(adminUser, 'quick-manager', 'delete');
+  const canCreate = checkClientPermission(adminUser, 'quick-manager', 'create');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [slides, setSlides] = useState<any[]>([]);
@@ -354,7 +366,16 @@ export default function QuickManagerPage() {
     }
   };
 
-
+  if (!mounted) {
+    return (
+      <div className="w-full max-w-[100vw] px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8 mx-auto min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 border-4 border-primary/30 border-t-primary animate-spin rounded-full" />
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">Loading Manager...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-[100vw] px-4 md:px-8 py-6 md:py-8 space-y-6 md:space-y-8 mx-auto overflow-x-hidden min-h-screen relative">
@@ -555,6 +576,7 @@ export default function QuickManagerPage() {
         {/* Pixel-Perfect Slide Images Flex Grid */}
         <div className="flex flex-wrap gap-3 md:gap-4 w-full">
           {/* Upload Card - Direct Action */}
+          {canCreate && (
           <div 
             onClick={() => !isUploading && fileInputRef.current?.click()}
             className={cn(
@@ -585,6 +607,7 @@ export default function QuickManagerPage() {
               onChange={(e) => handleFileChange(e, true)} 
             />
           </div>
+          )}
 
           {/* Image Cards */}
           {isLoading ? (
@@ -608,6 +631,7 @@ export default function QuickManagerPage() {
                   />
                   
                   {/* Delete Button - Top Right */}
+                  {canDelete && (
                   <button 
                     type="button"
                     onClick={(e) => {
@@ -618,6 +642,7 @@ export default function QuickManagerPage() {
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
+                  )}
                 </div>
               </div>
             );
@@ -632,6 +657,7 @@ export default function QuickManagerPage() {
       <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
           {/* Add Story Card */}
+          {canCreate && (
           <Dialog open={isSpotlightUploadOpen} onOpenChange={(open) => {
             setIsSpotlightUploadOpen(open);
             if (!open) { 
@@ -714,6 +740,7 @@ export default function QuickManagerPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          )}
 
           {spotlights.map((spot) => (
             <Card key={spot.id} className="min-w-[150px] md:min-w-0 group relative rounded-2xl overflow-hidden border border-border/40 shadow-sm p-[1px] bg-white dark:bg-slate-900">
@@ -732,6 +759,7 @@ export default function QuickManagerPage() {
                      </div>
                    </div>
                 </div>
+                 {canEdit && (
                  <button 
                   onClick={() => {
                     setEditingSpotlightId(spot.id);
@@ -743,12 +771,15 @@ export default function QuickManagerPage() {
                 >
                   <Edit2 className="h-2.5 w-2.5" />
                 </button>
+                 )}
+                {canDelete && (
                 <button 
                   onClick={() => handleSpotlightDelete(spot.id)}
                   className="absolute top-1.5 right-1.5 h-5 w-5 bg-red-500/90 text-white rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-30 cursor-pointer"
                 >
                   <Trash2 className="h-2.5 w-2.5" />
                 </button>
+                )}
               </div>
             </Card>
           ))}
@@ -762,6 +793,7 @@ export default function QuickManagerPage() {
       <section className="space-y-4 md:space-y-6 w-full overflow-hidden">
         <div className="flex flex-wrap gap-3 md:gap-4 w-full">
           {/* Add Offer Card */}
+          {canCreate && (
           <Dialog open={isOfferUploadOpen} onOpenChange={(open) => {
             setIsOfferUploadOpen(open);
             if (!open) { 
@@ -837,6 +869,7 @@ export default function QuickManagerPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          )}
  
           {offers.map((offer) => (
             <Card key={offer.id} className="w-auto max-w-[220px] h-24 md:h-28 group relative rounded-2xl overflow-hidden border-border/20 shadow-sm border-2 p-[1px] bg-white dark:bg-slate-900">
@@ -846,6 +879,7 @@ export default function QuickManagerPage() {
                 <div className="absolute top-2 left-2 px-2 py-0.5 bg-indigo-600 text-white text-[8px] font-black rounded-md shadow-lg">
                   {offer.category}
                 </div>
+                 {canEdit && (
                  <button 
                   onClick={() => {
                     setEditingOfferId(offer.id);
@@ -857,12 +891,15 @@ export default function QuickManagerPage() {
                 >
                   <Edit2 className="h-3.5 w-3.5" />
                 </button>
+                 )}
+                {canDelete && (
                 <button 
                   onClick={() => handleOfferDelete(offer.id)}
                   className="absolute top-2 right-2 h-7 w-7 bg-red-500 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-30 cursor-pointer"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
+                )}
               </div>
             </Card>
           ))}

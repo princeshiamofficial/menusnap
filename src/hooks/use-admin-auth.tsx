@@ -81,17 +81,21 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Real-time checks: periodic, focus change
+  // NOTE: We intentionally use adminUserRef (not adminUser state) to avoid
+  // re-registering the interval/listener on every session update.
   useEffect(() => {
-    if (!adminUser) return;
-
     // Check every 15 seconds
     const interval = setInterval(() => {
-      checkSession();
+      if (adminUserRef.current) {
+        checkSession();
+      }
     }, 15000);
 
     // Check when window gets focus
     const handleFocus = () => {
-      checkSession();
+      if (adminUserRef.current) {
+        checkSession();
+      }
     };
 
     window.addEventListener("focus", handleFocus);
@@ -99,14 +103,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [adminUser, checkSession]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkSession]); // Only depend on checkSession (stable callback), NOT adminUser state
 
   // Check session status on navigation
   useEffect(() => {
-    if (adminUser) {
+    if (adminUserRef.current) {
       checkSession();
     }
-  }, [pathname]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]); // Only re-run when path changes
 
   const adminLogin = useCallback(async (email: string, pass: string) => {
     setAdminLoading(true);

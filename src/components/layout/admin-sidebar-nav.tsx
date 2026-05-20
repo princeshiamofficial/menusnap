@@ -92,8 +92,8 @@ export function AdminSidebarNav() {
               <span className="font-bold text-xs text-sidebar-foreground truncate leading-tight">
                 {adminUser.name || adminUser.email.split('@')[0]}
               </span>
-              <span className="text-[10px] text-sidebar-primary/80 font-bold tracking-wider uppercase mt-0.5">
-                {adminUser.role || 'User'}
+              <span className="text-[10px] text-sidebar-foreground/50 font-medium truncate mt-0.5">
+                {adminUser.email}
               </span>
             </div>
 
