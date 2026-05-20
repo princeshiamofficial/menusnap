@@ -162,12 +162,12 @@ export async function getLeads(
       
       if (filters.dateFrom) {
         conditions.push('c.created_at >= ?');
-        params.push(filters.dateFrom);
+        params.push(`${filters.dateFrom} 00:00:00`);
       }
       
       if (filters.dateTo) {
         conditions.push('c.created_at <= ?');
-        params.push(filters.dateTo);
+        params.push(`${filters.dateTo} 23:59:59`);
       }
 
       if (conditions.length > 0) {
