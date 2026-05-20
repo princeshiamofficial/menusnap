@@ -204,6 +204,15 @@ export async function updateAdminPasswordAction(
     const newHash = await bcrypt.hash(newPassword, 10);
     await pool.execute('UPDATE admins SET password_hash = ? WHERE id = ?', [newHash, session.id]);
 
+    // Invalidate other session tokens for security
+    const cookieStore = await cookies();
+    const currentToken = cookieStore.get(SESSION_COOKIE)?.value;
+    if (currentToken) {
+      await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ? AND token != ?', [session.id, currentToken]);
+    } else {
+      await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ?', [session.id]);
+    }
+
     return { success: true };
   } catch (e: any) {
     return { success: false, error: e.message || 'Server error.' };

@@ -3,6 +3,7 @@
 import pool from '@/lib/mysql';
 import bcrypt from 'bcryptjs';
 import { getAdminSessionAction } from './admin-auth';
+import { cookies } from 'next/headers';
 
 /**
  * Interface representing a user record in the admins table.
@@ -285,6 +286,20 @@ export async function updateAdminUserAction(
       );
     }
 
+    // Invalidate sessions for edited user.
+    // If they updated themselves, delete all OTHER sessions. If they updated someone else, delete ALL sessions.
+    if (session?.id === id) {
+      const cookieStore = await cookies();
+      const currentToken = cookieStore.get('admin_session')?.value;
+      if (currentToken) {
+        await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ? AND token != ?', [id, currentToken]);
+      } else {
+        await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ?', [id]);
+      }
+    } else {
+      await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ?', [id]);
+    }
+
     return { success: true };
   } catch (error: any) {
     console.error('Error updating admin user:', error);
@@ -308,6 +323,8 @@ export async function deleteAdminUserAction(id: number): Promise<{ success: bool
     }
 
     await pool.execute('DELETE FROM admins WHERE id = ?', [id]);
+    // Invalidate sessions for the deleted user
+    await pool.execute('DELETE FROM admin_sessions WHERE admin_id = ?', [id]);
     return { success: true };
   } catch (error: any) {
     console.error('Error deleting admin user:', error);
