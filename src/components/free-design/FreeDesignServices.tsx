@@ -29,7 +29,7 @@ export function FreeDesignServices() {
   ];
 
   return (
-    <section className="bg-white py-6 md:py-24 px-6 md:px-12 lg:px-24 font-bengali border-t border-slate-100 overflow-hidden">
+    <section id="services" className="bg-white py-6 md:py-24 px-6 md:px-12 lg:px-24 font-bengali border-t border-slate-100 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
           

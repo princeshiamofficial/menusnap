@@ -27,7 +27,7 @@ export function FreeDesignTestimonials() {
   ];
 
   return (
-    <section className="bg-[#FAF9F6] py-6 md:py-24 px-6 md:px-12 lg:px-24 font-bengali border-t border-slate-100">
+    <section id="testimonials" className="bg-[#FAF9F6] py-6 md:py-24 px-6 md:px-12 lg:px-24 font-bengali border-t border-slate-100">
       <div className="max-w-7xl mx-auto">
         <div className="mb-16">
           <span className="text-[#F07C22] font-bold mb-4 block uppercase tracking-widest text-sm">আসল অভিজ্ঞতা</span>

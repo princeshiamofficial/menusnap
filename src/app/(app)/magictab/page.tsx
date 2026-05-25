@@ -609,7 +609,7 @@ const Typewriter = React.memo(function Typewriter({ words, className }: { words:
 
 
 export default function MagicTabPage() {
-  const { clientUser, clientLoading } = useClientAuth();
+  const { clientUser, clientLoading, isClientLoggedIn } = useClientAuth();
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -761,11 +761,11 @@ export default function MagicTabPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedMenuType) {
+    if (isClientLoggedIn && selectedMenuType) {
       loadCategories(selectedMenuType);
       loadItems(selectedMenuType);
     }
-  }, [selectedMenuType, loadCategories, loadItems]);
+  }, [isClientLoggedIn, selectedMenuType, loadCategories, loadItems]);
 
 
   // Effect to handle restoring a draft on page load

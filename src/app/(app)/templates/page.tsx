@@ -229,7 +229,7 @@ export default function TemplatesPage(): ReactNode {
   const [showConfetti, setShowConfetti] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { clientUser, clientLoading } = useClientAuth();
+  const { clientUser, clientLoading, isClientLoggedIn } = useClientAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -258,13 +258,15 @@ export default function TemplatesPage(): ReactNode {
         setIsLoading(false);
       }
     }
-    fetchTemplates();
+    if (isClientLoggedIn) {
+      fetchTemplates();
+    }
 
     const orderId = localStorage.getItem('pendingOrderIdForTemplate');
     if (orderId) {
       setPendingOrderId(orderId);
     }
-  }, []);
+  }, [isClientLoggedIn]);
 
   const handleSelectTemplate = (template: ApiTemplate) => {
     setTemplateToConfirm(template);

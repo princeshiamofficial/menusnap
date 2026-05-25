@@ -1,107 +1,121 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
+import { Check } from "lucide-react";
 
 export function FreeDesignFeatures() {
-  const features = [
-    {
-      id: "#১",
-      title: "টাকা দিয়ে হতাশার ভয়?",
-      description: "ডিজাইনারকে পেমেন্ট করলেন কিন্তু কাজ মনের মতো হলো না? পুরো টাকাই লস—এমন চিন্তা আর করতে হবে না।"
-    },
-    {
-      id: "#২",
-      title: "রিভিশনের সময় নষ্ট?",
-      description: "বারবার চেঞ্জ চাইতে গিয়ে সম্পর্ক খারাপ হওয়া বা কাজ শেষ না হওয়ার ঝামেলা এখন অতীত। আমরা প্রফেশনাল কাজ দিই প্রথমবারেই।"
-    },
-    {
-      id: "#৩",
-      title: "মানহীন ডিজাইনের অবসান",
-      description: "মাঝারি ডিজাইন দিয়ে ব্যবসা চালিয়ে প্রথম ইম্প্রেশন হারাবেন না। আপনার ব্র্যান্ডের জন্য আমরা নিশ্চিত করি সেরা মান।"
-    },
-    {
-      id: "#৪",
-      title: "আগে ভরসা, পরে পেমেন্ট",
-      description: "অচেনা কাউকে আগে টাকা দেওয়ার সাহস পাচ্ছেন না? আমাদের ওপর ভরসা রাখা সহজ, কারণ আগে আমরা কাজ করে দেখাই।"
-    }
+  const pricingData: { title: string; price: string; highlight?: boolean }[] = [
+    { title: "১০ পেইজ ডিজাইন চার্জ (৩০০ × ১০)", price: "৳৩,০০০" },
+    { title: "৫টি রিভিশন (২০০ × ৫)", price: "৳১,০০০" },
+    { title: "পাঁচ বছরের অভিজ্ঞ ডিজাইনারের কনসালটেন্সি", price: "৳২০০" },
+    { title: "মেনু লিস্ট কম্পিউটার কম্পোজ", price: "৳২০০" },
+    { title: "প্রাইজ এবং রং রাইটিং চেক", price: "৳২০০" },
+    { title: "হাই কোয়ালিটি (HD) সোশ্যাল ইউজ ফাইল", price: "৳৫০০" }
   ];
 
   return (
-    <section className="bg-white py-6 md:py-24 px-6 md:px-12 lg:px-24 border-t border-slate-100 font-bengali">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-24">
-          <h2 className="text-[#1A1A1A] text-4xl md:text-6xl font-serif mb-6 leading-tight">
-            আগে টাকা দেওয়া মানে <br className="hidden md:block" />
-            অনেক রিস্ক নেওয়া
+    <section id="features" className="bg-white pt-3 pb-6 md:pt-5 md:pb-10 px-6 md:px-12 lg:px-24 border-t border-slate-100 font-bengali">
+      <div className="max-w-4xl mx-auto">
+        {/* Section Header */}
+        <div className="text-center mb-8">
+          <h2 className="text-[#1A1A1A] text-4xl md:text-5xl font-serif mb-6 leading-tight">
+            ডিজাইন ও সার্ভিস মূল্য তালিকা
           </h2>
-          <p className="text-[#666666] text-xl max-w-3xl mx-auto font-medium">
-            বেশিরভাগ বিজনেস ওনার ভালো ডিজাইন চান, কিন্তু না জেনে আগে পেমেন্ট করতে ভয় পান। এই ভয়টা সম্পূর্ণ যুক্তিসঙ্গত, আর আমরা এখানে সেই ভয় দূর করতেই কাজ করি।
+          <p className="text-[#666666] text-lg md:text-xl max-w-2xl mx-auto font-medium">
+            ডিজাইন পছন্দ হলে তবেই পেমেন্ট করবেন — এটাই আমাদের প্রতিশ্রুতি। আমাদের ডিজাইন ও সার্ভিসের বিবরণ নিচে দেখে নিন।
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left Side - Floating Books */}
-          <div className="relative flex justify-center items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="relative w-full aspect-square max-w-[500px]"
-            >
-              <Image
-                src="/floating-books.png"
-                alt="Floating Books"
-                fill
-                className="object-contain"
-              />
-            </motion.div>
-          </div>
-
-          {/* Right Side - Features List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-12">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="flex flex-col gap-3 group"
-              >
+        {/* Pricing Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="w-full overflow-hidden rounded-2xl border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.04)] bg-[#FAF9F6] p-6 md:p-10"
+        >
+          <div className="space-y-1">
+            {pricingData.map((item, index) => (
+              <div key={index} className="flex items-center justify-between gap-4 py-2.5 border-b border-slate-200/60 last:border-0 hover:bg-slate-100/10 px-2 rounded-xl transition-all">
                 <div className="flex items-center gap-3">
-                  <span className="text-[#F07C22] text-2xl font-bold group-hover:scale-110 transition-transform">{feature.id}</span>
-                  <h3 className="text-[#1A1A1A] text-2xl font-bold">
-                    {feature.title}
-                  </h3>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full border-[2.5px] border-[#F07C22] flex items-center justify-center text-[#F07C22]">
+                    <Check className="w-3.5 h-3.5 stroke-[3.5]" />
+                  </div>
+                  <span className="text-[#1A1A1A] text-sm md:text-base font-semibold font-bengali">
+                    {item.title}
+                  </span>
                 </div>
-                <p className="text-[#666666] text-lg leading-relaxed max-w-md">
-                  {feature.description}
-                </p>
-              </motion.div>
+                <span className="text-right text-sm md:text-base font-semibold text-[#1A1A1A] shrink-0 font-bengali">
+                  {item.price}
+                </span>
+              </div>
             ))}
+
+            {/* Total Row */}
+            <div className="flex items-center justify-between gap-4 pt-4 mt-3 border-t-2 border-dashed border-slate-300 px-2">
+              <span className="text-[#1A1A1A] text-base md:text-lg font-bold font-bengali">
+                মোট মূল্য (Total Price)
+              </span>
+              <span className="text-right text-base md:text-lg font-bold text-[#F07C22] font-bengali">
+                ৳৫,১০০
+              </span>
+            </div>
           </div>
-        </div>
+        </motion.div>
+
+        {/* Hot Offer Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+          className="mt-6 w-full overflow-hidden rounded-2xl border border-red-600/30 shadow-[0_15px_40px_rgba(220,38,38,0.15)] bg-black py-3 px-6 md:py-4 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-bengali"
+        >
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black bg-neutral-900 border border-red-500/30 text-white uppercase tracking-wider">
+              🔥 <span className="animate-fire text-[#FFEA00]">Hot Offer</span>
+            </span>
+            <span className="text-white text-base md:text-lg font-bold">
+              সম্পূর্ণ প্যাকেজ ও সার্ভিস চার্জ
+            </span>
+          </div>
+          <div className="flex items-center gap-3.5">
+            <span className="text-lg md:text-xl line-through text-slate-500 font-semibold">
+              ৳৫,১০০
+            </span>
+            <span className="text-3xl md:text-4xl font-bold text-[#F07C22]">
+              ৳১,০০০
+            </span>
+          </div>
+        </motion.div>
       </div>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Hind+Siliguri:wght@400;500;600;700&display=swap');
+        .font-serif {
+          font-family: 'Playfair Display', serif;
+        }
+        .font-bengali {
+          font-family: 'Hind Siliguri', sans-serif;
+        }
+        @keyframes fire-glow {
+          0%, 100% {
+            text-shadow: 
+              0 0 4px #ff2a00,
+              0 -2px 8px #ff7b00,
+              0 -4px 12px #ffea00;
+          }
+          50% {
+            text-shadow: 
+              0 0 6px #ff2a00,
+              0 -4px 10px #ff7b00,
+              0 -6px 16px #ffea00;
+          }
+        }
+        .animate-fire {
+          animation: fire-glow 1.2s ease-in-out infinite;
+        }
+      `}</style>
     </section>
   );
-}
-
-const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Hind+Siliguri:wght@400;500;600;700&display=swap');
-  
-  .font-serif {
-    font-family: 'Playfair Display', serif;
-  }
-  
-  .font-bengali {
-    font-family: 'Hind Siliguri', sans-serif;
-  }
-`;
-
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement("style");
-  styleSheet.innerText = styles;
-  document.head.appendChild(styleSheet);
 }
