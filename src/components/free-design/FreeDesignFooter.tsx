@@ -11,17 +11,17 @@ export function FreeDesignFooter() {
         {/* Contacts & Policies Sub-Container to reduce gap by 70% */}
         <div className="w-full flex flex-col items-center gap-3">
           {/* ROW 1: Social Contact Buttons & Support 24/7 */}
-          <div className="w-full flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+          <div className="w-full flex flex-row items-center justify-center gap-3 sm:gap-6 md:gap-8">
             
             {/* Action Icons (Call, Messenger, WhatsApp) */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Phone Call */}
               <a 
                 href="tel:+8801919760626" 
-                className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 to-emerald-400 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
+                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-emerald-500 to-emerald-400 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
                 aria-label="Call Support"
               >
-                <i className="bi bi-telephone-fill text-2xl text-white"></i>
+                <i className="bi bi-telephone-fill text-lg md:text-2xl text-white"></i>
               </a>
               
               {/* FB Messenger */}
@@ -29,10 +29,10 @@ export function FreeDesignFooter() {
                 href="https://m.me/menusnap" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-400 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
+                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-400 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
                 aria-label="Contact Messenger"
               >
-                <i className="bi bi-messenger text-2xl text-white"></i>
+                <i className="bi bi-messenger text-lg md:text-2xl text-white"></i>
               </a>
               
               {/* WhatsApp */}
@@ -40,28 +40,28 @@ export function FreeDesignFooter() {
                 href="https://wa.me/8801919760626" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
+                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
                 aria-label="Contact WhatsApp"
               >
-                <i className="bi bi-whatsapp text-[26px] text-white"></i>
+                <i className="bi bi-whatsapp text-xl md:text-[26px] text-white"></i>
               </a>
             </div>
 
             {/* Support Headset Group */}
-            <div className="flex items-center gap-[4px]">
-              <div className="w-[104px] h-[104px] shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-16 h-16 md:w-[104px] md:h-[104px] shrink-0">
                 <img 
                   src="/spmic.webp" 
                   alt="Support Headset" 
-                  className="w-[104px] h-[104px] object-contain"
+                  className="w-full h-full object-contain"
                 />
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-red-600 text-sm sm:text-base font-normal tracking-wide">Support 24/7</span>
-                <a href="tel:+8801919760626" className="text-white text-base sm:text-lg font-normal tracking-wide hover:text-red-500 transition-colors">
+                <span className="text-red-600 text-[10px] sm:text-base font-normal tracking-wide leading-tight">Support 24/7</span>
+                <a href="tel:+8801919760626" className="text-white text-xs sm:text-lg font-bold sm:font-normal tracking-wide hover:text-red-500 transition-colors leading-tight">
                   +8801919-760626
                 </a>
-                <a href="mailto:menusnap.official@gmail.com" className="text-red-500 text-xs sm:text-sm font-normal hover:underline">
+                <a href="mailto:menusnap.official@gmail.com" className="text-red-500 text-[9px] sm:text-sm font-normal hover:underline leading-tight">
                   menusnap.official@gmail.com
                 </a>
               </div>
@@ -71,7 +71,7 @@ export function FreeDesignFooter() {
 
           {/* ROW 2: Policy Links */}
           <div className="w-full text-center py-1">
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-lg sm:text-xl font-normal tracking-wide text-red-600">
+            <div className="flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-3 gap-y-2 text-xs sm:text-xl font-normal tracking-wide text-red-600">
               <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
               <span className="text-neutral-600 font-normal">|</span>
               <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
