@@ -11,43 +11,41 @@ import { FreeDesignAddReview } from "@/components/free-design/FreeDesignAddRevie
 import { FreeDesignBookingCalendar } from "@/components/free-design/FreeDesignBookingCalendar";
 import { FreeDesignFooter } from "@/components/free-design/FreeDesignFooter";
 
-import { ClientGate } from "@/components/auth/ClientGate";
+
 
 export default function FreeDesignPage() {
   return (
-    <ClientGate>
-      <main className="min-h-screen bg-white">
-        {/* Navbar */}
-        <FreeDesignNavbar />
+    <main className="min-h-screen bg-white">
+      {/* Navbar */}
+      <FreeDesignNavbar />
 
-        {/* Hero Section */}
-        <FreeDesignHero />
+      {/* Hero Section */}
+      <FreeDesignHero />
 
-        {/* Happy Client Section */}
-        <FreeDesignHappyClient />
+      {/* Happy Client Section */}
+      <FreeDesignHappyClient />
 
-        {/* Client Review Section */}
-        <FreeDesignClientReview />
+      {/* Client Review Section */}
+      <FreeDesignClientReview />
 
-        {/* Features Section */}
-        <FreeDesignFeatures />
+      {/* Features Section */}
+      <FreeDesignFeatures />
 
-        {/* Coverage Section */}
-        <FreeDesignCoverage />
+      {/* Coverage Section */}
+      <FreeDesignCoverage />
 
-        {/* Quantity Info Section */}
-        <FreeDesignQuantity />
+      {/* Quantity Info Section */}
+      <FreeDesignQuantity />
 
-        {/* Add Review Section */}
-        {/* <FreeDesignAddReview /> */}
+      {/* Add Review Section */}
+      {/* <FreeDesignAddReview /> */}
 
-        {/* Slot Booking Calendar Section */}
-        <FreeDesignBookingCalendar />
+      {/* Slot Booking Calendar Section */}
+      <FreeDesignBookingCalendar />
 
-        {/* Footer Section */}
-        <FreeDesignFooter />
-      </main>
-    </ClientGate>
+      {/* Footer Section */}
+      <FreeDesignFooter />
+    </main>
   );
 }
 
