@@ -69,21 +69,21 @@ export function FreeDesignFeatures() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="mt-6 w-full overflow-hidden rounded-2xl border border-red-600/30 shadow-[0_15px_40px_rgba(220,38,38,0.15)] bg-black py-3 px-6 md:py-4 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-bengali"
+          className="mt-6 w-full overflow-hidden rounded-2xl border border-red-600/30 shadow-[0_15px_40px_rgba(220,38,38,0.15)] bg-black py-2.5 px-3 sm:py-4 sm:px-8 flex flex-row items-center justify-between gap-2 sm:gap-4 font-bengali"
         >
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black bg-neutral-900 border border-red-500/30 text-white uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-3.5 sm:py-1 rounded-full text-[9px] sm:text-xs font-black bg-neutral-900 border border-red-500/30 text-white uppercase tracking-wider whitespace-nowrap">
               🔥 <span className="animate-fire text-[#FFEA00]">Hot Offer</span>
             </span>
-            <span className="text-white text-base md:text-lg font-bold">
+            <span className="text-white text-[10px] sm:text-lg font-bold whitespace-nowrap">
               সম্পূর্ণ প্যাকেজ ও সার্ভিস চার্জ
             </span>
           </div>
-          <div className="flex items-center gap-3.5">
-            <span className="text-lg md:text-xl line-through text-slate-500 font-semibold">
+          <div className="flex items-center gap-2 sm:gap-3.5">
+            <span className="text-xs sm:text-xl line-through text-slate-500 font-semibold whitespace-nowrap">
               ৳৫,১০০
             </span>
-            <span className="text-3xl md:text-4xl font-bold text-[#F07C22]">
+            <span className="text-base sm:text-4xl font-bold text-[#F07C22] whitespace-nowrap">
               ৳১,০০০
             </span>
           </div>
