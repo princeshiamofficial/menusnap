@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 export function FreeDesignHappyClient() {
   return (
-    <section id="happy-clients" className="scroll-mt-[120px] bg-slate-50 pt-4 pb-2 md:pt-6 md:pb-4 px-3 md:px-12 lg:px-24 font-bengali">
+    <section id="happy-clients" className="scroll-mt-[120px] bg-slate-50 pt-4 pb-2 md:pt-6 md:pb-4 px-0 md:px-12 lg:px-24 font-bengali">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-6 md:mb-8">
@@ -25,7 +25,7 @@ export function FreeDesignHappyClient() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="relative w-full rounded-3xl overflow-hidden border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.06)] bg-white"
+          className="relative w-full rounded-none md:rounded-3xl overflow-hidden border-x-0 md:border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.06)] bg-white"
         >
           <Image
             src="/happclient.png"

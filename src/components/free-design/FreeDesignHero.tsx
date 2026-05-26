@@ -24,8 +24,8 @@ export function FreeDesignHero() {
   ];
 
   return (
-    <section className="w-full bg-white px-4 md:px-6 pt-4 pb-1 md:pt-8 md:pb-2 font-bengali">
-      <div className="max-w-7xl mx-auto w-full bg-black rounded-3xl md:rounded-[2.5rem] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.15)] px-6 py-6 md:py-8 md:px-12 lg:py-10 lg:px-20 relative overflow-hidden">
+    <section className="w-full bg-white px-0 md:px-6 pt-4 pb-1 md:pt-8 md:pb-2 font-bengali">
+      <div className="max-w-7xl mx-auto w-full bg-black rounded-none md:rounded-[2.5rem] border-x-0 md:border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.15)] px-6 py-6 md:py-8 md:px-12 lg:py-10 lg:px-20 relative overflow-hidden">
         {/* Background glow gradient */}
         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-black to-slate-900 pointer-events-none" />        {/* ROW: Coach Kanchon Quote Card */}
         <div className="relative z-10 grid grid-cols-12 gap-4 items-center w-full bg-white/[0.02] backdrop-blur-md border border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 shadow-2xl shadow-black/50 overflow-hidden">

@@ -175,13 +175,19 @@
 }
 
 @media (max-width: 768px) {
-  html, body, #__next, body > div {
-    overflow-x: hidden !important;
-    max-width: 100vw !important;
-    position: relative;
+  /* NOTE: Do NOT set overflow-x: hidden on html — it breaks position: sticky.
+     Use body-only overflow clipping and avoid position: relative on html/body. */
+  body {
+    overflow-x: clip; /* 'clip' prevents horizontal scroll without creating a scroll container that breaks sticky */
+    max-width: 100vw;
     width: 100%;
     margin: 0;
     padding: 0;
+  }
+
+  #__next, body > div:not([class*="sticky"]) {
+    max-width: 100vw;
+    width: 100%;
   }
   
   * {
