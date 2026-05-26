@@ -10,7 +10,7 @@ export function FreeDesignHappyClient() {
         {/* Section Header */}
         <div className="text-center mb-6 md:mb-8">
 
-          <h2 className="text-[#1A1A1A] text-[14px] sm:text-3xl md:text-5xl font-serif mb-6 leading-tight whitespace-nowrap tracking-tight">
+          <h2 className="text-[#1A1A1A] text-[20px] sm:text-3xl md:text-5xl font-serif mb-6 leading-tight tracking-tight">
             শতশত রেস্টুরেন্ট ও পার্লারের বিশ্বস্ত পার্টনার
           </h2>
           

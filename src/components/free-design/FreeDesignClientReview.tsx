@@ -138,7 +138,7 @@ export function FreeDesignClientReview() {
           {/* Section Header */}
           <div className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <h2 className="text-white text-3xl md:text-5xl font-serif leading-tight">
+              <h2 className="text-white text-[20px] sm:text-3xl md:text-5xl font-serif leading-tight">
                 Client Review
               </h2>
             </div>
