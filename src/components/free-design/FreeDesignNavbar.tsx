@@ -104,7 +104,7 @@ export function FreeDesignNavbar() {
       >
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/dashboard/" className="flex items-center gap-2 group">
+          <Link href="/free-design" className="flex items-center gap-2 group">
             <div className="bg-black px-4 py-2 rounded-xl transition-transform group-hover:scale-105 flex items-center justify-center">
               <img 
                 src="/menusnap-logo-white.png" 
