@@ -129,7 +129,7 @@ export function FreeDesignClientReview() {
   };
 
   return (
-    <section id="client-reviews" className="w-full bg-white px-4 md:px-6 pt-3 pb-0 md:pt-6 md:pb-0 font-bengali border-t border-slate-100">
+    <section id="client-reviews" className="scroll-mt-[120px] w-full bg-white px-4 md:px-6 pt-3 pb-0 md:pt-6 md:pb-0 font-bengali border-t border-slate-100">
       <div className="max-w-7xl mx-auto w-full bg-black rounded-3xl md:rounded-[2.5rem] border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.15)] px-6 pt-8 pb-4 md:pt-12 md:pb-6 md:px-12 lg:px-20 relative overflow-hidden">
         {/* Background glow gradient */}
         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-black to-slate-900 pointer-events-none" />

@@ -9,6 +9,7 @@ import { FreeDesignCoverage } from "@/components/free-design/FreeDesignCoverage"
 import { FreeDesignQuantity } from "@/components/free-design/FreeDesignQuantity";
 import { FreeDesignAddReview } from "@/components/free-design/FreeDesignAddReview";
 import { FreeDesignBookingCalendar } from "@/components/free-design/FreeDesignBookingCalendar";
+import { FreeDesignFooter } from "@/components/free-design/FreeDesignFooter";
 
 import { ClientGate } from "@/components/auth/ClientGate";
 
@@ -38,10 +39,13 @@ export default function FreeDesignPage() {
         <FreeDesignQuantity />
 
         {/* Add Review Section */}
-        <FreeDesignAddReview />
+        {/* <FreeDesignAddReview /> */}
 
         {/* Slot Booking Calendar Section */}
         <FreeDesignBookingCalendar />
+
+        {/* Footer Section */}
+        <FreeDesignFooter />
       </main>
     </ClientGate>
   );

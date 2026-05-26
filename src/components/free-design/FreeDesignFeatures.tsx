@@ -14,7 +14,7 @@ export function FreeDesignFeatures() {
   ];
 
   return (
-    <section id="features" className="bg-white pt-3 pb-6 md:pt-5 md:pb-10 px-6 md:px-12 lg:px-24 border-t border-slate-100 font-bengali">
+    <section id="features" className="scroll-mt-[120px] bg-white pt-3 pb-6 md:pt-5 md:pb-10 px-6 md:px-12 lg:px-24 border-t border-slate-100 font-bengali">
       <div className="max-w-4xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-8">

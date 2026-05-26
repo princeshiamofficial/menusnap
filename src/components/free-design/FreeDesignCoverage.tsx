@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 
 export function FreeDesignCoverage() {
   return (
-    <section id="coverage" className="w-full bg-white px-4 md:px-6 pt-3 pb-3 md:pt-4 md:pb-4 font-bengali">
+    <section id="coverage" className="scroll-mt-[120px] w-full bg-white px-4 md:px-6 pt-3 pb-3 md:pt-4 md:pb-4 font-bengali">
       <div className="max-w-7xl mx-auto w-full text-center px-6 md:px-12 lg:px-20">
         {/* Description Text */}
-        <p className="text-[#666666] text-[20px] md:text-[26px] font-bold mb-6">
+        <p className="text-[#666666] text-[14px] md:text-[18px] font-bold mb-6">
           বিগত ৫ বছরে আমাদের সেবার পরিধি ও দেশজুড়ে আমাদের কাজের ব্যাপ্তি।
         </p>
 
@@ -17,7 +17,7 @@ export function FreeDesignCoverage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="w-full flex items-center justify-center"
+          className="w-full max-w-3xl mx-auto flex items-center justify-center"
         >
           <img
             src="/coverage-country.png"

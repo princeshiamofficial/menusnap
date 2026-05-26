@@ -182,14 +182,14 @@ export function FreeDesignBookingCalendar() {
   });
 
   return (
-    <section id="booking-calendar" className="w-full bg-white px-4 md:px-6 py-10 md:py-16 border-t border-slate-100 font-sans">
-      <div className="max-w-7xl mx-auto w-full px-4 md:px-12 lg:px-20">
+    <section id="booking-calendar" className="scroll-mt-[120px] w-full bg-white px-4 md:px-6 py-10 md:py-16 border-t border-slate-100 font-sans">
+      <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-12 lg:px-20">
         
         {/* Main Calendly Mock Container */}
-        <div className="max-w-5xl mx-auto bg-white border border-slate-200/60 rounded-3xl shadow-[0_15px_50px_rgba(0,0,0,0.06)] overflow-hidden min-h-[550px] grid grid-cols-1 md:grid-cols-12">
+        <div className="max-w-5xl mx-auto bg-white border border-slate-100 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden min-h-[580px] grid grid-cols-1 md:grid-cols-12">
           
           {/* LEFT SIDEBAR: Meeting Details (Col Span 4) */}
-          <div className="md:col-span-4 border-b md:border-b-0 md:border-r border-slate-200 p-6 md:p-8 flex flex-col justify-between bg-slate-50/50">
+          <div className="md:col-span-4 border-b md:border-b-0 md:border-r border-slate-100 p-6 md:p-8 flex flex-col justify-between bg-slate-50/30">
             <div>
               {/* Host Logo Wrapper */}
               <div className="bg-black inline-flex px-3 py-1.5 rounded-lg mb-6">
@@ -200,43 +200,45 @@ export function FreeDesignBookingCalendar() {
                 />
               </div>
 
-              {/* Host Title */}
-              <h3 className="text-slate-500 font-bold text-xs uppercase tracking-wider mb-2">
-                MenuSnap
-              </h3>
-              
+
               {/* Event Name */}
-              <h1 className="text-slate-900 font-extrabold text-xl md:text-2xl leading-tight mb-4">
+              <h1 className="text-slate-900 font-bold text-lg md:text-xl lg:text-2xl leading-tight mb-6 tracking-tight">
                 Free Design Strategy Call
               </h1>
 
-              {/* Meeting duration */}
-              <div className="flex items-center gap-2.5 text-slate-600 font-bold text-sm mb-3">
-                <Clock className="w-4 h-4 text-slate-400" />
-                <span>15 min</span>
-              </div>
+              <div className="space-y-4 mb-6">
+                {/* Meeting duration */}
+                <div className="flex items-center gap-3 text-slate-600 font-semibold text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-[#F07C22] shrink-0">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <span>15 min</span>
+                </div>
 
-              {/* Delivery Details */}
-              <div className="flex items-center gap-2.5 text-slate-600 font-bold text-sm mb-6">
-                <Globe className="w-4 h-4 text-slate-400" />
-                <span>WhatsApp Call / Google Meet</span>
+                {/* Delivery Details */}
+                <div className="flex items-center gap-3 text-slate-600 font-semibold text-sm">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-[#F07C22] shrink-0">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <span>WhatsApp Call / Google Meet</span>
+                </div>
               </div>
 
               {/* Meeting Details Description */}
-              <p className="text-slate-500 text-xs md:text-sm leading-relaxed mb-6">
+              <p className="text-slate-500 text-xs md:text-sm leading-relaxed mb-6 font-medium">
                 A quick 15-minute consultation to review your menu structure, pricing strategy, and design options to boost your restaurant or salon sales.
               </p>
             </div>
 
             {/* Footer timezone hint */}
-            <div className="text-slate-400 text-xs font-semibold flex items-center gap-1.5 mt-auto">
-              <Globe className="w-3.5 h-3.5" />
+            <div className="text-slate-400 text-xs font-semibold flex items-center gap-2 mt-8 md:mt-auto">
+              <Globe className="w-4 h-4 text-slate-400" />
               <span>Bangladesh Time (GMT+6)</span>
             </div>
           </div>
 
           {/* RIGHT VIEWPORT: Calendar / Time / Details Form (Col Span 8) */}
-          <div className="md:col-span-8 p-6 md:p-8 flex flex-col relative justify-center bg-white">
+          <div className="md:col-span-8 p-6 md:p-8 lg:p-10 flex flex-col relative justify-center bg-white">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
@@ -244,30 +246,30 @@ export function FreeDesignBookingCalendar() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="w-full flex flex-col lg:flex-row gap-6 md:gap-8 justify-between"
+                  className="w-full flex flex-col lg:flex-row gap-8 lg:gap-10 justify-center items-start max-w-3xl mx-auto"
                 >
                   {/* Calendar Widget panel */}
-                  <div className="flex-1 w-full max-w-md mx-auto lg:max-w-none">
-                    <h2 className="text-slate-950 font-bold text-lg mb-6">
+                  <div className="flex-1 w-full max-w-sm mx-auto">
+                    <h2 className="text-slate-900 font-bold text-lg mb-6 tracking-tight">
                       Select a Date & Time
                     </h2>
 
                     {/* Month Picker Header */}
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-slate-700 font-bold text-sm">
+                      <span className="text-slate-800 font-bold text-base pl-1">
                         {monthNames[month]} {year}
                       </span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={handlePrevMonth}
-                          className="p-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+                          className="p-2 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-all border border-slate-100 text-slate-500"
                           aria-label="Previous month"
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
                         <button
                           onClick={handleNextMonth}
-                          className="p-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+                          className="p-2 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-all border border-slate-100 text-slate-500"
                           aria-label="Next month"
                         >
                           <ChevronRight className="w-4 h-4" />
@@ -276,7 +278,7 @@ export function FreeDesignBookingCalendar() {
                     </div>
 
                     {/* Calendar grid */}
-                    <div className="grid grid-cols-7 gap-y-2 text-center text-xs font-bold text-slate-400 mb-2">
+                    <div className="grid grid-cols-7 gap-y-2 text-center text-[10px] font-bold text-slate-400 tracking-wider mb-3">
                       <span>SUN</span>
                       <span>MON</span>
                       <span>TUE</span>
@@ -286,7 +288,7 @@ export function FreeDesignBookingCalendar() {
                       <span>SAT</span>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-y-2.5 gap-x-1.5 text-center">
+                    <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center">
                       {calendarDays.map((item, idx) => {
                         const past = isPastDate(item.date);
                         const current = item.isCurrentMonth;
@@ -302,18 +304,17 @@ export function FreeDesignBookingCalendar() {
                               setSelectedDate(item.date);
                               setSelectedTime(null);
                             }}
-                            className={`aspect-square w-full rounded-full flex flex-col items-center justify-center font-bold text-xs relative transition-all ${
+                            className={`h-10 w-10 md:h-11 md:w-11 rounded-full flex items-center justify-center text-sm relative transition-all mx-auto ${
                               selected
-                                ? "bg-[#F07C22] text-white"
+                                ? "bg-[#F07C22] text-white shadow-md shadow-[#F07C22]/30 font-bold"
                                 : active
-                                ? "bg-orange-50 text-[#F07C22] hover:bg-[#F07C22]/20"
-                                : "text-slate-300 cursor-not-allowed"
+                                ? today
+                                  ? "bg-orange-500/10 text-[#F07C22] border border-[#F07C22]/20 font-bold hover:bg-[#F07C22] hover:text-white"
+                                  : "text-slate-800 hover:bg-orange-50 hover:text-[#F07C22] font-semibold"
+                                : "text-slate-300/80 cursor-not-allowed font-normal"
                             }`}
                           >
                             <span>{item.day}</span>
-                            {today && !selected && (
-                              <span className="absolute bottom-1.5 w-1 h-1 rounded-full bg-[#F07C22]" />
-                            )}
                           </button>
                         );
                       })}
@@ -325,13 +326,13 @@ export function FreeDesignBookingCalendar() {
                     <motion.div
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="w-full lg:w-60 shrink-0 flex flex-col max-w-md mx-auto lg:max-w-none"
+                      className="w-full lg:w-60 shrink-0 flex flex-col max-w-sm mx-auto"
                     >
                       <h4 className="text-slate-700 font-bold text-sm mb-4">
                         {formatSelectedDate(selectedDate)}
                       </h4>
 
-                      <div className="flex flex-col gap-2 overflow-y-auto max-h-[400px] pr-1">
+                      <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[480px] pr-1.5 scrollbar-thin">
                         {filteredTimeSlots.length > 0 ? (
                           filteredTimeSlots.map((time, idx) => {
                             const timeSelected = selectedTime === time;
@@ -339,10 +340,10 @@ export function FreeDesignBookingCalendar() {
                               <div key={idx} className="flex flex-row gap-2 w-full">
                                 <button
                                   onClick={() => setSelectedTime(time)}
-                                  className={`py-3.5 px-4 border rounded-lg text-xs font-bold transition-all ${
+                                  className={`py-3 px-4 border rounded-xl text-sm font-semibold transition-all ${
                                     timeSelected
-                                      ? "bg-slate-700 border-slate-700 text-white w-1/2"
-                                      : "border-orange-500/30 text-[#F07C22] hover:border-[#F07C22] bg-white w-full"
+                                      ? "bg-slate-900 border-slate-900 text-white w-1/2"
+                                      : "border-slate-200 text-slate-700 hover:border-[#F07C22] hover:bg-orange-50/20 bg-white w-full"
                                   }`}
                                 >
                                   {time}
@@ -353,7 +354,7 @@ export function FreeDesignBookingCalendar() {
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     onClick={handleNextStep}
-                                    className="w-1/2 py-3.5 bg-[#F07C22] hover:bg-[#D96B19] text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center"
+                                    className="w-1/2 py-3 bg-[#F07C22] hover:bg-[#D96B19] text-white rounded-xl text-sm font-bold shadow-md shadow-[#F07C22]/20 transition-all flex items-center justify-center"
                                   >
                                     Next
                                   </motion.button>
@@ -378,82 +379,82 @@ export function FreeDesignBookingCalendar() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="w-full"
+                  className="w-full max-w-lg mx-auto"
                 >
                   {/* Back Navigation */}
                   <button
                     onClick={handleBackStep}
-                    className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-xs font-bold mb-6 transition-colors"
+                    className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200/80 mb-6 transition-all"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Back</span>
                   </button>
 
-                  <h2 className="text-slate-950 font-extrabold text-lg mb-2">
+                  <h2 className="text-slate-950 font-extrabold text-xl mb-1 tracking-tight">
                     Enter Details
                   </h2>
-                  <p className="text-slate-400 text-xs font-bold mb-6">
+                  <p className="text-slate-400 text-xs font-semibold mb-6">
                     {formatSelectedDate(selectedDate)} at {confirmedTime}
                   </p>
 
-                  <form onSubmit={handleScheduleBooking} className="space-y-4 max-w-lg">
+                  <form onSubmit={handleScheduleBooking} className="space-y-4">
                     {/* Name input */}
                     <div className="space-y-1.5">
-                      <label className="text-slate-700 text-xs font-bold pl-0.5">Name *</label>
+                      <label className="text-slate-600 text-xs font-semibold pl-0.5">Name *</label>
                       <div className="relative">
-                        <User className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                           type="text"
                           required
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           placeholder="Your Name"
-                          className="w-full bg-white border border-slate-200 focus:border-[#F07C22] rounded-xl py-3 pl-10 pr-4 text-slate-800 text-sm font-medium shadow-2xs outline-none transition-all focus:ring-2 focus:ring-[#F07C22]/10"
+                          className="w-full bg-white border border-slate-200 focus:border-[#F07C22] focus:ring-4 focus:ring-[#F07C22]/10 rounded-2xl py-3 pl-10 pr-4 text-slate-800 text-sm font-medium outline-none transition-all shadow-xs"
                         />
                       </div>
                     </div>
 
                     {/* Email Input */}
                     <div className="space-y-1.5">
-                      <label className="text-slate-700 text-xs font-bold pl-0.5">Email *</label>
+                      <label className="text-slate-600 text-xs font-semibold pl-0.5">Email *</label>
                       <div className="relative">
-                        <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                           type="email"
                           required
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="Email Address"
-                          className="w-full bg-white border border-slate-200 focus:border-[#F07C22] rounded-xl py-3 pl-10 pr-4 text-slate-800 text-sm font-medium shadow-2xs outline-none transition-all focus:ring-2 focus:ring-[#F07C22]/10"
+                          className="w-full bg-white border border-slate-200 focus:border-[#F07C22] focus:ring-4 focus:ring-[#F07C22]/10 rounded-2xl py-3 pl-10 pr-4 text-slate-800 text-sm font-medium outline-none transition-all shadow-xs"
                         />
                       </div>
                     </div>
 
                     {/* WhatsApp Input */}
                     <div className="space-y-1.5">
-                      <label className="text-slate-700 text-xs font-bold pl-0.5">WhatsApp Number *</label>
+                      <label className="text-slate-600 text-xs font-semibold pl-0.5">WhatsApp Number *</label>
                       <div className="relative">
-                        <Phone className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
+                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                           type="tel"
                           required
                           value={whatsapp}
                           onChange={(e) => setWhatsapp(e.target.value)}
                           placeholder="WhatsApp Number"
-                          className="w-full bg-white border border-slate-200 focus:border-[#F07C22] rounded-xl py-3 pl-10 pr-4 text-slate-800 text-sm font-medium shadow-2xs outline-none transition-all focus:ring-2 focus:ring-[#F07C22]/10"
+                          className="w-full bg-white border border-slate-200 focus:border-[#F07C22] focus:ring-4 focus:ring-[#F07C22]/10 rounded-2xl py-3 pl-10 pr-4 text-slate-800 text-sm font-medium outline-none transition-all shadow-xs"
                         />
                       </div>
                     </div>
 
                     {/* Notes Field */}
                     <div className="space-y-1.5">
-                      <label className="text-slate-700 text-xs font-bold pl-0.5">Share notes / requirements</label>
+                      <label className="text-slate-600 text-xs font-semibold pl-0.5">Share notes / requirements</label>
                       <textarea
                         rows={3}
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Please share anything that will help prepare for our meeting."
-                        className="w-full bg-white border border-slate-200 focus:border-[#F07C22] rounded-xl py-3 px-4 text-slate-800 text-sm font-medium shadow-2xs outline-none transition-all focus:ring-2 focus:ring-[#F07C22]/10 resize-none"
+                        className="w-full bg-white border border-slate-200 focus:border-[#F07C22] focus:ring-4 focus:ring-[#F07C22]/10 rounded-2xl py-3 px-4 text-slate-800 text-sm font-medium outline-none transition-all resize-none shadow-xs"
                       />
                     </div>
 
@@ -466,7 +467,7 @@ export function FreeDesignBookingCalendar() {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="bg-[#F07C22] hover:bg-[#D96B19] text-white font-bold py-3.5 px-6 rounded-full text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto bg-[#F07C22] hover:bg-[#D96B19] text-white font-bold py-3.5 px-8 rounded-full text-sm shadow-md shadow-[#F07C22]/20 hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? (
                         <>
@@ -489,37 +490,43 @@ export function FreeDesignBookingCalendar() {
                   exit={{ opacity: 0 }}
                   className="w-full text-center flex flex-col items-center justify-center p-4 md:p-8"
                 >
-                  <div className="w-16 h-16 rounded-full bg-green-50 border border-green-200 flex items-center justify-center text-green-500 mb-6 shadow-sm">
-                    <CheckCircle2 className="w-9 h-9" />
+                  <div className="w-20 h-20 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 mb-6 shadow-xs animate-pulse">
+                    <CheckCircle2 className="w-10 h-10" />
                   </div>
                   
-                  <h2 className="text-slate-900 font-extrabold text-2xl mb-2">
+                  <h2 className="text-slate-900 font-extrabold text-2xl mb-2 tracking-tight">
                     You are scheduled!
                   </h2>
-                  <p className="text-slate-400 text-sm font-semibold mb-6">
+                  <p className="text-slate-450 text-sm font-semibold mb-8">
                     A confirmation details overview is provided below.
                   </p>
 
-                  <div className="w-full max-w-md border border-slate-100 rounded-2xl bg-slate-50/50 p-5 text-left mb-6 space-y-3.5">
-                    <div className="flex items-center gap-2.5 text-slate-700 font-bold text-sm border-b border-slate-100 pb-2">
-                      <div className="w-2 h-2 rounded-full bg-[#F07C22]" />
+                  <div className="w-full max-w-md border border-slate-100 rounded-3xl bg-slate-50/40 p-6 text-left mb-8 space-y-4 shadow-sm">
+                    <div className="flex items-center gap-2.5 text-slate-800 font-bold text-base border-b border-slate-100 pb-3">
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#F07C22]" />
                       <span>Free Design Strategy Call</span>
                     </div>
 
-                    <div className="flex items-center gap-2.5 text-slate-600 font-medium text-xs">
-                      <Clock className="w-4 h-4 text-slate-400" />
+                    <div className="flex items-center gap-3 text-slate-600 font-semibold text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-[#F07C22]">
+                        <Clock className="w-4 h-4" />
+                      </div>
                       <span>15 min</span>
                     </div>
 
-                    <div className="flex items-center gap-2.5 text-slate-600 font-medium text-xs">
-                      <CalendarIcon className="w-4 h-4 text-slate-400" />
-                      <span className="font-semibold text-slate-800">
+                    <div className="flex items-center gap-3 text-slate-600 font-semibold text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-[#F07C22]">
+                        <CalendarIcon className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-slate-800">
                         {confirmedTime}, {formatSelectedDate(selectedDate)}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2.5 text-slate-600 font-medium text-xs">
-                      <Globe className="w-4 h-4 text-slate-400" />
+                    <div className="flex items-center gap-3 text-slate-600 font-semibold text-sm">
+                      <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-[#F07C22]">
+                        <Globe className="w-4 h-4" />
+                      </div>
                       <span>Bangladesh Time (GMT+6)</span>
                     </div>
                   </div>
@@ -535,7 +542,7 @@ export function FreeDesignBookingCalendar() {
                       setNotes("");
                     }}
                     variant="outline"
-                    className="border-slate-200 hover:bg-slate-100 rounded-full font-bold px-6 py-4"
+                    className="border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-full font-bold px-8 py-3.5 text-sm transition-all shadow-xs"
                   >
                     Schedule another meeting
                   </Button>

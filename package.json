@@ -72,6 +72,7 @@
     "@uiw/react-md-editor": "^4.0.4",
     "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "bcryptjs": "^3.0.3",
+    "bootstrap-icons": "^1.13.1",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

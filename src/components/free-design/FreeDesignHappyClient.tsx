@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 
 export function FreeDesignHappyClient() {
   return (
-    <section id="happy-clients" className="bg-slate-50 pt-4 pb-2 md:pt-6 md:pb-4 px-6 md:px-12 lg:px-24 font-bengali">
+    <section id="happy-clients" className="scroll-mt-[120px] bg-slate-50 pt-4 pb-2 md:pt-6 md:pb-4 px-6 md:px-12 lg:px-24 font-bengali">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-6 md:mb-8">

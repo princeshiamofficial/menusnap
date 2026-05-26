@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -10,11 +10,92 @@ export function FreeDesignNavbar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navLinks = [
-    { label: "ড্যাশবোর্ড", href: "/dashboard/", isExternal: true },
-    { label: "ঝুঁকি ও বৈশিষ্ট্য", href: "#features" },
-    { label: "সার্ভিসসমূহ", href: "#services" },
-    { label: "ক্লায়েন্ট রিভিউ", href: "#testimonials" }
+    { label: "Partners", href: "#happy-clients" },
+    { label: "Reviews", href: "#client-reviews" },
+    { label: "Pricing", href: "#features" },
+    { label: "Coverage", href: "#coverage" },
+    { label: "Stats", href: "#quantity-info" },
+    { label: "Booking", href: "#booking-calendar" }
   ];
+
+  const [activeSection, setActiveSection] = useState<string>("");
+
+  // Update active section state and URL hash dynamically on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const sectionElements = navLinks
+        .map((link) => {
+          if (link.href.startsWith("#")) {
+            const id = link.href.substring(1);
+            return document.getElementById(id);
+          }
+          return null;
+        })
+        .filter(Boolean) as HTMLElement[];
+
+      let currentSection = "";
+      const topOffset = 150; // offset buffer to detect active section
+
+      if (window.scrollY < 100) {
+        setActiveSection("");
+        if (window.location.hash) {
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+        return;
+      }
+
+      sectionElements.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= topOffset && rect.bottom > topOffset) {
+          currentSection = el.id;
+        }
+      });
+
+      if (currentSection) {
+        setActiveSection(currentSection);
+        const newHash = `#${currentSection}`;
+        if (window.location.hash !== newHash) {
+          window.history.replaceState(null, "", newHash);
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    const timer = setTimeout(handleScroll, 100);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(timer);
+    };
+  }, []);
+
+  // Smooth scroll with offset for direct hash loads and hash change events
+  useEffect(() => {
+    const handleHashScroll = () => {
+      const hash = window.location.hash;
+      if (hash) {
+        const id = hash.substring(1);
+        const element = document.getElementById(id);
+        if (element) {
+          setTimeout(() => {
+            const topOffset = 90; // offset height under sticky header
+            const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({
+              top: elementPosition - topOffset,
+              behavior: "smooth"
+            });
+          }, 150);
+        }
+      }
+    };
+
+    handleHashScroll();
+    window.addEventListener("hashchange", handleHashScroll);
+    return () => {
+      window.removeEventListener("hashchange", handleHashScroll);
+    };
+  }, []);
 
   return (
     <div className="sticky top-0 z-[100] w-full px-4 md:px-6 pointer-events-none font-bengali">
@@ -35,12 +116,15 @@ export function FreeDesignNavbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link, idx) => (
-              link.isExternal ? (
+            {navLinks.map((link, idx) => {
+              const isActive = link.href === `#${activeSection}`;
+              return link.isExternal ? (
                 <Link 
                   key={idx}
                   href={link.href}
-                  className="text-[#666666] hover:text-[#F07C22] font-semibold text-sm transition-colors flex items-center gap-1.5"
+                  className={`font-semibold text-sm transition-colors flex items-center gap-1.5 ${
+                    isActive ? "text-[#F07C22] font-bold" : "text-[#666666] hover:text-[#F07C22]"
+                  }`}
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   {link.label}
@@ -49,17 +133,19 @@ export function FreeDesignNavbar() {
                 <a 
                   key={idx}
                   href={link.href}
-                  className="text-[#666666] hover:text-[#F07C22] font-semibold text-sm transition-colors"
+                  className={`font-semibold text-sm transition-colors ${
+                    isActive ? "text-[#F07C22] font-bold" : "text-[#666666] hover:text-[#F07C22]"
+                  }`}
                 >
                   {link.label}
                 </a>
-              )
-            ))}
+              );
+            })}
           </nav>
 
           {/* Desktop CTA */}
           <div className="hidden md:block">
-            <a href="#booking-form">
+            <a href="#booking-calendar">
               <Button className="bg-[#F07C22] hover:bg-[#D96B19] text-white px-6 py-5 rounded-full font-bold text-sm shadow-sm transition-all active:scale-95">
                 Book Slot
               </Button>
@@ -86,13 +172,16 @@ export function FreeDesignNavbar() {
               className="md:hidden w-full overflow-hidden mt-3 border-t border-slate-100"
             >
               <div className="py-4 flex flex-col gap-4">
-                {navLinks.map((link, idx) => (
-                  link.isExternal ? (
+                {navLinks.map((link, idx) => {
+                  const isActive = link.href === `#${activeSection}`;
+                  return link.isExternal ? (
                     <Link 
                       key={idx}
                       href={link.href}
                       onClick={() => setIsOpen(false)}
-                      className="text-[#666666] hover:text-[#F07C22] font-semibold text-base transition-colors flex items-center gap-2"
+                      className={`font-semibold text-base transition-colors flex items-center gap-2 ${
+                        isActive ? "text-[#F07C22] font-bold" : "text-[#666666] hover:text-[#F07C22]"
+                      }`}
                     >
                       <LayoutDashboard className="w-5 h-5" />
                       {link.label}
@@ -102,13 +191,15 @@ export function FreeDesignNavbar() {
                       key={idx}
                       href={link.href}
                       onClick={() => setIsOpen(false)}
-                      className="text-[#666666] hover:text-[#F07C22] font-semibold text-base transition-colors"
+                      className={`font-semibold text-base transition-colors ${
+                        isActive ? "text-[#F07C22] font-bold" : "text-[#666666] hover:text-[#F07C22]"
+                      }`}
                     >
                       {link.label}
                     </a>
-                  )
-                ))}
-                <a href="#booking-form" onClick={() => setIsOpen(false)} className="w-full">
+                  );
+                })}
+                <a href="#booking-calendar" onClick={() => setIsOpen(false)} className="w-full">
                   <Button className="w-full bg-[#F07C22] hover:bg-[#D96B19] text-white py-6 rounded-xl font-bold text-base shadow-sm">
                     Book Slot
                   </Button>
