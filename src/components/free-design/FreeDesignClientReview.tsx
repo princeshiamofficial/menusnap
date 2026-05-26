@@ -199,9 +199,9 @@ export function FreeDesignClientReview() {
                           setPlayingIndex(idx);
                         }
                       }}
-                      className="flex-shrink-0 w-[calc((100%-16px)/1.8)] sm:w-[calc((100%-32px)/2.6)] md:w-[calc((100%-48px)/3.8)] lg:w-[calc((100%-96px)/6.3)] aspect-[9/16] snap-center relative rounded-[2rem] overflow-hidden border-2 border-red-600 shadow-[0_15px_35px_rgba(220,38,38,0.12)] bg-slate-950 group cursor-pointer p-[2px]"
+                      className="flex-shrink-0 w-[calc((100%-32px)/3.4)] sm:w-[calc((100%-48px)/4.2)] md:w-[calc((100%-64px)/5.2)] lg:w-[calc((100%-96px)/6.3)] aspect-[9/16] snap-center relative rounded-[1.2rem] md:rounded-[2rem] overflow-hidden border-2 border-red-600 shadow-[0_15px_35px_rgba(220,38,38,0.12)] bg-slate-950 group cursor-pointer p-[2px]"
                     >
-                      <div className="w-full h-full relative overflow-hidden rounded-[calc(2rem-2px)] bg-slate-950">
+                      <div className="w-full h-full relative overflow-hidden rounded-[calc(1.2rem-2px)] md:rounded-[calc(2rem-2px)] bg-slate-950">
                         {isPlaying ? (
                           <div className="w-full h-full relative overflow-hidden">
                             {/* Close Button Inside Card */}
@@ -237,12 +237,10 @@ export function FreeDesignClientReview() {
 
                             {/* Play Button Overlay */}
                             <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-                              <div className="w-14 h-14 rounded-full bg-red-600/90 border border-red-500/40 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.4)] group-hover:scale-110 group-hover:bg-red-500 transition-all duration-300">
-                                <Play className="w-6 h-6 text-white fill-white ml-1" />
+                              <div className="w-8 h-8 md:w-14 md:h-14 rounded-full bg-red-600/90 border border-red-500/40 flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.4)] group-hover:scale-110 group-hover:bg-red-500 transition-all duration-300">
+                                <Play className="w-3.5 h-3.5 md:w-6 md:h-6 text-white fill-white ml-0.5 md:ml-1" />
                               </div>
                             </div>
-
-
 
                             {/* Subtle Overlay */}
                             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-500 pointer-events-none" />
