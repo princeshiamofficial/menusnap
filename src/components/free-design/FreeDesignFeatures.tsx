@@ -18,7 +18,7 @@ export function FreeDesignFeatures() {
       <div className="max-w-4xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-8">
-          <h2 className="text-[#1A1A1A] text-4xl md:text-5xl font-serif mb-6 leading-tight">
+          <h2 className="text-[#1A1A1A] text-[18px] sm:text-3xl md:text-5xl font-serif mb-6 leading-tight">
             ডিজাইন ও সার্ভিস মূল্য তালিকা
           </h2>
           <p className="text-[#666666] text-lg md:text-xl max-w-2xl mx-auto font-medium">
