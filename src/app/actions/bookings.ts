@@ -16,6 +16,7 @@ async function ensureBookingsTable() {
         booking_date VARCHAR(50) NOT NULL,
         booking_time VARCHAR(50) NOT NULL,
         notes TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
@@ -27,13 +28,6 @@ async function ensureBookingsTable() {
 
 /**
  * Creates a new booking slot record in the database.
- * @param name The name of the client booking.
- * @param email The contact email of the client.
- * @param whatsapp The WhatsApp phone number.
- * @param date Selected date of the meeting.
- * @param time Selected time of the meeting.
- * @param notes Optional requirements/notes.
- * @returns Standard response indicating success or failure.
  */
 export async function createBooking(
   name: string,
@@ -75,3 +69,55 @@ export async function createBooking(
     return { success: false, error: error?.message || "Failed to submit booking due to database error." };
   }
 }
+
+/**
+ * Fetches all bookings from the database, ordered by most recent first.
+ * @returns Standard response with array of bookings.
+ */
+export async function getBookings() {
+  try {
+    await ensureBookingsTable();
+
+    const [rows]: any = await pool.execute(
+      `SELECT * FROM bookings ORDER BY created_at DESC`
+    );
+
+    return { success: true, data: rows as any[] };
+  } catch (error: any) {
+    console.error("Database Error fetching bookings:", error);
+    return { success: false, error: error?.message || "Failed to fetch bookings." };
+  }
+}
+
+/**
+ * Updates the status of a booking.
+ * @param id Booking ID.
+ * @param status New status value.
+ */
+export async function updateBookingStatus(id: number, status: string) {
+  try {
+    await pool.execute(
+      `UPDATE bookings SET status = ? WHERE id = ?`,
+      [status, id]
+    );
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error updating booking status:", error);
+    return { success: false, error: error?.message || "Failed to update status." };
+  }
+}
+
+/**
+ * Deletes a booking record permanently.
+ * @param id Booking ID to delete.
+ */
+export async function deleteBooking(id: number) {
+  try {
+    await pool.execute(`DELETE FROM bookings WHERE id = ?`, [id]);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Database Error deleting booking:", error);
+    return { success: false, error: error?.message || "Failed to delete booking." };
+  }
+}
+

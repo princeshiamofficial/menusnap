@@ -17,7 +17,8 @@ import {
   FolderOpen,
   Zap,
   MessageSquare,
-  UserCog
+  UserCog,
+  CalendarCheck
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -35,6 +36,7 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/contacts', label: 'Contacts', icon: Users, hasChevron: true },
   { href: '/m-admin/manage-orders', label: 'Orders', icon: ShoppingCart, hasChevron: true },
   { href: '/m-admin/responses', label: 'Responses', icon: MessageSquare, hasChevron: true },
+  { href: '/m-admin/consultation-events', label: 'Consultations', icon: CalendarCheck, hasChevron: true },
   { href: '/m-admin/manage-categories', label: 'Categories', icon: LayoutList, hasChevron: true },
   { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers, hasChevron: true },

@@ -15,6 +15,7 @@ export function getPermissionKey(pathname: string): string {
   if (cleanPath.startsWith('/m-admin/magic-docs')) return 'magic-docs';
   if (cleanPath.startsWith('/m-admin/settings')) return 'settings';
   if (cleanPath.startsWith('/m-admin/manage-users')) return 'manage-users';
+  if (cleanPath.startsWith('/m-admin/consultation-events')) return 'consultation-events';
   return '';
 }
 
@@ -48,6 +49,7 @@ export function checkClientPermission(
       'magic-docs': ['view', 'create', 'edit', 'delete'],
       'settings': [],
       'manage-users': [],
+      'consultation-events': ['view', 'edit', 'delete'],
     };
     return defaultUserPermissions[pageKey]?.includes(action) || false;
   }
