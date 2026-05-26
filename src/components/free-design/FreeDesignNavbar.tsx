@@ -98,9 +98,9 @@ export function FreeDesignNavbar() {
   }, []);
 
   return (
-    <div className="sticky top-0 z-[100] w-full px-4 md:px-6 pointer-events-none font-bengali">
+    <div className="sticky top-0 z-[100] w-full px-0 md:px-6 pointer-events-none font-bengali">
       <header 
-        className="max-w-7xl mx-auto w-full bg-white/90 backdrop-blur-md border border-slate-200/50 rounded-b-2xl md:rounded-b-[2rem] shadow-lg py-3 px-6 md:px-10 transition-all duration-300 pointer-events-auto"
+        className="max-w-7xl mx-auto w-full bg-white/90 backdrop-blur-md border-b border-slate-200/50 md:border md:rounded-b-[2rem] shadow-lg py-3 px-4 md:px-10 transition-all duration-300 pointer-events-auto"
       >
         <div className="flex items-center justify-between">
           {/* Logo */}
