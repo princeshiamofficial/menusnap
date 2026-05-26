@@ -5,12 +5,12 @@ import { motion } from "framer-motion";
 
 export function FreeDesignHappyClient() {
   return (
-    <section id="happy-clients" className="scroll-mt-[120px] bg-slate-50 pt-4 pb-2 md:pt-6 md:pb-4 px-6 md:px-12 lg:px-24 font-bengali">
+    <section id="happy-clients" className="scroll-mt-[120px] bg-slate-50 pt-4 pb-2 md:pt-6 md:pb-4 px-3 md:px-12 lg:px-24 font-bengali">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-6 md:mb-8">
 
-          <h2 className="text-[#1A1A1A] text-3xl md:text-5xl font-serif mb-6 leading-tight">
+          <h2 className="text-[#1A1A1A] text-[14px] sm:text-3xl md:text-5xl font-serif mb-6 leading-tight whitespace-nowrap tracking-tight">
             শতশত রেস্টুরেন্ট ও পার্লারের বিশ্বস্ত পার্টনার
           </h2>
           
