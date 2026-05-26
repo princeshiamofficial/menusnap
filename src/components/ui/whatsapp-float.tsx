@@ -22,11 +22,12 @@ export function WhatsAppFloat({
     window.open(url, "_blank");
   };
 
-  // Hide on login and admin pages
+  // Hide on login, admin, and free-design pages
   const isHidden = pathname === '/login' || 
                    pathname === '/login/' || 
                    pathname.startsWith('/m-admin') || 
-                   pathname.startsWith('/panel');
+                   pathname.startsWith('/panel') ||
+                   pathname.startsWith('/free-design');
 
   if (isHidden) return null;
 
