@@ -153,7 +153,7 @@ export function FreeDesignClientReview() {
             {showLeftArrow && (
               <button
                 onClick={() => handleScroll("left")}
-                className="absolute -left-4 md:-left-8 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-slate-900 border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex items-center justify-center text-white hover:text-red-500 hover:scale-110 hover:border-red-600/30 active:scale-95 transition-all duration-200"
+                className="hidden md:flex absolute -left-4 md:-left-8 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-slate-900 border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)] items-center justify-center text-white hover:text-red-500 hover:scale-110 hover:border-red-600/30 active:scale-95 transition-all duration-200"
                 aria-label="Previous reviews"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -164,7 +164,7 @@ export function FreeDesignClientReview() {
             {showRightArrow && (
               <button
                 onClick={() => handleScroll("right")}
-                className="absolute -right-4 md:-right-8 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-slate-900 border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex items-center justify-center text-white hover:text-red-500 hover:scale-110 hover:border-red-600/30 active:scale-95 transition-all duration-200"
+                className="hidden md:flex absolute -right-4 md:-right-8 top-1/2 -translate-y-1/2 z-40 w-12 h-12 rounded-full bg-slate-900 border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.5)] items-center justify-center text-white hover:text-red-500 hover:scale-110 hover:border-red-600/30 active:scale-95 transition-all duration-200"
                 aria-label="Next reviews"
               >
                 <ChevronRight className="w-6 h-6" />
