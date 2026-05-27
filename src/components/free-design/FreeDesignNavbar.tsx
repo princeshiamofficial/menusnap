@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export function FreeDesignNavbar() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const navLinks = [
+  const navLinks: { label: string; href: string; isExternal?: boolean }[] = [
     { label: "Partners", href: "#happy-clients" },
     { label: "Reviews", href: "#client-reviews" },
     { label: "Pricing", href: "#features" },

@@ -185,7 +185,7 @@
     padding: 0;
   }
 
-  #__next, body > div:not([class*="sticky"]) {
+  #__next, body > div:not([class*="sticky"]):not([class*="fixed"]):not([class*="absolute"]) {
     max-width: 100vw;
     width: 100%;
   }
