@@ -69,7 +69,7 @@ export function FreeDesignNavbar() {
   return (
     <div className="sticky top-0 z-[100] w-full font-bengali md:px-6">
       <header 
-        className="max-w-7xl mx-auto w-full bg-white/90 backdrop-blur-md border-b border-slate-200/50 md:border md:rounded-b-xl shadow-lg py-3 px-4 md:px-10 transition-all duration-300"
+        className="max-w-7xl mx-auto w-full bg-white/90 backdrop-blur-md border-b border-slate-200/50 md:border md:rounded-b-xl shadow-lg py-3 pl-2 pr-4 md:pl-6 md:pr-10 transition-all duration-300"
       >
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -78,7 +78,7 @@ export function FreeDesignNavbar() {
               <img 
                 src="/menusnap-logo-white.png" 
                 alt="MenuSnap Logo" 
-                className="h-8 w-auto object-contain"
+                className="h-7 w-auto object-contain"
                 style={{ filter: "url(#white-to-black)" }}
               />
             </div>
