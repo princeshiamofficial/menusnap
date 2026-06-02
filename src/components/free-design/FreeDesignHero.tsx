@@ -98,7 +98,7 @@ export function FreeDesignHero() {
               {[...logos, ...logos].map((src, i) => (
                 <div 
                   key={i} 
-                  className="relative flex items-center justify-center h-16 w-32 bg-black border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300 p-0 overflow-hidden"
+                  className="relative flex items-center justify-center h-16 w-32 shrink-0 bg-black border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300 p-0 overflow-hidden"
                 >
                   <img 
                     src={src} 
