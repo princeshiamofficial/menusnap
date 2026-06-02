@@ -70,13 +70,13 @@ export function FreeDesignHero() {
           </div>
 
           {/* Right Column Spacer (to preserve layout grid column) */}
-          <div className="col-span-4 h-full min-h-[280px] sm:min-h-[280px] md:min-h-[300px]" />
+          <div className="col-span-4 h-full min-h-[224px] sm:min-h-[224px] md:min-h-[300px]" />
 
           {/* Portrait Image absolute to Card Container */}
           <img 
             src="/abdul awal.png" 
             alt="Abdul Awal" 
-            className="block max-h-[320px] sm:max-h-[320px] md:max-h-[340px] lg:max-h-[390px] w-auto object-contain absolute bottom-0 right-0 z-10"
+            className="block max-h-[256px] sm:max-h-[256px] md:max-h-[340px] lg:max-h-[390px] w-auto object-contain absolute bottom-0 right-0 z-10"
           />
         </div>
         {/* Divider */}
