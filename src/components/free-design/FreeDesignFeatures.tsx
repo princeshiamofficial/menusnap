@@ -14,7 +14,7 @@ export function FreeDesignFeatures() {
   ];
 
   return (
-    <section id="features" className="scroll-mt-[120px] bg-white pt-3 pb-6 md:pt-5 md:pb-10 px-6 md:px-12 lg:px-24 border-t border-slate-100 font-bengali">
+    <section id="features" className="scroll-mt-[120px] bg-white pt-3 pb-6 md:pt-5 md:pb-10 px-1 md:px-12 lg:px-24 border-t border-slate-100 font-bengali">
       <Script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" strategy="afterInteractive" />
       <div className="max-w-4xl mx-auto">
         {/* Section Header */}
