@@ -98,7 +98,7 @@ export function FreeDesignHero() {
               {[...logos, ...logos].map((src, i) => (
                 <div 
                   key={i} 
-                  className="relative flex items-center justify-center h-16 w-32 shrink-0 bg-black border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300 p-0 overflow-hidden"
+                  className="relative flex items-center justify-center h-16 w-16 md:w-32 shrink-0 bg-black border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300 p-0 overflow-hidden"
                 >
                   <img 
                     src={src} 
@@ -107,8 +107,8 @@ export function FreeDesignHero() {
                     loading="lazy"
                   />
                   {/* Left & Right black blur/fade overlay */}
-                  <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-black to-transparent z-20 pointer-events-none" />
-                  <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-black to-transparent z-20 pointer-events-none" />
+                  <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-black to-transparent z-20 pointer-events-none hidden md:block" />
+                  <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-black to-transparent z-20 pointer-events-none hidden md:block" />
                 </div>
               ))}
             </div>
