@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Scissors, ChefHat, Sparkles, Flame, Utensils } from "lucide-react";
 import { Albert_Sans } from "next/font/google";
 
 const albert = Albert_Sans({
@@ -12,20 +11,11 @@ const albert = Albert_Sans({
 });
 
 export function FreeDesignHero() {
-  const brands = [
-    { name: "Persona Salon", icon: Scissors },
-    { name: "Sultans Dine", icon: ChefHat },
-    { name: "Farzana Shakil's", icon: Sparkles },
-    { name: "Takeout Metro", icon: Flame },
-    { name: "Chillox Burgers", icon: Utensils },
-    { name: "LUNA Kitchen", icon: ChefHat },
-    { name: "Urban Cuts", icon: Scissors },
-    { name: "Glow Spa", icon: Sparkles },
-  ];
+  const logos = Array.from({ length: 53 }, (_, i) => `/trustedLogo/Logo-${i + 1}.webp`);
 
   return (
-    <section className="w-full bg-white px-0 md:px-6 pt-4 pb-1 md:pt-8 md:pb-2 font-bengali">
-      <div className="max-w-7xl mx-auto w-full bg-black rounded-none md:rounded-[2.5rem] border-x-0 md:border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.15)] px-6 py-6 md:py-8 md:px-12 lg:py-10 lg:px-20 relative overflow-hidden">
+    <section className="w-full bg-white px-0 md:px-6 pt-0 pb-0.5 md:pt-4 md:pb-1 font-bengali">
+      <div className="max-w-7xl mx-auto w-full bg-black rounded-none md:rounded-[2.5rem] border-x-0 md:border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.15)] px-6 py-3 md:py-4 md:px-12 lg:py-5 lg:px-20 relative overflow-hidden">
         {/* Background glow gradient */}
         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-black to-slate-900 pointer-events-none" />        {/* ROW: Coach Kanchon Quote Card */}
         <div className="relative z-10 grid grid-cols-12 gap-4 items-center w-full bg-white/[0.02] backdrop-blur-md border border-white/5 rounded-3xl p-4 sm:p-6 md:p-10 shadow-2xl shadow-black/50 overflow-hidden">
@@ -90,35 +80,37 @@ export function FreeDesignHero() {
           />
         </div>
         {/* Divider */}
-        <div className="w-full h-[1px] bg-white/10 my-5 md:my-8 relative z-10" />
+        <div className="w-full h-[1px] bg-white/10 my-2.5 md:my-4 relative z-10" />
 
         {/* Trust Marquee Section */}
         <div className="relative z-10 flex flex-col items-center w-full">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full mb-8 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full mb-4 shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-[#F07C22] animate-pulse" />
             <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-300">
-              Trusted by 5000+ Leading Restaurants & Salons
+              Trusted by 5000+ Leading Restaurants & Parlor
             </span>
           </div>
 
           {/* Marquee Wrapper with Fade Effect */}
           <div className="w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,white_15%,white_85%,transparent)] select-none">
-            <div className="flex gap-4 w-max animate-marquee py-2">
-              {[...brands, ...brands, ...brands].map((brand, i) => {
-                const Icon = brand.icon;
-                return (
-                  <div 
-                    key={i} 
-                    className="flex items-center gap-2.5 px-6 py-3 bg-white/5 border border-white/5 hover:border-white/10 rounded-2xl transition-colors duration-300"
-                  >
-                    <Icon className="w-4 h-4 text-[#F07C22]" />
-                    <span className="text-white text-sm md:text-base font-semibold tracking-wide whitespace-nowrap">
-                      {brand.name}
-                    </span>
-                  </div>
-                );
-              })}
+            <div className="flex gap-0 w-max animate-marquee py-2">
+              {[...logos, ...logos].map((src, i) => (
+                <div 
+                  key={i} 
+                  className="relative flex items-center justify-center h-16 w-32 bg-black border border-white/5 hover:border-white/10 rounded-2xl transition-all duration-300 p-0 overflow-hidden"
+                >
+                  <img 
+                    src={src} 
+                    alt={`Trusted Logo ${(i % 53) + 1}`} 
+                    className="max-h-full max-w-full object-contain relative z-10"
+                    loading="lazy"
+                  />
+                  {/* Left & Right black blur/fade overlay */}
+                  <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-black to-transparent z-20 pointer-events-none" />
+                  <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-black to-transparent z-20 pointer-events-none" />
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -134,10 +126,10 @@ export function FreeDesignHero() {
         }
         @keyframes marquee {
           0% { transform: translateX(0); }
-          100% { transform: translateX(-33.33%); }
+          100% { transform: translateX(-50%); }
         }
         .animate-marquee {
-          animation: marquee 25s linear infinite;
+          animation: marquee 60s linear infinite;
         }
       `}</style>
     </section>

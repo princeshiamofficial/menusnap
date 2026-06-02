@@ -8,12 +8,80 @@ import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 export function FreeDesignClientReview() {
   const reviews = [
     {
-      videoUrl: "https://youtube.com/shorts/Cyahmutl3uI?si=qNmlnUeayBKSkw3K",
+      videoUrl: "https://www.youtube.com/watch?v=TPW7AcFR6tU",
       alt: "Restaurant Video Review"
     },
     {
-      videoUrl: "https://youtube.com/shorts/st116OEhUls?si=7YVXGVe8plabiwdr",
-      alt: "Parlor Video Review"
+      videoUrl: "https://www.youtube.com/watch?v=1-TVLkmLCZo",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/watch?v=QlySPy2Mpvw",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/watch?v=ZPs6FADzCgM",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/watch?v=my6Q6-FS4J4",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/watch?v=aBhOppSO9RQ",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/watch?v=Gf11CXXOj3c",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/watch?v=jIl7qMwA1IY",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/watch?v=gp5b1yAVo8U",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/watch?v=A36jBK_xN4Y",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://youtube.com/shorts/WasCg_UId2U",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/shorts/_dOdiuq2Us0",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/shorts/IR5xjqErgbo",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/shorts/v8yjy7WQ2_Q",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/shorts/oDa1GE-iU3o",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/shorts/FeLeX6gesJw",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/shorts/e7sNDDpcqQs",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/shorts/JZZP3cXjENg",
+      alt: "Restaurant Video Review"
+    },
+    {
+      videoUrl: "https://www.youtube.com/shorts/8bXT0x1Dp30",
+      alt: "Restaurant Video Review"
     }
   ];
 
@@ -35,15 +103,15 @@ export function FreeDesignClientReview() {
     if (!url) return "";
     if (url.includes("/shorts/")) {
       const parts = url.split("/shorts/");
-      return parts[1] ? parts[1].split(/[?#]/)[0] : "";
+      return parts[1] ? parts[1].split(/[?#&]/)[0] : "";
     }
     if (url.includes("watch?v=")) {
       const parts = url.split("watch?v=");
-      return parts[1] ? parts[1].split(/[?#]/)[0] : "";
+      return parts[1] ? parts[1].split(/[?#&]/)[0] : "";
     }
     if (url.includes("youtu.be/")) {
       const parts = url.split("youtu.be/");
-      return parts[1] ? parts[1].split(/[?#]/)[0] : "";
+      return parts[1] ? parts[1].split(/[?#&]/)[0] : "";
     }
     return "";
   };
@@ -130,20 +198,29 @@ export function FreeDesignClientReview() {
 
   return (
     <section id="client-reviews" className="scroll-mt-[120px] w-full bg-white px-0 md:px-6 pt-3 pb-0 md:pt-6 md:pb-0 font-bengali border-t border-slate-100">
-      <div className="max-w-7xl mx-auto w-full bg-black rounded-none md:rounded-[2.5rem] border-x-0 md:border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.15)] px-6 pt-8 pb-4 md:pt-12 md:pb-6 md:px-12 lg:px-20 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto w-full bg-black rounded-none md:rounded-[2.5rem] border-x-0 md:border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.15)] px-3 pt-4 pb-2 md:pt-6 md:pb-3 md:px-6 lg:px-10 relative overflow-hidden">
         {/* Background glow gradient */}
         <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-black to-slate-900 pointer-events-none" />
+
+        {/* Card Background Image */}
+        <div className="absolute inset-0 z-0 opacity-[0.07] pointer-events-none mix-blend-overlay">
+          <img 
+            src="/login-bg.png" 
+            alt="Card Background" 
+            className="w-full h-full object-cover filter blur-[1px]"
+          />
+        </div>
 
         <div className="relative z-10">
           {/* Section Header */}
           <div className="mb-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <h2 className="text-white text-[20px] sm:text-3xl md:text-5xl font-serif leading-tight">
+              <h2 className="text-white text-[14px] sm:text-[21px] md:text-[34px] font-sans font-extrabold tracking-tight leading-tight">
                 Client Review
               </h2>
             </div>
-            <p className="text-slate-400 text-base md:text-lg max-w-md font-medium">
-              আমাদের সেবার মাধ্যমে লাভবান হওয়া কিছু উদ্যোক্তার আসল ফিডব্যাক ও রিভিউর ঝলক।
+            <p className="text-slate-400 text-base md:text-lg md:whitespace-nowrap font-medium">
+              আমাদের সেবার মাধ্যমে লাভবান হওয়া কিছু উদ্যোক্তার ফিডব্যাক ও রিভিউ।
             </p>
           </div>
 
@@ -188,7 +265,7 @@ export function FreeDesignClientReview() {
                 }`}
                 style={{ scrollBehavior: isDragging ? "auto" : "smooth" }}
               >
-                {[...reviews, ...reviews, ...reviews, ...reviews].map((item, idx) => {
+                {reviews.map((item, idx) => {
                   const isPlaying = playingIndex === idx;
                   return (
                     <motion.div

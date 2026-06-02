@@ -12,4 +12,16 @@ declare global {
         };
         _fbq: any;
     }
+    namespace JSX {
+        interface IntrinsicElements {
+            'lottie-player': any;
+        }
+    }
+    namespace React {
+        namespace JSX {
+            interface IntrinsicElements {
+                'lottie-player': any;
+            }
+        }
+    }
 }

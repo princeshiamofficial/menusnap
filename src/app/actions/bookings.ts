@@ -1,6 +1,23 @@
 "use server";
 
 import pool from '@/lib/mysql';
+import { headers } from 'next/headers';
+
+/**
+ * Gets the client IP address from request headers.
+ */
+export async function getClientIP() {
+  try {
+    const headerList = await headers();
+    const forwardedFor = headerList.get('x-forwarded-for');
+    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : headerList.get('x-real-ip') || '127.0.0.1';
+    return { success: true, ip };
+  } catch (error) {
+    console.error("Failed to retrieve client IP:", error);
+    return { success: true, ip: '127.0.0.1' };
+  }
+}
+
 
 /**
  * Ensures the bookings table exists in the database.

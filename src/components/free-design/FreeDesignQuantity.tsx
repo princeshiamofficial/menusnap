@@ -31,7 +31,7 @@ function Counter({ value, duration = 1.5 }: { value: number; duration?: number }
 
 export function FreeDesignQuantity() {
   return (
-    <section id="quantity-info" className="scroll-mt-[120px] w-full bg-white px-4 md:px-6 pt-3 pb-6 md:pt-5 md:pb-10 font-sans relative overflow-hidden">
+    <section id="quantity-info" className="scroll-mt-[120px] w-full bg-white px-4 md:px-6 pt-3 pb-3 md:pt-5 md:pb-6 font-sans relative overflow-hidden">
       {/* Background blobs for subtle depth */}
       <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-64 h-64 rounded-full bg-[#caa460]/5 blur-3xl pointer-events-none" />
       <div className="absolute top-1/2 right-1/3 -translate-y-1/2 w-64 h-64 rounded-full bg-[#caa460]/3 blur-3xl pointer-events-none" />

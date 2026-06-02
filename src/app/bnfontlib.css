@@ -1,0 +1,93 @@
+/* ==========================================================================
+   BANGLA WEB FONTS LIBRARY v1.0
+   ========================================================================== */
+
+/* --- 1. CDN IMPORTS (Google Fonts) --- */
+
+/* --- 2. LOCAL SELF-HOSTED FONTS (Assumes /fonts/ folder structure) --- */
+@font-face {
+    font-family: 'SolaimanLipi';
+    src: url('/fonts/SolaimanLipi.woff2') format('woff2'),
+         url('/fonts/SolaimanLipi.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Kalpurush';
+    src: url('/fonts/Kalpurush.woff2') format('woff2'),
+         url('/fonts/Kalpurush.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Nikosh';
+    src: url('/fonts/Nikosh.woff2') format('woff2'),
+         url('/fonts/Nikosh.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'AdorshoLipi';
+    src: url('/fonts/AdorshoLipi.woff2') format('woff2'),
+         url('/fonts/AdorshoLipi.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Siyam Rupali';
+    src: url('/fonts/SiyamRupali.woff2') format('woff2'),
+         url('/fonts/SiyamRupali.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Lohit Bengali';
+    src: url('/fonts/LohitBengali.woff2') format('woff2'),
+         url('/fonts/LohitBengali.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* --- 3. CSS UTILITY CLASSES --- */
+.bn-solaiman       { font-family: 'SolaimanLipi', Arial, sans-serif; }
+.bn-noto-sans      { font-family: 'Noto Sans Bengali', sans-serif; }
+.bn-kalpurush      { font-family: 'Kalpurush', Arial, sans-serif; }
+.bn-nikosh         { font-family: 'Nikosh', Times New Roman, serif; }
+.bn-hind-siliguri  { font-family: 'Hind Siliguri', sans-serif; }
+.bn-adorsho        { font-family: 'AdorshoLipi', sans-serif; }
+.bn-siyam          { font-family: 'Siyam Rupali', sans-serif; }
+.bn-baloo          { font-family: 'Baloo Da 2', sans-serif; }
+.bn-tiro           { font-family: 'Tiro Bangla', serif; }
+.bn-lohit          { font-family: 'Lohit Bengali', sans-serif; }
+
+/* --- 4. USE-CASE OPTIMIZED UTILITY CLASSES --- */
+
+/* Recommended for long-form content, articles, and blog bodies */
+.bn-body-optimized {
+    font-family: 'SolaimanLipi', 'Noto Sans Bengali', 'Kalpurush', sans-serif;
+    line-height: 1.8;
+    letter-spacing: 0.02em;
+}
+
+/* Recommended for clean, modern interface headings, buttons, and navbars */
+.bn-ui-optimized {
+    font-family: 'Hind Siliguri', 'Noto Sans Bengali', sans-serif;
+    line-height: 1.5;
+}
+
+/* Recommended for stylistic headlines, banners, and hero text */
+.bn-display-optimized {
+    font-family: 'Baloo Da 2', 'AdorshoLipi', sans-serif;
+    font-weight: 700;
+}

@@ -4,8 +4,8 @@ import React from "react";
 
 export function FreeDesignFooter() {
   return (
-    <footer className="w-full bg-black text-neutral-400 py-12 px-4 md:px-8 lg:px-16 font-sans relative overflow-hidden">
-      <div className="max-w-7xl mx-auto flex flex-col items-center gap-10 relative z-10">
+    <footer className="w-full bg-black text-neutral-400 pt-4 pb-4 md:pt-6 md:pb-8 px-4 md:px-8 lg:px-16 font-sans relative overflow-hidden">
+      <div className="max-w-7xl mx-auto flex flex-col items-center gap-5 relative z-10">
         
         {/* ROW 1: Social Contact Buttons & Support 24/7 */}
         {/* Contacts & Policies Sub-Container to reduce gap by 70% */}
@@ -18,10 +18,10 @@ export function FreeDesignFooter() {
               {/* Phone Call */}
               <a 
                 href="tel:+8801919760626" 
-                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-emerald-500 to-emerald-400 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
+                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-emerald-500 to-emerald-400 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 shrink-0"
                 aria-label="Call Support"
               >
-                <i className="bi bi-telephone-fill text-lg md:text-2xl text-white"></i>
+                <i className="bi bi-telephone-fill text-base md:text-2xl text-white"></i>
               </a>
               
               {/* FB Messenger */}
@@ -29,10 +29,10 @@ export function FreeDesignFooter() {
                 href="https://m.me/menusnap" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-400 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
+                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-cyan-400 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 shrink-0"
                 aria-label="Contact Messenger"
               >
-                <i className="bi bi-messenger text-lg md:text-2xl text-white"></i>
+                <i className="bi bi-messenger text-base md:text-2xl text-white"></i>
               </a>
               
               {/* WhatsApp */}
@@ -40,16 +40,16 @@ export function FreeDesignFooter() {
                 href="https://wa.me/8801919760626" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200"
+                className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-tr from-green-500 to-emerald-500 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 shrink-0"
                 aria-label="Contact WhatsApp"
               >
-                <i className="bi bi-whatsapp text-xl md:text-[26px] text-white"></i>
+                <i className="bi bi-whatsapp text-lg md:text-[26px] text-white"></i>
               </a>
             </div>
 
             {/* Support Headset Group */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="w-16 h-16 md:w-[104px] md:h-[104px] shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-12 h-12 sm:w-16 md:w-[104px] md:h-[104px] shrink-0">
                 <img 
                   src="/spmic.webp" 
                   alt="Support Headset" 
@@ -57,11 +57,11 @@ export function FreeDesignFooter() {
                 />
               </div>
               <div className="flex flex-col text-left">
-                <span className="text-red-600 text-[10px] sm:text-base font-normal tracking-wide leading-tight">Support 24/7</span>
-                <a href="tel:+8801919760626" className="text-white text-xs sm:text-lg font-bold sm:font-normal tracking-wide hover:text-red-500 transition-colors leading-tight">
+                <span className="text-red-600 text-[9px] sm:text-xs md:text-base font-bold tracking-wide leading-tight bn-support-text relative sm:-left-[8%] z-10">Support 24/7</span>
+                <a href="tel:+8801919760626" className="text-white text-xs sm:text-sm md:text-lg font-bold tracking-wide hover:text-red-500 transition-colors leading-tight relative sm:-left-[5%] z-10">
                   +8801919-760626
                 </a>
-                <a href="mailto:menusnap.official@gmail.com" className="text-red-500 text-[9px] sm:text-sm font-normal hover:underline leading-tight">
+                <a href="mailto:menusnap.official@gmail.com" className="text-red-500 text-[9px] sm:text-[10px] md:text-sm font-normal hover:underline leading-tight relative sm:-left-[20%] z-10">
                   menusnap.official@gmail.com
                 </a>
               </div>
@@ -113,22 +113,24 @@ export function FreeDesignFooter() {
 
           {/* ROW 6: Address & Copyright Footer */}
           <div className="w-full flex flex-col items-center text-center gap-2 pt-3.5 border-t border-neutral-900/60">
-            <span className="text-neutral-300 text-base sm:text-lg font-normal tracking-wide">
+            <span className="text-neutral-300 text-base sm:text-lg font-normal tracking-wide font-bengali">
               House No. 14, Road No. A, Block A, Sontek, South Kajla, Jatrabari, Dhaka - 1236
             </span>
             <span className="text-neutral-400 text-[10px] sm:text-xs font-normal tracking-wide">
                 © Menu Snap - All rights reserved
               </span>
+            {/* 
             <a 
               href="https://www.facebook.com/mehanahmed.me" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-white text-xs sm:text-sm font-medium tracking-wide flex items-center gap-1"
+              className="text-white text-[10px] sm:text-xs font-medium tracking-wide flex items-center gap-1"
             >
               <span>Design and Managed by:</span>
               <i className="bi bi-facebook text-[#1877F2]"></i>
               <span>Mehan Ahmed</span>
             </a>
+            */}
           </div>
         </div>
 

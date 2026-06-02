@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Globe, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Calendar as CalendarIcon, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createBooking } from "@/app/actions/bookings";
+import { createBooking, getClientIP } from "@/app/actions/bookings";
 
 // Time slots available for booking
 const TIME_SLOTS = [
@@ -36,6 +36,93 @@ export function FreeDesignBookingCalendar() {
   const [step, setStep] = useState(1); // 1: Date/Time, 2: Details, 3: Success
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  // Countdown Timer states for ৳1,000 Discount
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [isDiscountActive, setIsDiscountActive] = useState<boolean>(false);
+
+  // Initialize and run client-side timer seeded by User IP
+  useEffect(() => {
+    async function initTimer() {
+      try {
+        const ipRes = await getClientIP();
+        const clientIp = ipRes?.ip || "127.0.0.1";
+        const storageKey = `menusnap_timer_deadline_${clientIp}`;
+        
+        let deadline = localStorage.getItem(storageKey);
+        const now = Date.now();
+        
+        if (!deadline) {
+          // Initialize 3 hours from now
+          const threeHours = 3 * 60 * 60 * 1000;
+          const newDeadline = now + threeHours;
+          localStorage.setItem(storageKey, newDeadline.toString());
+          deadline = newDeadline.toString();
+        }
+        
+        const deadlineNum = parseInt(deadline);
+        if (deadlineNum > now) {
+          setTimeLeft(Math.floor((deadlineNum - now) / 1000));
+          setIsDiscountActive(true);
+        } else {
+          setTimeLeft(0);
+          setIsDiscountActive(false);
+        }
+      } catch (error) {
+        console.error("Error initializing IP-based timer:", error);
+      }
+    }
+    
+    initTimer();
+  }, []);
+
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0) return;
+    
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          clearInterval(interval);
+          setIsDiscountActive(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [timeLeft]);
+
+  const formatTimeLeft = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    const hrsStr = hrs.toString().padStart(2, "0");
+    const minsStr = mins.toString().padStart(2, "0");
+    const secsStr = secs.toString().padStart(2, "0");
+    
+    const timeStr = `${hrsStr}:${minsStr}:${secsStr}`;
+
+    const englishToBengaliMap: { [key: string]: string } = {
+      "0": "০",
+      "1": "১",
+      "2": "২",
+      "3": "৩",
+      "4": "৪",
+      "5": "৫",
+      "6": "৬",
+      "7": "৭",
+      "8": "৮",
+      "9": "৯",
+    };
+    
+    return timeStr
+      .split("")
+      .map((char) => englishToBengaliMap[char] || char)
+      .join("");
+  };
 
   // Get Calendar Info
   const year = currentDate.getFullYear();
@@ -145,7 +232,15 @@ export function FreeDesignBookingCalendar() {
     setIsSubmitting(true);
     try {
       const dateString = formatFullDateString(selectedDate);
-      const res = await createBooking(name, email, whatsapp, dateString, confirmedTime, notes);
+      
+      let finalNotes = notes;
+      if (isDiscountActive) {
+        finalNotes = notes.trim()
+          ? `${notes}\n[৳১,০০০ Discount Applied (3h IP-based countdown)]`
+          : '[৳১,০০০ Discount Applied (3h IP-based countdown)]';
+      }
+
+      const res = await createBooking(name, email, whatsapp, dateString, confirmedTime, finalNotes);
 
       if (res.success) {
         setStep(3);
@@ -182,31 +277,40 @@ export function FreeDesignBookingCalendar() {
   });
 
   return (
-    <section id="booking-calendar" className="scroll-mt-[120px] w-full bg-white px-4 md:px-6 py-10 md:py-16 border-t border-slate-100 font-sans">
-      <div className="max-w-7xl mx-auto w-full px-2 sm:px-4 md:px-12 lg:px-20">
+    <section id="booking-calendar" className="scroll-mt-[120px] w-full bg-white px-1 md:px-6 pt-6 pb-3 md:pt-10 md:pb-5 border-t border-slate-100 font-sans">
+      <div className="max-w-7xl mx-auto w-full px-1 md:px-6">
         
         {/* Main Calendly Mock Container */}
-        <div className="max-w-5xl mx-auto bg-white border border-slate-100 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden min-h-[580px] grid grid-cols-1 md:grid-cols-12">
+        <div className="max-w-7xl mx-auto bg-white border border-slate-100 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden min-h-[580px] grid grid-cols-1 md:grid-cols-12">
           
           {/* LEFT SIDEBAR: Meeting Details (Col Span 4) */}
           <div className="md:col-span-4 border-b md:border-b-0 md:border-r border-slate-100 p-6 md:p-8 flex flex-col justify-between bg-slate-50/30">
             <div>
-              {/* Host Logo Wrapper */}
-              <div className="bg-black inline-flex px-3 py-1.5 rounded-lg mb-6">
-                <img 
-                  src="/menusnap-logo-white.png" 
-                  alt="MenuSnap Logo" 
-                  className="h-5 w-auto object-contain"
-                />
-              </div>
 
 
               {/* Event Name */}
-              <h1 className="text-slate-900 font-bold text-lg md:text-xl lg:text-2xl leading-tight mb-6 tracking-tight">
+              <h1 className="text-slate-900 font-bold text-lg md:text-xl lg:text-2xl leading-tight mb-4 md:mb-6 tracking-tight">
                 Free Design Strategy Call
               </h1>
 
-              <div className="space-y-4 mb-6">
+              {/* ৳1,000 Discount Indicator with IP-based Countdown */}
+              {isDiscountActive && timeLeft !== null && timeLeft > 0 && (
+                <div className="bg-red-50 border border-red-200/60 rounded-2xl p-4 mb-6 shadow-xs font-bengali">
+                  <div className="flex items-center gap-2 text-red-600 font-extrabold text-sm mb-1.5 animate-pulse">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-600 shrink-0" />
+                    <span>৳১,০০০ ডিসকাউন্ট অ্যাক্টিভ!</span>
+                  </div>
+                  <p className="text-slate-600 text-xs font-bold leading-relaxed mb-3">
+                    পরবর্তী ৩ ঘণ্টার মধ্যে আপনার বুকিং সম্পন্ন করে আপনার মেনু ডিজাইন প্যাকেজে ফ্ল্যাট ৳১,০০০ ডিসকাউন্ট বুঝে নিন।
+                  </p>
+                  <div className="bg-white border border-red-100 rounded-xl py-2 px-3 flex items-center justify-between">
+                    <span className="text-slate-400 text-[10px] font-extrabold uppercase tracking-wider">অফারের সময় বাকি:</span>
+                    <span className="text-red-600 font-extrabold text-sm tracking-mono">{formatTimeLeft(timeLeft)}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="hidden md:block space-y-4 mb-6">
                 {/* Meeting duration */}
                 <div className="flex items-center gap-3 text-slate-600 font-semibold text-sm">
                   <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-[#F07C22] shrink-0">
@@ -225,20 +329,20 @@ export function FreeDesignBookingCalendar() {
               </div>
 
               {/* Meeting Details Description */}
-              <p className="text-slate-500 text-xs md:text-sm leading-relaxed mb-6 font-medium">
+              <p className="hidden md:block text-slate-500 text-xs md:text-sm leading-relaxed mb-6 font-medium">
                 A quick 15-minute consultation to review your menu structure, pricing strategy, and design options to boost your restaurant or salon sales.
               </p>
             </div>
 
             {/* Footer timezone hint */}
-            <div className="text-slate-400 text-xs font-semibold flex items-center gap-2 mt-8 md:mt-auto">
+            <div className="hidden md:flex text-slate-400 text-xs font-semibold items-center gap-2 mt-4 md:mt-auto">
               <Globe className="w-4 h-4 text-slate-400" />
               <span>Bangladesh Time (GMT+6)</span>
             </div>
           </div>
 
           {/* RIGHT VIEWPORT: Calendar / Time / Details Form (Col Span 8) */}
-          <div className="md:col-span-8 p-6 md:p-8 lg:p-10 flex flex-col relative justify-center bg-white">
+          <div className="md:col-span-8 px-1 py-2.5 sm:p-6 md:p-8 lg:p-10 flex flex-col relative justify-center bg-white">
             <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
@@ -246,17 +350,17 @@ export function FreeDesignBookingCalendar() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="w-full flex flex-col lg:flex-row gap-8 lg:gap-10 justify-center items-start max-w-3xl mx-auto"
+                  className="w-full flex flex-row gap-0.5 sm:gap-8 justify-center items-start max-w-3xl mx-auto"
                 >
                   {/* Calendar Widget panel */}
-                  <div className="flex-1 w-full max-w-sm mx-auto">
-                    <h2 className="text-slate-900 font-bold text-lg mb-6 tracking-tight">
+                  <div className="flex-1 w-full max-w-[280px] sm:max-w-sm mx-auto">
+                    <h2 className="text-slate-900 font-bold text-base sm:text-lg mb-6 tracking-tight">
                       Select a Date & Time
                     </h2>
 
                     {/* Month Picker Header */}
                     <div className="flex items-center justify-between mb-4">
-                      <span className="text-slate-800 font-bold text-base pl-1">
+                      <span className="text-slate-800 font-bold text-sm sm:text-base pl-1">
                         {monthNames[month]} {year}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -278,7 +382,7 @@ export function FreeDesignBookingCalendar() {
                     </div>
 
                     {/* Calendar grid */}
-                    <div className="grid grid-cols-7 gap-y-2 text-center text-[10px] font-bold text-slate-400 tracking-wider mb-3">
+                    <div className="grid grid-cols-7 gap-y-2 text-center text-[8px] sm:text-[10px] font-bold text-slate-400 tracking-wider mb-3">
                       <span>SUN</span>
                       <span>MON</span>
                       <span>TUE</span>
@@ -288,7 +392,7 @@ export function FreeDesignBookingCalendar() {
                       <span>SAT</span>
                     </div>
 
-                    <div className="grid grid-cols-7 gap-y-3 gap-x-1 text-center">
+                    <div className="grid grid-cols-7 gap-y-2 sm:gap-y-3 gap-x-0.5 sm:gap-x-1 text-center">
                       {calendarDays.map((item, idx) => {
                         const past = isPastDate(item.date);
                         const current = item.isCurrentMonth;
@@ -304,12 +408,12 @@ export function FreeDesignBookingCalendar() {
                               setSelectedDate(item.date);
                               setSelectedTime(null);
                             }}
-                            className={`h-10 w-10 md:h-11 md:w-11 rounded-full flex items-center justify-center text-sm relative transition-all mx-auto ${
+                            className={`h-7 w-7 sm:h-10 sm:w-10 md:h-11 md:w-11 rounded-full flex items-center justify-center text-xs sm:text-sm relative transition-all mx-auto ${
                               selected
                                 ? "bg-[#F07C22] text-white shadow-md shadow-[#F07C22]/30 font-bold"
                                 : active
                                 ? today
-                                  ? "bg-orange-500/10 text-[#F07C22] border border-[#F07C22]/20 font-bold hover:bg-[#F07C22] hover:text-white"
+                                  ? "bg-orange-50/10 text-[#F07C22] border border-[#F07C22]/20 font-bold hover:bg-[#F07C22] hover:text-white"
                                   : "text-slate-800 hover:bg-orange-50 hover:text-[#F07C22] font-semibold"
                                 : "text-slate-300/80 cursor-not-allowed font-normal"
                             }`}
@@ -326,23 +430,23 @@ export function FreeDesignBookingCalendar() {
                     <motion.div
                       initial={{ opacity: 0, y: 15 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="w-full lg:w-60 shrink-0 flex flex-col max-w-sm mx-auto"
+                      className="w-[110px] sm:w-[180px] md:w-60 shrink-0 flex flex-col max-w-sm mx-auto"
                     >
-                      <h4 className="text-slate-700 font-bold text-sm mb-4">
+                      <h4 className="text-slate-700 font-bold text-[10px] sm:text-sm mb-4 leading-tight">
                         {formatSelectedDate(selectedDate)}
                       </h4>
 
-                      <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[480px] pr-1.5 scrollbar-thin">
+                      <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[280px] sm:max-h-[380px] md:max-h-[480px] pr-1.5 scrollbar-thin">
                         {filteredTimeSlots.length > 0 ? (
                           filteredTimeSlots.map((time, idx) => {
                             const timeSelected = selectedTime === time;
                             return (
-                              <div key={idx} className="flex flex-row gap-2 w-full">
+                              <div key={idx} className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 w-full">
                                 <button
                                   onClick={() => setSelectedTime(time)}
-                                  className={`py-3 px-4 border rounded-xl text-sm font-semibold transition-all ${
+                                  className={`py-2 px-1 sm:py-3 sm:px-4 border rounded-xl text-[10px] sm:text-sm font-semibold transition-all ${
                                     timeSelected
-                                      ? "bg-slate-900 border-slate-900 text-white w-1/2"
+                                      ? "bg-slate-900 border-slate-900 text-white w-full sm:w-1/2"
                                       : "border-slate-200 text-slate-700 hover:border-[#F07C22] hover:bg-orange-50/20 bg-white w-full"
                                   }`}
                                 >
@@ -354,7 +458,7 @@ export function FreeDesignBookingCalendar() {
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     onClick={handleNextStep}
-                                    className="w-1/2 py-3 bg-[#F07C22] hover:bg-[#D96B19] text-white rounded-xl text-sm font-bold shadow-md shadow-[#F07C22]/20 transition-all flex items-center justify-center"
+                                    className="w-full sm:w-1/2 py-2 sm:py-3 bg-[#F07C22] hover:bg-[#D96B19] text-white rounded-xl text-[10px] sm:text-sm font-bold shadow-md shadow-[#F07C22]/20 transition-all flex items-center justify-center"
                                   >
                                     Next
                                   </motion.button>
@@ -439,7 +543,7 @@ export function FreeDesignBookingCalendar() {
                           type="tel"
                           required
                           value={whatsapp}
-                          onChange={(e) => setWhatsapp(e.target.value)}
+                          onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ""))}
                           placeholder="WhatsApp Number"
                           className="w-full bg-white border border-slate-200 focus:border-[#F07C22] focus:ring-4 focus:ring-[#F07C22]/10 rounded-2xl py-3 pl-10 pr-4 text-slate-800 text-sm font-medium outline-none transition-all shadow-xs"
                         />
@@ -507,6 +611,13 @@ export function FreeDesignBookingCalendar() {
                       <span>Free Design Strategy Call</span>
                     </div>
 
+                    {isDiscountActive && (
+                      <div className="flex items-center gap-2.5 text-emerald-600 font-bold text-sm bg-emerald-50 border border-emerald-100 rounded-2xl p-3 mb-2 animate-bounce font-bengali">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span>৳১,০০০ ডিসকাউন্ট অফারটি সফলভাবে যুক্ত হয়েছে!</span>
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-3 text-slate-600 font-semibold text-sm">
                       <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-[#F07C22]">
                         <Clock className="w-4 h-4" />
@@ -549,6 +660,12 @@ export function FreeDesignBookingCalendar() {
                 </motion.div>
               )}
             </AnimatePresence>
+            
+            {/* Mobile-only timezone hint at the bottom */}
+            <div className="flex md:hidden text-slate-400 text-xs font-semibold items-center justify-center gap-2 mt-6 pb-2">
+              <Globe className="w-4 h-4 text-slate-400" />
+              <span>Bangladesh Time (GMT+6)</span>
+            </div>
           </div>
 
         </div>
