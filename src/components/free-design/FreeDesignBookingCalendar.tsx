@@ -46,6 +46,16 @@ export function FreeDesignBookingCalendar() {
     setMounted(true);
   }, []);
 
+  // Update URL hash when step changes to 3 (success screen)
+  useEffect(() => {
+    if (step === 3) {
+      window.location.hash = "scheduled";
+    } else if (mounted && window.location.hash === "#scheduled") {
+      // Clear hash if we navigate back from step 3
+      window.history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
+  }, [step, mounted]);
+
   // Initialize and run client-side timer seeded by User IP
   useEffect(() => {
     async function initTimer() {
