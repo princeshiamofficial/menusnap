@@ -163,6 +163,7 @@ export default function ConsultationEventsPage() {
     pending: bookings.filter((b) => b.status === "pending").length,
     confirmed: bookings.filter((b) => b.status === "confirmed").length,
     completed: bookings.filter((b) => b.status === "completed").length,
+    cancelled: bookings.filter((b) => b.status === "cancelled").length,
   };
 
   if (adminLoading || (loading && bookings.length === 0)) {
@@ -207,12 +208,13 @@ export default function ConsultationEventsPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { label: "Total Bookings", value: stats.total, color: "bg-slate-900 text-white", icon: Users },
             { label: "Pending", value: stats.pending, color: "bg-amber-50 text-amber-600", icon: AlertCircle },
             { label: "Confirmed", value: stats.confirmed, color: "bg-blue-50 text-blue-600", icon: CheckCircle2 },
             { label: "Completed", value: stats.completed, color: "bg-emerald-50 text-emerald-600", icon: CheckCircle2 },
+            { label: "Cancelled", value: stats.cancelled, color: "bg-red-50 text-red-600", icon: XCircle },
           ].map((stat) => (
             <div key={stat.label} className={cn("rounded-2xl p-4 flex items-center gap-3", stat.color)}>
               <stat.icon className="h-5 w-5 shrink-0 opacity-80" />
