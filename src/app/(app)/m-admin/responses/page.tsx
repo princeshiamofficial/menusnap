@@ -47,6 +47,61 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const TableRowSkeleton = () => (
+  <TableRow className="border-slate-50">
+    <TableCell className="pl-6 py-4 text-center">
+      <Skeleton className="h-4 w-6 mx-auto rounded" />
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="flex flex-col gap-1.5">
+        <Skeleton className="h-5 w-32 rounded" />
+        <Skeleton className="h-3 w-16 rounded" />
+      </div>
+    </TableCell>
+    <TableCell className="py-4">
+      <Skeleton className="h-4 w-28 rounded" />
+    </TableCell>
+    <TableCell className="py-4">
+      <Skeleton className="h-6 w-20 rounded-full" />
+    </TableCell>
+    <TableCell className="py-4">
+      <Skeleton className="h-4 w-36 rounded" />
+    </TableCell>
+    <TableCell className="py-4">
+      <Skeleton className="h-4 w-28 rounded" />
+    </TableCell>
+    <TableCell className="text-right pr-6 py-4">
+      <Skeleton className="h-9 w-9 rounded-full ml-auto" />
+    </TableCell>
+  </TableRow>
+);
+
+const MobileCardSkeleton = () => (
+  <div className="bg-white rounded-[2rem] p-5 border border-slate-100 space-y-4 shadow-sm">
+    <div className="flex items-start justify-between">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-14 w-14 rounded-[1.25rem]" />
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-24" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-12 rounded-full" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </div>
+      </div>
+      <Skeleton className="h-10 w-10 rounded-2xl" />
+    </div>
+    <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-50 space-y-2">
+      <Skeleton className="h-3.5 w-16" />
+      <Skeleton className="h-4 w-full rounded" />
+    </div>
+    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+      <Skeleton className="h-3.5 w-24" />
+      <Skeleton className="h-2 w-2 rounded-full" />
+    </div>
+  </div>
+);
+
 export default function ResponsesPage() {
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [loading, setLoading] = useState(true);
@@ -128,17 +183,7 @@ export default function ResponsesPage() {
     window.open(`https://wa.me/${finalNumber}`, '_blank');
   };
 
-  if (adminLoading || (loading && data.freeDesign.length === 0)) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50/50 gap-4">
-        <div className="relative">
-          <div className="h-16 w-16 rounded-full border-4 border-slate-100 border-t-slate-900 animate-spin" />
-          <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-slate-900" />
-        </div>
-        <p className="text-slate-500 font-bold tracking-tight animate-pulse">Initializing Dashboard...</p>
-      </div>
-    );
-  }
+
 
   const totalCount = data.hiring.length + data.freeDesign.length + data.teamTracker.length;
 
@@ -162,9 +207,13 @@ export default function ResponsesPage() {
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
             <div className="flex items-center gap-3 flex-1 sm:flex-none">
-              <div className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-slate-200 flex-1 sm:flex-none whitespace-nowrap">
-                {totalCount} Total Requests
-              </div>
+              {adminLoading || loading ? (
+                <Skeleton className="h-9 w-32 rounded-full bg-slate-200" />
+              ) : (
+                <div className="flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-full text-xs sm:text-sm font-bold shadow-lg shadow-slate-200 flex-1 sm:flex-none whitespace-nowrap">
+                  {totalCount} Total Requests
+                </div>
+              )}
             </div>
             <Button 
               variant="outline" 
@@ -282,14 +331,7 @@ function ResponseTable({ items, type, formatDate, openWhatsApp, loading, searchT
     </div>
   );
 
-  if (loading && items.length === 0) {
-    return (
-      <div className="p-12 flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Fetching Records...</p>
-      </div>
-    );
-  }
+
 
   return (
     <div className="w-full">
@@ -312,7 +354,11 @@ function ResponseTable({ items, type, formatDate, openWhatsApp, loading, searchT
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.length > 0 ? (
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRowSkeleton key={i} />
+              ))
+            ) : items.length > 0 ? (
               items.map((item: any, index: number) => (
                 <ResponseRow 
                   key={item.id} 
@@ -336,7 +382,11 @@ function ResponseTable({ items, type, formatDate, openWhatsApp, loading, searchT
 
       {/* Mobile View */}
       <div className="md:hidden p-4 space-y-4 pb-20">
-        {items.length > 0 ? (
+        {loading ? (
+          Array.from({ length: 3 }).map((_, index) => (
+            <MobileCardSkeleton key={index} />
+          ))
+        ) : items.length > 0 ? (
           items.map((item: any, index: number) => (
             <MobileResponseCard 
               key={item.id} 
