@@ -39,6 +39,8 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { getBookings, updateBookingStatus, deleteBooking } from "@/app/actions/bookings";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { getAdminUsersMinimalAction } from "@/app/actions/admin-users";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,6 +74,7 @@ type Booking = {
   notes?: string;
   status: string;
   created_at: string;
+  updated_by_id?: number | null;
 };
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; icon: React.ElementType }> = {
@@ -114,6 +117,12 @@ const TableRowSkeleton = () => (
       <Skeleton className="h-4 w-28 rounded" />
     </TableCell>
     <TableCell className="py-4">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-6 w-6 rounded-full" />
+        <Skeleton className="h-5 w-16 rounded" />
+      </div>
+    </TableCell>
+    <TableCell className="py-4">
       <Skeleton className="h-7 w-20 rounded-full" />
     </TableCell>
     <TableCell className="text-right pr-6 py-4">
@@ -149,13 +158,14 @@ const MobileCardSkeleton = () => (
 );
 
 export default function ConsultationEventsPage() {
-  const { isAdminLoggedIn, adminLoading } = useAdminAuth();
+  const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const { toast } = useToast();
+  const [adminsList, setAdminsList] = useState<any[]>([]);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -173,15 +183,30 @@ export default function ConsultationEventsPage() {
     }
   }, [toast]);
 
+  const fetchAdmins = useCallback(async () => {
+    try {
+      const result = await getAdminUsersMinimalAction();
+      if (result.success && result.data) {
+        setAdminsList(result.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch admins list:", err);
+    }
+  }, []);
+
   useEffect(() => {
-    if (isAdminLoggedIn) fetchBookings();
-  }, [isAdminLoggedIn, fetchBookings]);
+    if (isAdminLoggedIn) {
+      fetchBookings();
+      fetchAdmins();
+    }
+  }, [isAdminLoggedIn, fetchBookings, fetchAdmins]);
 
   const handleStatusChange = async (id: number, status: string) => {
     setUpdatingId(id);
     const res = await updateBookingStatus(id, status);
     if (res.success) {
-      setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status } : b));
+      const updaterId = adminUser?.id || null;
+      setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status, updated_by_id: updaterId } : b));
       toast({ title: "Status updated", description: `Booking marked as ${status}.` });
     } else {
       toast({ title: "Error", description: res.error, variant: "destructive" });
@@ -321,6 +346,7 @@ export default function ConsultationEventsPage() {
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Notes</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Discounted</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Booked On</TableHead>
+                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Updated By</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Status</TableHead>
                     <TableHead className="text-right font-bold text-[11px] uppercase tracking-widest text-slate-400 pr-6">Actions</TableHead>
                   </TableRow>
@@ -332,7 +358,7 @@ export default function ConsultationEventsPage() {
                     ))
                   ) : filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-20 text-center">
+                      <TableCell colSpan={9} className="py-20 text-center">
                         <div className="flex flex-col items-center gap-3">
                           <div className="p-5 bg-slate-50 rounded-3xl text-slate-200">
                             <CalendarCheck className="h-10 w-10" />
@@ -406,6 +432,33 @@ export default function ConsultationEventsPage() {
                               <Calendar className="h-3.5 w-3.5 text-slate-300" />
                               {formatDate(booking.created_at)}
                             </div>
+                          </TableCell>
+                          <TableCell className="text-[12px] text-slate-500 font-bold whitespace-nowrap">
+                            {(() => {
+                              const updater = booking.updated_by_id ? adminsList.find((a: any) => a.id === booking.updated_by_id) : null;
+                              const updaterEmail = updater?.email || "";
+                              const updaterAvatar = updater?.avatar_url || "";
+                              const updaterName = updater?.name || "";
+
+                              return booking.updated_by_id && updaterEmail ? (
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6 border border-slate-100 shadow-sm shrink-0">
+                                    <AvatarImage 
+                                      src={updaterAvatar || `https://api.dicebear.com/7.x/initials/svg?seed=${updaterEmail}`} 
+                                      alt={updaterEmail} 
+                                    />
+                                    <AvatarFallback className="bg-primary/10 text-primary text-[9px] font-bold">
+                                      {(updaterName || updaterEmail || 'A').substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className={`bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-lg text-[10px] max-w-[120px] truncate ${updaterName ? "font-sans font-semibold text-slate-700" : "font-mono font-medium text-slate-600"}`} title={updaterEmail}>
+                                    {updaterName || updaterEmail.split('@')[0]}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-slate-300 italic text-[11px] font-normal pl-2">—</span>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -546,6 +599,38 @@ export default function ConsultationEventsPage() {
                           {booking.booking_time}
                         </div>
                       </div>
+
+                      {/* Updated By */}
+                      {booking.updated_by_id ? (
+                        <div className="mb-3 flex items-center justify-between bg-slate-50/50 rounded-2xl px-4 py-2 border border-slate-100/50">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Updated By</span>
+                          {(() => {
+                            const updater = adminsList.find((a: any) => a.id === booking.updated_by_id);
+                            const updaterEmail = updater?.email || "";
+                            const updaterAvatar = updater?.avatar_url || "";
+                            const updaterName = updater?.name || "";
+
+                            return updaterEmail ? (
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-5 w-5 border border-slate-100 shadow-sm shrink-0">
+                                  <AvatarImage 
+                                    src={updaterAvatar || `https://api.dicebear.com/7.x/initials/svg?seed=${updaterEmail}`} 
+                                    alt={updaterEmail} 
+                                  />
+                                  <AvatarFallback className="bg-primary/10 text-primary text-[8px] font-bold">
+                                    {(updaterName || updaterEmail || 'A').substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className={`bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-lg text-[9px] max-w-[120px] truncate ${updaterName ? "font-sans font-semibold text-slate-700" : "font-mono font-medium text-slate-600"}`} title={updaterEmail}>
+                                  {updaterName || updaterEmail.split('@')[0]}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-350 italic text-[10px] font-normal">—</span>
+                            );
+                          })()}
+                        </div>
+                      ) : null}
 
                       {/* Notes */}
                       {(() => {

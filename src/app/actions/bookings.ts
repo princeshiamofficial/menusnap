@@ -3,6 +3,7 @@
 import pool from '@/lib/mysql';
 import { headers } from 'next/headers';
 import { checkAdminPermission } from './admin-users';
+import { getAdminSessionAction } from './admin-auth';
 
 /**
  * Gets the client IP address from request headers.
@@ -38,6 +39,13 @@ async function ensureBookingsTable() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Check if 'updated_by_id' column exists, if not, add it
+    const [columns]: any = await pool.execute("SHOW COLUMNS FROM bookings LIKE 'updated_by_id'");
+    if (columns.length === 0) {
+      console.log("Adding 'updated_by_id' column to bookings table...");
+      await pool.execute("ALTER TABLE bookings ADD COLUMN updated_by_id INT DEFAULT NULL");
+    }
   } catch (err) {
     console.error("Failed to initialize bookings table:", err);
     throw err;
@@ -124,9 +132,12 @@ export async function updateBookingStatus(id: number, status: string) {
       return { success: false, error: "Unauthorized. You do not have permission to update bookings." };
     }
 
+    const session = await getAdminSessionAction();
+    const updaterId = session?.id || null;
+
     await pool.execute(
-      `UPDATE bookings SET status = ? WHERE id = ?`,
-      [status, id]
+      `UPDATE bookings SET status = ?, updated_by_id = ? WHERE id = ?`,
+      [status, updaterId, id]
     );
     return { success: true };
   } catch (error: any) {
