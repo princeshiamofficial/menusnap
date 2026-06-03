@@ -80,6 +80,11 @@ const STATUS_CONFIG: Record<string, { label: string; className: string; icon: Re
   cancelled: { label: "Cancelled", className: "bg-red-50 text-red-600 border-red-100", icon: XCircle },
 };
 
+const cleanNotes = (notes?: string) => {
+  if (!notes) return "";
+  return notes.replace(/\[৳১,০০০ Discount Applied \(3h IP-based countdown\)\]/g, "").trim();
+};
+
 export default function ConsultationEventsPage() {
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -316,11 +321,14 @@ export default function ConsultationEventsPage() {
                             </div>
                           </TableCell>
                           <TableCell className="max-w-[200px]">
-                            {booking.notes ? (
-                              <p className="text-[13px] text-slate-500 font-medium truncate">{booking.notes}</p>
-                            ) : (
-                              <span className="text-slate-300 text-xs font-semibold italic">—</span>
-                            )}
+                            {(() => {
+                              const clean = cleanNotes(booking.notes);
+                              return clean ? (
+                                <p className="text-[13px] text-slate-500 font-medium truncate">{clean}</p>
+                              ) : (
+                                <span className="text-slate-300 text-xs font-semibold italic">—</span>
+                              );
+                            })()}
                           </TableCell>
                           <TableCell>
                             {booking.notes && (booking.notes.includes("Discount Applied") || booking.notes.includes("৳১,০০০")) ? (
@@ -476,15 +484,18 @@ export default function ConsultationEventsPage() {
                       </div>
 
                       {/* Notes */}
-                      {booking.notes && (
-                        <div className="mb-3 bg-amber-50/50 border border-amber-100/60 rounded-2xl px-4 py-3">
-                          <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-500 mb-1">
-                            <StickyNote className="h-3 w-3" />
-                            Notes
+                      {(() => {
+                        const clean = cleanNotes(booking.notes);
+                        return clean ? (
+                          <div className="mb-3 bg-amber-50/50 border border-amber-100/60 rounded-2xl px-4 py-3">
+                            <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-500 mb-1">
+                              <StickyNote className="h-3 w-3" />
+                              Notes
+                            </div>
+                            <p className="text-slate-600 text-xs font-medium leading-relaxed">{clean}</p>
                           </div>
-                          <p className="text-slate-600 text-xs font-medium leading-relaxed">{booking.notes}</p>
-                        </div>
-                      )}
+                        ) : null;
+                      })()}
 
                       {/* Status + Booked On */}
                       <div className="flex items-center justify-between pt-3 border-t border-slate-50">
