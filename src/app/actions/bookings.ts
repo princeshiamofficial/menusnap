@@ -188,10 +188,13 @@ function slotToMinutes(slot: string): number {
 }
 
 /**
- * Ensures the booking slots table exists and is populated with default values if empty.
+ * Ensures the booking slots table exists and is populated with default values only if created for the first time.
  */
 async function ensureBookingSlotsTable() {
   try {
+    const [tables]: any = await pool.execute("SHOW TABLES LIKE 'booking_slots'");
+    const tableExists = tables.length > 0;
+
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS booking_slots (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -199,9 +202,8 @@ async function ensureBookingSlotsTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // Check if table is empty, if so, seed it with default slots
-    const [rows]: any = await pool.execute('SELECT COUNT(*) as count FROM booking_slots');
-    if (rows[0].count === 0) {
+    // Only seed default slots if the table did NOT exist before (first installation)
+    if (!tableExists) {
       const DEFAULT_SLOTS = [
         "09:30 AM",
         "10:00 AM",
@@ -372,6 +374,41 @@ export async function generateBookingSlotsAction(
   } catch (error: any) {
     console.error("Error generating booking slots:", error);
     return { success: false, error: error?.message || "Failed to generate slots." };
+  }
+}
+
+/**
+ * Resets the booking slots to their original default set.
+ */
+export async function resetBookingSlotsToDefaultAction() {
+  try {
+    const hasAccess = await checkAdminPermission('settings', 'edit');
+    if (!hasAccess) {
+      return { success: false, error: "Unauthorized. You do not have permission to edit settings." };
+    }
+
+    await ensureBookingSlotsTable();
+    await pool.execute('DELETE FROM booking_slots');
+    
+    const DEFAULT_SLOTS = [
+      "09:30 AM",
+      "10:00 AM",
+      "10:30 AM",
+      "11:00 AM",
+      "11:30 AM",
+      "02:00 PM",
+      "02:30 PM",
+      "03:00 PM",
+      "03:30 PM",
+      "04:00 PM",
+    ];
+    for (const slot of DEFAULT_SLOTS) {
+      await pool.execute('INSERT IGNORE INTO booking_slots (time_slot) VALUES (?)', [slot]);
+    }
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error resetting booking slots to default:", error);
+    return { success: false, error: error?.message || "Failed to reset slots." };
   }
 }
 

@@ -364,7 +364,7 @@ export function FreeDesignBookingCalendar() {
 
               {/* Meeting Details Description */}
               <p className="hidden md:block text-slate-500 text-xs md:text-sm leading-relaxed mb-6 font-medium">
-                A quick 15-minute consultation to review your menu structure, pricing strategy, and design options to boost your restaurant or salon sales.
+                A quick 15-minute consultation to review your menu structure, pricing strategy, and design options to boost your restaurant or parlor sales.
               </p>
             </div>
 

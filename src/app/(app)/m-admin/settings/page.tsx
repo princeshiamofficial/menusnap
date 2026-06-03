@@ -24,7 +24,8 @@ import {
   addBookingSlotAction,
   deleteBookingSlotAction,
   clearAllBookingSlotsAction,
-  generateBookingSlotsAction
+  generateBookingSlotsAction,
+  resetBookingSlotsToDefaultAction
 } from '@/app/actions/bookings';
 
 
@@ -282,6 +283,32 @@ function MetaPixelSettingsForm(): ReactNode {
   );
 }
 
+const TIME_OPTIONS = (() => {
+  const options = [];
+  const periods = ["AM", "PM"];
+  for (const period of periods) {
+    options.push(`12:00 ${period}`);
+    options.push(`12:30 ${period}`);
+    for (let hour = 1; hour <= 11; hour++) {
+      const paddedHour = hour.toString().padStart(2, "0");
+      options.push(`${paddedHour}:00 ${period}`);
+      options.push(`${paddedHour}:30 ${period}`);
+    }
+  }
+  return options;
+})();
+
+const timeToMinutes = (timeStr: string): number => {
+  const match = timeStr.match(/^(\d{2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return 0;
+  let hour = parseInt(match[1]);
+  const minute = parseInt(match[2]);
+  const ampm = match[3].toUpperCase();
+  if (ampm === "PM" && hour < 12) hour += 12;
+  if (ampm === "AM" && hour === 12) hour = 0;
+  return hour * 60 + minute;
+};
+
 function BookingSlotsSettingsForm(): ReactNode {
   const { toast } = useToast();
   const [slots, setSlots] = useState<{ id: number; time_slot: string }[]>([]);
@@ -294,6 +321,22 @@ function BookingSlotsSettingsForm(): ReactNode {
   const [endTime, setEndTime] = useState("09:00 PM");
   const [interval, setIntervalVal] = useState(30);
   const [generating, setGenerating] = useState(false);
+
+  // Auto-adjust endTime if startTime is changed to a value after it
+  useEffect(() => {
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+    if (startMinutes >= endMinutes) {
+      const firstValidOption = TIME_OPTIONS.find((opt) => timeToMinutes(opt) > startMinutes);
+      if (firstValidOption) {
+        setEndTime(firstValidOption);
+      }
+    }
+  }, [startTime, endTime]);
+
+  const filteredEndTimeOptions = TIME_OPTIONS.filter((opt) => {
+    return timeToMinutes(opt) > timeToMinutes(startTime);
+  });
 
   const fetchSlots = async () => {
     setLoading(true);
@@ -317,7 +360,7 @@ function BookingSlotsSettingsForm(): ReactNode {
 
   const handleAddSlot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSlot.trim()) return;
+    if (!newSlot) return;
 
     setAdding(true);
     try {
@@ -383,6 +426,21 @@ function BookingSlotsSettingsForm(): ReactNode {
     }
   };
 
+  const handleResetToDefault = async () => {
+    if (!confirm("Are you sure you want to reset slots to the default set (09:30 AM to 04:00 PM)? This will overwrite your current slot configuration.")) return;
+    try {
+      const res = await resetBookingSlotsToDefaultAction();
+      if (res.success) {
+        toast({ title: "Success", description: "Slots reset to default.", variant: "success" });
+        fetchSlots();
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to reset slots.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
+    }
+  };
+
   return (
     <Card className="rounded-[2.5rem] border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden bg-white/70 backdrop-blur-xl">
       <CardHeader className="pb-2">
@@ -396,18 +454,29 @@ function BookingSlotsSettingsForm(): ReactNode {
               <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Available Time Slots</CardDescription>
             </div>
           </div>
-          {slots.length > 0 && (
+          <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={handleClearAll}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50/50 rounded-xl px-3 h-9 font-bold text-xs"
+              onClick={handleResetToDefault}
+              className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50/50 rounded-xl px-3 h-9 font-bold text-xs"
             >
-              <Trash2 className="h-4 w-4 mr-1.5" />
-              Clear All
+              Reset to Defaults
             </Button>
-          )}
+            {slots.length > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAll}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50/50 rounded-xl px-3 h-9 font-bold text-xs"
+              >
+                <Trash2 className="h-4 w-4 mr-1.5" />
+                Clear All
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6 pt-4">
@@ -427,7 +496,7 @@ function BookingSlotsSettingsForm(): ReactNode {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 font-bold text-xs shadow-sm hover:border-orange-500/50 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 font-bold text-xs shadow-sm hover:border-orange-500/55 transition-colors"
                   >
                     <span>{slot.time_slot}</span>
                     <button
@@ -449,18 +518,21 @@ function BookingSlotsSettingsForm(): ReactNode {
         <form onSubmit={handleAddSlot} className="space-y-2.5">
           <Label htmlFor="newSlot" className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">Add Custom Slot</Label>
           <div className="flex gap-2">
-            <Input
+            <select
               id="newSlot"
-              type="text"
               value={newSlot}
               onChange={(e) => setNewSlot(e.target.value)}
-              placeholder="e.g. 09:00 AM or 05:30 PM"
-              className="h-12 rounded-2xl border-slate-100 focus:ring-0 focus:border-orange-500/50 bg-white/50 flex-1 font-semibold"
-            />
+              className="w-full h-12 px-3 rounded-2xl border border-slate-100 bg-white/50 text-sm font-semibold text-slate-700 focus:outline-none focus:border-orange-500/50"
+            >
+              <option value="">Select Time Slot...</option>
+              {TIME_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
             <Button
               type="submit"
-              disabled={adding || !newSlot.trim()}
-              className="h-12 px-5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-wider uppercase active:scale-[0.98] transition-all"
+              disabled={adding || !newSlot}
+              className="h-12 px-5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-wider uppercase active:scale-[0.98] transition-all shrink-0"
             >
               Add Slot
             </Button>
@@ -479,25 +551,29 @@ function BookingSlotsSettingsForm(): ReactNode {
           <form onSubmit={handleGenerateSlots} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="startTime" className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Start Time</Label>
-              <Input
+              <select
                 id="startTime"
-                type="text"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                placeholder="e.g. 09:00 AM"
-                className="h-11 rounded-xl border-slate-100 bg-white/50 text-xs font-semibold"
-              />
+                className="w-full h-11 px-3 rounded-xl border border-slate-100 bg-white/50 text-xs font-semibold text-slate-700 focus:outline-none focus:border-orange-500/50"
+              >
+                {TIME_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="endTime" className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">End Time</Label>
-              <Input
+              <select
                 id="endTime"
-                type="text"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                placeholder="e.g. 09:00 PM"
-                className="h-11 rounded-xl border-slate-100 bg-white/50 text-xs font-semibold"
-              />
+                className="w-full h-11 px-3 rounded-xl border border-slate-100 bg-white/50 text-xs font-semibold text-slate-700 focus:outline-none focus:border-orange-500/50"
+              >
+                {filteredEndTimeOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="interval" className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Interval (Minutes)</Label>

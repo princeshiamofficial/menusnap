@@ -92,7 +92,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn, decodeHtmlEntities } from "@/lib/utils";
 import { getLeads, updateClientNote, updateClientStage, getClientHistory, deleteClient } from '@/app/actions/clients';
 import { getStages, addStage, updateStage, deleteStage } from '@/app/actions/stages';
-import { getAdminUsersAction } from '@/app/actions/admin-users';
+import { getAdminUsersMinimalAction } from '@/app/actions/admin-users';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { checkClientPermission } from '@/lib/admin-permissions';
 
@@ -363,7 +363,7 @@ export default function ContactsPage() {
 
   const fetchAdmins = async () => {
     try {
-      const result = await getAdminUsersAction();
+      const result = await getAdminUsersMinimalAction();
       if (result.success && result.data) {
         setAdminsList(result.data);
       }

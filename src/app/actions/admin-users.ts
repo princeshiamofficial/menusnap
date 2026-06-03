@@ -128,6 +128,29 @@ export async function checkAdminPermission(pageKey: string, action: string): Pro
 }
 
 /**
+ * Gets a minimal list of admin users (id, name, email, avatar_url) for display purposes.
+ * Accessible to any authenticated admin user.
+ */
+export async function getAdminUsersMinimalAction(): Promise<{ success: boolean; data?: Pick<AdminUserRecord, 'id' | 'email' | 'name' | 'avatar_url'>[]; error?: string }> {
+  try {
+    const session = await getAdminSessionAction();
+    if (!session) {
+      return { success: false, error: 'Unauthorized. Please log in.' };
+    }
+
+    await ensureAdminsSchema();
+    const [rows]: any = await pool.execute(
+      `SELECT id, email, name, avatar_url FROM admins ORDER BY id ASC`
+    );
+
+    return { success: true, data: rows };
+  } catch (error: any) {
+    console.error('Error fetching minimal admin users:', error);
+    return { success: false, error: error.message || 'Failed to fetch users.' };
+  }
+}
+
+/**
  * Gets all admin users.
  */
 export async function getAdminUsersAction(): Promise<{ success: boolean; data?: AdminUserRecord[]; error?: string }> {
