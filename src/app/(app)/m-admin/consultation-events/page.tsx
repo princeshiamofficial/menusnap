@@ -251,6 +251,7 @@ export default function ConsultationEventsPage() {
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Client</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Schedule</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Notes</TableHead>
+                    <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Discounted</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Booked On</TableHead>
                     <TableHead className="font-bold text-[11px] uppercase tracking-widest text-slate-400">Status</TableHead>
                     <TableHead className="text-right font-bold text-[11px] uppercase tracking-widest text-slate-400 pr-6">Actions</TableHead>
@@ -259,14 +260,14 @@ export default function ConsultationEventsPage() {
                 <TableBody>
                   {loading && filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-20 text-center">
+                      <TableCell colSpan={8} className="py-20 text-center">
                         <Loader2 className="h-8 w-8 animate-spin text-slate-300 mx-auto mb-3" />
                         <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Fetching Records...</p>
                       </TableCell>
                     </TableRow>
                   ) : filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-20 text-center">
+                      <TableCell colSpan={8} className="py-20 text-center">
                         <div className="flex flex-col items-center gap-3">
                           <div className="p-5 bg-slate-50 rounded-3xl text-slate-200">
                             <CalendarCheck className="h-10 w-10" />
@@ -319,6 +320,17 @@ export default function ConsultationEventsPage() {
                               <p className="text-[13px] text-slate-500 font-medium truncate">{booking.notes}</p>
                             ) : (
                               <span className="text-slate-300 text-xs font-semibold italic">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {booking.notes && (booking.notes.includes("Discount Applied") || booking.notes.includes("৳১,০০০")) ? (
+                              <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-emerald-100 font-extrabold text-[10px] rounded-full px-2.5 py-1">
+                                Yes
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-slate-400 border-slate-200 font-bold text-[10px] rounded-full px-2.5 py-1 bg-slate-50/50">
+                                No
+                              </Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-[12px] text-slate-400 font-bold whitespace-nowrap">
@@ -419,7 +431,18 @@ export default function ConsultationEventsPage() {
                             {booking.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-black text-slate-900 text-base leading-tight">{booking.name}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-black text-slate-900 text-base leading-tight">{booking.name}</p>
+                              {booking.notes && (booking.notes.includes("Discount Applied") || booking.notes.includes("৳১,০০০")) ? (
+                                <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-50 border-emerald-100 font-extrabold text-[9px] py-0.5 px-2 rounded-full shrink-0">
+                                  Discounted: Yes
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-slate-450 border-slate-200 font-bold text-[9px] py-0.5 px-2 rounded-full shrink-0 bg-slate-50/50">
+                                  Discounted: No
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-xs text-slate-400 font-semibold">{booking.email}</p>
                           </div>
                         </div>
