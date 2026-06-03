@@ -31,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,68 @@ const cleanNotes = (notes?: string) => {
   if (!notes) return "";
   return notes.replace(/\[৳১,০০০ Discount Applied \(3h IP-based countdown\)\]/g, "").trim();
 };
+
+const TableRowSkeleton = () => (
+  <TableRow className="border-slate-50">
+    <TableCell className="pl-6 py-4 text-center">
+      <Skeleton className="h-4 w-6 mx-auto rounded" />
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-5 w-28 rounded" />
+        <Skeleton className="h-3 w-36 rounded" />
+        <Skeleton className="h-3 w-24 rounded" />
+      </div>
+    </TableCell>
+    <TableCell className="py-4">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-5 w-24 rounded" />
+        <Skeleton className="h-3.5 w-16 rounded" />
+      </div>
+    </TableCell>
+    <TableCell className="py-4">
+      <Skeleton className="h-4 w-32 rounded" />
+    </TableCell>
+    <TableCell className="py-4">
+      <Skeleton className="h-6 w-12 rounded-full" />
+    </TableCell>
+    <TableCell className="py-4">
+      <Skeleton className="h-4 w-28 rounded" />
+    </TableCell>
+    <TableCell className="py-4">
+      <Skeleton className="h-7 w-20 rounded-full" />
+    </TableCell>
+    <TableCell className="text-right pr-6 py-4">
+      <div className="flex justify-end gap-2">
+        <Skeleton className="h-9 w-9 rounded-full" />
+        <Skeleton className="h-9 w-9 rounded-full" />
+      </div>
+    </TableCell>
+  </TableRow>
+);
+
+const MobileCardSkeleton = () => (
+  <div className="bg-white rounded-[2rem] p-5 border border-slate-100 space-y-4 shadow-sm">
+    <div className="flex items-start justify-between">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-12 w-12 rounded-2xl" />
+        <div className="space-y-2">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-3 w-36" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Skeleton className="h-9 w-9 rounded-2xl" />
+        <Skeleton className="h-9 w-9 rounded-2xl" />
+      </div>
+    </div>
+    <Skeleton className="h-10 w-full rounded-2xl" />
+    <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+      <Skeleton className="h-7 w-20 rounded-full" />
+      <Skeleton className="h-3.5 w-24" />
+    </div>
+  </div>
+);
 
 export default function ConsultationEventsPage() {
   const { isAdminLoggedIn, adminLoading } = useAdminAuth();
@@ -166,17 +229,7 @@ export default function ConsultationEventsPage() {
     cancelled: bookings.filter((b) => b.status === "cancelled").length,
   };
 
-  if (adminLoading || (loading && bookings.length === 0)) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50/50 gap-4">
-        <div className="relative">
-          <div className="h-16 w-16 rounded-full border-4 border-slate-100 border-t-slate-900 animate-spin" />
-          <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-slate-900" />
-        </div>
-        <p className="text-slate-500 font-bold tracking-tight animate-pulse">Loading Consultations...</p>
-      </div>
-    );
-  }
+
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/50 min-w-0 w-full max-w-full overflow-x-hidden">
@@ -219,7 +272,11 @@ export default function ConsultationEventsPage() {
             <div key={stat.label} className={cn("rounded-2xl p-4 flex items-center gap-3", stat.color)}>
               <stat.icon className="h-5 w-5 shrink-0 opacity-80" />
               <div>
-                <p className="text-2xl font-black leading-none">{stat.value}</p>
+                {adminLoading || loading ? (
+                  <Skeleton className={cn("h-8 w-12 rounded-lg", stat.color.includes("bg-slate-900") ? "bg-white/20" : "bg-slate-200/60")} />
+                ) : (
+                  <p className="text-2xl font-black leading-none">{stat.value}</p>
+                )}
                 <p className="text-[11px] font-semibold opacity-70 mt-0.5">{stat.label}</p>
               </div>
             </div>
@@ -233,7 +290,11 @@ export default function ConsultationEventsPage() {
               <div>
                 <CardTitle className="text-lg font-bold text-slate-800">Booking Directory</CardTitle>
                 <CardDescription className="text-slate-400 font-medium text-sm">
-                  {filtered.length} of {bookings.length} records
+                  {adminLoading || loading ? (
+                    <Skeleton className="h-4 w-24" />
+                  ) : (
+                    `${filtered.length} of ${bookings.length} records`
+                  )}
                 </CardDescription>
               </div>
               <div className="relative w-full sm:w-72 group">
@@ -265,13 +326,10 @@ export default function ConsultationEventsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading && filtered.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="py-20 text-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-slate-300 mx-auto mb-3" />
-                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Fetching Records...</p>
-                      </TableCell>
-                    </TableRow>
+                  {adminLoading || loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRowSkeleton key={i} />
+                    ))
                   ) : filtered.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="py-20 text-center">
@@ -412,7 +470,11 @@ export default function ConsultationEventsPage() {
 
             {/* Mobile Cards */}
             <div className="md:hidden p-4 space-y-4 pb-24">
-              {filtered.length === 0 ? (
+              {adminLoading || loading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <MobileCardSkeleton key={index} />
+                ))
+              ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-16 text-center">
                   <div className="p-5 bg-slate-50 rounded-3xl text-slate-200">
                     <CalendarCheck className="h-10 w-10" />
