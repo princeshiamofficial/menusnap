@@ -4,10 +4,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clock, Globe, ChevronLeft, ChevronRight, CheckCircle2, User, Mail, Phone, Calendar as CalendarIcon, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createBooking, getClientIP } from "@/app/actions/bookings";
+import { createBooking, getClientIP, getBookingSlotsAction } from "@/app/actions/bookings";
 
-// Time slots available for booking
-const TIME_SLOTS = [
+const DEFAULT_TIME_SLOTS = [
   "09:30 AM",
   "10:00 AM",
   "10:30 AM",
@@ -41,6 +40,26 @@ export function FreeDesignBookingCalendar() {
   // Countdown Timer states for ৳1,000 Discount
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isDiscountActive, setIsDiscountActive] = useState<boolean>(false);
+
+  // Loaded Slots
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function loadSlots() {
+      try {
+        const res = await getBookingSlotsAction();
+        if (res.success && res.data) {
+          setTimeSlots(res.data.map((item: any) => item.time_slot));
+        } else {
+          setTimeSlots(DEFAULT_TIME_SLOTS);
+        }
+      } catch (err) {
+        console.error("Failed to load time slots:", err);
+        setTimeSlots(DEFAULT_TIME_SLOTS);
+      }
+    }
+    loadSlots();
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -272,7 +291,7 @@ export function FreeDesignBookingCalendar() {
 
   const isTodaySelected = selectedDate && isToday(selectedDate);
 
-  const filteredTimeSlots = TIME_SLOTS.filter((slot) => {
+  const filteredTimeSlots = timeSlots.filter((slot) => {
     if (!isTodaySelected) return true;
 
     const match = slot.match(/^(\d{2}):(\d{2})\s*(AM|PM)$/i);

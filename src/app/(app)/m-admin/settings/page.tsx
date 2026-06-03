@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook, MessageCircle, Trash2, ShieldCheck, Zap, Laptop, Globe as GlobeIcon } from 'lucide-react';
+import { Settings as SettingsIcon, KeyRound, Mail, Save, AlertTriangle, Facebook, MessageCircle, Trash2, ShieldCheck, Zap, Laptop, Globe as GlobeIcon, X } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,13 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getMetaPixelSettings, saveMetaPixelSettings, type MetaPixelSettings } from '@/app/actions/meta-events';
+import {
+  getBookingSlotsAction,
+  addBookingSlotAction,
+  deleteBookingSlotAction,
+  clearAllBookingSlotsAction,
+  generateBookingSlotsAction
+} from '@/app/actions/bookings';
 
 
 // Zod schemas for validation
@@ -275,6 +282,254 @@ function MetaPixelSettingsForm(): ReactNode {
   );
 }
 
+function BookingSlotsSettingsForm(): ReactNode {
+  const { toast } = useToast();
+  const [slots, setSlots] = useState<{ id: number; time_slot: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [newSlot, setNewSlot] = useState("");
+
+  // Generator states
+  const [startTime, setStartTime] = useState("09:00 AM");
+  const [endTime, setEndTime] = useState("09:00 PM");
+  const [interval, setIntervalVal] = useState(30);
+  const [generating, setGenerating] = useState(false);
+
+  const fetchSlots = async () => {
+    setLoading(true);
+    try {
+      const res = await getBookingSlotsAction();
+      if (res.success && res.data) {
+        setSlots(res.data);
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to load slots.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to connect to server.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSlots();
+  }, []);
+
+  const handleAddSlot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSlot.trim()) return;
+
+    setAdding(true);
+    try {
+      const res = await addBookingSlotAction(newSlot);
+      if (res.success) {
+        toast({ title: "Success", description: `Slot ${newSlot} added successfully.`, variant: "success" });
+        setNewSlot("");
+        fetchSlots();
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to add slot.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDeleteSlot = async (id: number, time_slot: string) => {
+    try {
+      const res = await deleteBookingSlotAction(id);
+      if (res.success) {
+        toast({ title: "Deleted", description: `Slot ${time_slot} removed.`, variant: "success" });
+        setSlots((prev) => prev.filter((s) => s.id !== id));
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to delete slot.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
+    }
+  };
+
+  const handleGenerateSlots = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGenerating(true);
+    try {
+      const res = await generateBookingSlotsAction(startTime, endTime, interval);
+      if (res.success) {
+        toast({ title: "Success", description: `Generated ${res.count} slots successfully.`, variant: "success" });
+        fetchSlots();
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to generate slots.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!confirm("Are you sure you want to delete all booking slots? Clients won't be able to book strategy calls until you add new slots.")) return;
+    try {
+      const res = await clearAllBookingSlotsAction();
+      if (res.success) {
+        toast({ title: "Success", description: "All slots cleared.", variant: "success" });
+        setSlots([]);
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to clear slots.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Error", description: "An error occurred.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <Card className="rounded-[2.5rem] border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden bg-white/70 backdrop-blur-xl">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-orange-50 text-orange-500 rounded-2xl">
+              <SettingsIcon className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-black tracking-tight">Consultation Slots</CardTitle>
+              <CardDescription className="text-xs font-semibold uppercase tracking-wider text-slate-400">Available Time Slots</CardDescription>
+            </div>
+          </div>
+          {slots.length > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleClearAll}
+              className="text-red-500 hover:text-red-700 hover:bg-red-50/50 rounded-xl px-3 h-9 font-bold text-xs"
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Clear All
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6 pt-4">
+        {/* Current Slots Badges */}
+        <div className="space-y-2">
+          <Label className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">Active Slots ({slots.length})</Label>
+          <div className="p-4 bg-slate-50/50 rounded-3xl border border-slate-100 min-h-[100px] flex flex-wrap gap-2 items-center justify-start">
+            {loading ? (
+              <p className="text-slate-400 text-xs font-semibold animate-pulse mx-auto">Loading available slots...</p>
+            ) : slots.length === 0 ? (
+              <p className="text-slate-400 text-xs font-semibold mx-auto">No active booking slots. Use the options below to add slots.</p>
+            ) : (
+              <AnimatePresence>
+                {slots.map((slot) => (
+                  <motion.div
+                    key={slot.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 font-bold text-xs shadow-sm hover:border-orange-500/50 transition-colors"
+                  >
+                    <span>{slot.time_slot}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSlot(slot.id, slot.time_slot)}
+                      className="text-slate-400 hover:text-red-500 rounded-full p-0.5 transition-colors"
+                      title="Remove Slot"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            )}
+          </div>
+        </div>
+
+        {/* Add custom slot form */}
+        <form onSubmit={handleAddSlot} className="space-y-2.5">
+          <Label htmlFor="newSlot" className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">Add Custom Slot</Label>
+          <div className="flex gap-2">
+            <Input
+              id="newSlot"
+              type="text"
+              value={newSlot}
+              onChange={(e) => setNewSlot(e.target.value)}
+              placeholder="e.g. 09:00 AM or 05:30 PM"
+              className="h-12 rounded-2xl border-slate-100 focus:ring-0 focus:border-orange-500/50 bg-white/50 flex-1 font-semibold"
+            />
+            <Button
+              type="submit"
+              disabled={adding || !newSlot.trim()}
+              className="h-12 px-5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs tracking-wider uppercase active:scale-[0.98] transition-all"
+            >
+              Add Slot
+            </Button>
+          </div>
+        </form>
+
+        <hr className="border-slate-100 my-4" />
+
+        {/* Quick Batch Generator */}
+        <div className="space-y-4">
+          <div>
+            <Label className="text-xs font-bold text-slate-500 ml-1 uppercase tracking-widest">Batch Generate Slots</Label>
+            <p className="text-[11px] text-slate-400 font-medium ml-1">Generate a range of slots automatically (e.g., 9:00 AM to 9:00 PM).</p>
+          </div>
+
+          <form onSubmit={handleGenerateSlots} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="startTime" className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Start Time</Label>
+              <Input
+                id="startTime"
+                type="text"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                placeholder="e.g. 09:00 AM"
+                className="h-11 rounded-xl border-slate-100 bg-white/50 text-xs font-semibold"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="endTime" className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">End Time</Label>
+              <Input
+                id="endTime"
+                type="text"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                placeholder="e.g. 09:00 PM"
+                className="h-11 rounded-xl border-slate-100 bg-white/50 text-xs font-semibold"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="interval" className="text-[10px] font-bold text-slate-400 ml-1 uppercase tracking-wider">Interval (Minutes)</Label>
+              <select
+                id="interval"
+                value={interval}
+                onChange={(e) => setIntervalVal(parseInt(e.target.value))}
+                className="w-full h-11 px-3 rounded-xl border border-slate-100 bg-white/50 text-xs font-bold text-slate-700 focus:outline-none focus:border-orange-500/50"
+              >
+                <option value={15}>15 Minutes</option>
+                <option value={30}>30 Minutes</option>
+                <option value={45}>45 Minutes</option>
+                <option value={60}>60 Minutes (1 hour)</option>
+                <option value={120}>120 Minutes (2 hours)</option>
+              </select>
+            </div>
+            <div className="col-span-1 sm:col-span-3 pt-2">
+              <Button
+                type="submit"
+                disabled={generating}
+                className="w-full h-12 rounded-2xl bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-100 text-white font-bold text-xs uppercase tracking-wider active:scale-[0.98] transition-all"
+              >
+                {generating ? "Generating..." : "Generate Slots Range"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function AdminSettingsPage(): ReactNode {
   const { adminLoading } = useAdminAuth();
@@ -298,6 +553,7 @@ export default function AdminSettingsPage(): ReactNode {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }} className="space-y-10">
                     <MetaPixelSettingsForm />
+                    <BookingSlotsSettingsForm />
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="space-y-10">

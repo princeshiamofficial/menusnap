@@ -104,6 +104,7 @@ export async function checkAdminPermission(pageKey: string, action: string): Pro
         'contacts': ['view', 'edit'],
         'manage-orders': ['view', 'edit'],
         'responses': ['view', 'edit'],
+        'consultation-events': ['view', 'edit', 'delete'],
         'manage-categories': ['view', 'edit'],
         'manage-magictab': ['view', 'edit'],
         'manage-templates': ['view', 'edit'],
