@@ -21,6 +21,7 @@ const TIME_SLOTS = [
 ];
 
 export function FreeDesignBookingCalendar() {
+  const [mounted, setMounted] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -40,6 +41,10 @@ export function FreeDesignBookingCalendar() {
   // Countdown Timer states for ৳1,000 Discount
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [isDiscountActive, setIsDiscountActive] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Initialize and run client-side timer seeded by User IP
   useEffect(() => {
@@ -342,8 +347,13 @@ export function FreeDesignBookingCalendar() {
           </div>
 
           {/* RIGHT VIEWPORT: Calendar / Time / Details Form (Col Span 8) */}
-          <div className="md:col-span-8 px-1 py-2.5 sm:p-6 md:p-8 lg:p-10 flex flex-col relative justify-center bg-white">
-            <AnimatePresence mode="wait">
+          <div className="md:col-span-8 px-1 py-2.5 sm:p-6 md:p-8 lg:p-10 flex flex-col relative justify-center bg-white min-h-[400px]">
+            {!mounted ? (
+              <div className="flex items-center justify-center py-20 w-full">
+                <Loader2 className="w-8 h-8 animate-spin text-[#F07C22]" />
+              </div>
+            ) : (
+              <AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
                   key="step1"
@@ -660,6 +670,7 @@ export function FreeDesignBookingCalendar() {
                 </motion.div>
               )}
             </AnimatePresence>
+            )}
             
             {/* Mobile-only timezone hint at the bottom */}
             <div className="flex md:hidden text-slate-400 text-xs font-semibold items-center justify-center gap-2 mt-6 pb-2">
