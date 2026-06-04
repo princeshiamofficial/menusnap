@@ -770,7 +770,7 @@ export default function ContactsPage() {
         <CardContent className="p-0">
             <div className="w-full">
               {/* Desktop Table - Hidden on small screens */}
-              <Table className="hidden md:table">
+              <Table className="hidden md:table" wrapperClassName="max-h-[calc(100vh-280px)] overflow-y-auto">
                 <TableHeader className="bg-slate-50/80 backdrop-blur-md sticky top-0 z-30 shadow-sm">
                   <TableRow className="hover:bg-transparent border-slate-100">
                     <TableHead className="w-[60px] text-center font-semibold text-xs text-slate-500 pl-6">SL</TableHead>

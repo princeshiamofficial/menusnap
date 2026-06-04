@@ -336,8 +336,8 @@ export default function ConsultationEventsPage() {
 
           <CardContent className="p-0">
             {/* Desktop Table */}
-            <div className="hidden md:block overflow-x-auto">
-              <Table>
+            <div className="hidden md:block">
+              <Table wrapperClassName="max-h-[calc(100vh-280px)] overflow-y-auto">
                 <TableHeader className="bg-slate-50/80 sticky top-0 z-10 border-b border-slate-100">
                   <TableRow className="hover:bg-transparent border-none">
                     <TableHead className="w-[50px] text-center font-bold text-[11px] uppercase tracking-widest text-slate-400 pl-6 py-5">#</TableHead>
