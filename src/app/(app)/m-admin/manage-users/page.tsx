@@ -78,6 +78,7 @@ import {
   createAdminUserAction,
   updateAdminUserAction,
   deleteAdminUserAction,
+  getPredefinedAvatarsAction,
   AdminUserRecord
 } from '@/app/actions/admin-users';
 import { uploadFileLocally } from '@/app/actions/uploads';
@@ -121,13 +122,7 @@ const DEFAULT_USER_PERMISSIONS: Record<string, string[]> = {
   'manage-users': [],
 };
 
-const PREDEFINED_AVATARS = [
-  { url: '/avatar/avatar-1.png', name: 'Avatar 1' },
-  { url: '/avatar/avatar-2.png', name: 'Avatar 2' },
-  { url: '/avatar/avatar-3.png', name: 'Avatar 3' },
-  { url: '/avatar/avatar-4.png', name: 'Avatar 4' },
-  { url: '/avatar/avatar-5.png', name: 'Avatar 5' },
-];
+
 
 export default function ManageUsersPage() {
   const { adminUser } = useAdminAuth();
@@ -136,6 +131,7 @@ export default function ManageUsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [predefinedAvatars, setPredefinedAvatars] = useState<{ url: string; name: string }[]>([]);
 
   // Dialog & Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -172,8 +168,20 @@ export default function ManageUsersPage() {
     }
   };
 
+  const fetchPredefinedAvatars = async () => {
+    try {
+      const res = await getPredefinedAvatarsAction();
+      if (res.success && res.data) {
+        setPredefinedAvatars(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load predefined avatars:', err);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchPredefinedAvatars();
   }, []);
 
   const fetchUsers = async () => {
@@ -585,7 +593,7 @@ export default function ManageUsersPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-1.5 max-h-12 overflow-y-auto pr-1">
-                    {PREDEFINED_AVATARS.map((av) => (
+                    {predefinedAvatars.map((av) => (
                       <button
                         key={av.url}
                         type="button"
@@ -823,7 +831,7 @@ export default function ManageUsersPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-1.5 max-h-12 overflow-y-auto pr-1">
-                    {PREDEFINED_AVATARS.map((av) => (
+                    {predefinedAvatars.map((av) => (
                       <button
                         key={av.url}
                         type="button"

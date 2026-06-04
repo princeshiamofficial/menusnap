@@ -4,6 +4,8 @@ import pool from '@/lib/mysql';
 import bcrypt from 'bcryptjs';
 import { getAdminSessionAction } from './admin-auth';
 import { cookies } from 'next/headers';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Interface representing a user record in the admins table.
@@ -363,5 +365,41 @@ export async function deleteAdminUserAction(id: number): Promise<{ success: bool
   } catch (error: any) {
     console.error('Error deleting admin user:', error);
     return { success: false, error: error.message || 'Failed to delete user.' };
+  }
+}
+
+/**
+ * Reads the public/avatar directory directly and returns the list of available avatars.
+ */
+export async function getPredefinedAvatarsAction(): Promise<{ success: boolean; data?: { url: string; name: string }[]; error?: string }> {
+  try {
+    const session = await getAdminSessionAction();
+    if (!session) {
+      return { success: false, error: 'Unauthorized.' };
+    }
+
+    const dirPath = path.join(process.cwd(), 'public', 'avatar');
+    if (!fs.existsSync(dirPath)) {
+      return { success: true, data: [] };
+    }
+
+    const files = await fs.promises.readdir(dirPath);
+    const avatars = files
+      .filter(file => /\.(png|jpe?g|webp|gif|svg)$/i.test(file))
+      .map(file => {
+        const nameWithoutExt = file.replace(/\.[^/.]+$/, '');
+        const formattedName = nameWithoutExt
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, c => c.toUpperCase());
+        return {
+          url: `/avatar/${file}`,
+          name: formattedName
+        };
+      });
+
+    return { success: true, data: avatars };
+  } catch (error: any) {
+    console.error('Error reading avatar directory:', error);
+    return { success: false, error: error.message || 'Failed to read avatar directory.' };
   }
 }
