@@ -132,6 +132,11 @@ const PREDEFINED_AVATARS = [
   { url: '/avatars/ariful.png', name: 'Ariful' },
   { url: '/avatars/farhan.png', name: 'Farhan' },
   { url: '/avatars/rakibul.png', name: 'Rakibul' },
+  { url: '/avatar/avatar-1.png', name: 'Avatar 1' },
+  { url: '/avatar/avatar-2.png', name: 'Avatar 2' },
+  { url: '/avatar/avatar-3.png', name: 'Avatar 3' },
+  { url: '/avatar/avatar-4.png', name: 'Avatar 4' },
+  { url: '/avatar/avatar-5.png', name: 'Avatar 5' },
 ];
 
 export default function ManageUsersPage() {
