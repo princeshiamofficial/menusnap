@@ -122,16 +122,6 @@ const DEFAULT_USER_PERMISSIONS: Record<string, string[]> = {
 };
 
 const PREDEFINED_AVATARS = [
-  { url: '/menusnap_avatar_3d.png', name: 'MenuSnap Bot' },
-  { url: '/manager_3d.png', name: 'Manager' },
-  { url: '/chef_3d.png', name: 'Chef' },
-  { url: '/cashier_3d.png', name: 'Cashier' },
-  { url: '/receptionist_3d.png', name: 'Receptionist' },
-  { url: '/waiter_3d.png', name: 'Waiter' },
-  { url: '/avatars/sadia.png', name: 'Sadia' },
-  { url: '/avatars/ariful.png', name: 'Ariful' },
-  { url: '/avatars/farhan.png', name: 'Farhan' },
-  { url: '/avatars/rakibul.png', name: 'Rakibul' },
   { url: '/avatar/avatar-1.png', name: 'Avatar 1' },
   { url: '/avatar/avatar-2.png', name: 'Avatar 2' },
   { url: '/avatar/avatar-3.png', name: 'Avatar 3' },
