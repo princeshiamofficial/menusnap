@@ -8,6 +8,31 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  const origin = request.headers.get('origin');
+  const host = request.headers.get('host');
+  const xForwardedHost = request.headers.get('x-forwarded-host');
+
+  let needsRewrite = false;
+  const requestHeaders = new Headers(request.headers);
+
+  // Fix duplicated Origin header from LiteSpeed / Cloudflare
+  if (origin && origin.includes(',')) {
+    requestHeaders.set('origin', origin.split(',')[0].trim());
+    needsRewrite = true;
+  }
+
+  // Fix duplicated Host header
+  if (host && host.includes(',')) {
+    requestHeaders.set('host', host.split(',')[0].trim());
+    needsRewrite = true;
+  }
+
+  // Fix duplicated X-Forwarded-Host header
+  if (xForwardedHost && xForwardedHost.includes(',')) {
+    requestHeaders.set('x-forwarded-host', xForwardedHost.split(',')[0].trim());
+    needsRewrite = true;
+  }
+
   // 1. Skip system paths, API endpoints, static assets, and admin routes
   if (
     pathname.startsWith('/_next') || 
@@ -16,6 +41,13 @@ export function middleware(request: NextRequest) {
     pathname.includes('.') || // Avoid slashing files like favicon.ico, images, etc.
     pathname === '/'          // Root already has a virtual slash or is fine
   ) {
+    if (needsRewrite) {
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
+    }
     return NextResponse.next();
   }
 
@@ -24,6 +56,14 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = pathname + '/';
     return NextResponse.redirect(url, 301); // Permanent redirect for SEO
+  }
+
+  if (needsRewrite) {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   }
 
   return NextResponse.next();
