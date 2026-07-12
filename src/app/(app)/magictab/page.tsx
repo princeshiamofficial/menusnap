@@ -460,7 +460,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
           </div>
         </div>
         {item.subItems && item.subItems.length > 0 && (
-          <div className="mt-3 pl-2 mt-auto pt-2">
+          <div className="mt-auto pl-2 pt-2">
             <Button 
               variant="link" 
               size="sm" 
