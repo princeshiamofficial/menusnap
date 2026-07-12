@@ -98,12 +98,26 @@ function TemplateCard({
 }: TemplateCardProps): ReactNode {
   const { imageUrl, name: title, description, tags, isTopRated } = template;
   const [imgSrc, setImgSrc] = useState(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     setImgSrc(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+    setRetryCount(0);
   }, [imageUrl]);
 
+  const handleImageError = () => {
+    if (retryCount < 2 && imageUrl && imageUrl !== DEFAULT_TEMPLATE_IMAGE_URL) {
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        setImgSrc(`${imageUrl}?t=${Date.now()}`);
+      }, 400);
+    } else {
+      setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL);
+    }
+  };
+
   const isUsingPlaceholder = imgSrc === DEFAULT_TEMPLATE_IMAGE_URL;
+  const isLocalUpload = Boolean(imgSrc && (imgSrc.startsWith('/uploads/') || imgSrc.startsWith('data:')));
   
   const getImageHint = (name: string): string => {
     return name.toLowerCase().split(' ').slice(0, 2).join(' ') || 'template design';
@@ -123,23 +137,25 @@ function TemplateCard({
                 src={imgSrc}
                 alt=""
                 fill
+                unoptimized={isLocalUpload}
                 className="object-cover blur-xl opacity-95 transition-transform duration-500 group-hover:scale-110"
                 priority={false}
                 aria-hidden="true"
-                onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+                onError={handleImageError}
               />
             )}
             <Image
               src={imgSrc}
               alt={decodeHtmlEntities(title)}
               fill
+              unoptimized={isLocalUpload}
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               className={cn(
                 "relative z-10 transition-all duration-500 group-hover:scale-110",
                 isUsingPlaceholder ? "object-cover" : "object-contain drop-shadow-xl group-hover:drop-shadow-2xl"
               )}
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(title)}
-              onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+              onError={handleImageError}
             />
             <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(0,0,0,0.15)] pointer-events-none z-20 group-hover:shadow-[inset_0_0_60px_rgba(0,0,0,0.2)] transition-shadow duration-500" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />

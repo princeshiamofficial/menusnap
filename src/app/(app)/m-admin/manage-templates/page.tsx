@@ -110,10 +110,23 @@ const AdminTemplateCard = memo(function AdminTemplateCard({
   canDelete,
 }: AdminTemplateCardProps): ReactNode {
   const [imgSrc, setImgSrc] = useState(template.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     setImgSrc(template.imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+    setRetryCount(0);
   }, [template.imageUrl]);
+
+  const handleImageError = () => {
+    if (retryCount < 2 && template.imageUrl && template.imageUrl !== DEFAULT_TEMPLATE_IMAGE_URL) {
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        setImgSrc(`${template.imageUrl}?t=${Date.now()}`);
+      }, 400);
+    } else {
+      setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL);
+    }
+  };
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
@@ -131,6 +144,7 @@ const AdminTemplateCard = memo(function AdminTemplateCard({
   }
 
   const isUsingPlaceholder = imgSrc === DEFAULT_TEMPLATE_IMAGE_URL;
+  const isLocalUpload = Boolean(imgSrc && (imgSrc.startsWith('/uploads/') || imgSrc.startsWith('data:')));
 
   return (
     <Card className="overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg flex flex-col h-full bg-card">
@@ -141,23 +155,25 @@ const AdminTemplateCard = memo(function AdminTemplateCard({
               src={imgSrc}
               alt=""
               fill
+              unoptimized={isLocalUpload}
               className="object-cover blur-xl opacity-95"
               priority={false}
               aria-hidden="true"
-              onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+              onError={handleImageError}
             />
           )}
           <Image
             src={imgSrc} 
             alt={template.name}
             fill
+            unoptimized={isLocalUpload}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className={cn(
               "relative z-10 transition-all duration-300",
               isUsingPlaceholder ? "object-cover" : "object-contain drop-shadow-xl"
             )}
             data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : getImageHint(template.name)}
-            onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+            onError={handleImageError}
           />
           <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.1)] pointer-events-none z-20" />
           {template.isTopRated && (

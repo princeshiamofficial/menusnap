@@ -43,10 +43,23 @@ const DEFAULT_TEMPLATE_IMAGE_URL = '/placeholder.svg';
 
 function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHint }: TemplateCardProps) {
   const [imgSrc, setImgSrc] = useState(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     setImgSrc(imageUrl || DEFAULT_TEMPLATE_IMAGE_URL);
+    setRetryCount(0);
   }, [imageUrl]);
+
+  const handleImageError = () => {
+    if (retryCount < 2 && imageUrl && imageUrl !== DEFAULT_TEMPLATE_IMAGE_URL) {
+      setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+        setImgSrc(`${imageUrl}?t=${Date.now()}`);
+      }, 400);
+    } else {
+      setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL);
+    }
+  };
 
   const isUsingPlaceholder = imgSrc === DEFAULT_TEMPLATE_IMAGE_URL;
 
@@ -65,7 +78,7 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover blur-xl opacity-95"
                 aria-hidden="true"
-                onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+                onError={handleImageError}
               />
             )}
             <img
@@ -76,7 +89,7 @@ function TemplateCard({ imageUrl, title, description, tags, isTopRated, imageHin
                 isUsingPlaceholder ? "object-cover" : "object-contain drop-shadow-xl"
               )}
               data-ai-hint={isUsingPlaceholder ? "placeholder abstract" : (imageHint || "template design")}
-              onError={() => setImgSrc(DEFAULT_TEMPLATE_IMAGE_URL)}
+              onError={handleImageError}
             />
             <div className="absolute inset-0 shadow-[inset_0_0_40px_rgba(0,0,0,0.15)] pointer-events-none z-20" />
           </div>
