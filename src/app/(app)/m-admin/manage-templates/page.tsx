@@ -1115,10 +1115,6 @@ export default function ManageTemplatesPage(): ReactNode {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={handleRefresh} disabled={isLoading} className="h-10 rounded-lg">
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
           {canCreate && (
             <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground h-10 rounded-lg">
               <PlusCircle className="h-4 w-4 mr-2" />
