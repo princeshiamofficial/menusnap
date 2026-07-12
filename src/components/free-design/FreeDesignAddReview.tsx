@@ -6,6 +6,7 @@ import { Building, MessageSquare, UploadCloud, Trash2, CheckCircle2, Loader2 } f
 import { Button } from "@/components/ui/button";
 import { uploadFileLocally } from "@/app/actions/uploads";
 import { submitReview } from "@/app/actions/reviews";
+import { compressImageFile } from "@/lib/utils";
 
 export function FreeDesignAddReview() {
   const [businessName, setBusinessName] = useState("");
@@ -32,8 +33,9 @@ export function FreeDesignAddReview() {
 
     setIsUploading(true);
     try {
+      const compressedFile = await compressImageFile(file, 1200, 0.8);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
 
       const res = await uploadFileLocally(formData, "client-reviews");
       if (res.success && res.data?.url) {

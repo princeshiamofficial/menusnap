@@ -16,8 +16,42 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'MenuSnap',
-  description: 'Manage your restaurant and beauty parlour menus',
+  metadataBase: new URL('https://menusnap.colorhutbd.xyz'),
+  title: {
+    default: 'MenuSnap - Smart Digital Menu & QR Order Management System',
+    template: '%s | MenuSnap',
+  },
+  description: 'Create, manage, and customize interactive digital menus and QR ordering systems for restaurants, cafes, and beauty parlours seamlessly with MenuSnap.',
+  keywords: [
+    'MenuSnap',
+    'digital menu',
+    'QR code ordering',
+    'restaurant menu management',
+    'beauty parlour menu',
+    'interactive menu builder',
+  ],
+  alternates: {
+    canonical: '/',
+  },
+  publisher: 'MenuSnap',
+  authors: [{ name: 'MenuSnap Team', url: 'https://menusnap.colorhutbd.xyz' }],
+  creator: 'MenuSnap',
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: 'MenuSnap - Smart Digital Menu & QR Order Management System',
+    description: 'Create, manage, and customize interactive digital menus and QR ordering systems for restaurants, cafes, and beauty parlours seamlessly with MenuSnap.',
+    url: 'https://menusnap.colorhutbd.xyz',
+    siteName: 'MenuSnap',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MenuSnap - Smart Digital Menu & QR Order Management System',
+    description: 'Create, manage, and customize interactive digital menus and QR ordering systems for restaurants, cafes, and beauty parlours seamlessly with MenuSnap.',
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

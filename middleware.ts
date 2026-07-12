@@ -41,32 +41,30 @@ export function middleware(request: NextRequest) {
     pathname.includes('.') || // Avoid slashing files like favicon.ico, images, etc.
     pathname === '/'          // Root already has a virtual slash or is fine
   ) {
-    if (needsRewrite) {
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
-    }
-    return NextResponse.next();
+    const isPrivate = pathname.startsWith('/m-admin');
+    const robotsValue = isPrivate ? 'noindex, nofollow' : 'index, follow';
+
+    const res = needsRewrite
+      ? NextResponse.next({ request: { headers: requestHeaders } })
+      : NextResponse.next();
+    res.headers.set('X-Robots-Tag', robotsValue);
+    return res;
   }
 
   // 2. Enforce trailing slash for client pages (GET requests only, ignore RSC/internal fetches)
   if (request.method === 'GET' && !pathname.endsWith('/') && !request.nextUrl.searchParams.has('_rsc')) {
     const url = request.nextUrl.clone();
     url.pathname = pathname + '/';
-    return NextResponse.redirect(url, 301); // Permanent redirect for SEO
+    const res = NextResponse.redirect(url, 301); // Permanent redirect for SEO
+    res.headers.set('X-Robots-Tag', 'index, follow');
+    return res;
   }
 
-  if (needsRewrite) {
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  }
-
-  return NextResponse.next();
+  const res = needsRewrite
+    ? NextResponse.next({ request: { headers: requestHeaders } })
+    : NextResponse.next();
+  res.headers.set('X-Robots-Tag', 'index, follow');
+  return res;
 }
 
 // Optional: Limit middleware to specific paths for performance

@@ -82,6 +82,7 @@ import {
   AdminUserRecord
 } from '@/app/actions/admin-users';
 import { uploadFileLocally } from '@/app/actions/uploads';
+import { compressImageFile } from '@/lib/utils';
 
 // Page configuration for the permissions matrix
 const APP_PAGES = [
@@ -152,10 +153,11 @@ export default function ManageUsersPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
+      const compressedFile = await compressImageFile(file, 600, 0.85);
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+
       const res = await uploadFileLocally(formData, 'avatars');
       if (res.success && res.data?.url) {
         setAvatarUrl(res.data.url);

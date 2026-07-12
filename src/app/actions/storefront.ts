@@ -4,6 +4,53 @@ import { revalidatePath } from 'next/cache';
 import pool from '@/lib/mysql';
 import fs from 'fs/promises';
 import path from 'path';
+import sharp from 'sharp';
+
+/**
+ * Optimizes and saves a base64 image string to public/uploads directory.
+ */
+async function saveOptimizedBase64Image(
+  imageUrl: string,
+  uploadDir: string,
+  prefix: string,
+  subPath: string,
+  maxWidth = 1600,
+  quality = 80
+): Promise<string> {
+  await fs.mkdir(uploadDir, { recursive: true });
+
+  const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, '');
+  let buffer = Buffer.from(base64Data, 'base64');
+  let ext = 'webp';
+
+  try {
+    const isGif = imageUrl.startsWith('data:image/gif');
+    if (isGif) {
+      ext = 'gif';
+    } else {
+      const optBuf = await sharp(buffer)
+        .resize({
+          width: maxWidth,
+          height: maxWidth,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality, effort: 4 })
+        .toBuffer();
+      buffer = Buffer.from(optBuf);
+    }
+  } catch (err) {
+    console.warn('Sharp optimization failed, saving original buffer:', err);
+    const rawExt = imageUrl.split(';')[0].split('/')[1] || 'png';
+    ext = rawExt.toLowerCase();
+  }
+
+  const fileName = `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
+  const filePath = path.join(uploadDir, fileName);
+  await fs.writeFile(filePath, buffer);
+
+  return `/uploads/${subPath}/${fileName}`;
+}
 
 /**
  * Helper to delete a file from the public directory if it exists.
@@ -159,28 +206,7 @@ export async function addDashboardSlide(imageUrl: string) {
     // Handle base64 image data to keep DB text very short
     if (imageUrl.startsWith('data:image')) {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'slides');
-      
-      // Ensure directory exists
-      try {
-        await fs.access(uploadDir);
-      } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-      }
-
-      // Generate unique filename
-      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
-      const fileName = `slide-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-      
-      // Extract base64 data
-      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      // Save to filesystem
-      await fs.writeFile(filePath, buffer);
-      
-      // Store relative path in DB
-      finalImageUrl = `/uploads/slides/${fileName}`;
+      finalImageUrl = await saveOptimizedBase64Image(imageUrl, uploadDir, 'slide', 'slides');
     }
 
     const [result]: any = await pool.execute(
@@ -272,22 +298,14 @@ export async function addSpotlightCategory(formData: FormData) {
 
     if (imageUrl && imageUrl.startsWith('data:image')) {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights', 'categories');
-      
-      try {
-        await fs.access(uploadDir);
-      } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-      }
-
-      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
-      const fileName = `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-      
-      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      await fs.writeFile(filePath, buffer);
-      finalImageUrl = `/uploads/spotlights/categories/${fileName}`;
+      finalImageUrl = await saveOptimizedBase64Image(
+        imageUrl,
+        uploadDir,
+        'cat',
+        'spotlights/categories',
+        600,
+        80
+      );
     }
 
     const [result]: any = await pool.execute(
@@ -340,27 +358,20 @@ export async function updateSpotlightCategory(formData: FormData) {
     if (imageUrl && imageUrl.startsWith('data:image')) {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights', 'categories');
       
-      try {
-        await fs.access(uploadDir);
-      } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-      }
-
       // Delete old image if it exists
       const [oldRows]: any = await pool.execute('SELECT image_url FROM dashboard_spotlight_categories WHERE id = ?', [id]);
       if (oldRows.length > 0 && oldRows[0].image_url) {
         await deleteFileIfExists(oldRows[0].image_url);
       }
 
-      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
-      const fileName = `cat-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-      
-      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      await fs.writeFile(filePath, buffer);
-      finalImageUrl = `/uploads/spotlights/categories/${fileName}`;
+      finalImageUrl = await saveOptimizedBase64Image(
+        imageUrl,
+        uploadDir,
+        'cat',
+        'spotlights/categories',
+        600,
+        80
+      );
     }
 
     if (finalImageUrl) {
@@ -401,22 +412,14 @@ export async function addDashboardSpotlight(formData: FormData) {
 
     if (imageUrl.startsWith('data:image')) {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights');
-      
-      try {
-        await fs.access(uploadDir);
-      } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-      }
-
-      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
-      const fileName = `spotlight-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-      
-      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      await fs.writeFile(filePath, buffer);
-      finalImageUrl = `/uploads/spotlights/${fileName}`;
+      finalImageUrl = await saveOptimizedBase64Image(
+        imageUrl,
+        uploadDir,
+        'spotlight',
+        'spotlights',
+        1080,
+        80
+      );
     }
 
     const [result]: any = await pool.execute(
@@ -483,27 +486,20 @@ export async function updateDashboardSpotlight(formData: FormData) {
     if (imageUrl && imageUrl.startsWith('data:image')) {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'spotlights');
       
-      try {
-        await fs.access(uploadDir);
-      } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-      }
-
       // Delete old image
       const [oldRows]: any = await pool.execute('SELECT image_url FROM dashboard_spotlights WHERE id = ?', [id]);
       if (oldRows.length > 0) {
         await deleteFileIfExists(oldRows[0].image_url);
       }
 
-      const fileExt = imageUrl.split(';')[0].split('/')[1] || 'png';
-      const fileName = `spotlight-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-      
-      const base64Data = imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      await fs.writeFile(filePath, buffer);
-      finalImageUrl = `/uploads/spotlights/${fileName}`;
+      finalImageUrl = await saveOptimizedBase64Image(
+        imageUrl,
+        uploadDir,
+        'spotlight',
+        'spotlights',
+        1080,
+        80
+      );
     }
 
     if (finalImageUrl) {
@@ -552,22 +548,14 @@ export async function addExclusiveOffer(data: { category: string, imageUrl: stri
 
     if (data.imageUrl.startsWith('data:image')) {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'offers');
-      
-      try {
-        await fs.access(uploadDir);
-      } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-      }
-
-      const fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
-      const fileName = `offer-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-      
-      const base64Data = data.imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      await fs.writeFile(filePath, buffer);
-      finalImageUrl = `/uploads/offers/${fileName}`;
+      finalImageUrl = await saveOptimizedBase64Image(
+        data.imageUrl,
+        uploadDir,
+        'offer',
+        'offers',
+        1080,
+        80
+      );
     }
 
     const [result]: any = await pool.execute(
@@ -620,27 +608,20 @@ export async function updateExclusiveOffer(id: number, data: { category: string,
     if (data.imageUrl && data.imageUrl.startsWith('data:image')) {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'offers');
       
-      try {
-        await fs.access(uploadDir);
-      } catch {
-        await fs.mkdir(uploadDir, { recursive: true });
-      }
-
       // Delete old image
       const [oldRows]: any = await pool.execute('SELECT image_url FROM dashboard_exclusive_offers WHERE id = ?', [id]);
       if (oldRows.length > 0) {
         await deleteFileIfExists(oldRows[0].image_url);
       }
 
-      const fileExt = data.imageUrl.split(';')[0].split('/')[1] || 'png';
-      const fileName = `offer-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-      const filePath = path.join(uploadDir, fileName);
-      
-      const base64Data = data.imageUrl.replace(/^data:image\/\w+;base64,/, "");
-      const buffer = Buffer.from(base64Data, 'base64');
-      
-      await fs.writeFile(filePath, buffer);
-      finalImageUrl = `/uploads/offers/${fileName}`;
+      finalImageUrl = await saveOptimizedBase64Image(
+        data.imageUrl,
+        uploadDir,
+        'offer',
+        'offers',
+        1080,
+        80
+      );
     }
 
     if (finalImageUrl) {

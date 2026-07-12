@@ -73,6 +73,7 @@ import {
   deleteTemplateFromMySql 
 } from "@/app/actions/orders";
 import { uploadFileLocally } from "@/app/actions/uploads";
+import { compressImageFile } from "@/lib/utils";
 
 const DEFAULT_TEMPLATE_IMAGE_URL = '/placeholder.svg';
 
@@ -409,10 +410,11 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
     const imageFileToUpload = extractFileFromValue(data.imageFile);
     if (imageFileToUpload) {
-      const imageFormData = new FormData();
-      imageFormData.append("file", imageFileToUpload);
-
       try {
+        const compressedFile = await compressImageFile(imageFileToUpload, 1600, 0.8);
+        const imageFormData = new FormData();
+        imageFormData.append("file", compressedFile);
+
         const uploadResult = await uploadFileLocally(imageFormData, 'templates');
         if (!uploadResult.success || !uploadResult.data?.url) {
           throw new Error(uploadResult.message || "Image upload failed");
@@ -691,10 +693,11 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
     const imageFileToUpload = extractFileFromValue(data.imageFile);
     if (imageFileToUpload) {
-      const imageFormData = new FormData();
-      imageFormData.append("file", imageFileToUpload);
-
       try {
+        const compressedFile = await compressImageFile(imageFileToUpload, 1600, 0.8);
+        const imageFormData = new FormData();
+        imageFormData.append("file", compressedFile);
+
         const uploadResult = await uploadFileLocally(imageFormData, 'templates');
         if (!uploadResult.success || !uploadResult.data?.url) {
           throw new Error(uploadResult.message || "New image upload failed");

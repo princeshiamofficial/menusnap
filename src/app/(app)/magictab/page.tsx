@@ -1167,6 +1167,7 @@ export default function MagicTabPage() {
         </div>
 
         <main className="flex-1 flex flex-col bg-background overflow-hidden">
+          <h1 className="sr-only">MagicTab - AI Menu Builder & Collaborative Digital Menu Creator</h1>
           <div className="py-3 px-4 md:py-4 md:px-6 border-b border-border bg-card shadow-sm md:shadow-none flex flex-col gap-3">
             {/* First row: Search and Actions */}
             <div className="flex flex-col gap-3">
