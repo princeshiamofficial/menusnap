@@ -1122,11 +1122,31 @@ export default function ManageTemplatesPage(): ReactNode {
         </div>
         <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-4">
           <Tabs value={activeFilter} onValueChange={(val: any) => setActiveFilter(val)} className="w-full sm:w-auto">
-            <TabsList className="bg-muted/60 p-1 h-9 border border-border/40">
-              <TabsTrigger value="all" className="text-xs px-3.5 py-1 font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">All</TabsTrigger>
-              <TabsTrigger value="unpublished" className="text-xs px-3.5 py-1 font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Unpublished</TabsTrigger>
-              <TabsTrigger value="restaurant" className="text-xs px-3.5 py-1 font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Restaurant</TabsTrigger>
-              <TabsTrigger value="parlour" className="text-xs px-3.5 py-1 font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Parlour</TabsTrigger>
+            <TabsList className="inline-flex items-center gap-1.5 p-1.5 h-auto rounded-xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
+              <TabsTrigger 
+                value="all" 
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
+              >
+                All
+              </TabsTrigger>
+              <TabsTrigger 
+                value="unpublished" 
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
+              >
+                Unpublished
+              </TabsTrigger>
+              <TabsTrigger 
+                value="restaurant" 
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
+              >
+                Restaurant
+              </TabsTrigger>
+              <TabsTrigger 
+                value="parlour" 
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
+              >
+                Parlour
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
