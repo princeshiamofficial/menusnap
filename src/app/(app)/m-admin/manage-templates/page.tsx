@@ -272,15 +272,28 @@ function AdminTemplateSkeletonCard(): ReactNode {
 
 const slugify = (text: string) => text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
+const extractFileFromValue = (val: any): File | null => {
+  if (!val) return null;
+  if (val instanceof File) return val;
+  if (Array.isArray(val) && val[0] instanceof File) return val[0];
+  if (typeof FileList !== 'undefined' && val instanceof FileList && val.length > 0) return val[0];
+  if (val[0] && (val[0] instanceof File || typeof val[0].arrayBuffer === 'function')) return val[0];
+  return null;
+};
+
 const addTemplateFormSchema = z.object({
   templateName: z.string().min(1, "Template name is required"),
   description: z.string().min(1, "Description is required"),
-  imageFile: z.custom<FileList>((val) => val instanceof FileList, "Please upload an image")
-    .refine((files) => files.length > 0, `Template image is required.`)
-    .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `Max image size is 5MB.`)
+  imageFile: z.any()
+    .refine((val) => extractFileFromValue(val) !== null, "Template image is required.")
+    .refine((val) => !extractFileFromValue(val) || extractFileFromValue(val)!.size <= 10 * 1024 * 1024, "Max image size is 10MB.")
     .refine(
-      (files) => ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
-      "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
+      (val) => {
+        const f = extractFileFromValue(val);
+        if (!f) return true;
+        return f.type?.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(f.name || '');
+      },
+      "Only image files (.jpg, .png, .webp, .gif) are supported."
     ),
   tag: z.string({ required_error: "Please select a tag." }).min(1, "A tag is required."),
   isTopRated: z.boolean().default(false),
@@ -315,19 +328,19 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 
   const processAndSetImage = useCallback((file: File | null) => {
     if (file) {
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const isImage = file.type?.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(file.name || '');
+      const maxSize = 10 * 1024 * 1024; // 10MB
 
-      if (!allowedTypes.includes(file.type)) {
-        toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
-        form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); 
+      if (!isImage) {
+        toast({ title: "Invalid File Type", description: "Only image formats are supported.", variant: "destructive" });
+        form.setValue("imageFile", [], { shouldValidate: true }); 
         setImagePreview(null);
         if (fileInputRef.current) fileInputRef.current.value = ""; 
         return;
       }
       if (file.size > maxSize) {
-        toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
-        form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true }); 
+        toast({ title: "File Too Large", description: "Maximum image size is 10MB.", variant: "destructive" });
+        form.setValue("imageFile", [], { shouldValidate: true }); 
         setImagePreview(null);
         if (fileInputRef.current) fileInputRef.current.value = ""; 
         return;
@@ -339,12 +352,10 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       };
       reader.readAsDataURL(file);
 
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
-      form.setValue("imageFile", dataTransfer.files, { shouldValidate: true });
+      form.setValue("imageFile", [file], { shouldValidate: true });
     } else {
       setImagePreview(null);
-      form.setValue("imageFile", new DataTransfer().files, { shouldValidate: true });
+      form.setValue("imageFile", [], { shouldValidate: true });
       if (fileInputRef.current) fileInputRef.current.value = ""; 
     }
   }, [form, toast]);
@@ -395,8 +406,8 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
     form.clearErrors(); 
     let uploadedImageUrl = "";
 
-    if (data.imageFile && data.imageFile.length > 0) {
-      const imageFileToUpload = data.imageFile[0];
+    const imageFileToUpload = extractFileFromValue(data.imageFile);
+    if (imageFileToUpload) {
       const imageFormData = new FormData();
       imageFormData.append("file", imageFileToUpload);
 
@@ -407,14 +418,14 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
         }
         uploadedImageUrl = uploadResult.data.url;
       } catch (error: any) {
-        toast({ title: "Image Upload Error", description: error.message, variant: "destructive" });
-        form.setError("imageFile", { type: "manual", message: error.message || "Failed to upload image."});
+        toast({ title: "Image Upload Error", description: error?.message || "Failed to upload image.", variant: "destructive" });
+        form.setError("imageFile", { type: "manual", message: error?.message || "Failed to upload image." });
         return; 
       }
     } else {
-        toast({ title: "Image Required", description: "Please select an image for the template.", variant: "destructive" });
-        form.setError("imageFile", { type: "manual", message: "Template image is required."});
-        return;
+      toast({ title: "Image Required", description: "Please select an image for the template.", variant: "destructive" });
+      form.setError("imageFile", { type: "manual", message: "Template image is required." });
+      return;
     }
 
     const templateId = slugify(data.templateName) + '-' + Date.now().toString(36);
@@ -434,10 +445,10 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
       if (!result.success) {
         throw new Error(result.message || `Failed to add template to local database.`);
       }
-      toast({ title: "Template Added", description: `Template "${data.templateName}" created successfully in local DB.` });
+      toast({ title: "Template Added", description: `Template "${data.templateName}" created successfully.` });
       onSuccess();
     } catch (error: any) {
-      toast({ title: "Template Add Error", description: error.message, variant: "destructive" });
+      toast({ title: "Template Add Error", description: error?.message || "Could not save template.", variant: "destructive" });
     }
   }
 
@@ -557,12 +568,12 @@ function AddTemplateForm({ onSuccess, onOpenChange }: AddTemplateFormProps) {
 const editTemplateFormSchema = z.object({
   templateName: z.string().min(1, "Template name is required"),
   description: z.string().min(1, "Description is required"),
-  imageFile: z.custom<FileList>((val) => val === null || val === undefined || val instanceof FileList, "Invalid image file")
+  imageFile: z.any()
     .optional()
-    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= 5 * 1024 * 1024, `Max image size is 5MB.`)
+    .refine((files) => !files || files.length === 0 || files?.[0]?.size <= 10 * 1024 * 1024, "Max image size is 10MB.")
     .refine(
-      (files) => !files || files.length === 0 || ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(files?.[0]?.type),
-      "Only .jpg, .jpeg, .png, .webp and .gif formats are supported."
+      (files) => !files || files.length === 0 || !files?.[0] || files[0].type?.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(files[0].name || ''),
+      "Only image files (.jpg, .png, .webp, .gif) are supported."
     ),
   tag: z.string({ required_error: "Please select a tag." }).min(1, "A tag is required."),
   isTopRated: z.boolean().default(false),
@@ -600,18 +611,18 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
 
   const processAndSetImage = useCallback((file: File | null) => {
     if (file) {
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const isImage = file.type?.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(file.name || '');
+      const maxSize = 10 * 1024 * 1024; // 10MB
 
-      if (!allowedTypes.includes(file.type)) {
-        toast({ title: "Invalid File Type", description: "Only JPG, PNG, WEBP, and GIF formats are supported.", variant: "destructive" });
+      if (!isImage) {
+        toast({ title: "Invalid File Type", description: "Only image formats are supported.", variant: "destructive" });
         form.setValue("imageFile", undefined, { shouldValidate: true });
         setImagePreview(templateData.imageUrl || null); 
         if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
       if (file.size > maxSize) {
-        toast({ title: "File Too Large", description: "Maximum image size is 5MB.", variant: "destructive" });
+        toast({ title: "File Too Large", description: "Maximum image size is 10MB.", variant: "destructive" });
         form.setValue("imageFile", undefined, { shouldValidate: true });
         setImagePreview(templateData.imageUrl || null); 
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -624,9 +635,7 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       };
       reader.readAsDataURL(file);
 
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
-      form.setValue("imageFile", dataTransfer.files, { shouldValidate: true });
+      form.setValue("imageFile", [file], { shouldValidate: true });
     } else {
       setImagePreview(templateData.imageUrl || null);
       form.setValue("imageFile", undefined, { shouldValidate: true });
@@ -679,8 +688,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
     form.clearErrors();
     let finalImageUrl = templateData.imageUrl;
 
-    if (data.imageFile && data.imageFile.length > 0) {
-      const imageFileToUpload = data.imageFile[0];
+    const imageFileToUpload = extractFileFromValue(data.imageFile);
+    if (imageFileToUpload) {
       const imageFormData = new FormData();
       imageFormData.append("file", imageFileToUpload);
 
@@ -691,8 +700,8 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
         }
         finalImageUrl = uploadResult.data.url;
       } catch (error: any) {
-        toast({ title: "Image Upload Error", description: error.message, variant: "destructive" });
-        form.setError("imageFile", { type: "manual", message: error.message || "Failed to upload new image."});
+        toast({ title: "Image Upload Error", description: error?.message || "Failed to upload new image.", variant: "destructive" });
+        form.setError("imageFile", { type: "manual", message: error?.message || "Failed to upload new image." });
         return;
       }
     }
@@ -711,12 +720,12 @@ function EditTemplateForm({ templateData, onSuccess, onOpenChange }: EditTemplat
       const result = await upsertTemplateToMySql(templatePayload);
 
       if (!result.success) {
-        throw new Error(result.message || "Failed to update local template.");
+        throw new Error(result.message || "Failed to update template.");
       }
-      toast({ title: "Success", description: `Template "${data.templateName}" updated locally.` });
+      toast({ title: "Success", description: `Template "${data.templateName}" updated successfully.` });
       onSuccess();
     } catch (error: any) {
-      toast({ title: "Update Error", description: error.message, variant: "destructive" });
+      toast({ title: "Update Error", description: error?.message || "Could not update template.", variant: "destructive" });
     }
   }
 

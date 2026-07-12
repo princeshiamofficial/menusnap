@@ -254,16 +254,48 @@ export async function getMenuItemsFromMySql(type?: 'restaurant' | 'parlour', vis
 }
 
 /**
+ * Ensure templates table exists in MySQL.
+ */
+async function ensureTemplatesTable() {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS templates (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        imageUrl LONGTEXT,
+        tags LONGTEXT,
+        isTopRated BOOLEAN DEFAULT FALSE,
+        isPublished BOOLEAN DEFAULT FALSE,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+  } catch (error) {
+    console.error('Failed to ensure templates table:', error);
+  }
+}
+
+/**
  * Fetch all templates from local MySQL.
  */
 export async function getTemplatesFromMySql() {
   try {
+    await ensureTemplatesTable();
     const [rows]: any = await pool.execute("SELECT *, DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') as createdAt FROM templates ORDER BY createdAt DESC");
     
-    const formatted = (Array.isArray(rows) ? rows : []).map((template: any) => ({
-      ...template,
-      tags: typeof template.tags === 'string' ? JSON.parse(template.tags) : (template.tags || [])
-    }));
+    const formatted = (Array.isArray(rows) ? rows : []).map((template: any) => {
+      let tagsData = [];
+      try {
+        tagsData = typeof template.tags === 'string' ? JSON.parse(template.tags) : (template.tags || []);
+      } catch {
+        tagsData = [];
+      }
+      return {
+        ...template,
+        tags: Array.isArray(tagsData) ? tagsData : []
+      };
+    });
     
     return { success: true, data: formatted };
   } catch (error: any) {
@@ -346,6 +378,7 @@ export async function deleteMenuItemFromMySql(id: string) {
  */
 export async function upsertTemplateToMySql(template: any) {
   try {
+    await ensureTemplatesTable();
     const { id, name, description, imageUrl, tags, isTopRated, isPublished } = template;
     await pool.execute(
       `INSERT INTO templates (id, name, description, imageUrl, tags, isTopRated, isPublished)
@@ -367,6 +400,7 @@ export async function upsertTemplateToMySql(template: any) {
  */
 export async function deleteTemplateFromMySql(id: string) {
   try {
+    await ensureTemplatesTable();
     await pool.execute('DELETE FROM templates WHERE id = ?', [id]);
     return { success: true };
   } catch (error: any) {

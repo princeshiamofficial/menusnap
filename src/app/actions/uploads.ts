@@ -12,25 +12,32 @@ import path from 'path';
 export async function uploadFileLocally(formData: FormData, subDir: string = 'general') {
   try {
     const file = formData.get('file') as File;
-    if (!file) {
+    if (!file || typeof file === 'string') {
       return { success: false, message: 'No file provided' };
     }
 
     const bytes = await file.arrayBuffer();
+    if (!bytes || bytes.byteLength === 0) {
+      return { success: false, message: 'Uploaded file is empty' };
+    }
     const buffer = Buffer.from(bytes);
 
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', subDir);
     
     // Ensure directory exists
-    try {
-      await fs.access(uploadDir);
-    } catch {
-      await fs.mkdir(uploadDir, { recursive: true });
-    }
+    await fs.mkdir(uploadDir, { recursive: true });
 
     // Generate unique filename
-    const fileExt = path.extname(file.name) || '.png';
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}${fileExt}`;
+    const rawName = file.name || 'image.png';
+    let fileExt = path.extname(rawName);
+    if (!fileExt) {
+      if (file.type === 'image/jpeg') fileExt = '.jpg';
+      else if (file.type === 'image/webp') fileExt = '.webp';
+      else if (file.type === 'image/gif') fileExt = '.gif';
+      else fileExt = '.png';
+    }
+    const cleanExt = fileExt.toLowerCase();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${cleanExt}`;
     const filePath = path.join(uploadDir, fileName);
     
     // Save to filesystem
