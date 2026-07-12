@@ -70,32 +70,33 @@ export function SidebarNav() {
               const isExternal = item.href.startsWith('http');
               return (
                 <SidebarMenuItem key={item.href}>
-                  <Link 
-                    href={item.href} 
-                    target={isExternal ? "_blank" : undefined}
-                    rel={isExternal ? "noopener noreferrer" : undefined}
+                  <SidebarMenuButton
+                    asChild
+                    variant="default"
+                    className={cn(
+                      "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
+                        ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold"
+                        : "text-sidebar-foreground/80",
+                      "group-data-[collapsible=icon]:justify-center"
+                    )}
+                    isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
+                    tooltip={{
+                      children: item.label,
+                      className: "bg-popover text-popover-foreground border-border shadow-md",
+                      sideOffset: 10
+                    }}
                   >
-                    <SidebarMenuButton
-                      variant="default"
-                      className={cn(
-                        "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        (pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)))
-                          ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold"
-                          : "text-sidebar-foreground/80",
-                        "group-data-[collapsible=icon]:justify-center"
-                      )}
-                      isActive={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
-                      tooltip={{
-                        children: item.label,
-                        className: "bg-popover text-popover-foreground border-border shadow-md",
-                        sideOffset: 10
-                      }}
+                    <Link 
+                      href={item.href} 
+                      target={isExternal ? "_blank" : undefined}
+                      rel={isExternal ? "noopener noreferrer" : undefined}
                     >
                       <item.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden flex-1">{item.label}</span>
                       {item.hasChevron && <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden" />}
-                    </SidebarMenuButton>
-                  </Link>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               );
             })}

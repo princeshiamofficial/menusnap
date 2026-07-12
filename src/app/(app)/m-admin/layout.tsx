@@ -40,7 +40,7 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
 
   if (adminLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-muted/30 p-4">
+      <div className="flex items-center justify-center min-h-screen bg-muted/30 p-4 sm:p-6 md:p-8">
         <div className="w-full max-w-md space-y-4">
           <Skeleton className="h-16 w-16 rounded-full mx-auto bg-card" />
           <Skeleton className="h-8 w-48 mx-auto bg-card" />
@@ -73,8 +73,8 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
           {hasAccess ? (
             children
           ) : (
-            <div className="flex flex-col items-center justify-center flex-1 p-8 text-center min-h-[70vh]">
-              <div className="max-w-md p-8 bg-card border border-border rounded-2xl shadow-xl space-y-6 flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center flex-1 p-4 sm:p-6 md:p-8 text-center min-h-[70vh]">
+              <div className="max-w-md p-6 sm:p-8 bg-card border border-border rounded-2xl shadow-xl space-y-6 flex flex-col items-center justify-center">
                 <div className="w-16 h-16 rounded-full bg-destructive/10 text-destructive flex items-center justify-center">
                   <ShieldAlert className="w-8 h-8" />
                 </div>

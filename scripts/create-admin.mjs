@@ -21,17 +21,16 @@ async function run() {
   `);
   console.log('admins table created (or already exists)');
 
-  // Insert default admin
-  const hash = await bcrypt.hash('admin123', 10);
   try {
+    const hash = await bcrypt.hash('admin123', 10);
     await pool.execute(
-      'INSERT IGNORE INTO admins (email, password_hash) VALUES (?, ?)',
+      'INSERT INTO admins (email, password_hash) VALUES (?, ?) ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash)',
       ['admin@colorhut.com', hash]
     );
-    console.log('Default admin created: admin@colorhut.com / admin123');
+    console.log('Default admin created or password reset: admin@colorhut.com / admin123');
     console.log('IMPORTANT: Change the password after first login!');
   } catch (err) {
-    console.log('Admin already exists or error:', err.message);
+    console.log('Error creating/updating admin:', err.message);
   }
 
   process.exit(0);

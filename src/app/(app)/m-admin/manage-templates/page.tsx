@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
 import Image from 'next/image';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { checkClientPermission } from '@/lib/admin-permissions';
@@ -98,7 +98,7 @@ interface AdminTemplateCardProps {
   canDelete: boolean;
 }
 
-function AdminTemplateCard({
+const AdminTemplateCard = memo(function AdminTemplateCard({
   template,
   onEdit,
   onDelete,
@@ -235,7 +235,17 @@ function AdminTemplateCard({
       </CardFooter>
     </Card>
   );
-}
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.template.id === nextProps.template.id &&
+    prevProps.template.name === nextProps.template.name &&
+    prevProps.template.isPublished === nextProps.template.isPublished &&
+    prevProps.template.isTopRated === nextProps.template.isTopRated &&
+    prevProps.template.imageUrl === nextProps.template.imageUrl &&
+    prevProps.canEdit === nextProps.canEdit &&
+    prevProps.canDelete === nextProps.canDelete
+  );
+});
 
 function AdminTemplateSkeletonCard(): ReactNode {
   return (

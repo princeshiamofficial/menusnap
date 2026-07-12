@@ -8,7 +8,7 @@ import { cookies } from 'next/headers';
 import crypto from 'crypto';
 
 const SESSION_COOKIE = 'admin_session';
-const SESSION_EXPIRY_DAYS = 7;
+const SESSION_EXPIRY_DAYS = 30;
 const COOKIE_EXPIRY_DAYS = 30;
 
 async function ensureSessionTable() {
@@ -38,7 +38,7 @@ export async function adminLoginAction(email: string, password: string): Promise
     await ensureSessionTable();
     
     // Cleanup expired sessions
-    await pool.execute('DELETE FROM admin_sessions WHERE expires_at < NOW()');
+    await pool.execute('DELETE FROM admin_sessions WHERE expires_at < NOW() AND expires_at < UTC_TIMESTAMP()');
 
     const [rows]: any = await pool.execute(
       'SELECT id, email, password_hash FROM admins WHERE email = ? LIMIT 1',
@@ -104,14 +104,21 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
       `SELECT s.admin_id as id, s.email, a.role, a.permissions, a.avatar_url, a.name 
        FROM admin_sessions s 
        JOIN admins a ON s.admin_id = a.id 
-       WHERE s.token = ? AND s.expires_at > NOW() LIMIT 1`,
+       WHERE s.token = ? AND (s.expires_at > NOW() OR s.expires_at > UTC_TIMESTAMP()) LIMIT 1`,
       [token]
     );
 
     if (!rows.length) return null;
 
-    // NOTE: We intentionally do NOT update expires_at on every check
-    // to prevent causing different return values each call (which caused infinite re-renders)
+    // Slide/extend session expiration in background so active sessions never expire
+    const newExpiresAt = new Date(Date.now() + 60 * 60 * 24 * SESSION_EXPIRY_DAYS * 1000);
+    pool.execute(
+      'UPDATE admin_sessions SET expires_at = ? WHERE token = ?',
+      [formatUtcDateTime(newExpiresAt), token]
+    ).catch(() => {});
+
+    // NOTE: We intentionally do NOT include expires_at in the return object
+    // to prevent causing different return values each call (which would cause re-renders)
 
     const admin = rows[0];
     let parsedPermissions = null;
@@ -133,7 +140,7 @@ export async function getAdminSessionAction(): Promise<{ email: string; id: numb
     };
   } catch (e) {
     console.error('Session check error:', e);
-    return null;
+    throw e;
   }
 }
 

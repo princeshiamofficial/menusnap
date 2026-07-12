@@ -388,19 +388,25 @@ interface MenuItemCardProps {
   onEditItem: (item: MenuItem) => void;
   onToggleSubItems: (id: string) => void;
   isSubItemsExpanded: boolean;
+  registerCardRef?: (id: string, el: HTMLDivElement | null) => void;
 }
 
-const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardProps>(function MenuItemCard({
+const MenuItemCard = React.memo(function MenuItemCard({
   item,
   isSelected,
   onSelectItem,
   onEditItem,
   onToggleSubItems,
-  isSubItemsExpanded
-}, ref) {
+  isSubItemsExpanded,
+  registerCardRef
+}: MenuItemCardProps) {
+  const handleCardRef = useCallback((el: HTMLDivElement | null) => {
+    registerCardRef?.(item.id, el);
+  }, [registerCardRef, item.id]);
+
   return (
     <Card 
-      ref={ref} 
+      ref={handleCardRef} 
       className={cn(
         "shadow-sm hover:shadow-md transition-all rounded-lg bg-card border border-border h-full flex flex-col cursor-pointer select-none",
         isSelected ? "bg-primary/5 shadow-md" : ""
@@ -429,29 +435,20 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
                   {item.price > 0 && `৳${item.price.toLocaleString()}`}
                 </div>
                 <div className="h-7 w-7 flex items-center justify-center">
-                  <AnimatePresence>
-                    {isSelected && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.5 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEditItem(item);
-                          }} 
-                          aria-label="Edit item"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {isSelected && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 animate-in fade-in zoom-in-50 duration-150" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditItem(item);
+                      }} 
+                      aria-label="Edit item"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -491,7 +488,15 @@ const MenuItemCard = React.memo(React.forwardRef<HTMLDivElement, MenuItemCardPro
       </CardContent>
     </Card>
   );
-}));
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.name === nextProps.item.name &&
+    prevProps.item.price === nextProps.item.price &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.isSubItemsExpanded === nextProps.isSubItemsExpanded
+  );
+});
 MenuItemCard.displayName = 'MenuItemCard';
 
 
@@ -642,6 +647,11 @@ export default function MagicTabPage() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const magicSearchRef = useRef<HTMLTextAreaElement>(null);
   const [isMobileSearchActive, setIsMobileSearchActive] = useState(false);
+
+  const registerCardRef = useCallback((id: string, el: HTMLDivElement | null) => {
+    if (el) itemCardRefs.current.set(id, el);
+    else itemCardRefs.current.delete(id);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1042,22 +1052,24 @@ export default function MagicTabPage() {
         /* Silence creation errors */
       }
 
-      const cardElement = itemCardRefs.current.get(itemId);
-      const buttonElement = previewButtonRef.current;
+      requestAnimationFrame(() => {
+        const cardElement = itemCardRefs.current.get(itemId);
+        const buttonElement = previewButtonRef.current;
 
-      if (cardElement && buttonElement) {
-        const cardRect = cardElement.getBoundingClientRect();
-        const buttonRect = buttonElement.getBoundingClientRect();
-        const burstId = Date.now();
-        const newAnimations = Array.from({ length: 7 }).map((_, i) => ({
-          id: burstId + i,
-          startX: cardRect.left + cardRect.width / 2,
-          startY: cardRect.top + cardRect.height / 2,
-          endX: buttonRect.left + buttonRect.width / 2,
-          endY: buttonRect.top + buttonRect.height / 2,
-        }));
-        setAnimations(prev => [...prev, ...newAnimations]);
-      }
+        if (cardElement && buttonElement) {
+          const cardRect = cardElement.getBoundingClientRect();
+          const buttonRect = buttonElement.getBoundingClientRect();
+          const burstId = Date.now();
+          const newAnimations = Array.from({ length: 7 }).map((_, i) => ({
+            id: burstId + i,
+            startX: cardRect.left + cardRect.width / 2,
+            startY: cardRect.top + cardRect.height / 2,
+            endX: buttonRect.left + buttonRect.width / 2,
+            endY: buttonRect.top + buttonRect.height / 2,
+          }));
+          setAnimations(prev => [...prev, ...newAnimations]);
+        }
+      });
     }
   }, []);
 
@@ -1369,10 +1381,7 @@ export default function MagicTabPage() {
                   {currentMenuItems.map((item) => (
                     <MenuItemCard
                       key={item.id}
-                      ref={(el) => {
-                        if (el) itemCardRefs.current.set(item.id, el);
-                        else itemCardRefs.current.delete(item.id);
-                      }}
+                      registerCardRef={registerCardRef}
                       item={item}
                       isSelected={!!selectedItems[item.id]}
                       onSelectItem={handleSelectItem}

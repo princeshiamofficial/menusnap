@@ -42,11 +42,19 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   const adminUserRef = useRef(adminUser);
+  const lastCheckedRef = useRef<number>(0);
+
   useEffect(() => {
     adminUserRef.current = adminUser;
   }, [adminUser]);
 
-  const checkSession = useCallback(async () => {
+  const checkSession = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastCheckedRef.current < 30000) {
+      return;
+    }
+    lastCheckedRef.current = now;
+
     try {
       const session = await getAdminSessionAction();
       if (!session && adminUserRef.current) {
@@ -60,8 +68,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       } else if (session && JSON.stringify(session) !== JSON.stringify(adminUserRef.current)) {
         setAdminUser(session);
       }
-    } catch {
-      setAdminUser(null);
+    } catch (err) {
+      // Do not log out on transient network or server errors during background checks
+      console.warn("Transient session check error ignored:", err);
     }
   }, [toast, router]);
 
@@ -71,6 +80,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       try {
         const session = await getAdminSessionAction();
         setAdminUser(session);
+        lastCheckedRef.current = Date.now();
       } catch {
         setAdminUser(null);
       } finally {
@@ -84,17 +94,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // NOTE: We intentionally use adminUserRef (not adminUser state) to avoid
   // re-registering the interval/listener on every session update.
   useEffect(() => {
-    // Check every 15 seconds
+    // Check every 2 minutes
     const interval = setInterval(() => {
       if (adminUserRef.current) {
-        checkSession();
+        checkSession(true);
       }
-    }, 15000);
+    }, 120000);
 
-    // Check when window gets focus
+    // Check when window gets focus (throttled to max once per 30s)
     const handleFocus = () => {
       if (adminUserRef.current) {
-        checkSession();
+        checkSession(false);
       }
     };
 
@@ -109,7 +119,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Check session status on navigation
   useEffect(() => {
     if (adminUserRef.current) {
-      checkSession();
+      checkSession(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]); // Only re-run when path changes
