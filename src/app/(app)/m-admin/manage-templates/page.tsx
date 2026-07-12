@@ -900,11 +900,20 @@ export default function ManageTemplatesPage(): ReactNode {
     }
   }, []);
 
+  const hasFetchedRef = useRef(false);
+
   useEffect(() => {
-    if (isAdminLoggedIn) {
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       fetchTemplates();
     }
-  }, [fetchTemplates, isAdminLoggedIn]);
+  }, [fetchTemplates]);
+
+  useEffect(() => {
+    if (isAdminLoggedIn && !allTemplates.length && !isLoading) {
+      fetchTemplates();
+    }
+  }, [fetchTemplates, isAdminLoggedIn, allTemplates.length, isLoading]);
 
   const handleRefresh = useCallback(() => {
     fetchTemplates();

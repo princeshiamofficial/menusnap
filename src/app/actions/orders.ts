@@ -253,10 +253,13 @@ export async function getMenuItemsFromMySql(type?: 'restaurant' | 'parlour', vis
   }
 }
 
+let templatesTableChecked = false;
+
 /**
  * Ensure templates table exists in MySQL.
  */
 async function ensureTemplatesTable() {
+  if (templatesTableChecked) return;
   try {
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS templates (
@@ -271,6 +274,7 @@ async function ensureTemplatesTable() {
         updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
+    templatesTableChecked = true;
   } catch (error) {
     console.error('Failed to ensure templates table:', error);
   }
