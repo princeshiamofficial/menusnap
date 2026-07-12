@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Select,
   SelectContent,
@@ -1119,12 +1120,15 @@ export default function ManageTemplatesPage(): ReactNode {
             )}
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-border flex flex-wrap gap-2 items-center">
-            <span className="text-sm font-medium text-muted-foreground mr-2">Filters:</span>
-            <Button variant={activeFilter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('all')}>All</Button>
-            <Button variant={activeFilter === 'unpublished' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('unpublished')}>Unpublished</Button>
-            <Button variant={activeFilter === 'restaurant' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('restaurant')}>Restaurant</Button>
-            <Button variant={activeFilter === 'parlour' ? 'default' : 'outline'} size="sm" onClick={() => setActiveFilter('parlour')}>Parlour</Button>
+        <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-4">
+          <Tabs value={activeFilter} onValueChange={(val: any) => setActiveFilter(val)} className="w-full sm:w-auto">
+            <TabsList className="bg-muted/60 p-1 h-9 border border-border/40">
+              <TabsTrigger value="all" className="text-xs px-3.5 py-1 font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">All</TabsTrigger>
+              <TabsTrigger value="unpublished" className="text-xs px-3.5 py-1 font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Unpublished</TabsTrigger>
+              <TabsTrigger value="restaurant" className="text-xs px-3.5 py-1 font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Restaurant</TabsTrigger>
+              <TabsTrigger value="parlour" className="text-xs px-3.5 py-1 font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Parlour</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </section>
 
