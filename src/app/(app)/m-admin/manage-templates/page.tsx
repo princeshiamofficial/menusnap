@@ -1091,7 +1091,7 @@ export default function ManageTemplatesPage(): ReactNode {
         </div>
       </header>
 
-      <section className="bg-card p-4 sm:p-6 rounded-lg shadow border border-border">
+      <section className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h2 className="text-xl font-semibold text-foreground">All Templates</h2>
@@ -1120,7 +1120,7 @@ export default function ManageTemplatesPage(): ReactNode {
             )}
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <Tabs value={activeFilter} onValueChange={(val: any) => setActiveFilter(val)} className="w-full sm:w-auto">
             <TabsList className="inline-flex items-center gap-1.5 p-1.5 h-auto rounded-xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
               <TabsTrigger 
