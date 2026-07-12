@@ -35,11 +35,11 @@ function PageTitleManager() {
     const cleanPath = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
 
     const seoTitles: Record<string, string> = {
-      '/magictab': 'MagicTab - AI Menu Builder & Digital Menu Creator | MenuSnap',
-      '/dashboard': 'Dashboard - Digital Menu & Order Management | MenuSnap',
-      '/free-design': 'Free Custom Digital Menu & QR Design Service | MenuSnap',
-      '/templates': 'Digital Menu & QR Code Templates | MenuSnap',
-      '/marketing-consultation': 'Restaurant Marketing & Menu Consultation | MenuSnap',
+      '/templates': 'Explore Restaurant & Parlour Menu Design Gallery | MenuSnap',
+      '/free-design': 'Free Custom Menu Design Service for Restaurants & Parlours | MenuSnap',
+      '/dashboard': 'Dashboard - Explore & Manage Your Menu Design Collection | MenuSnap',
+      '/magictab': 'MagicTab - AI Menu Builder & Creative Layout Designer | MenuSnap',
+      '/marketing-consultation': 'Restaurant Marketing & Menu Consultation Service | MenuSnap',
     };
 
     if (seoTitles[cleanPath]) {

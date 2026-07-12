@@ -18,17 +18,17 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://menusnap.colorhutbd.xyz'),
   title: {
-    default: 'MenuSnap - Smart Digital Menu & QR Order Management System',
+    default: 'MenuSnap - Explore & Showcase Premium Restaurant & Parlour Menu Designs',
     template: '%s | MenuSnap',
   },
-  description: 'Create, manage, and customize interactive digital menus and QR ordering systems for restaurants, cafes, and beauty parlours seamlessly with MenuSnap.',
+  description: 'Discover and browse stunning restaurant, cafe, and beauty parlour menu designs. Explore creative templates, showcase your menu layouts, and get custom design inspirations with MenuSnap.',
   keywords: [
     'MenuSnap',
-    'digital menu',
-    'QR code ordering',
-    'restaurant menu management',
-    'beauty parlour menu',
-    'interactive menu builder',
+    'menu design showcase',
+    'restaurant menu designs',
+    'parlour menu templates',
+    'menu design inspiration',
+    'browse menu designs',
   ],
   alternates: {
     canonical: '/',
@@ -41,16 +41,16 @@ export const metadata: Metadata = {
     follow: true,
   },
   openGraph: {
-    title: 'MenuSnap - Smart Digital Menu & QR Order Management System',
-    description: 'Create, manage, and customize interactive digital menus and QR ordering systems for restaurants, cafes, and beauty parlours seamlessly with MenuSnap.',
+    title: 'MenuSnap - Explore & Showcase Premium Restaurant & Parlour Menu Designs',
+    description: 'Discover and browse stunning restaurant, cafe, and beauty parlour menu designs. Explore creative templates, showcase your menu layouts, and get custom design inspirations with MenuSnap.',
     url: 'https://menusnap.colorhutbd.xyz',
     siteName: 'MenuSnap',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MenuSnap - Smart Digital Menu & QR Order Management System',
-    description: 'Create, manage, and customize interactive digital menus and QR ordering systems for restaurants, cafes, and beauty parlours seamlessly with MenuSnap.',
+    title: 'MenuSnap - Explore & Showcase Premium Restaurant & Parlour Menu Designs',
+    description: 'Discover and browse stunning restaurant, cafe, and beauty parlour menu designs. Explore creative templates, showcase your menu layouts, and get custom design inspirations with MenuSnap.',
   },
   manifest: '/manifest.json',
   appleWebApp: {
