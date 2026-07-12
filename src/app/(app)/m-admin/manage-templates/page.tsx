@@ -1074,81 +1074,57 @@ export default function ManageTemplatesPage(): ReactNode {
   return (
     <div className="min-h-full bg-background/30 p-4 sm:p-6 lg:p-10 w-full overflow-x-hidden relative">
       <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8 w-full mt-10">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-3xl font-bold text-foreground flex items-center">
-          <Layers className="h-8 w-8 mr-3 text-primary" />
-          Templates
-        </h1>
-        <div className="relative w-full sm:w-auto sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search templates..."
-            className="pl-10 w-full text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </header>
+      <section className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <Tabs value={activeFilter} onValueChange={(val: any) => setActiveFilter(val)} className="w-full lg:w-auto">
+          <TabsList className="inline-flex items-center gap-1.5 p-1.5 h-auto rounded-xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
+            <TabsTrigger 
+              value="all" 
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
+            >
+              All
+            </TabsTrigger>
+            <TabsTrigger 
+              value="unpublished" 
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
+            >
+              Unpublished
+            </TabsTrigger>
+            <TabsTrigger 
+              value="restaurant" 
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
+            >
+              Restaurant
+            </TabsTrigger>
+            <TabsTrigger 
+              value="parlour" 
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
+            >
+              Parlour
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground">All Templates</h2>
-            {!isLoading && !error && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {`${stats.available} templates available • ${stats.published} published`}
-              </p>
-            )}
-            {isLoading && (
-                <Skeleton className="h-4 w-48 mt-1.5" />
-            )}
-            {!isLoading && error && (
-                 <p className="text-sm text-muted-foreground mt-1">Could not load stats.</p>
-            )}
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search templates..."
+              className="pl-9 h-10 w-full text-sm rounded-lg"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <div className="flex items-center gap-2 mt-3 sm:mt-0">
-            <Button variant="outline" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
+          <Button variant="outline" onClick={handleRefresh} disabled={isLoading} className="h-10 rounded-lg">
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          {canCreate && (
+            <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground h-10 rounded-lg">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Template
             </Button>
-            {canCreate && (
-              <Button variant="default" onClick={() => setIsAddTemplateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add Template
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <Tabs value={activeFilter} onValueChange={(val: any) => setActiveFilter(val)} className="w-full sm:w-auto">
-            <TabsList className="inline-flex items-center gap-1.5 p-1.5 h-auto rounded-xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800">
-              <TabsTrigger 
-                value="all" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
-              >
-                All
-              </TabsTrigger>
-              <TabsTrigger 
-                value="unpublished" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
-              >
-                Unpublished
-              </TabsTrigger>
-              <TabsTrigger 
-                value="restaurant" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
-              >
-                Restaurant
-              </TabsTrigger>
-              <TabsTrigger 
-                value="parlour" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:text-slate-900 dark:data-[state=active]:text-slate-100 data-[state=active]:font-semibold data-[state=active]:border data-[state=active]:border-slate-200/80 dark:data-[state=active]:border-slate-700 data-[state=active]:shadow-sm"
-              >
-                Parlour
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          )}
         </div>
       </section>
 
