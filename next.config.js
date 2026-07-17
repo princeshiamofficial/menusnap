@@ -5,6 +5,11 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   allowedDevOrigins: ['192.168.10.139', 'localhost:9002'],
+  allowedOrigins: [
+    'menusnap.colorhutbd.xyz',
+    'https://menusnap.colorhutbd.xyz',
+    'www.menusnap.colorhutbd.xyz',
+  ],
   experimental: {
     serverActions: {
       bodySizeLimit: '32mb',
