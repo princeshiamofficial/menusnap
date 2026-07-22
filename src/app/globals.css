@@ -204,3 +204,134 @@
     box-sizing: border-box !important;
   }
 }
+
+/* ==========================================================================
+   Design Monks Curved Bottom Navigation (bottom nav.html replica)
+   ========================================================================== */
+@property --_gradient-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes gradient-angle-rotate {
+  0% { --_gradient-angle: 0deg; }
+  100% { --_gradient-angle: 360deg; }
+}
+
+.rd-navbar_wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  pointer-events: none;
+  width: 100%;
+}
+
+.rd-navbar {
+  --_action-btn-size: 60px;
+  --_curve-round-gap: 4px;
+  --_curve-round-radius: 14px;
+  --_middle-size: calc(var(--_action-btn-size) + var(--_curve-round-radius) + (var(--_curve-round-gap) * 2));
+  --color--navbar--btn-border-radius: 18px;
+
+  pointer-events: auto;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr var(--_middle-size) 1fr 1fr;
+  align-items: center;
+  padding: 10px 0 16px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.rd-navbar_curve-shape {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rd-navbar_link {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.15s ease;
+  gap: 3px;
+  padding: 4px 0;
+}
+
+.rd-navbar_link.is-active {
+  color: hsl(var(--primary));
+  font-weight: 700;
+}
+
+.rd-navbar_link_icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.rd-navbar_link_text {
+  font-size: 10px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.rd-navbar_btn {
+  position: relative;
+  z-index: 20;
+  justify-self: center;
+  width: var(--_action-btn-size);
+  height: var(--_action-btn-size);
+  transform: translateY(-50%);
+  border-radius: var(--color--navbar--btn-border-radius);
+  clip-path: inset(0 round var(--color--navbar--btn-border-radius));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 10px 25px -5px rgba(249, 115, 22, 0.4);
+}
+
+.rd-navbar_btn_bg {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from var(--_gradient-angle) at 50% 50%, #FBFAF6 0deg, rgba(251, 250, 246, 0.00) 360deg), hsl(var(--primary));
+  animation: gradient-angle-rotate 3s linear infinite;
+}
+
+.rd-navbar_btn_content {
+  position: absolute;
+  inset: 2px;
+  background: #0a0a0a;
+  border-radius: calc(var(--color--navbar--btn-border-radius) - 2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  transition: background-color 0.2s ease;
+}
+
+.rd-navbar_btn_content.is-active {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.rd-navbar_btn_icon {
+  width: 26px;
+  height: 26px;
+}
+
