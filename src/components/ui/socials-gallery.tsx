@@ -47,7 +47,7 @@ export function SocialsGallery({ items: propItems }: SocialsGalleryProps) {
       {/* Title */}
       <div className="max-w-6xl mx-auto mb-10 text-center">
         <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-normal tracking-tight text-foreground">
-          Our Happy Clients
+          Client Gallery
         </h2>
       </div>
 
