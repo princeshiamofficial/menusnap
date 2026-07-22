@@ -190,19 +190,17 @@ export default function HappyClientsPage() {
     <div className="min-h-full bg-background p-4 sm:p-6 lg:p-8 flex flex-col justify-center items-center">
       {/* Featured Spotlight Team Carousel */}
       <div className="w-full max-w-6xl">
-        <div className="bg-card/40 border border-border rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
-          <TeamCarousel 
-            members={SPOTLIGHT_CLIENTS} 
-            title="HAPPY CLIENTS"
-            titleColor="rgba(245, 158, 11, 0.8)"
-            cardWidth={300}
-            cardHeight={400}
-            autoPlay={4000}
-            infoTextColor="hsl(var(--foreground))"
-            infoPosition="bottom"
-            className="min-h-0 py-6"
-          />
-        </div>
+        <TeamCarousel 
+          members={SPOTLIGHT_CLIENTS} 
+          title="HAPPY CLIENTS"
+          titleColor="rgba(245, 158, 11, 0.8)"
+          cardWidth={300}
+          cardHeight={400}
+          autoPlay={4000}
+          infoTextColor="hsl(var(--foreground))"
+          infoPosition="bottom"
+          className="min-h-0 py-6"
+        />
       </div>
     </div>
   );
