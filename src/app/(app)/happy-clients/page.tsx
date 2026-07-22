@@ -187,153 +187,22 @@ export default function HappyClientsPage() {
   }, [searchTerm, selectedCategory]);
 
   return (
-    <div className="min-h-full bg-background p-4 sm:p-6 lg:p-8 space-y-8">
-
+    <div className="min-h-full bg-background p-4 sm:p-6 lg:p-8 flex flex-col justify-center items-center">
       {/* Featured Spotlight Team Carousel */}
-      <div className="space-y-4">
+      <div className="w-full max-w-6xl">
         <div className="bg-card/40 border border-border rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
           <TeamCarousel 
             members={SPOTLIGHT_CLIENTS} 
-            title="SPOTLIGHT"
+            title="HAPPY CLIENTS"
             titleColor="rgba(245, 158, 11, 0.8)"
-            cardWidth={280}
-            cardHeight={360}
+            cardWidth={300}
+            cardHeight={400}
             autoPlay={4000}
             infoTextColor="hsl(var(--foreground))"
             infoPosition="bottom"
             className="min-h-0 py-6"
           />
         </div>
-      </div>
-
-      {/* Controls & Category Filter Section */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Search Bar */}
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              type="search" 
-              placeholder="Search by client name, city, tag..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-10 rounded-xl bg-card border-border text-sm"
-            />
-          </div>
-
-          {/* Category Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 no-scrollbar">
-            {[
-              { id: 'all', label: 'All Clients', icon: Users },
-              { id: 'restaurant', label: 'Restaurants', icon: UtensilsCrossed },
-              { id: 'cafe', label: 'Cafes', icon: Coffee },
-              { id: 'bakery', label: 'Bakeries', icon: Cake },
-              { id: 'fast-food', label: 'Fast Food', icon: Sparkles },
-              { id: 'fine-dining', label: 'Fine Dining', icon: Award },
-            ].map(cat => {
-              const Icon = cat.icon;
-              const isSelected = selectedCategory === cat.id;
-              return (
-                <Button
-                  key={cat.id}
-                  variant={isSelected ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`rounded-xl text-xs px-3.5 h-9 whitespace-nowrap transition-all ${
-                    isSelected ? 'shadow-md shadow-primary/20 font-semibold' : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5 mr-1.5" />
-                  {cat.label}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Clients Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AnimatePresence mode="popLayout">
-            {filteredClients.map((client, idx) => (
-              <motion.div
-                key={client.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                whileHover={{ y: -4 }}
-              >
-                <Card className="h-full flex flex-col justify-between overflow-hidden border-border bg-card hover:shadow-xl hover:border-primary/40 transition-all rounded-2xl group">
-                  <CardHeader className="p-6 pb-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        {/* Logo Emblem */}
-                        <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${client.logoBg} flex items-center justify-center text-white font-black text-lg shadow-md shrink-0`}>
-                          {client.name.charAt(0)}
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">
-                            {client.name}
-                          </CardTitle>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                            <MapPin className="h-3 w-3 shrink-0" />
-                            <span>{client.location}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Badge variant="secondary" className="bg-muted text-foreground text-[11px] font-semibold rounded-lg shrink-0 px-2 py-0.5">
-                        {client.categoryLabel}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="px-6 py-2 flex-grow space-y-4">
-                    {/* Quote Review Box */}
-                    <div className="relative p-4 rounded-xl bg-muted/40 border border-border/50 text-xs text-foreground/90 leading-relaxed italic">
-                      <Quote className="h-4 w-4 text-primary/30 absolute top-2 right-2" />
-                      "{client.review}"
-                    </div>
-
-                    {/* Owner / Rep */}
-                    <div className="text-[11px] text-muted-foreground font-medium flex items-center justify-between">
-                      <span>— {client.ownerName}</span>
-                      <span className="flex items-center gap-1 text-amber-500 font-semibold">
-                        <Star className="h-3 w-3 fill-amber-500" /> {client.rating}
-                      </span>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {client.tags.map(tag => (
-                        <span key={tag} className="text-[10px] bg-primary/10 text-primary font-medium px-2 py-0.5 rounded-md">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  </CardContent>
-
-                  {/* Footer Stats */}
-                  <div className="px-6 py-4 bg-muted/20 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      <span><strong className="text-foreground font-semibold">{client.ordersCount}</strong> Orders Served</span>
-                    </div>
-                    <span className="text-[11px]">Partner since {client.joinedYear}</span>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {filteredClients.length === 0 && (
-          <div className="text-center py-16 bg-card rounded-2xl border border-border space-y-3">
-            <HeartHandshake className="mx-auto h-12 w-12 text-muted-foreground/40" />
-            <h3 className="text-lg font-semibold text-foreground">No Happy Clients Found</h3>
-            <p className="text-xs text-muted-foreground">Try adjusting your search criteria or category filters.</p>
-          </div>
-        )}
       </div>
     </div>
   );
