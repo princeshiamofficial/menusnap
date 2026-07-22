@@ -80,7 +80,7 @@ export function BottomNavigation() {
                 <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
                 <feColorMatrix
                   type="matrix"
-                  values="0 0 0 0 0.188235 0 0 0 0 1 0 0 0 0 0.592157 0 0 0 0.4 0"
+                  values="0 0 0 0 0.96 0 0 0 0 0.62 0 0 0 0 0.2 0 0 0 0.3 0"
                 />
                 <feBlend mode="normal" in2="shape" result="effect1_innerShadow_14_1436" />
               </filter>
@@ -105,8 +105,8 @@ export function BottomNavigation() {
             );
           })}
 
-          {/* Empty Center Spacer for Notch Cutout */}
-          <div className="w-[84px] h-full" />
+          {/* Center Notch Spacer */}
+          <div className="w-[72px] h-full" />
 
           {/* Right Nav Items */}
           {navItemsRight.map((item) => {
