@@ -251,8 +251,8 @@ export default function MagicDocsPage(): ReactNode {
     ));
 
     return (
-        <div className="min-h-full bg-background/30 p-4 sm:p-6 lg:p-10 w-full overflow-x-hidden relative">
-            <div className="max-w-[1600px] mx-auto space-y-6 sm:space-y-8 w-full mt-10">
+        <div className="min-h-full bg-background/30 p-2 sm:p-4 w-full overflow-x-hidden relative">
+            <div className="w-full space-y-4 sm:space-y-6">
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
