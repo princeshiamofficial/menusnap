@@ -106,6 +106,17 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
   const [direction, setDirection] = useState(0); // 0: no movement, 1: next, -1: prev
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const effectiveCardWidth = isMobile ? Math.min(cardWidth, 210) : cardWidth;
+  const effectiveCardHeight = isMobile ? Math.min(cardHeight, 290) : cardHeight;
 
   const totalMembers = members.length;
 
@@ -145,7 +156,7 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
         return {
           zIndex: 10,
           opacity: 1,
-          scale: 1.1,
+          scale: isMobile ? 1.05 : 1.1,
           x: 0,
           filter: 'grayscale(0%)',
           pointerEvents: 'auto',
@@ -156,7 +167,7 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
           zIndex: 5,
           opacity: sideCardOpacity,
           scale: sideCardScale,
-          x: cardWidth * 0.7,
+          x: effectiveCardWidth * (isMobile ? 0.55 : 0.7),
           filter: grayscaleEffect ? 'grayscale(100%)' : 'grayscale(0%)',
           pointerEvents: 'auto',
           transition,
@@ -166,7 +177,7 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
           zIndex: 1,
           opacity: sideCardOpacity * 0.7,
           scale: sideCardScale * 0.9,
-          x: cardWidth * 1.4,
+          x: effectiveCardWidth * (isMobile ? 1.1 : 1.4),
           filter: grayscaleEffect ? 'grayscale(100%)' : 'grayscale(0%)',
           pointerEvents: 'auto',
           transition,
@@ -176,7 +187,7 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
           zIndex: 5,
           opacity: sideCardOpacity,
           scale: sideCardScale,
-          x: -cardWidth * 0.7,
+          x: -effectiveCardWidth * (isMobile ? 0.55 : 0.7),
           filter: grayscaleEffect ? 'grayscale(100%)' : 'grayscale(0%)',
           pointerEvents: 'auto',
           transition,
@@ -186,7 +197,7 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
           zIndex: 1,
           opacity: sideCardOpacity * 0.7,
           scale: sideCardScale * 0.9,
-          x: -cardWidth * 1.4,
+          x: -effectiveCardWidth * (isMobile ? 1.1 : 1.4),
           filter: grayscaleEffect ? 'grayscale(100%)' : 'grayscale(0%)',
           pointerEvents: 'auto',
           transition,
@@ -196,7 +207,7 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
           zIndex: 0,
           opacity: 0,
           scale: 0.8,
-          x: direction > 0 ? cardWidth * (visibleCards + 1) : -cardWidth * (visibleCards + 1),
+          x: direction > 0 ? effectiveCardWidth * (visibleCards + 1) : -effectiveCardWidth * (visibleCards + 1),
           pointerEvents: 'none',
           filter: grayscaleEffect ? 'grayscale(100%)' : 'grayscale(0%)',
           transition,
@@ -284,17 +295,17 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
   };
 
   const titleSizeClasses = {
-    sm: 'text-4xl',
-    md: 'text-5xl',
-    lg: 'text-6xl',
-    xl: 'text-7xl',
-    '2xl': 'text-8xl',
+    sm: 'text-2xl sm:text-4xl',
+    md: 'text-3xl sm:text-5xl',
+    lg: 'text-4xl sm:text-6xl',
+    xl: 'text-5xl sm:text-7xl',
+    '2xl': 'text-4xl sm:text-8xl',
   };
 
   return (
     <div
       id="team-carousel-container"
-      className={cn(`py-12 flex flex-col items-center justify-center overflow-hidden relative transparent`, className)}
+      className={cn(`py-4 sm:py-12 flex flex-col items-center justify-center overflow-hidden relative transparent`, className)}
       style={{ background: background }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -321,9 +332,9 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
 
       {/* Carousel Container */}
       <div
-        className="w-full max-w-6xl relative mt-16"
+        className="w-full max-w-6xl relative mt-8 sm:mt-16"
         style={{
-          height: cardHeight + 60,
+          height: effectiveCardHeight + (isMobile ? 20 : 60),
           perspective: '1000px',
         }}
       >
@@ -367,13 +378,13 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
                     cardClassName
                   )}
                   style={{
-                    width: cardWidth,
-                    height: cardHeight,
+                    width: effectiveCardWidth,
+                    height: effectiveCardHeight,
                     borderRadius: cardRadius,
                     top: '50%',
                     left: '50%',
-                    marginLeft: -cardWidth / 2,
-                    marginTop: -cardHeight / 2,
+                    marginLeft: -effectiveCardWidth / 2,
+                    marginTop: -effectiveCardHeight / 2,
                   }}
                   initial={getVariantStyles('hidden') as any}
                   animate={getVariantStyles(position) as any}
