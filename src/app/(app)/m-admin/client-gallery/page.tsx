@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 import { SocialsGallery } from '@/components/ui/socials-gallery';
+import { ImageUploader } from "@/components/ui/image-uploader";
 
 interface GalleryItem {
   id: string;
@@ -411,15 +412,13 @@ export default function ClientGalleryAdminPage() {
               />
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Image URL</label>
-              <Input 
-                value={formData.imageUrl || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
-                placeholder="https://images.unsplash.com/..."
-                className="mt-1"
-              />
-            </div>
+            {/* Image Uploader with File Select, Drag & Drop, and Clipboard Paste */}
+            <ImageUploader 
+              value={formData.imageUrl || ''} 
+              onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
+              label="Gallery Image Photo"
+              subDir="spotlights"
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <div>

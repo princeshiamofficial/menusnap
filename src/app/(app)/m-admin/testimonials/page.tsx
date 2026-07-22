@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { TeamCarousel, TeamMember } from "@/components/ui/team-carousel";
+import { ImageUploader } from "@/components/ui/image-uploader";
 
 interface TestimonialItem {
   id: string;
@@ -337,15 +338,13 @@ export default function TestimonialsAdminPage() {
               />
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">3D Carousel Photo URL</label>
-              <Input 
-                value={formData.image || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                placeholder="https://images.unsplash.com/photo-1501339847302..."
-                className="mt-1"
-              />
-            </div>
+            {/* Image Uploader with File Select, Drag & Drop, and Clipboard Paste */}
+            <ImageUploader 
+              value={formData.image || ''} 
+              onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+              label="3D Carousel Photo"
+              subDir="spotlights"
+            />
 
             <div className="grid grid-cols-2 gap-3">
               <div>
