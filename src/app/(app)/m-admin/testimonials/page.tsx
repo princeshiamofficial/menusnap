@@ -15,7 +15,7 @@ import {
   CheckCircle2, 
   Sparkles,
   MoreVertical,
-  Eye
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 import { TeamCarousel, TeamMember } from "@/components/ui/team-carousel";
-import { SocialsGallery } from "@/components/ui/socials-gallery";
 
 interface TestimonialItem {
   id: string;
@@ -150,7 +149,6 @@ export default function TestimonialsAdminPage() {
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>(INITIAL_TESTIMONIALS);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<'manage' | 'carousel'>('manage');
   
   // Modal states
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
@@ -194,7 +192,7 @@ export default function TestimonialsAdminPage() {
         name: t.name,
         role: `${t.categoryLabel || t.category.toUpperCase()} • ${t.location}`,
         bio: t.review,
-        image: t.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+        image: t.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
       }));
   }, [testimonials]);
 
@@ -301,25 +299,9 @@ export default function TestimonialsAdminPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            variant={activeTab === 'manage' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('manage')}
-            className="gap-2 font-bold"
-          >
-            <Building2 className="h-4 w-4" /> Manage Table
-          </Button>
-          <Button 
-            variant={activeTab === 'carousel' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('carousel')}
-            className="gap-2 font-bold"
-          >
-            <Eye className="h-4 w-4" /> Live Carousel Preview
-          </Button>
-          <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md">
-            <Plus className="h-4 w-4" /> Add Testimonial
-          </Button>
-        </div>
+        <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md">
+          <Plus className="h-4 w-4" /> Add Testimonial
+        </Button>
       </div>
 
       {/* Metrics Row */}
@@ -356,139 +338,130 @@ export default function TestimonialsAdminPage() {
         </div>
       </div>
 
-      {activeTab === 'carousel' ? (
-        /* Live 3D Carousel & Gallery Preview Section */
-        <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm overflow-hidden space-y-8">
-          <div className="pb-3 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              <span className="text-sm font-bold text-foreground uppercase tracking-wider">Live Page Preview (3D Carousel &amp; Gallery)</span>
-            </div>
-            <Badge variant="outline" className="text-primary border-primary">100% Identical to Public Page</Badge>
+      {/* Featured 3D Spotlight Carousel Section */}
+      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm overflow-hidden">
+        <div className="mb-2 pb-3 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-amber-500" />
+            <span className="text-sm font-bold text-foreground uppercase tracking-wider">Spotlight 3D Carousel Showcase</span>
           </div>
-          
-          <div className="w-full max-w-5xl mx-auto py-2">
-            <TeamCarousel 
-              members={spotlightCarouselMembers} 
-              title="HAPPY CLIENTS"
-              titleColor="rgba(245, 158, 11, 0.8)"
-              cardWidth={300}
-              cardHeight={400}
-              autoPlay={4000}
-              infoTextColor="hsl(var(--foreground))"
-              infoPosition="bottom"
-              className="min-h-0 py-4"
-            />
-          </div>
-
-          <div className="w-full pt-6 border-t border-border/50">
-            <SocialsGallery />
-          </div>
+          <Badge variant="outline" className="text-primary border-primary">Live Front-End Sync</Badge>
         </div>
-      ) : (
-        /* Manage Table Section */
-        <>
-          {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search by client name, location, or owner..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-card border-border"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {['all', 'restaurant', 'cafe', 'bakery', 'fast-food', 'fine-dining'].map(cat => (
-                <Button
-                  key={cat}
-                  variant={categoryFilter === cat ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCategoryFilter(cat)}
-                  className="capitalize text-xs font-semibold"
-                >
-                  {cat === 'all' ? 'All' : cat.replace('-', ' ')}
-                </Button>
-              ))}
-            </div>
-          </div>
+        
+        <div className="w-full max-w-5xl mx-auto py-2">
+          <TeamCarousel 
+            members={spotlightCarouselMembers} 
+            title="HAPPY CLIENTS"
+            titleColor="rgba(245, 158, 11, 0.8)"
+            cardWidth={300}
+            cardHeight={400}
+            autoPlay={4000}
+            infoTextColor="hsl(var(--foreground))"
+            infoPosition="bottom"
+            className="min-h-0 py-4"
+          />
+        </div>
+      </div>
 
-          {/* Table */}
-          <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow>
-                  <TableHead className="font-bold">Client Name</TableHead>
-                  <TableHead className="font-bold">Category &amp; Subtitle</TableHead>
-                  <TableHead className="font-bold">Location</TableHead>
-                  <TableHead className="font-bold">Rating</TableHead>
-                  <TableHead className="font-bold">Owner / Representative</TableHead>
-                  <TableHead className="font-bold">Spotlight</TableHead>
-                  <TableHead className="font-bold text-right">Actions</TableHead>
+      {/* Search & Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search by client name, location, or owner..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 bg-card border-border"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {['all', 'restaurant', 'cafe', 'bakery', 'fast-food', 'fine-dining'].map(cat => (
+            <Button
+              key={cat}
+              variant={categoryFilter === cat ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCategoryFilter(cat)}
+              className="capitalize text-xs font-semibold"
+            >
+              {cat === 'all' ? 'All' : cat.replace('-', ' ')}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader className="bg-muted/40">
+            <TableRow>
+              <TableHead className="font-bold">Client Name</TableHead>
+              <TableHead className="font-bold">Category &amp; Subtitle</TableHead>
+              <TableHead className="font-bold">Location</TableHead>
+              <TableHead className="font-bold">Rating</TableHead>
+              <TableHead className="font-bold">Owner / Representative</TableHead>
+              <TableHead className="font-bold">Spotlight</TableHead>
+              <TableHead className="font-bold text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No testimonials found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredItems.map(item => (
+                <TableRow key={item.id} className="hover:bg-muted/30">
+                  <TableCell className="font-bold text-foreground">{item.name}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <Badge variant="outline" className="capitalize text-[11px] w-max mb-1">
+                        {item.category.replace('-', ' ')}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{item.categoryLabel}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{item.location}</TableCell>
+                  <TableCell>
+                    <span className="flex items-center gap-1 font-bold text-xs text-amber-500">
+                      <Star className="h-3.5 w-3.5 fill-amber-500" />
+                      {item.rating.toFixed(1)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-sm text-foreground/90">{item.ownerName}</TableCell>
+                  <TableCell>
+                    {item.isSpotlight ? (
+                      <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px]">
+                        Spotlight Card
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Standard</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenEdit(item)} className="gap-2 cursor-pointer">
+                          <Edit3 className="h-3.5 w-3.5" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDeleteTarget(item)} className="gap-2 text-destructive cursor-pointer">
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No testimonials found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredItems.map(item => (
-                    <TableRow key={item.id} className="hover:bg-muted/30">
-                      <TableCell className="font-bold text-foreground">{item.name}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <Badge variant="outline" className="capitalize text-[11px] w-max mb-1">
-                            {item.category.replace('-', ' ')}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">{item.categoryLabel}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{item.location}</TableCell>
-                      <TableCell>
-                        <span className="flex items-center gap-1 font-bold text-xs text-amber-500">
-                          <Star className="h-3.5 w-3.5 fill-amber-500" />
-                          {item.rating.toFixed(1)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm text-foreground/90">{item.ownerName}</TableCell>
-                      <TableCell>
-                        {item.isSpotlight ? (
-                          <Badge className="bg-amber-500/15 text-amber-500 border-amber-500/30 text-[10px]">
-                            Spotlight Card
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Standard</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEdit(item)} className="gap-2 cursor-pointer">
-                              <Edit3 className="h-3.5 w-3.5" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setDeleteTarget(item)} className="gap-2 text-destructive cursor-pointer">
-                              <Trash2 className="h-3.5 w-3.5" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </>
-      )}
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Add / Edit Dialog */}
       <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
