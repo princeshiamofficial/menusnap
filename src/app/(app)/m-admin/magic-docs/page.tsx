@@ -48,6 +48,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatDisplayDate, parseMySqlDateAsUtc } from '@/lib/dateUtils';
 
 interface MagicDocument {
@@ -57,6 +58,8 @@ interface MagicDocument {
     lastUpdated: string;
     createdAt?: string;
     createdBy?: string;
+    createdByUserId?: number | null;
+    creatorAvatarUrl?: string | null;
     isDeleted?: boolean;
     deletedAt?: string;
 }
@@ -120,6 +123,8 @@ export default function MagicDocsPage(): ReactNode {
                     lastUpdated: d.lastUpdated || d.last_updated || '',
                     createdAt: d.createdAt || d.created_at || '',
                     createdBy: d.createdBy || d.created_by || 'Admin',
+                    createdByUserId: d.createdByUserId || d.created_by_user_id || null,
+                    creatorAvatarUrl: d.creatorAvatarUrl || d.avatar_url || null,
                     isDeleted: !!d.is_deleted,
                     deletedAt: d.deletedAt || d.deleted_at || null
                 }));
@@ -134,6 +139,8 @@ export default function MagicDocsPage(): ReactNode {
                         lastUpdated: d.lastUpdated || d.last_updated || '',
                         createdAt: d.createdAt || d.created_at || '',
                         createdBy: d.createdBy || d.created_by || 'Admin',
+                        createdByUserId: d.createdByUserId || d.created_by_user_id || null,
+                        creatorAvatarUrl: d.creatorAvatarUrl || d.avatar_url || null,
                         isDeleted: true,
                         deletedAt: d.deletedAt || d.deleted_at || null
                     }));
@@ -163,10 +170,12 @@ export default function MagicDocsPage(): ReactNode {
     const handleCreateNew = async () => {
         const id = crypto.randomUUID();
         const authorName = adminUser?.name || adminUser?.email || "Admin";
+        const authorUserId = adminUser?.id || null;
         const newDoc = {
             id,
             title: "Untitled Document",
             content: "",
+            createdByUserId: authorUserId,
             createdBy: authorName
         };
 
@@ -408,10 +417,17 @@ export default function MagicDocsPage(): ReactNode {
                                                     </span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-xs font-medium text-foreground/80">
-                                                    <div className="flex items-center gap-1.5" title="Created By">
-                                                        <User className="h-3.5 w-3.5 text-muted-foreground/70" />
-                                                        <span>{doc.createdBy || (doc as any).created_by || 'Admin'}</span>
+                                                <TableCell className="text-xs font-medium text-foreground/90">
+                                                    <div className="flex items-center gap-2" title={`Created by ${doc.createdBy || 'Admin'}`}>
+                                                        <Avatar className="h-6 w-6 border border-border/50 shrink-0">
+                                                            {doc.creatorAvatarUrl ? (
+                                                                <AvatarImage src={doc.creatorAvatarUrl} alt={doc.createdBy || 'User'} />
+                                                            ) : null}
+                                                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold">
+                                                                {(doc.createdBy || 'A').charAt(0).toUpperCase()}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="truncate max-w-[110px]">{doc.createdBy || 'Admin'}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-xs text-muted-foreground">
