@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { TeamCarousel, TeamMember } from "@/components/ui/team-carousel";
+import { SocialsGallery } from "@/components/ui/socials-gallery";
 
 interface HappyClient {
   id: string;
@@ -201,6 +202,11 @@ export default function HappyClientsPage() {
           infoPosition="bottom"
           className="min-h-0 py-6"
         />
+      </div>
+
+      {/* Socials Gallery Grid Section */}
+      <div className="w-full">
+        <SocialsGallery />
       </div>
     </div>
   );
