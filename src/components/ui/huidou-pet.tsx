@@ -175,21 +175,15 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
           </motion.div>
         ))}
 
-        {/* Mascot Avatar Container */}
-        <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-3xl bg-gradient-to-br from-amber-400/20 via-primary/10 to-amber-600/30 p-1 border-2 border-amber-400/40 shadow-2xl backdrop-blur-md overflow-hidden group-hover:border-amber-400 transition-all group-hover:shadow-amber-500/20">
-          <div className="w-full h-full rounded-2xl bg-card/90 overflow-hidden relative flex items-center justify-center">
-            {/* HTML Canvas Frame Slicer */}
-            <canvas
-              ref={canvasRef}
-              width={160}
-              height={160}
-              className="w-full h-full object-contain pointer-events-none"
-            />
-          </div>
-          {/* Badge */}
-          <span className="absolute bottom-1 right-1 text-[10px] bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded-full shadow-md">
-            灰豆
-          </span>
+        {/* Mascot Avatar Container (Transparent Without BG) */}
+        <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center">
+          {/* HTML Canvas Frame Slicer */}
+          <canvas
+            ref={canvasRef}
+            width={160}
+            height={160}
+            className="w-full h-full object-contain pointer-events-none filter drop-shadow-xl"
+          />
         </div>
       </motion.div>
     </div>
