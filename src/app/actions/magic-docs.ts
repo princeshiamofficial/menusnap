@@ -7,6 +7,7 @@ import { formatUtcDateTime } from '@/lib/dateUtils';
 
 export async function getMagicDocsFromMySql() {
   try {
+    await initMagicDocsTable();
     const [rows]: any = await pool.execute(
       `SELECT *, DATE_FORMAT(last_updated, '%Y-%m-%d %H:%i:%s') as last_updated,
        DATE_FORMAT(last_updated, '%Y-%m-%d %H:%i:%s') as lastUpdated,
@@ -21,7 +22,6 @@ export async function getMagicDocsFromMySql() {
     return { success: true, data: plainDocs };
   } catch (error: any) {
     console.error('MySQL Magic Docs Fetch Error:', error);
-    // If table doesn't exist, return empty
     if (error.code === 'ER_NO_SUCH_TABLE') {
       return { success: true, data: [] };
     }
@@ -31,6 +31,7 @@ export async function getMagicDocsFromMySql() {
 
 export async function getMagicDocByIdFromMySql(id: string) {
   try {
+    await initMagicDocsTable();
     const [rows]: any = await pool.execute(
       `SELECT *, DATE_FORMAT(last_updated, '%Y-%m-%d %H:%i:%s') as last_updated,
        DATE_FORMAT(last_updated, '%Y-%m-%d %H:%i:%s') as lastUpdated,
@@ -50,6 +51,7 @@ export async function getMagicDocByIdFromMySql(id: string) {
 
 export async function upsertMagicDocToMySql(doc: any) {
   try {
+    await initMagicDocsTable();
     const { id, title, content, isDeleted, deletedAt } = doc;
     const now = formatUtcDateTime();
     const finalDeletedAt = deletedAt ? formatUtcDateTime(deletedAt) : null;
@@ -73,6 +75,7 @@ export async function upsertMagicDocToMySql(doc: any) {
 
 export async function deleteMagicDocFromMySql(id: string) {
   try {
+    await initMagicDocsTable();
     const now = formatUtcDateTime();
     await pool.execute('UPDATE magic_docs SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
     revalidatePath('/m-admin/magic-docs');
@@ -85,6 +88,7 @@ export async function deleteMagicDocFromMySql(id: string) {
 
 export async function permanentDeleteMagicDocFromMySql(id: string) {
   try {
+    await initMagicDocsTable();
     await pool.execute('DELETE FROM magic_docs WHERE id = ?', [id]);
     revalidatePath('/m-admin/magic-docs');
     return { success: true };

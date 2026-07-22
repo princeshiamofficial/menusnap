@@ -107,13 +107,13 @@ export default function MagicDocsPage(): ReactNode {
             if (result.success && Array.isArray(result.data)) {
                 const data = result.data;
                 const allMapped = data.map((d: any) => ({
-                    id: d.id,
-                    title: d.title,
-                    content: d.content,
-                    lastUpdated: d.lastUpdated,
-                    createdAt: d.createdAt,
+                    id: String(d.id || ''),
+                    title: d.title || 'Untitled Document',
+                    content: d.content || '',
+                    lastUpdated: d.lastUpdated || d.last_updated || '',
+                    createdAt: d.createdAt || d.created_at || '',
                     isDeleted: !!d.is_deleted,
-                    deletedAt: d.deletedAt
+                    deletedAt: d.deletedAt || d.deleted_at || null
                 }));
                 setDocs(allMapped.filter((d: any) => !d.isDeleted));
                 setTrashDocs(allMapped.filter((d: any) => d.isDeleted));
@@ -216,30 +216,36 @@ export default function MagicDocsPage(): ReactNode {
     };
 
     const filteredAndSortedDocs = useMemo(() => {
-        let filteredDocs = docs.filter(doc =>
-            doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doc.id.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        let filteredDocs = docs.filter(doc => {
+            const titleStr = (doc.title || '').toLowerCase();
+            const idStr = (doc.id || '').toLowerCase();
+            const query = searchTerm.toLowerCase();
+            return titleStr.includes(query) || idStr.includes(query);
+        });
         switch (sortOption) {
             case 'newest':
                 filteredDocs.sort((a, b) => {
                     const dateA = a.createdAt || a.lastUpdated;
                     const dateB = b.createdAt || b.lastUpdated;
-                    try { return parseMySqlDateAsUtc(dateB as string).getTime() - parseMySqlDateAsUtc(dateA as string).getTime(); } catch { return 0; }
+                    const timeA = dateA ? parseMySqlDateAsUtc(dateA as string).getTime() : 0;
+                    const timeB = dateB ? parseMySqlDateAsUtc(dateB as string).getTime() : 0;
+                    return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
                 });
                 break;
             case 'oldest':
                 filteredDocs.sort((a, b) => {
                     const dateA = a.createdAt || a.lastUpdated;
                     const dateB = b.createdAt || b.lastUpdated;
-                    try { return parseMySqlDateAsUtc(dateA as string).getTime() - parseMySqlDateAsUtc(dateB as string).getTime(); } catch { return 0; }
+                    const timeA = dateA ? parseMySqlDateAsUtc(dateA as string).getTime() : 0;
+                    const timeB = dateB ? parseMySqlDateAsUtc(dateB as string).getTime() : 0;
+                    return (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
                 });
                 break;
             case 'title-asc':
-                filteredDocs.sort((a, b) => a.title.localeCompare(b.title));
+                filteredDocs.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
                 break;
             case 'title-desc':
-                filteredDocs.sort((a, b) => b.title.localeCompare(a.title));
+                filteredDocs.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
                 break;
         }
         return filteredDocs;
@@ -423,7 +429,7 @@ export default function MagicDocsPage(): ReactNode {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]" title={doc.id}>
-                                                    {doc.id.split('-')[0]}...
+                                                    {doc.id ? (doc.id.includes('-') ? doc.id.split('-')[0] : doc.id) : 'N/A'}...
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <DropdownMenu>
