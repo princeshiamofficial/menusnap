@@ -111,11 +111,17 @@ async function ensureClientGalleryTable() {
 
     // Seed or sync missing items
     const [rows]: any = await pool.execute('SELECT COUNT(*) as count FROM client_gallery');
-    if (rows && rows[0] && Number(rows[0].count) < 12) {
+    if (rows && rows[0] && Number(rows[0].count) < 9) {
       for (const item of INITIAL_GALLERY) {
         await pool.execute(
-          `INSERT IGNORE INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE 
+             title = VALUES(title),
+             image_url = VALUES(image_url),
+             bento_column = VALUES(bento_column),
+             card_size = VALUES(card_size),
+             tags = VALUES(tags)`,
           [item.id || '', item.title, item.imageUrl, item.column || 1, item.size || 'large', item.tags || '']
         );
       }

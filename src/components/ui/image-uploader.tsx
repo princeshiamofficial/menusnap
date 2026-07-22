@@ -191,8 +191,8 @@ export function ImageUploader({
 
       {/* Image Preview Box (If image value exists - SHOW ONLY IMAGE) */}
       {value ? (
-        <div className="relative group rounded-2xl overflow-hidden border border-border/80 bg-card p-1 shadow-sm">
-          <div className="relative h-44 w-full rounded-xl overflow-hidden border border-border/40 bg-muted">
+        <div className="relative group rounded-2xl overflow-hidden bg-muted shadow-sm border border-border/50">
+          <div className="relative h-48 w-full overflow-hidden">
             <Image src={value} alt="Uploaded Image Preview" fill className="object-cover" />
             <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
               <Button
@@ -200,7 +200,7 @@ export function ImageUploader({
                 variant="outline"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-8 px-2.5 text-xs font-bold bg-background/80 backdrop-blur-md shadow-md border-border hover:bg-background"
+                className="h-8 px-2.5 text-xs font-bold bg-background/90 backdrop-blur-md shadow-md border-border text-foreground hover:bg-background"
               >
                 Change
               </Button>
