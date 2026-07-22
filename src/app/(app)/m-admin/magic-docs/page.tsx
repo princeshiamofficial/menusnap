@@ -67,6 +67,7 @@ export default function MagicDocsPage(): ReactNode {
     const canDelete = checkClientPermission(adminUser, 'magic-docs', 'delete');
     const canCreate = checkClientPermission(adminUser, 'magic-docs', 'create');
     const [docs, setDocs] = useState<MagicDocument[]>([]);
+    const [totalDocsCount, setTotalDocsCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -77,22 +78,26 @@ export default function MagicDocsPage(): ReactNode {
     const [trashDocs, setTrashDocs] = useState<MagicDocument[]>([]);
     const ITEMS_PER_PAGE = 10;
 
-
-
-    // Load docs on mount
-    const fetchDocs = useCallback(async () => {
+    // Load docs from server action with pagination, search & sort
+    const fetchDocs = useCallback(async (page: number, search: string, sort: 'newest' | 'oldest' | 'title-asc' | 'title-desc') => {
         setIsLoading(true);
         setError(null);
         try {
-            const result = await getMagicDocsFromMySql();
+            const result = await getMagicDocsFromMySql({
+                page,
+                limit: ITEMS_PER_PAGE,
+                search,
+                sort
+            });
 
             if (!result.success) {
                 console.error("Error fetching docs:", result.message);
-                // Fallback to localStorage for existing users
                 const stored = localStorage.getItem('magic-internal-docs') || localStorage.getItem('ch-internal-docs');
                 if (stored) {
                     try {
-                        setDocs(JSON.parse(stored));
+                        const parsed = JSON.parse(stored);
+                        setDocs(parsed);
+                        setTotalDocsCount(parsed.length);
                         setIsLoading(false);
                         return;
                     } catch (e) {
@@ -100,13 +105,14 @@ export default function MagicDocsPage(): ReactNode {
                     }
                 }
                 setDocs([]);
+                setTotalDocsCount(0);
                 setIsLoading(false);
                 return;
             }
 
             if (result.success && Array.isArray(result.data)) {
                 const data = result.data;
-                const allMapped = data.map((d: any) => ({
+                const mapped = data.map((d: any) => ({
                     id: String(d.id || ''),
                     title: d.title || 'Untitled Document',
                     content: d.content || '',
@@ -115,30 +121,41 @@ export default function MagicDocsPage(): ReactNode {
                     isDeleted: !!d.is_deleted,
                     deletedAt: d.deletedAt || d.deleted_at || null
                 }));
-                setDocs(allMapped.filter((d: any) => !d.isDeleted));
-                setTrashDocs(allMapped.filter((d: any) => d.isDeleted));
+                setDocs(mapped);
+                setTotalDocsCount(result.totalCount ?? mapped.length);
+
+                if (result.trashDocs && Array.isArray(result.trashDocs)) {
+                    const mappedTrash = result.trashDocs.map((d: any) => ({
+                        id: String(d.id || ''),
+                        title: d.title || 'Untitled Document',
+                        content: d.content || '',
+                        lastUpdated: d.lastUpdated || d.last_updated || '',
+                        createdAt: d.createdAt || d.created_at || '',
+                        isDeleted: true,
+                        deletedAt: d.deletedAt || d.deleted_at || null
+                    }));
+                    setTrashDocs(mappedTrash);
+                }
             }
         } catch (e: any) {
             setError(e.message || "Failed to load docs");
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [ITEMS_PER_PAGE]);
 
+    // Debounced fetch on search / sort / page change
     useEffect(() => {
-        if (isAdminLoggedIn) {
-            fetchDocs();
-        }
-    }, [fetchDocs, isAdminLoggedIn]);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, sortOption]);
+        if (!isAdminLoggedIn) return;
+        const timer = setTimeout(() => {
+            fetchDocs(currentPage, searchTerm, sortOption);
+        }, 250);
+        return () => clearTimeout(timer);
+    }, [fetchDocs, isAdminLoggedIn, currentPage, searchTerm, sortOption]);
 
     const handleRefresh = useCallback(() => {
-        fetchDocs();
-        setCurrentPage(1);
-    }, [fetchDocs]);
+        fetchDocs(currentPage, searchTerm, sortOption);
+    }, [fetchDocs, currentPage, searchTerm, sortOption]);
 
     const handleCreateNew = async () => {
         const id = crypto.randomUUID();
@@ -168,13 +185,12 @@ export default function MagicDocsPage(): ReactNode {
                 console.error("Error moving to trash:", result.message);
                 alert("Failed to move document to trash.");
             } else {
-                fetchDocs();
+                fetchDocs(currentPage, searchTerm, sortOption);
             }
         }
     };
 
     const handleRestore = async (id: string) => {
-        // Find the doc in trashDocs to get its metadata
         const docToRestore = trashDocs.find(d => d.id === id);
         if (!docToRestore) return;
 
@@ -188,7 +204,7 @@ export default function MagicDocsPage(): ReactNode {
             console.error("Error restoring doc:", result.message);
             alert("Failed to restore document.");
         } else {
-            fetchDocs();
+            fetchDocs(currentPage, searchTerm, sortOption);
         }
     };
 
@@ -200,7 +216,7 @@ export default function MagicDocsPage(): ReactNode {
                 console.error("Error permanently deleting doc:", result.message);
                 alert("Failed to delete document permanently.");
             } else {
-                fetchDocs();
+                fetchDocs(currentPage, searchTerm, sortOption);
             }
         }
     };
@@ -215,48 +231,7 @@ export default function MagicDocsPage(): ReactNode {
         return date.toLocaleString('en-US', options);
     };
 
-    const filteredAndSortedDocs = useMemo(() => {
-        let filteredDocs = docs.filter(doc => {
-            const titleStr = (doc.title || '').toLowerCase();
-            const idStr = (doc.id || '').toLowerCase();
-            const query = searchTerm.toLowerCase();
-            return titleStr.includes(query) || idStr.includes(query);
-        });
-        switch (sortOption) {
-            case 'newest':
-                filteredDocs.sort((a, b) => {
-                    const dateA = a.createdAt || a.lastUpdated;
-                    const dateB = b.createdAt || b.lastUpdated;
-                    const timeA = dateA ? parseMySqlDateAsUtc(dateA as string).getTime() : 0;
-                    const timeB = dateB ? parseMySqlDateAsUtc(dateB as string).getTime() : 0;
-                    return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
-                });
-                break;
-            case 'oldest':
-                filteredDocs.sort((a, b) => {
-                    const dateA = a.createdAt || a.lastUpdated;
-                    const dateB = b.createdAt || b.lastUpdated;
-                    const timeA = dateA ? parseMySqlDateAsUtc(dateA as string).getTime() : 0;
-                    const timeB = dateB ? parseMySqlDateAsUtc(dateB as string).getTime() : 0;
-                    return (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
-                });
-                break;
-            case 'title-asc':
-                filteredDocs.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-                break;
-            case 'title-desc':
-                filteredDocs.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
-                break;
-        }
-        return filteredDocs;
-    }, [docs, searchTerm, sortOption]);
-
-    const totalPages = useMemo(() => Math.ceil(filteredAndSortedDocs.length / ITEMS_PER_PAGE), [filteredAndSortedDocs.length]);
-
-    const paginatedDocs = useMemo(() => {
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredAndSortedDocs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredAndSortedDocs, currentPage]);
+    const totalPages = useMemo(() => Math.ceil(totalDocsCount / ITEMS_PER_PAGE), [totalDocsCount, ITEMS_PER_PAGE]);
 
     const orderRowSkeletons = Array.from({ length: Math.min(ITEMS_PER_PAGE, 5) }).map((_, i) => (
         <motion.tr
@@ -318,11 +293,20 @@ export default function MagicDocsPage(): ReactNode {
                             placeholder="Search by Title or ID..."
                             className="pl-10 w-full h-9 text-sm"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setCurrentPage(1);
+                            }}
                         />
                     </div>
                     <div className="flex w-full sm:w-auto items-center gap-2 mt-2 sm:mt-0">
-                        <Select value={sortOption} onValueChange={(value) => setSortOption(value as any)}>
+                        <Select 
+                            value={sortOption} 
+                            onValueChange={(value) => {
+                                setSortOption(value as any);
+                                setCurrentPage(1);
+                            }}
+                        >
                             <SelectTrigger className="w-full sm:w-auto min-w-[180px] h-9 text-sm">
                                 <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                                 <SelectValue placeholder="Sort by..." />
@@ -365,7 +349,7 @@ export default function MagicDocsPage(): ReactNode {
                                 <RefreshCw className="h-4 w-4 mr-2" /> Try Again
                             </Button>
                         </motion.div>
-                    ) : paginatedDocs.length === 0 ? (
+                    ) : docs.length === 0 ? (
                         <motion.div
                             className="text-center py-10 text-muted-foreground"
                             initial={{ opacity: 0, y: 20 }}
@@ -391,7 +375,7 @@ export default function MagicDocsPage(): ReactNode {
                                 </TableHeader>
                                 <TableBody>
                                     <AnimatePresence>
-                                        {paginatedDocs.map((doc, index) => (
+                                        {docs.map((doc, index) => (
                                             <motion.tr
                                                 key={doc.id}
                                                 className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
@@ -401,7 +385,7 @@ export default function MagicDocsPage(): ReactNode {
                                                 transition={{ duration: 0.3, delay: index * 0.03 }}
                                             >
                                                 <TableCell className="text-center text-muted-foreground font-medium text-xs">
-                                                    {filteredAndSortedDocs.length - ((currentPage - 1) * ITEMS_PER_PAGE + index)}
+                                                    {totalDocsCount - ((currentPage - 1) * ITEMS_PER_PAGE + index)}
                                                 </TableCell>
                                                 <TableCell className="font-medium">
                                                     <div className="flex items-center gap-3">
@@ -468,7 +452,7 @@ export default function MagicDocsPage(): ReactNode {
                 </div>
 
                 <div className="flex justify-between items-center mt-auto pt-4 border-t border-border text-sm text-muted-foreground">
-                    <p>Showing {paginatedDocs.length} of {filteredAndSortedDocs.length} docs.</p>
+                    <p>Showing {docs.length} of {totalDocsCount} docs.</p>
                     <div className="flex items-center space-x-1">
                         <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
                             <Button
