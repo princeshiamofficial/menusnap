@@ -363,31 +363,7 @@ export default function TestimonialsAdminPage() {
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search by client name, location, or owner..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-card border-border"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {['all', 'restaurant', 'cafe', 'bakery', 'fast-food', 'fine-dining'].map(cat => (
-            <Button
-              key={cat}
-              variant={categoryFilter === cat ? "default" : "outline"}
-              size="sm"
-              onClick={() => setCategoryFilter(cat)}
-              className="capitalize text-xs font-semibold"
-            >
-              {cat === 'all' ? 'All' : cat.replace('-', ' ')}
-            </Button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Table */}
       <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
