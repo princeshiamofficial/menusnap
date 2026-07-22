@@ -58,42 +58,11 @@ import * as z from "zod";
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { getCategoriesFromMySql, getMenuItemsFromMySql } from '@/app/actions/orders';
 import { ClientGate } from '@/components/auth/ClientGate';
-import { TeamCarousel, type TeamMember } from '@/components/ui/team-carousel';
+import { HuidouPet } from '@/components/ui/huidou-pet';
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
 const CUSTOM_MENU_ITEMS_STORAGE_KEY = 'colorHutCustomMenuItems';
-
-const MAGICTAB_SPOTLIGHT_MEMBERS: TeamMember[] = [
-  {
-    id: '1',
-    name: 'Featured Biryani',
-    role: 'House Special Signature',
-    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80',
-    bio: 'Aromatic basmati rice cooked with tender marinated meat and saffron spices.'
-  },
-  {
-    id: '2',
-    name: 'Gourmet Burger',
-    role: 'Chef Special Signature',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
-    bio: 'Double beef patty with melted cheddar, crispy bacon, and secret house sauce.'
-  },
-  {
-    id: '3',
-    name: 'Artisan Coffee',
-    role: 'Fresh Roast Espresso',
-    image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80',
-    bio: 'Single-origin Ethiopian roast prepared by expert baristas.'
-  },
-  {
-    id: '4',
-    name: 'Decadent Desserts',
-    role: 'Belgian Chocolate Cake',
-    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80',
-    bio: 'Rich layers of dark chocolate ganache and velvety sponge cake.'
-  }
-];
 
 interface Category {
   id: string;
@@ -1405,21 +1374,6 @@ export default function MagicTabPage() {
             </div>
           </div>
           <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 sm:p-6 bg-[#fafafa]/50">
-            {/* Featured Menu Spotlight Carousel */}
-            <div className="mb-6 overflow-hidden rounded-2xl bg-card border border-border p-2 sm:p-4 shadow-sm">
-              <TeamCarousel
-                members={MAGICTAB_SPOTLIGHT_MEMBERS}
-                title="SPOTLIGHT"
-                titleColor="rgba(249, 115, 22, 0.75)"
-                cardWidth={260}
-                cardHeight={320}
-                autoPlay={4500}
-                infoTextColor="hsl(var(--foreground))"
-                infoPosition="bottom"
-                className="min-h-0 py-2"
-              />
-            </div>
-
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-24 w-full rounded-xl" />)}</div>
             ) : error ? (
@@ -1471,6 +1425,8 @@ export default function MagicTabPage() {
         selectedMenuType={selectedMenuType}
         clientUser={clientUser}
       />
+
+      <HuidouPet />
     </>
     </ClientGate>
   );
