@@ -61,23 +61,34 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
     loadData();
   }, [propItems]);
 
-  // Organize items by column
-  const col1 = galleryItems.filter(i => (i.column || 1) === 1);
-  const col2 = galleryItems.filter(i => (i.column || 1) === 2);
-  const col3 = galleryItems.filter(i => (i.column || 1) === 3);
+  // SMART AUTO ADJUSTMENT: Automatically balance items across 3 columns
+  const col1: GalleryItemData[] = [];
+  const col2: GalleryItemData[] = [];
+  const col3: GalleryItemData[] = [];
 
-  // Exact Bento Grid Slot Mapping
+  galleryItems.forEach((item, index) => {
+    // Priority to item.column if explicitly specified, otherwise auto-distribute
+    const targetCol = item.column ? item.column : (index % 3) + 1;
+    if (targetCol === 1) col1.push(item);
+    else if (targetCol === 2) col2.push(item);
+    else col3.push(item);
+  });
+
+  // Slot mapping with Auto-Adjustment for Bento heights
   const col1Large = col1.find(i => i.size === 'large') || col1[0];
   const col1Small1 = col1.filter(i => i.id !== col1Large?.id)[0];
   const col1Small2 = col1.filter(i => i.id !== col1Large?.id)[1];
+  const col1Extra = col1.filter(i => i.id !== col1Large?.id && i.id !== col1Small1?.id && i.id !== col1Small2?.id);
 
   const col2Large = col2.find(i => i.size === 'large') || col2[2] || col2[0];
   const col2Small1 = col2.filter(i => i.id !== col2Large?.id)[0];
   const col2Small2 = col2.filter(i => i.id !== col2Large?.id)[1];
+  const col2Extra = col2.filter(i => i.id !== col2Large?.id && i.id !== col2Small1?.id && i.id !== col2Small2?.id);
 
   const col3Large = col3.find(i => i.size === 'large') || col3[0];
   const col3Small1 = col3.filter(i => i.id !== col3Large?.id)[0];
   const col3Small2 = col3.filter(i => i.id !== col3Large?.id)[1];
+  const col3Extra = col3.filter(i => i.id !== col3Large?.id && i.id !== col3Small1?.id && i.id !== col3Small2?.id);
 
   return (
     <section className="w-full py-6 px-4 sm:px-6 lg:px-8 bg-background">
@@ -90,7 +101,7 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
         </div>
       )}
 
-      {/* Exact Match Bento Grid */}
+      {/* Auto-Adjusted Bento Grid */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
         
         {/* ================= COLUMN 1 (LEFT) ================= */}
@@ -103,6 +114,15 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
               {col1Small2 && <BentoCard item={col1Small2} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />}
             </div>
           )}
+
+          {col1Extra.map((item, idx) => (
+            <BentoCard 
+              key={item.id || idx} 
+              item={item} 
+              height={idx % 2 === 0 ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} 
+              actionSlot={actionSlot} 
+            />
+          ))}
         </div>
 
         {/* ================= COLUMN 2 (CENTER) ================= */}
@@ -115,6 +135,15 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
           )}
 
           {col2Large && <BentoCard item={col2Large} height="h-[340px] sm:h-[380px]" actionSlot={actionSlot} />}
+
+          {col2Extra.map((item, idx) => (
+            <BentoCard 
+              key={item.id || idx} 
+              item={item} 
+              height={idx % 2 === 0 ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} 
+              actionSlot={actionSlot} 
+            />
+          ))}
         </div>
 
         {/* ================= COLUMN 3 (RIGHT) ================= */}
@@ -127,6 +156,15 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
               {col3Small2 && <BentoCard item={col3Small2} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />}
             </div>
           )}
+
+          {col3Extra.map((item, idx) => (
+            <BentoCard 
+              key={item.id || idx} 
+              item={item} 
+              height={idx % 2 === 0 ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} 
+              actionSlot={actionSlot} 
+            />
+          ))}
         </div>
 
       </div>

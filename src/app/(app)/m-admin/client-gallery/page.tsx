@@ -169,9 +169,9 @@ export default function ClientGalleryAdminPage() {
         id: Date.now().toString(),
         title: formData.title || '',
         imageUrl: formData.imageUrl || '',
-        column: Number(formData.column) || 1,
-        size: (formData.size as any) || 'large',
-        tags: formData.tags || '',
+        column: (galleryItems.length % 3) + 1,
+        size: galleryItems.length % 2 === 0 ? 'large' : 'small',
+        tags: '',
       };
 
       const res = await createGalleryItem(newPayload);
@@ -358,42 +358,6 @@ export default function ClientGalleryAdminPage() {
                 label="Gallery Image Photo"
                 subDir="spotlights"
               />
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase">Bento Column</label>
-                  <select
-                    value={formData.column || 1}
-                    onChange={(e) => setFormData(prev => ({ ...prev, column: Number(e.target.value) }))}
-                    className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
-                  >
-                    <option value={1}>Column 1 (Left)</option>
-                    <option value={2}>Column 2 (Center)</option>
-                    <option value={3}>Column 3 (Right)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase">Card Size</label>
-                  <select
-                    value={formData.size || 'large'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, size: e.target.value as any }))}
-                    className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
-                  >
-                    <option value="large">Large (380px)</option>
-                    <option value="small">Small (180px)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase">Tags / Keywords</label>
-                <Input 
-                  value={formData.tags || ''} 
-                  onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-                  placeholder="e.g. Menu Cover, Esthetique, Green"
-                  className="mt-1"
-                />
-              </div>
             </div>
           </ScrollArea>
 
