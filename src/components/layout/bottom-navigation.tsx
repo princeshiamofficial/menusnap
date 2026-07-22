@@ -40,7 +40,7 @@ export function BottomNavigation() {
 
   return (
     <div data-wf--new-navbar--variant="primary" className="rd-navbar_wrapper md:hidden">
-      <div className="relative w-full h-[88px] pointer-events-auto">
+      <div className="relative w-full h-[80px] pointer-events-auto">
         {/* Main Grid Navigation */}
         <nav className="rd-navbar w-full h-full">
           {/* Curve Shape SVG Background */}
