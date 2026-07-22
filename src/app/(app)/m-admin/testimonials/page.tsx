@@ -251,16 +251,7 @@ export default function TestimonialsAdminPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 bg-background min-h-screen">
-      {/* Top Action Bar */}
-      <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 border-b border-border/40 pb-4">
-        <div className="flex items-center gap-2">
-          <HeartHandshake className="h-6 w-6 text-primary" />
-          <span className="text-lg font-bold text-foreground tracking-tight">Testimonials Management</span>
-        </div>
-        <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md">
-          <Plus className="h-4 w-4" /> Add Testimonial
-        </Button>
-      </div>
+
 
       {/* Featured 3D Spotlight Carousel Section */}
       <div className="w-full max-w-6xl mx-auto">
