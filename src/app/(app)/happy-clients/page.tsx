@@ -187,50 +187,7 @@ export default function HappyClientsPage() {
   }, [searchTerm, selectedCategory]);
 
   return (
-    <div className="min-h-full bg-background p-4 sm:p-6 lg:p-8 space-y-12">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sidebar via-background to-card p-6 sm:p-10 border border-border shadow-xl">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 max-w-3xl space-y-4">
-          <Badge variant="outline" className="px-3 py-1 bg-primary/10 text-primary border-primary/20 rounded-full text-xs font-semibold uppercase tracking-wider gap-1.5">
-            <HeartHandshake className="h-3.5 w-3.5" /> Client Success Showcase
-          </Badge>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground">
-            Trusted by Top Restaurants & Brands <Sparkles className="inline-block h-8 w-8 text-amber-400 ml-1" />
-          </h1>
-          <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-            Discover how hundreds of leading restaurants, cafes, and bakeries rely on MenuSnap to power their digital table ordering, QR menus, and customer growth.
-          </p>
-        </div>
-
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-border/60">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-primary font-bold text-2xl sm:text-3xl">
-              <Building2 className="h-5 w-5" /> 500+
-            </div>
-            <p className="text-xs text-muted-foreground font-medium">Active Outlets</p>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-amber-500 font-bold text-2xl sm:text-3xl">
-              <Star className="h-5 w-5 fill-amber-500" /> 4.9/5
-            </div>
-            <p className="text-xs text-muted-foreground font-medium">Average Rating</p>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-emerald-500 font-bold text-2xl sm:text-3xl">
-              <TrendingUp className="h-5 w-5" /> 2.5M+
-            </div>
-            <p className="text-xs text-muted-foreground font-medium">Digital Orders</p>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-blue-500 font-bold text-2xl sm:text-3xl">
-              <CheckCircle2 className="h-5 w-5" /> 99.8%
-            </div>
-            <p className="text-xs text-muted-foreground font-medium">Uptime & Satisfaction</p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-full bg-background p-4 sm:p-6 lg:p-8 space-y-8">
 
       {/* Featured Spotlight Team Carousel */}
       <div className="space-y-4">
