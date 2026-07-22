@@ -301,149 +301,49 @@ export default function ClientGalleryAdminPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground flex items-center gap-2.5">
-            <ImageIcon className="h-7 w-7 text-primary" />
-            Client&apos;s Gallery Management
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage the &quot;Our Happy Clients&quot; bento gallery grid images, positions, and mockups.
-          </p>
+      {/* Top Action Bar */}
+      <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 border-b border-border/40 pb-2">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="h-6 w-6 text-primary" />
+          <span className="text-lg font-bold text-foreground tracking-tight">Client&apos;s Gallery Management</span>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant={activeTab === 'manage' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('manage')}
-            className="gap-2 font-bold"
-          >
-            <Grid className="h-4 w-4" /> Manage Grid
-          </Button>
-          <Button 
-            variant={activeTab === 'preview' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('preview')}
-            className="gap-2 font-bold"
-          >
-            <Eye className="h-4 w-4" /> Live Preview
-          </Button>
-          <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md">
-            <Plus className="h-4 w-4" /> Add Gallery Image
-          </Button>
-        </div>
+        <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md">
+          <Plus className="h-4 w-4" /> Add Gallery Image
+        </Button>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold uppercase">
-            <span>Total Gallery Items</span>
-            <ImageIcon className="h-4 w-4 text-primary" />
-          </div>
-          <p className="text-2xl font-black text-foreground mt-2">{galleryItems.length}</p>
-        </div>
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold uppercase">
-            <span>Active Bento Grid</span>
-            <Grid className="h-4 w-4 text-amber-500" />
-          </div>
-          <p className="text-2xl font-black text-foreground mt-2">3 Columns</p>
-        </div>
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold uppercase">
-            <span>Grid Status</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </div>
-          <p className="text-2xl font-black text-emerald-500 mt-2">Live &amp; Responsive</p>
-        </div>
+      {/* Same-to-Same Bento Gallery View with Hover Edit/Delete Controls */}
+      <div className="w-full max-w-6xl mx-auto">
+        <SocialsGallery 
+          items={galleryItems}
+          actionSlot={(item) => (
+            <div className="flex items-center gap-1.5">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => {
+                  const target = galleryItems.find(g => g.id === item.id);
+                  if (target) handleOpenEdit(target);
+                }}
+                className="h-7 px-2.5 gap-1 font-bold text-xs bg-background/90 backdrop-blur-md border-border text-foreground hover:bg-accent"
+              >
+                <Edit3 className="h-3 w-3" /> Edit
+              </Button>
+              <Button 
+                size="sm" 
+                variant="destructive" 
+                onClick={() => {
+                  const target = galleryItems.find(g => g.id === item.id);
+                  if (target) setDeleteTarget(target);
+                }}
+                className="h-7 px-2 gap-1 font-bold text-xs shadow-md"
+              >
+                <Trash2 className="h-3 w-3" /> Delete
+              </Button>
+            </div>
+          )}
+        />
       </div>
-
-      {activeTab === 'preview' ? (
-        /* Live Preview Tab */
-        <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm">
-          <div className="mb-4 pb-3 border-b border-border flex items-center justify-between">
-            <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Live Bento Gallery Preview</span>
-            <Badge variant="outline" className="text-primary border-primary">Exact Page Rendering</Badge>
-          </div>
-          <SocialsGallery />
-        </div>
-      ) : (
-        /* Manage Grid Tab */
-        <>
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search gallery images by title or tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-card border-border"
-            />
-          </div>
-
-          {/* Table */}
-          <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow>
-                  <TableHead className="font-bold">Preview</TableHead>
-                  <TableHead className="font-bold">Title / Caption</TableHead>
-                  <TableHead className="font-bold">Column</TableHead>
-                  <TableHead className="font-bold">Card Size</TableHead>
-                  <TableHead className="font-bold">Tags</TableHead>
-                  <TableHead className="font-bold text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No gallery items found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredItems.map(item => (
-                    <TableRow key={item.id} className="hover:bg-muted/30">
-                      <TableCell>
-                        <div className="relative h-12 w-16 rounded-lg overflow-hidden border border-border bg-muted">
-                          <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-bold text-foreground">{item.title}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">Column {item.column}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="capitalize text-xs">
-                          {item.size}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{item.tags}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEdit(item)} className="gap-2 cursor-pointer">
-                              <Edit3 className="h-3.5 w-3.5" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setDeleteTarget(item)} className="gap-2 text-destructive cursor-pointer">
-                              <Trash2 className="h-3.5 w-3.5" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </>
-      )}
 
       {/* Add / Edit Dialog */}
       <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>

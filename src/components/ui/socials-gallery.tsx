@@ -7,6 +7,7 @@ import { getClientGallery, GalleryItemData } from '@/app/actions/client-gallery'
 
 interface SocialsGalleryProps {
   items?: GalleryItemData[];
+  actionSlot?: (item: GalleryItemData) => React.ReactNode;
 }
 
 const FALLBACK_ITEMS: GalleryItemData[] = [
@@ -20,7 +21,7 @@ const FALLBACK_ITEMS: GalleryItemData[] = [
   { id: '8', title: 'Card G', imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80', column: 3, size: 'small' },
 ];
 
-export function SocialsGallery({ items: propItems }: SocialsGalleryProps) {
+export function SocialsGallery({ items: propItems, actionSlot }: SocialsGalleryProps) {
   const [galleryItems, setGalleryItems] = useState<GalleryItemData[]>(propItems || FALLBACK_ITEMS);
 
   useEffect(() => {
@@ -72,8 +73,13 @@ export function SocialsGallery({ items: propItems }: SocialsGalleryProps) {
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex items-end">
-                <span className="text-xs font-bold text-white drop-shadow">{item.title}</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex items-end justify-between gap-2">
+                <span className="text-xs font-bold text-white drop-shadow truncate">{item.title}</span>
+                {actionSlot && (
+                  <div className="shrink-0 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {actionSlot(item)}
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -97,8 +103,13 @@ export function SocialsGallery({ items: propItems }: SocialsGalleryProps) {
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex items-end">
-                <span className="text-xs font-bold text-white drop-shadow">{item.title}</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex items-end justify-between gap-2">
+                <span className="text-xs font-bold text-white drop-shadow truncate">{item.title}</span>
+                {actionSlot && (
+                  <div className="shrink-0 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {actionSlot(item)}
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -122,8 +133,13 @@ export function SocialsGallery({ items: propItems }: SocialsGalleryProps) {
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex items-end">
-                <span className="text-xs font-bold text-white drop-shadow">{item.title}</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex items-end justify-between gap-2">
+                <span className="text-xs font-bold text-white drop-shadow truncate">{item.title}</span>
+                {actionSlot && (
+                  <div className="shrink-0 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {actionSlot(item)}
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
