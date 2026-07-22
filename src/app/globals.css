@@ -259,7 +259,7 @@
   height: 80px;
   pointer-events: none;
   z-index: 1;
-  filter: drop-shadow(0 -4px 12px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 -4px 16px rgba(0, 0, 0, 0.12));
 }
 
 .rd-navbar_link {
@@ -269,7 +269,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: #64748b;
   text-decoration: none;
   transition: all 0.2s ease;
   width: 100%;
@@ -307,7 +307,7 @@
   height: 64px;
   border-radius: 18px;
   padding: 3px;
-  box-shadow: inset 0 3px 4px hsl(var(--primary) / 0.4), 0 8px 24px hsl(var(--primary) / 0.45);
+  box-shadow: inset 0 3px 4px hsl(var(--primary) / 0.4), 0 8px 24px hsl(var(--primary) / 0.35);
   pointer-events: auto;
   text-decoration: none;
 }
@@ -324,18 +324,19 @@
   position: absolute;
   inset: 3px;
   border-radius: 15px;
-  background: #0A0A0A;
+  background: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: #1e293b;
   transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .rd-navbar_btn_content.is-active,
 .rd-navbar_btn:hover .rd-navbar_btn_content {
   background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  color: #FFFFFF;
 }
 
 .rd-navbar_btn_icon {

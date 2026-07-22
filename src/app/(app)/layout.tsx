@@ -13,33 +13,31 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 function ClientAuthGuard({ children }: { children: ReactNode }) {
-  const { isClientLoggedIn, clientLoading } = useClientAuth();
+  const { isClientLoggedIn, clientLoading, clientUser } = useClientAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!clientLoading && !isClientLoggedIn) {
+      // Ensure we redirect to the login page with a trailing slash
       const loginPath = '/login/';
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      if (window.location.pathname !== loginPath) {
         router.push(loginPath);
+        // Fallback to hard redirect if router.push doesn't trigger
         const timeout = setTimeout(() => {
-          if (!window.location.pathname.startsWith('/login')) {
+          if (window.location.pathname !== loginPath) {
             window.location.href = loginPath;
           }
-        }, 500);
+        }, 2000);
         return () => clearTimeout(timeout);
       }
     }
   }, [isClientLoggedIn, clientLoading, router]);
 
+
+
+
   if (clientLoading || !isClientLoggedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen w-full bg-background text-foreground">
-        <div className="flex flex-col items-center gap-4 p-6">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-muted-foreground">Loading MenuSnap...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return <>{children}</>;
