@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ListOrdered, Layers, FileEdit, History } from 'lucide-react';
+import { LayoutGrid, ListOrdered, Layers, FileEdit, History, Grip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
@@ -12,7 +12,7 @@ const navItemsLeft = [
   { href: '/magictab/', label: 'MagicTab', icon: ListOrdered },
 ];
 
-const centerNavItem = { href: '/happy-clients/', label: 'More', icon: Layers };
+const centerNavItem = { href: '/happy-clients/', label: 'More', icon: Grip };
 
 const navItemsRight = [
   { href: '/templates/', label: 'Templates', icon: Layers },
