@@ -364,20 +364,24 @@ export default function ClientGalleryAdminPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-card border-border shadow-xl">
                   <DropdownMenuItem 
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onSelect={() => {
                       const target = galleryItems.find(g => g.id === item.id) || itemToUse;
-                      handleOpenEdit(target);
+                      setTimeout(() => {
+                        document.body.style.pointerEvents = "";
+                        handleOpenEdit(target);
+                      }, 50);
                     }} 
                     className="gap-2 font-bold cursor-pointer"
                   >
                     <Edit3 className="h-3.5 w-3.5" /> Edit Image
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    onSelect={() => {
                       const target = galleryItems.find(g => g.id === item.id) || itemToUse;
-                      setDeleteTarget(target);
+                      setTimeout(() => {
+                        document.body.style.pointerEvents = "";
+                        setDeleteTarget(target);
+                      }, 50);
                     }} 
                     className="gap-2 text-destructive font-bold cursor-pointer"
                   >
@@ -468,7 +472,15 @@ export default function ClientGalleryAdminPage() {
       </Dialog>
 
       {/* Delete Confirmation Alert */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+      <AlertDialog 
+        open={!!deleteTarget} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+            setTimeout(() => { document.body.style.pointerEvents = ""; }, 50);
+          }
+        }}
+      >
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg font-bold">Delete Gallery Item</AlertDialogTitle>

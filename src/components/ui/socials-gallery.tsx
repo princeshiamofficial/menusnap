@@ -148,16 +148,16 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
 
   // Fallback cards mapping if DB items are fewer
   const col1Large = col1.find(i => i.size === 'large') || col1[0] || FALLBACK_BENTO_ITEMS[0];
-  const col1Small1 = col1.filter(i => i.id !== col1Large.id)[0] || FALLBACK_BENTO_ITEMS[1];
-  const col1Small2 = col1.filter(i => i.id !== col1Large.id)[1] || FALLBACK_BENTO_ITEMS[2];
+  const col1Small1 = col1.filter(i => i.id !== col1Large?.id)[0] || FALLBACK_BENTO_ITEMS[1];
+  const col1Small2 = col1.filter(i => i.id !== col1Large?.id)[1] || FALLBACK_BENTO_ITEMS[2];
 
   const col2Large = col2.find(i => i.size === 'large') || col2[0] || FALLBACK_BENTO_ITEMS[5];
-  const col2Small1 = col2.filter(i => i.id !== col2Large.id)[0] || FALLBACK_BENTO_ITEMS[3];
-  const col2Small2 = col2.filter(i => i.id !== col2Large.id)[1] || FALLBACK_BENTO_ITEMS[4];
+  const col2Small1 = col2.filter(i => i.id !== col2Large?.id)[0] || FALLBACK_BENTO_ITEMS[3];
+  const col2Small2 = col2.filter(i => i.id !== col2Large?.id)[1] || FALLBACK_BENTO_ITEMS[4];
 
   const col3Large = col3.find(i => i.size === 'large') || col3[0] || FALLBACK_BENTO_ITEMS[6];
-  const col3Small1 = col3.filter(i => i.id !== col3Large.id)[0] || FALLBACK_BENTO_ITEMS[7];
-  const col3Small2 = col3.filter(i => i.id !== col3Large.id)[1] || FALLBACK_BENTO_ITEMS[8];
+  const col3Small1 = col3.filter(i => i.id !== col3Large?.id)[0] || FALLBACK_BENTO_ITEMS[7];
+  const col3Small2 = col3.filter(i => i.id !== col3Large?.id)[1] || FALLBACK_BENTO_ITEMS[8];
 
   return (
     <section className="w-full py-6 px-4 sm:px-6 lg:px-8 bg-background">
