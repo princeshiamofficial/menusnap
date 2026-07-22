@@ -48,6 +48,16 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogFooter,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogAction,
+    AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatDisplayDate, parseMySqlDateAsUtc } from '@/lib/dateUtils';
 
@@ -62,6 +72,12 @@ interface MagicDocument {
     creatorAvatarUrl?: string | null;
     isDeleted?: boolean;
     deletedAt?: string;
+}
+
+interface DeleteTarget {
+    id: string;
+    title: string;
+    isPermanent: boolean;
 }
 
 export default function MagicDocsPage(): ReactNode {
@@ -190,18 +206,16 @@ export default function MagicDocsPage(): ReactNode {
         router.push(`/m-admin/magic-docs/${id}`);
     };
 
-    const handleMoveToTrash = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (confirm("Move this document to trash?")) {
-            const result = await deleteMagicDocFromMySql(id);
+    const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-            if (!result.success) {
-                console.error("Error moving to trash:", result.message);
-                alert("Failed to move document to trash.");
-            } else {
-                fetchDocs(currentPage, searchTerm, sortOption);
-            }
-        }
+    const handleMoveToTrash = (id: string, title: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setDeleteTarget({ id, title, isPermanent: false });
+    };
+
+    const handlePermanentDelete = (id: string, title: string) => {
+        setDeleteTarget({ id, title, isPermanent: true });
     };
 
     const handleRestore = async (id: string) => {
@@ -222,16 +236,29 @@ export default function MagicDocsPage(): ReactNode {
         }
     };
 
-    const handlePermanentDelete = async (id: string) => {
-        if (confirm("Are you sure you want to permanently delete this document? This action cannot be undone.")) {
-            const result = await permanentDeleteMagicDocFromMySql(id);
-
-            if (!result.success) {
-                console.error("Error permanently deleting doc:", result.message);
-                alert("Failed to delete document permanently.");
+    const handleConfirmDelete = async () => {
+        if (!deleteTarget) return;
+        setIsDeleting(true);
+        try {
+            if (deleteTarget.isPermanent) {
+                const result = await permanentDeleteMagicDocFromMySql(deleteTarget.id);
+                if (!result.success) {
+                    console.error("Error permanently deleting doc:", result.message);
+                    alert("Failed to delete document permanently.");
+                }
             } else {
-                fetchDocs(currentPage, searchTerm, sortOption);
+                const result = await deleteMagicDocFromMySql(deleteTarget.id);
+                if (!result.success) {
+                    console.error("Error moving to trash:", result.message);
+                    alert("Failed to move document to trash.");
+                }
             }
+            fetchDocs(currentPage, searchTerm, sortOption);
+        } catch (err: any) {
+            console.error("Delete operation failed:", err);
+        } finally {
+            setIsDeleting(false);
+            setDeleteTarget(null);
         }
     };
 
@@ -464,7 +491,7 @@ export default function MagicDocsPage(): ReactNode {
                                                             {canDelete && (
                                                                 <>
                                                                     <DropdownMenuSeparator />
-                                                                    <DropdownMenuItem onClick={(e) => handleMoveToTrash(doc.id, e as any)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                                                    <DropdownMenuItem onClick={(e) => handleMoveToTrash(doc.id, doc.title, e as any)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                                                                         <Trash2 className="mr-2 h-4 w-4" /> Delete Docs
                                                                     </DropdownMenuItem>
                                                                 </>
@@ -581,7 +608,7 @@ export default function MagicDocsPage(): ReactNode {
                                                             variant="ghost"
                                                             size="sm"
                                                             className="h-9 w-9 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                            onClick={() => handlePermanentDelete(doc.id)}
+                                                            onClick={() => handlePermanentDelete(doc.id, doc.title)}
                                                             title="Delete permanently"
                                                         >
                                                             <Trash2 className="h-4 w-4" />
@@ -597,6 +624,52 @@ export default function MagicDocsPage(): ReactNode {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Confirmation Popup Dialog */}
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+                <AlertDialogContent className="max-w-md rounded-2xl p-6 shadow-2xl border border-border bg-card">
+                    <AlertDialogHeader>
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-950/50 mb-2">
+                            <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
+                        </div>
+                        <AlertDialogTitle className="text-xl font-bold text-center text-foreground">
+                            {deleteTarget?.isPermanent ? "Permanently Delete Document?" : "Move Document to Trash?"}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-center text-sm text-muted-foreground mt-2 leading-relaxed">
+                            {deleteTarget?.isPermanent ? (
+                                <>
+                                    Are you sure you want to permanently delete <strong className="text-foreground font-semibold">"{deleteTarget?.title}"</strong>? This action cannot be undone.
+                                </>
+                            ) : (
+                                <>
+                                    Are you sure you want to move <strong className="text-foreground font-semibold">"{deleteTarget?.title}"</strong> to trash? You can restore it anytime from the trash bin.
+                                </>
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+                        <AlertDialogCancel disabled={isDeleting} className="rounded-xl border-border hover:bg-muted font-medium">
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleConfirmDelete();
+                            }}
+                            disabled={isDeleting}
+                            className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium shadow-md shadow-red-500/20"
+                        >
+                            {isDeleting ? (
+                                <span className="flex items-center gap-2">
+                                    <RefreshCw className="h-4 w-4 animate-spin" /> Deleting...
+                                </span>
+                            ) : (
+                                deleteTarget?.isPermanent ? "Delete Permanently" : "Move to Trash"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
             </div>
         </div>
     );
