@@ -73,7 +73,7 @@ export default function HappyClientsPage() {
           titleColor="rgba(245, 158, 11, 0.8)"
           cardWidth={300}
           cardHeight={400}
-          autoPlay={4000}
+          autoPlay={0}
           infoTextColor="hsl(var(--foreground))"
           infoPosition="bottom"
           className="min-h-0 py-6"
