@@ -105,8 +105,8 @@ export function BottomNavigation() {
             );
           })}
 
-          {/* Empty Center Spacer for Notch Grid */}
-          <div className="w-[74px] h-full" />
+          {/* Center Notch Spacer */}
+          <div className="w-[48px] h-full" />
 
           {/* Right Nav Items */}
           {navItemsRight.map((item) => {
