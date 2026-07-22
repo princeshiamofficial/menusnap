@@ -28,15 +28,9 @@ export interface ClientAuthContextType {
 
 const ClientAuthContext = createContext<ClientAuthContextType | undefined>(undefined);
 
-const DEFAULT_GUEST_USER: ClientUser = {
-  businessName: 'MenuSnap Demo',
-  type: 'restaurant',
-  whatsappNumber: '01700000000'
-};
-
 export function ClientAuthProvider({ children }: { children: ReactNode }) {
-  const [clientUser, setClientUser] = useState<ClientUser | null>(DEFAULT_GUEST_USER);
-  const [clientLoading, setClientLoading] = useState(false);
+  const [clientUser, setClientUser] = useState<ClientUser | null>(null);
+  const [clientLoading, setClientLoading] = useState(true);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -45,11 +39,12 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       const storedUser = localStorage.getItem(CLIENT_STORAGE_KEY);
       if (storedUser) {
         setClientUser(JSON.parse(storedUser));
-      } else {
-        localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(DEFAULT_GUEST_USER));
       }
     } catch (error) {
       console.error("Failed to parse client user from localStorage", error);
+      localStorage.removeItem(CLIENT_STORAGE_KEY);
+    } finally {
+      setClientLoading(false);
     }
   }, []);
 
