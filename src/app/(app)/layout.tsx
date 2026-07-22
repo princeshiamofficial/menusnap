@@ -13,12 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 function ClientAuthGuard({ children }: { children: ReactNode }) {
-  const { clientLoading } = useClientAuth();
-
-  if (clientLoading) {
-    return null;
-  }
-
   return <>{children}</>;
 }
 
