@@ -267,25 +267,35 @@ export default function TestimonialsAdminPage() {
           className="min-h-0 py-2"
           actionSlot={(member) => {
             const item = testimonials.find(t => t.id === member.id);
-            if (!item) return null;
             return (
               <div className="flex items-center gap-2">
                 <Button 
                   size="sm" 
-                  variant="outline" 
-                  onClick={() => handleOpenEdit(item)}
-                  className="h-8 px-3 gap-1.5 font-bold text-xs bg-background/80 backdrop-blur-md shadow-md border-border hover:bg-accent"
-                >
-                  <Edit3 className="h-3.5 w-3.5" /> Edit
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="destructive" 
-                  onClick={() => setDeleteTarget(item)}
+                  onClick={handleOpenAdd}
                   className="h-8 px-3 gap-1.5 font-bold text-xs shadow-md"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                  <Plus className="h-3.5 w-3.5" /> Add New
                 </Button>
+                {item && (
+                  <>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleOpenEdit(item)}
+                      className="h-8 px-3 gap-1.5 font-bold text-xs bg-background/80 backdrop-blur-md shadow-md border-border hover:bg-accent"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="destructive" 
+                      onClick={() => setDeleteTarget(item)}
+                      className="h-8 px-3 gap-1.5 font-bold text-xs shadow-md"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </Button>
+                  </>
+                )}
               </div>
             );
           }}
