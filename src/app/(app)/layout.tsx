@@ -172,7 +172,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             >
               <main className={cn(
                 "flex-grow min-w-0 w-full max-w-full",
-                (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/templates" || pathname === "/templates/" || pathname === "/draft" || pathname === "/draft/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/") ? "p-0" : "p-3.5 sm:p-5 md:p-6"
+                (pathname === "/dashboard" || pathname === "/dashboard/" || pathname === "/magictab" || pathname === "/magictab/" || pathname === "/templates" || pathname === "/templates/" || pathname === "/draft" || pathname === "/draft/" || pathname === "/ebook" || pathname === "/ebook/" || pathname === "/marketing-consultation" || pathname === "/marketing-consultation/" || pathname.startsWith("/happy-clients")) ? "p-0" : "p-3.5 sm:p-5 md:p-6"
               )}>
                 {children}
               </main>

@@ -187,7 +187,7 @@ export default function HappyClientsPage() {
   }, [searchTerm, selectedCategory]);
 
   return (
-    <div className="min-h-full bg-background p-4 sm:p-6 lg:p-8 flex flex-col justify-center items-center">
+    <div className="min-h-full bg-background p-0 pt-2 sm:pt-4 flex flex-col justify-center items-center overflow-hidden">
       {/* Featured Spotlight Team Carousel */}
       <div className="w-full max-w-6xl">
         <TeamCarousel 
