@@ -39,10 +39,17 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       const storedUser = localStorage.getItem(CLIENT_STORAGE_KEY);
       if (storedUser) {
         setClientUser(JSON.parse(storedUser));
+      } else {
+        const guestUser: ClientUser = {
+          businessName: 'MenuSnap Demo',
+          type: 'restaurant',
+          whatsappNumber: '01700000000'
+        };
+        setClientUser(guestUser);
+        localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(guestUser));
       }
     } catch (error) {
       console.error("Failed to parse client user from localStorage", error);
-      localStorage.removeItem(CLIENT_STORAGE_KEY);
     } finally {
       setClientLoading(false);
     }

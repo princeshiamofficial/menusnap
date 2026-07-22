@@ -13,30 +13,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 function ClientAuthGuard({ children }: { children: ReactNode }) {
-  const { isClientLoggedIn, clientLoading, clientUser } = useClientAuth();
-  const router = useRouter();
+  const { clientLoading } = useClientAuth();
 
-  useEffect(() => {
-    if (!clientLoading && !isClientLoggedIn) {
-      // Ensure we redirect to the login page with a trailing slash
-      const loginPath = '/login/';
-      if (window.location.pathname !== loginPath) {
-        router.push(loginPath);
-        // Fallback to hard redirect if router.push doesn't trigger
-        const timeout = setTimeout(() => {
-          if (window.location.pathname !== loginPath) {
-            window.location.href = loginPath;
-          }
-        }, 2000);
-        return () => clearTimeout(timeout);
-      }
-    }
-  }, [isClientLoggedIn, clientLoading, router]);
-
-
-
-
-  if (clientLoading || !isClientLoggedIn) {
+  if (clientLoading) {
     return null;
   }
 
