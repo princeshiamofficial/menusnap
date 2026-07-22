@@ -9,8 +9,8 @@ export function SocialsGallery() {
     <section className="w-full py-12 px-4 sm:px-6 lg:px-8 bg-background">
       {/* Title */}
       <div className="max-w-6xl mx-auto mb-10 text-center">
-        <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-normal tracking-tight text-foreground font-serif">
-          Follow our socials
+        <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-normal tracking-tight text-foreground">
+          Our Happy Clients
         </h2>
       </div>
 
