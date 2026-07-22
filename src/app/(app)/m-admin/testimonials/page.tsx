@@ -348,34 +348,7 @@ export default function TestimonialsAdminPage() {
                 subDir="spotlights"
               />
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase">Category</label>
-                  <select
-                    value={formData.category || 'restaurant'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
-                    className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
-                  >
-                    <option value="restaurant">Restaurant</option>
-                    <option value="cafe">Cafe</option>
-                    <option value="bakery">Bakery</option>
-                    <option value="fast-food">Fast Food</option>
-                    <option value="fine-dining">Fine Dining</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase">Rating (1-5)</label>
-                  <Input 
-                    type="number"
-                    step="0.1"
-                    min="1"
-                    max="5"
-                    value={formData.rating || 5.0} 
-                    onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
+
 
               <div>
                 <label className="text-xs font-bold text-muted-foreground uppercase">Location / Branch</label>
