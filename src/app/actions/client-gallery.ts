@@ -109,17 +109,7 @@ async function ensureClientGalleryTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // Seed or sync missing items
-    const [rows]: any = await pool.execute('SELECT COUNT(*) as count FROM client_gallery');
-    if (rows && rows[0] && Number(rows[0].count) < 12) {
-      for (const item of INITIAL_GALLERY) {
-        await pool.execute(
-          `INSERT IGNORE INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [item.id || '', item.title, item.imageUrl, item.column || 1, item.size || 'large', item.tags || '']
-        );
-      }
-    }
+    // Table initialization without automatic sample seeding
   } catch (err) {
     console.error("Failed to initialize client_gallery table:", err);
   }
@@ -219,16 +209,7 @@ export async function clearClientGallery() {
   try {
     await ensureClientGalleryTable();
     await pool.execute('TRUNCATE TABLE client_gallery');
-
-    for (const item of INITIAL_GALLERY) {
-      await pool.execute(
-        `INSERT INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [item.id || '', item.title, item.imageUrl, item.column || 1, item.size || 'large', item.tags || '']
-      );
-    }
-
-    return { success: true, data: INITIAL_GALLERY };
+    return { success: true, data: [] };
   } catch (error: any) {
     console.error("Database Error clearing gallery table:", error);
     return { success: false, error: error?.message || "Failed to clear gallery DB" };

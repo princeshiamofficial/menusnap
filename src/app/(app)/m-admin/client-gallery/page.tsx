@@ -208,18 +208,11 @@ export default function ClientGalleryAdminPage() {
   };
 
   const handleClearDb = async () => {
-    if (!confirm("Are you sure you want to clear and reset the gallery database?")) return;
+    if (!confirm("Are you sure you want to clear the gallery database?")) return;
     const res = await clearClientGallery();
-    if (res.success && res.data) {
-      setGalleryItems(res.data.map(item => ({
-        id: item.id || Date.now().toString(),
-        title: item.title,
-        imageUrl: item.imageUrl,
-        column: item.column || 1,
-        size: item.size || 'large',
-        tags: item.tags || '',
-      })));
-      toast({ title: "DB Cleared & Reset", description: "Gallery DB cleared and reset to clean 9-item Bento grid!" });
+    if (res.success) {
+      setGalleryItems([]);
+      toast({ title: "DB Cleared", description: "Gallery database cleared cleanly!" });
     } else {
       toast({ title: "Error", description: res.error || "Failed to clear DB", variant: "destructive" });
     }
