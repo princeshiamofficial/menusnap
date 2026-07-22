@@ -40,7 +40,7 @@ export function BottomNavigation() {
 
   return (
     <div data-wf--new-navbar--variant="primary" className="rd-navbar_wrapper md:hidden">
-      <div className="relative w-full max-w-[480px] mx-auto h-[84px] pointer-events-auto">
+      <div className="relative w-full max-w-[420px] mx-auto h-[76px] pointer-events-auto">
         {/* Main Grid Navigation */}
         <nav className="rd-navbar w-full h-full">
           {/* Curve Shape SVG Background */}
@@ -54,7 +54,7 @@ export function BottomNavigation() {
             <g filter="url(#filter0_i_14_1436_menusnap)">
               <path
                 d="M150 8C150 3.58172 146.418 0 142 0H18C8.05908 0 0 8.05859 0 18V92H375V18C375 8.05859 366.941 0 357 0H232C227.582 0 224 3.58172 224 8V21C224 34.8066 218.307 46 204.5 46H170C156.193 46 150 34.8066 150 21V8Z"
-                fill="hsl(var(--card))"
+                fill="#0A0A0A"
               />
             </g>
             <defs>
@@ -80,7 +80,7 @@ export function BottomNavigation() {
                 <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
                 <feColorMatrix
                   type="matrix"
-                  values="0 0 0 0 0.96 0 0 0 0 0.62 0 0 0 0 0.2 0 0 0 0.3 0"
+                  values="0 0 0 0 0.95 0 0 0 0 0.6 0 0 0 0 0.15 0 0 0 0.5 0"
                 />
                 <feBlend mode="normal" in2="shape" result="effect1_innerShadow_14_1436" />
               </filter>
@@ -105,8 +105,8 @@ export function BottomNavigation() {
             );
           })}
 
-          {/* Center Notch Spacer */}
-          <div className="w-[72px] h-full" />
+          {/* Empty Center Spacer for Notch Grid */}
+          <div className="w-[74px] h-full" />
 
           {/* Right Nav Items */}
           {navItemsRight.map((item) => {
