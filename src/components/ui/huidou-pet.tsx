@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Heart } from 'lucide-react';
+import Image from 'next/image';
 
 interface HuidouPetProps {
   className?: string;
@@ -13,7 +14,6 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
   const [message, setMessage] = useState("Hi! I'm Huidou (灰豆) 🐾 Welcome to MagicTab!");
   const [hearts, setHearts] = useState<{ id: number; x: number; y: number }[]>([]);
   const [isBouncing, setIsBouncing] = useState(false);
-  const [frameIndex, setFrameIndex] = useState(0);
 
   const CUTE_MESSAGES = [
     "Need help managing your categories or menu items? 🐾",
@@ -22,15 +22,6 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
     "Huidou is watching over your orders! 🐱",
     "Meow! Don't forget to save your drafts! 📑"
   ];
-
-  // Sprite animation loop (cycles through 6 idle cat frames)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFrameIndex((prev) => (prev + 1) % 6);
-    }, 200); // 200ms per frame
-
-    return () => clearInterval(interval);
-  }, []);
 
   const handlePetClick = (e: React.MouseEvent) => {
     setIsBouncing(true);
@@ -49,9 +40,6 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
     const randomMsg = CUTE_MESSAGES[Math.floor(Math.random() * CUTE_MESSAGES.length)];
     setMessage(randomMsg);
   };
-
-  // Calculate background position percentage for 8-column spritesheet
-  const bgXPercent = (frameIndex / 7) * 100;
 
   if (!isOpen) {
     return (
@@ -123,17 +111,16 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
           </motion.div>
         ))}
 
-        {/* Mascot Avatar Container (Transparent CSS Animated Sprite) */}
+        {/* Mascot Avatar Container (Clean Animated WebP without grid leaks) */}
         <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
-          <div
-            className="w-full h-full filter drop-shadow-2xl transition-all"
-            style={{
-              backgroundImage: `url('/huidou-spritesheet.webp')`,
-              backgroundSize: `800% 1200%`,
-              backgroundPosition: `${bgXPercent}% 0%`,
-              backgroundRepeat: 'no-repeat',
-              imageRendering: 'pixelated',
-            }}
+          <Image
+            src="/huidou-idle.webp"
+            alt="Huidou 灰豆"
+            width={112}
+            height={112}
+            className="w-full h-full object-contain filter drop-shadow-2xl transition-transform group-hover:scale-110 pointer-events-none"
+            priority
+            unoptimized
           />
         </div>
       </motion.div>
