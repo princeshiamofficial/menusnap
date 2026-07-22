@@ -40,97 +40,101 @@ export function BottomNavigation() {
 
   return (
     <div data-wf--new-navbar--variant="primary" className="rd-navbar_wrapper md:hidden">
-      <nav className="rd-navbar">
-        {/* Exact Curve Shape SVG from bottom nav.html */}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="375"
-          height="92"
-          viewBox="0 0 375 92"
-          fill="none"
-          className="rd-navbar_curve-shape"
-          preserveAspectRatio="none"
-        >
-          <g filter="url(#filter0_i_14_1436_menusnap)">
-            <path
-              d="M150 8C150 3.58172 146.418 0 142 0H18C8.05908 0 0 8.05859 0 18V92H375V18C375 8.05859 366.941 0 357 0H232C227.582 0 224 3.58172 224 8V21C224 34.8066 218.307 46 204.5 46H170C156.193 46 150 34.8066 150 21V8Z"
-              fill="hsl(var(--card))"
-            />
-          </g>
-          <defs>
-            <filter
-              id="filter0_i_14_1436_menusnap"
-              x="0"
-              y="0"
-              width="375"
-              height="95"
-              filterUnits="userSpaceOnUse"
-              colorInterpolationFilters="sRGB"
-            >
-              <feFlood floodOpacity="0" result="BackgroundImageFix" />
-              <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-              <feColorMatrix
-                in="SourceAlpha"
-                type="matrix"
-                values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                result="hardAlpha"
+      <div className="relative w-full max-w-[480px] mx-auto h-[84px] pointer-events-auto">
+        {/* Main Grid Navigation */}
+        <nav className="rd-navbar w-full h-full">
+          {/* Curve Shape SVG Background */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 375 92"
+            fill="none"
+            className="rd-navbar_curve-shape"
+            preserveAspectRatio="none"
+          >
+            <g filter="url(#filter0_i_14_1436_menusnap)">
+              <path
+                d="M150 8C150 3.58172 146.418 0 142 0H18C8.05908 0 0 8.05859 0 18V92H375V18C375 8.05859 366.941 0 357 0H232C227.582 0 224 3.58172 224 8V21C224 34.8066 218.307 46 204.5 46H170C156.193 46 150 34.8066 150 21V8Z"
+                fill="hsl(var(--card))"
               />
-              <feOffset dy="3" />
-              <feGaussianBlur stdDeviation="2" />
-              <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-              <feColorMatrix
-                type="matrix"
-                values="0 0 0 0 0.188235 0 0 0 0 1 0 0 0 0 0.592157 0 0 0 0.4 0"
-              />
-              <feBlend mode="normal" in2="shape" result="effect1_innerShadow_14_1436" />
-            </filter>
-          </defs>
-        </svg>
+            </g>
+            <defs>
+              <filter
+                id="filter0_i_14_1436_menusnap"
+                x="0"
+                y="0"
+                width="375"
+                height="95"
+                filterUnits="userSpaceOnUse"
+                colorInterpolationFilters="sRGB"
+              >
+                <feFlood floodOpacity="0" result="BackgroundImageFix" />
+                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+                <feColorMatrix
+                  in="SourceAlpha"
+                  type="matrix"
+                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+                  result="hardAlpha"
+                />
+                <feOffset dy="3" />
+                <feGaussianBlur stdDeviation="2" />
+                <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+                <feColorMatrix
+                  type="matrix"
+                  values="0 0 0 0 0.188235 0 0 0 0 1 0 0 0 0 0.592157 0 0 0 0.4 0"
+                />
+                <feBlend mode="normal" in2="shape" result="effect1_innerShadow_14_1436" />
+              </filter>
+            </defs>
+          </svg>
 
-        {/* Left Nav Items */}
-        {navItemsLeft.map((item) => {
-          const isActive = activeItem.href === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn("rd-navbar_link group", isActive && "is-active")}
-            >
-              <motion.div whileTap={{ scale: 0.9 }} className="flex flex-col items-center">
-                <Icon className={cn("rd-navbar_link_icon transition-transform", isActive && "scale-110")} />
-                <span className="rd-navbar_link_text">{item.label}</span>
-              </motion.div>
-            </Link>
-          );
-        })}
+          {/* Left Nav Items */}
+          {navItemsLeft.map((item) => {
+            const isActive = activeItem.href === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn("rd-navbar_link group", isActive && "is-active")}
+              >
+                <motion.div whileTap={{ scale: 0.9 }} className="flex flex-col items-center">
+                  <Icon className={cn("rd-navbar_link_icon transition-transform", isActive && "scale-110")} />
+                  <span className="rd-navbar_link_text">{item.label}</span>
+                </motion.div>
+              </Link>
+            );
+          })}
 
-        {/* Center Action Button (Notch Center) */}
+          {/* Empty Center Spacer for Notch Cutout */}
+          <div className="w-[84px] h-full" />
+
+          {/* Right Nav Items */}
+          {navItemsRight.map((item) => {
+            const isActive = activeItem.href === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn("rd-navbar_link group", isActive && "is-active")}
+              >
+                <motion.div whileTap={{ scale: 0.9 }} className="flex flex-col items-center">
+                  <Icon className={cn("rd-navbar_link_icon transition-transform", isActive && "scale-110")} />
+                  <span className="rd-navbar_link_text">{item.label}</span>
+                </motion.div>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Center Action Button (Absolute Centered in Notch) */}
         <Link href={centerNavItem.href} className="rd-navbar_btn group">
           <div className="rd-navbar_btn_bg" />
           <div className={cn("rd-navbar_btn_content", isCenterActive && "is-active")}>
             <centerNavItem.icon className={cn("rd-navbar_btn_icon transition-transform group-hover:scale-110", isCenterActive && "rotate-6")} />
           </div>
         </Link>
-
-        {/* Right Nav Items */}
-        {navItemsRight.map((item) => {
-          const isActive = activeItem.href === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn("rd-navbar_link group", isActive && "is-active")}
-            >
-              <motion.div whileTap={{ scale: 0.9 }} className="flex flex-col items-center">
-                <Icon className={cn("rd-navbar_link_icon transition-transform", isActive && "scale-110")} />
-                <span className="rd-navbar_link_text">{item.label}</span>
-              </motion.div>
-            </Link>
-          );
-        })}
-      </nav>
+      </div>
     </div>
   );
 }

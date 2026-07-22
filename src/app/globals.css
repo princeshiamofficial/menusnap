@@ -295,20 +295,21 @@
 }
 
 .rd-navbar_btn {
-  position: relative;
-  z-index: 20;
+  position: absolute !important;
+  top: 0 !important;
+  left: 50% !important;
+  transform: translate(-50%, -46%) !important;
+  z-index: 30 !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 62px;
-  height: 62px;
+  width: 64px;
+  height: 64px;
   border-radius: 18px;
-  transform: translateY(-24px);
-  text-decoration: none;
   background: conic-gradient(from var(--_gradient-angle) at 50% 50%, #FBFAF6 0deg, rgba(251, 250, 246, 0.00) 360deg), #30ff97;
   animation: gradient-angle-rotate 3s linear infinite;
   padding: 3px;
-  box-shadow: 0 8px 24px rgba(48, 255, 151, 0.45);
+  box-shadow: inset 0 3px 4px rgba(48, 255, 151, 0.4), 0 8px 24px rgba(48, 255, 151, 0.45);
 }
 
 .rd-navbar_btn_content {
