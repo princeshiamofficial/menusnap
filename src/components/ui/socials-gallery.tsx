@@ -8,6 +8,7 @@ import { getClientGallery, GalleryItemData } from '@/app/actions/client-gallery'
 interface SocialsGalleryProps {
   items?: GalleryItemData[];
   actionSlot?: (item: GalleryItemData) => React.ReactNode;
+  showTitle?: boolean;
 }
 
 const FALLBACK_ITEMS: GalleryItemData[] = [
@@ -21,7 +22,7 @@ const FALLBACK_ITEMS: GalleryItemData[] = [
   { id: '8', title: 'Card G', imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80', column: 3, size: 'small' },
 ];
 
-export function SocialsGallery({ items: propItems, actionSlot }: SocialsGalleryProps) {
+export function SocialsGallery({ items: propItems, actionSlot, showTitle = true }: SocialsGalleryProps) {
   const [galleryItems, setGalleryItems] = useState<GalleryItemData[]>(propItems || FALLBACK_ITEMS);
 
   useEffect(() => {
@@ -44,13 +45,15 @@ export function SocialsGallery({ items: propItems, actionSlot }: SocialsGalleryP
   const col3Items = galleryItems.filter(i => (i.column || 1) === 3);
 
   return (
-    <section className="w-full py-12 px-4 sm:px-6 lg:px-8 bg-background">
+    <section className="w-full py-6 px-4 sm:px-6 lg:px-8 bg-background">
       {/* Title */}
-      <div className="max-w-6xl mx-auto mb-10 text-center">
-        <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-normal tracking-tight text-foreground">
-          Client Gallery
-        </h2>
-      </div>
+      {showTitle && (
+        <div className="max-w-6xl mx-auto mb-10 text-center">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-normal tracking-tight text-foreground">
+            Client Gallery
+          </h2>
+        </div>
+      )}
 
       {/* Gallery Bento Grid */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">

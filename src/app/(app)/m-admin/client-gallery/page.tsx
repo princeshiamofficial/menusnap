@@ -316,6 +316,7 @@ export default function ClientGalleryAdminPage() {
       <div className="w-full max-w-6xl mx-auto">
         <SocialsGallery 
           items={galleryItems}
+          showTitle={false}
           actionSlot={(item) => (
             <div className="flex items-center gap-1.5">
               <Button 
