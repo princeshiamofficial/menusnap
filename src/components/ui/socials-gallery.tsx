@@ -66,6 +66,19 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
   const col2 = galleryItems.filter(i => (i.column || 1) === 2);
   const col3 = galleryItems.filter(i => (i.column || 1) === 3);
 
+  // Exact Bento Grid Slot Mapping
+  const col1Large = col1.find(i => i.size === 'large') || col1[0];
+  const col1Small1 = col1.filter(i => i.id !== col1Large?.id)[0];
+  const col1Small2 = col1.filter(i => i.id !== col1Large?.id)[1];
+
+  const col2Large = col2.find(i => i.size === 'large') || col2[2] || col2[0];
+  const col2Small1 = col2.filter(i => i.id !== col2Large?.id)[0];
+  const col2Small2 = col2.filter(i => i.id !== col2Large?.id)[1];
+
+  const col3Large = col3.find(i => i.size === 'large') || col3[0];
+  const col3Small1 = col3.filter(i => i.id !== col3Large?.id)[0];
+  const col3Small2 = col3.filter(i => i.id !== col3Large?.id)[1];
+
   return (
     <section className="w-full py-6 px-4 sm:px-6 lg:px-8 bg-background">
       {/* Optional Title */}
@@ -77,43 +90,43 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
         </div>
       )}
 
-      {/* Dynamic Bento Grid - No Hardcoded Defaults */}
+      {/* Exact Match Bento Grid */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
         
         {/* ================= COLUMN 1 (LEFT) ================= */}
         <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
-          {col1.map((item, idx) => (
-            <BentoCard 
-              key={item.id || idx} 
-              item={item} 
-              height={item.size === 'small' ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} 
-              actionSlot={actionSlot} 
-            />
-          ))}
+          {col1Large && <BentoCard item={col1Large} height="h-[340px] sm:h-[380px]" actionSlot={actionSlot} />}
+
+          {(col1Small1 || col1Small2) && (
+            <div className="grid grid-cols-2 gap-4 sm:gap-5">
+              {col1Small1 && <BentoCard item={col1Small1} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />}
+              {col1Small2 && <BentoCard item={col1Small2} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />}
+            </div>
+          )}
         </div>
 
         {/* ================= COLUMN 2 (CENTER) ================= */}
         <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
-          {col2.map((item, idx) => (
-            <BentoCard 
-              key={item.id || idx} 
-              item={item} 
-              height={item.size === 'small' ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} 
-              actionSlot={actionSlot} 
-            />
-          ))}
+          {(col2Small1 || col2Small2) && (
+            <div className="grid grid-cols-2 gap-4 sm:gap-5">
+              {col2Small1 && <BentoCard item={col2Small1} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />}
+              {col2Small2 && <BentoCard item={col2Small2} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />}
+            </div>
+          )}
+
+          {col2Large && <BentoCard item={col2Large} height="h-[340px] sm:h-[380px]" actionSlot={actionSlot} />}
         </div>
 
         {/* ================= COLUMN 3 (RIGHT) ================= */}
         <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
-          {col3.map((item, idx) => (
-            <BentoCard 
-              key={item.id || idx} 
-              item={item} 
-              height={item.size === 'small' ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} 
-              actionSlot={actionSlot} 
-            />
-          ))}
+          {col3Large && <BentoCard item={col3Large} height="h-[340px] sm:h-[380px]" actionSlot={actionSlot} />}
+
+          {(col3Small1 || col3Small2) && (
+            <div className="grid grid-cols-2 gap-4 sm:gap-5">
+              {col3Small1 && <BentoCard item={col3Small1} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />}
+              {col3Small2 && <BentoCard item={col3Small2} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />}
+            </div>
+          )}
         </div>
 
       </div>
