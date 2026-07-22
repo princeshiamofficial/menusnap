@@ -11,6 +11,86 @@ interface SocialsGalleryProps {
   showTitle?: boolean;
 }
 
+export const DEFAULT_REFERENCE_BENTO_ITEMS: GalleryItemData[] = [
+  // Column 1
+  {
+    id: 'ref-1',
+    title: 'Book of Esther Cover Design',
+    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+    column: 1,
+    size: 'large',
+    tags: 'Esther, Green Roll',
+  },
+  {
+    id: 'ref-2',
+    title: 'Open Menu Book Showcase',
+    imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
+    column: 1,
+    size: 'small',
+    tags: 'Open Book',
+  },
+  {
+    id: 'ref-3',
+    title: 'Green Book Cover Mockup',
+    imageUrl: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?auto=format&fit=crop&w=600&q=80',
+    column: 1,
+    size: 'small',
+    tags: 'Green Cover',
+  },
+
+  // Column 2
+  {
+    id: 'ref-4',
+    title: 'Colorful Artwork Book Cover',
+    imageUrl: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&w=600&q=80',
+    column: 2,
+    size: 'small',
+    tags: 'Artwork',
+  },
+  {
+    id: 'ref-5',
+    title: 'Stacked Manuscript Pages',
+    imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
+    column: 2,
+    size: 'small',
+    tags: 'Manuscript',
+  },
+  {
+    id: 'ref-6',
+    title: 'Book of Psalms Soft Focus',
+    imageUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80',
+    column: 2,
+    size: 'large',
+    tags: 'Psalms, Blur',
+  },
+
+  // Column 3
+  {
+    id: 'ref-7',
+    title: 'Psalms Book with Flower Twig',
+    imageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80',
+    column: 3,
+    size: 'large',
+    tags: 'Psalms, Floral',
+  },
+  {
+    id: 'ref-8',
+    title: 'Esther Mini Green Card',
+    imageUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=600&q=80',
+    column: 3,
+    size: 'small',
+    tags: 'Esther Mini',
+  },
+  {
+    id: 'ref-9',
+    title: 'Abstract Art Cover',
+    imageUrl: 'https://images.unsplash.com/photo-1516962215378-7fa2e137ae93?auto=format&fit=crop&w=600&q=80',
+    column: 3,
+    size: 'small',
+    tags: 'Abstract',
+  },
+];
+
 interface CardProps {
   item: GalleryItemData;
   height: string;
@@ -113,7 +193,7 @@ function Column3Layout({ items, actionSlot }: { items: GalleryItemData[]; action
 }
 
 export function SocialsGallery({ items: propItems, actionSlot, showTitle = true }: SocialsGalleryProps) {
-  const [galleryItems, setGalleryItems] = useState<GalleryItemData[]>(propItems && propItems.length > 0 ? propItems : []);
+  const [galleryItems, setGalleryItems] = useState<GalleryItemData[]>(propItems || []);
 
   useEffect(() => {
     if (propItems && propItems.length > 0) {
@@ -123,19 +203,21 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
 
     async function loadData() {
       const res = await getClientGallery();
-      if (res.success && res.data) {
+      if (res.success && res.data && res.data.length > 0) {
         setGalleryItems(res.data);
       }
     }
     loadData();
   }, [propItems]);
 
-  // Organize all items into 3 columns dynamically
+  const activeItems = galleryItems.length > 0 ? galleryItems : DEFAULT_REFERENCE_BENTO_ITEMS;
+
+  // Organize active items into 3 columns dynamically
   const col1: GalleryItemData[] = [];
   const col2: GalleryItemData[] = [];
   const col3: GalleryItemData[] = [];
 
-  galleryItems.forEach((item, index) => {
+  activeItems.forEach((item, index) => {
     const colNum = item.column && [1, 2, 3].includes(item.column) ? item.column : (index % 3) + 1;
     if (colNum === 1) col1.push(item);
     else if (colNum === 2) col2.push(item);
@@ -153,7 +235,7 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
         </div>
       )}
 
-      {/* Exact Bento Grid UI with Side-by-Side Small Cards */}
+      {/* Exact Match Bento Grid */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
         <Column1Layout items={col1} actionSlot={actionSlot} />
         <Column2Layout items={col2} actionSlot={actionSlot} />
