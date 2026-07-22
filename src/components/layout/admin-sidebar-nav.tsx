@@ -18,7 +18,9 @@ import {
   Zap,
   MessageSquare,
   UserCog,
-  CalendarCheck
+  CalendarCheck,
+  HeartHandshake,
+  Image as ImageIcon
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -41,6 +43,8 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/m-admin/magic-docs', label: 'Magic Docs', icon: FolderOpen, hasChevron: true },
+  { href: '/m-admin/testimonials', label: 'Testimonials', icon: HeartHandshake, hasChevron: true },
+  { href: '/m-admin/client-gallery', label: "Client's Gallery", icon: ImageIcon, hasChevron: true },
   { href: '/m-admin/manage-users', label: 'Manage Users', icon: UserCog, hasChevron: true },
   { href: '/m-admin/settings', label: 'Settings', icon: Settings, hasChevron: true },
 ];
