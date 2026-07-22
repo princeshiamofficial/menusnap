@@ -69,79 +69,12 @@ interface GalleryItem {
   tags: string;
 }
 
-const INITIAL_GALLERY: GalleryItem[] = [
-  {
-    id: '1',
-    title: 'Book of Esther Cover Design',
-    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
-    column: 1,
-    size: 'large',
-    tags: 'Esther, Green Roll, Menu Cover',
-  },
-  {
-    id: '2',
-    title: 'Open Menu Book Showcase',
-    imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80',
-    column: 1,
-    size: 'small',
-    tags: 'Open Book, Table Scene',
-  },
-  {
-    id: '3',
-    title: 'Book Cover Art Mockup',
-    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
-    column: 2,
-    size: 'small',
-    tags: 'Mockup, Artwork',
-  },
-  {
-    id: '4',
-    title: 'Stacked Pages Texture',
-    imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80',
-    column: 2,
-    size: 'small',
-    tags: 'Paper Texture, Pages',
-  },
-  {
-    id: '5',
-    title: 'Psalms Landscape Showcase',
-    imageUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80',
-    column: 2,
-    size: 'large',
-    tags: 'Psalms, Landscape, Full Cover',
-  },
-  {
-    id: '6',
-    title: 'Psalms Book Cover with Floral Element',
-    imageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80',
-    column: 3,
-    size: 'large',
-    tags: 'Psalms, Floral Twig',
-  },
-  {
-    id: '7',
-    title: 'Esther Mini Cover',
-    imageUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=600&q=80',
-    column: 3,
-    size: 'small',
-    tags: 'Esther Mini',
-  },
-  {
-    id: '8',
-    title: 'Creative Cover Showcase',
-    imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
-    column: 3,
-    size: 'small',
-    tags: 'Creative Cover',
-  },
-];
-
 import { getClientGallery, createGalleryItem, updateGalleryItem, deleteGalleryItem, clearClientGallery, GalleryItemData } from '@/app/actions/client-gallery';
 
 export default function ClientGalleryAdminPage() {
   const { adminUser, adminLoading } = useAdminAuth();
   const { toast } = useToast();
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(INITIAL_GALLERY);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'manage' | 'preview'>('manage');
   const [dbLoading, setDbLoading] = useState(true);
