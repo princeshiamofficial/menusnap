@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Heart } from 'lucide-react';
 
@@ -13,8 +13,7 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
   const [message, setMessage] = useState("Hi! I'm Huidou (灰豆) 🐾 Welcome to MagicTab!");
   const [hearts, setHearts] = useState<{ id: number; x: number; y: number }[]>([]);
   const [isBouncing, setIsBouncing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const frameRef = useRef<number>(0);
+  const [frameIndex, setFrameIndex] = useState(0);
 
   const CUTE_MESSAGES = [
     "Need help managing your categories or menu items? 🐾",
@@ -24,67 +23,13 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
     "Meow! Don't forget to save your drafts! 📑"
   ];
 
-  // Canvas sprite frame animation loop
+  // Sprite animation loop (cycles through 6 idle cat frames)
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const interval = setInterval(() => {
+      setFrameIndex((prev) => (prev + 1) % 6);
+    }, 200); // 200ms per frame
 
-    const img = new Image();
-    img.src = '/huidou-spritesheet.webp';
-
-    let animId: number;
-    let lastTime = 0;
-    const fps = 6; // cute slow animation
-    const frameInterval = 1000 / fps;
-
-    // Sprite grid specifications (8 columns x 12 rows)
-    const cols = 8;
-    const rows = 12;
-    // Row 0 has clean idle cat frames
-    const totalIdleFrames = 6;
-
-    const render = (time: number) => {
-      if (time - lastTime >= frameInterval) {
-        lastTime = time;
-        if (img.complete && img.naturalWidth > 0) {
-          const frameW = img.naturalWidth / cols;
-          const frameH = img.naturalHeight / rows;
-          
-          const colIndex = frameRef.current % totalIdleFrames;
-          const rowIndex = 0; // Top row idle animation
-
-          const sx = colIndex * frameW;
-          const sy = rowIndex * frameH;
-
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          // Draw single cropped sprite frame smoothly onto canvas
-          ctx.drawImage(
-            img,
-            sx,
-            sy,
-            frameW,
-            frameH,
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-
-          frameRef.current = (frameRef.current + 1) % totalIdleFrames;
-        }
-      }
-      animId = requestAnimationFrame(render);
-    };
-
-    img.onload = () => {
-      animId = requestAnimationFrame(render);
-    };
-
-    return () => {
-      if (animId) cancelAnimationFrame(animId);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   const handlePetClick = (e: React.MouseEvent) => {
@@ -105,6 +50,9 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
     setMessage(randomMsg);
   };
 
+  // Calculate background position percentage for 8-column spritesheet
+  const bgXPercent = (frameIndex / 7) * 100;
+
   if (!isOpen) {
     return (
       <motion.button
@@ -114,7 +62,7 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
         className="fixed bottom-6 right-6 z-50 p-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full shadow-2xl hover:scale-110 transition-all border border-amber-300/40 group"
         title="Summon Huidou Pet 灰豆"
       >
-        <span className="text-xl">🐱</span>
+        <span className="text-2xl">🐱</span>
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
@@ -175,14 +123,17 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
           </motion.div>
         ))}
 
-        {/* Mascot Avatar Container (Transparent Without BG) */}
-        <div className="relative h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center">
-          {/* HTML Canvas Frame Slicer */}
-          <canvas
-            ref={canvasRef}
-            width={160}
-            height={160}
-            className="w-full h-full object-contain pointer-events-none filter drop-shadow-xl"
+        {/* Mascot Avatar Container (Transparent CSS Animated Sprite) */}
+        <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+          <div
+            className="w-full h-full filter drop-shadow-2xl transition-all"
+            style={{
+              backgroundImage: `url('/huidou-spritesheet.webp')`,
+              backgroundSize: `800% 1200%`,
+              backgroundPosition: `${bgXPercent}% 0%`,
+              backgroundRepeat: 'no-repeat',
+              imageRendering: 'pixelated',
+            }}
           />
         </div>
       </motion.div>
