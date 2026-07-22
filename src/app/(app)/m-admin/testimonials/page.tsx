@@ -302,55 +302,7 @@ export default function TestimonialsAdminPage() {
         />
       </div>
 
-      {/* Admin Quick Manage Testimonial Cards */}
-      <div className="w-full max-w-6xl mx-auto space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-500" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Manage Spotlight Items ({testimonials.length})</h3>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {testimonials.map(item => (
-            <div key={item.id} className="bg-card border border-border/70 rounded-2xl p-4 shadow-sm flex flex-col justify-between gap-3 group hover:border-primary/50 transition-colors">
-              <div className="flex items-start gap-3">
-                <div className="relative h-14 w-14 rounded-xl overflow-hidden shrink-0 border border-border bg-muted">
-                  <Image src={item.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80'} alt={item.name} fill className="object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-sm text-foreground truncate">{item.name}</h4>
-                  <p className="text-xs text-muted-foreground truncate">{item.categoryLabel || item.location}</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500">
-                      <Star className="h-3 w-3 fill-amber-500" /> {item.rating.toFixed(1)}
-                    </span>
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
-                      {item.location}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground/90 line-clamp-2 italic bg-muted/30 p-2 rounded-lg border border-border/30">
-                &quot;{item.review}&quot;
-              </p>
-
-              <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
-                <span className="text-muted-foreground truncate max-w-[140px] font-medium">{item.ownerName}</span>
-                <div className="flex items-center gap-1.5">
-                  <Button variant="outline" size="sm" onClick={() => handleOpenEdit(item)} className="h-7 px-2.5 gap-1 text-xs font-semibold">
-                    <Edit3 className="h-3 w-3" /> Edit
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="h-7 px-2 text-destructive hover:bg-destructive/10">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* Add / Edit Dialog */}
       <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
