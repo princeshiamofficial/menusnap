@@ -54,7 +54,7 @@ export function BottomNavigation() {
           <g filter="url(#filter0_i_14_1436_menusnap)">
             <path
               d="M150 8C150 3.58172 146.418 0 142 0H18C8.05908 0 0 8.05859 0 18V92H375V18C375 8.05859 366.941 0 357 0H232C227.582 0 224 3.58172 224 8V21C224 34.8066 218.307 46 204.5 46H170C156.193 46 150 34.8066 150 21V8Z"
-              className="fill-card dark:fill-[#0A0A0A] stroke-border/40"
+              fill="#0A0A0A"
             />
           </g>
           <defs>
