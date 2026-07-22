@@ -189,39 +189,31 @@ export function ImageUploader({
         }}
       />
 
-      {/* Image Preview Box (If image value exists) */}
+      {/* Image Preview Box (If image value exists - SHOW ONLY IMAGE) */}
       {value ? (
-        <div className="relative group rounded-2xl overflow-hidden border border-border/80 bg-muted/30 p-2 flex items-center gap-3">
-          <div className="relative h-16 w-20 rounded-xl overflow-hidden border border-border bg-background shrink-0">
+        <div className="relative group rounded-2xl overflow-hidden border border-border/80 bg-card p-1 shadow-sm">
+          <div className="relative h-44 w-full rounded-xl overflow-hidden border border-border/40 bg-muted">
             <Image src={value} alt="Uploaded Image Preview" fill className="object-cover" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-foreground truncate">
-              {value.startsWith('data:') ? 'Uploaded Photo' : (value.split('/').pop() || 'Selected Photo')}
-            </p>
-            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
-              <Check className="h-3 w-3" /> Image Loaded
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="h-8 px-2.5 text-xs font-semibold"
-            >
-              Change
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={handleRemove}
-              className="h-8 w-8 text-destructive hover:bg-destructive/10"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-8 px-2.5 text-xs font-bold bg-background/80 backdrop-blur-md shadow-md border-border hover:bg-background"
+              >
+                Change
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                onClick={handleRemove}
+                className="h-8 w-8 shadow-md"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       ) : activeTab === 'upload' ? (
