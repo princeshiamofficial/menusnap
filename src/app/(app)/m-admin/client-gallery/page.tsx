@@ -136,7 +136,7 @@ const INITIAL_GALLERY: GalleryItem[] = [
   },
 ];
 
-import { getClientGallery, createGalleryItem, updateGalleryItem, deleteGalleryItem, GalleryItemData } from '@/app/actions/client-gallery';
+import { getClientGallery, createGalleryItem, updateGalleryItem, deleteGalleryItem, clearClientGallery, GalleryItemData } from '@/app/actions/client-gallery';
 
 export default function ClientGalleryAdminPage() {
   const { adminUser, adminLoading } = useAdminAuth();
@@ -272,6 +272,24 @@ export default function ClientGalleryAdminPage() {
     setDeleteTarget(null);
   };
 
+  const handleClearDb = async () => {
+    if (!confirm("Are you sure you want to clear and reset the gallery database?")) return;
+    const res = await clearClientGallery();
+    if (res.success && res.data) {
+      setGalleryItems(res.data.map(item => ({
+        id: item.id || Date.now().toString(),
+        title: item.title,
+        imageUrl: item.imageUrl,
+        column: item.column || 1,
+        size: item.size || 'large',
+        tags: item.tags || '',
+      })));
+      toast({ title: "DB Cleared & Reset", description: "Gallery DB cleared and reset to clean 9-item Bento grid!" });
+    } else {
+      toast({ title: "Error", description: res.error || "Failed to clear DB", variant: "destructive" });
+    }
+  };
+
   if (adminLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -307,9 +325,14 @@ export default function ClientGalleryAdminPage() {
           <ImageIcon className="h-6 w-6 text-primary" />
           <span className="text-lg font-bold text-foreground tracking-tight">Client&apos;s Gallery Management</span>
         </div>
-        <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md">
-          <Plus className="h-4 w-4" /> Add Gallery Image
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleClearDb} className="gap-1.5 font-bold text-destructive hover:bg-destructive/10">
+            <Trash2 className="h-3.5 w-3.5" /> Clear DB
+          </Button>
+          <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md">
+            <Plus className="h-4 w-4" /> Add Gallery Image
+          </Button>
+        </div>
       </div>
 
       {/* Same-to-Same Bento Gallery View with Hover Edit/Delete Controls */}

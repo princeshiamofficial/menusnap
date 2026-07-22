@@ -111,17 +111,11 @@ async function ensureClientGalleryTable() {
 
     // Seed or sync missing items
     const [rows]: any = await pool.execute('SELECT COUNT(*) as count FROM client_gallery');
-    if (rows && rows[0] && Number(rows[0].count) < 9) {
+    if (rows && rows[0] && Number(rows[0].count) < 12) {
       for (const item of INITIAL_GALLERY) {
         await pool.execute(
-          `INSERT INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
-           VALUES (?, ?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE 
-             title = VALUES(title),
-             image_url = VALUES(image_url),
-             bento_column = VALUES(bento_column),
-             card_size = VALUES(card_size),
-             tags = VALUES(tags)`,
+          `INSERT IGNORE INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
+           VALUES (?, ?, ?, ?, ?, ?)`,
           [item.id || '', item.title, item.imageUrl, item.column || 1, item.size || 'large', item.tags || '']
         );
       }
@@ -215,5 +209,28 @@ export async function deleteGalleryItem(id: string) {
   } catch (error: any) {
     console.error("Database Error deleting gallery item:", error);
     return { success: false, error: error?.message || "Failed to delete gallery item" };
+  }
+}
+
+/**
+ * Clears/Truncates all gallery items in MySQL database and re-seeds with the 9-item exact Bento layout.
+ */
+export async function clearClientGallery() {
+  try {
+    await ensureClientGalleryTable();
+    await pool.execute('TRUNCATE TABLE client_gallery');
+
+    for (const item of INITIAL_GALLERY) {
+      await pool.execute(
+        `INSERT INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [item.id || '', item.title, item.imageUrl, item.column || 1, item.size || 'large', item.tags || '']
+      );
+    }
+
+    return { success: true, data: INITIAL_GALLERY };
+  } catch (error: any) {
+    console.error("Database Error clearing gallery table:", error);
+    return { success: false, error: error?.message || "Failed to clear gallery DB" };
   }
 }
