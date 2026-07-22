@@ -1,32 +1,20 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { checkClientPermission } from '@/lib/admin-permissions';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
 import { 
   Plus, 
-  Search, 
   Trash2, 
   Edit3, 
   Star, 
   HeartHandshake, 
-  Building2, 
-  CheckCircle2, 
   Sparkles,
-  MoreVertical,
-  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -46,12 +34,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 import { TeamCarousel, TeamMember } from "@/components/ui/team-carousel";
 
@@ -147,8 +129,6 @@ export default function TestimonialsAdminPage() {
   const { adminUser, adminLoading } = useAdminAuth();
   const { toast } = useToast();
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>(INITIAL_TESTIMONIALS);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   
   // Modal states
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
@@ -166,23 +146,13 @@ export default function TestimonialsAdminPage() {
     joinedYear: '2024',
     review: '',
     ownerName: '',
-    isSpotlight: false,
+    isSpotlight: true,
     image: '',
   });
 
   const hasViewPermission = useMemo(() => {
     return checkClientPermission(adminUser, 'testimonials', 'view');
   }, [adminUser]);
-
-  const filteredItems = useMemo(() => {
-    return testimonials.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            item.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            item.ownerName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
-      return matchesSearch && matchesCategory;
-    });
-  }, [testimonials, searchTerm, categoryFilter]);
 
   const spotlightCarouselMembers: TeamMember[] = useMemo(() => {
     return testimonials
@@ -261,12 +231,6 @@ export default function TestimonialsAdminPage() {
     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-10 w-64 rounded-xl" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Skeleton className="h-28 rounded-2xl" />
-          <Skeleton className="h-28 rounded-2xl" />
-          <Skeleton className="h-28 rounded-2xl" />
-          <Skeleton className="h-28 rounded-2xl" />
-        </div>
         <Skeleton className="h-96 rounded-2xl" />
       </div>
     );
@@ -286,10 +250,17 @@ export default function TestimonialsAdminPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background min-h-screen">
-
-
-
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8 bg-background min-h-screen">
+      {/* Top Action Bar */}
+      <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 border-b border-border/40 pb-4">
+        <div className="flex items-center gap-2">
+          <HeartHandshake className="h-6 w-6 text-primary" />
+          <span className="text-lg font-bold text-foreground tracking-tight">Testimonials Management</span>
+        </div>
+        <Button onClick={handleOpenAdd} className="gap-2 font-bold shadow-md">
+          <Plus className="h-4 w-4" /> Add Testimonial
+        </Button>
+      </div>
 
       {/* Featured 3D Spotlight Carousel Section */}
       <div className="w-full max-w-6xl mx-auto">
@@ -302,13 +273,59 @@ export default function TestimonialsAdminPage() {
           autoPlay={4000}
           infoTextColor="hsl(var(--foreground))"
           infoPosition="bottom"
-          className="min-h-0 py-4"
+          className="min-h-0 py-2"
         />
       </div>
 
+      {/* Admin Quick Manage Testimonial Cards */}
+      <div className="w-full max-w-6xl mx-auto space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Manage Spotlight Items ({testimonials.length})</h3>
+          </div>
+        </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {testimonials.map(item => (
+            <div key={item.id} className="bg-card border border-border/70 rounded-2xl p-4 shadow-sm flex flex-col justify-between gap-3 group hover:border-primary/50 transition-colors">
+              <div className="flex items-start gap-3">
+                <div className="relative h-14 w-14 rounded-xl overflow-hidden shrink-0 border border-border bg-muted">
+                  <Image src={item.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80'} alt={item.name} fill className="object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-sm text-foreground truncate">{item.name}</h4>
+                  <p className="text-xs text-muted-foreground truncate">{item.categoryLabel || item.location}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-amber-500">
+                      <Star className="h-3 w-3 fill-amber-500" /> {item.rating.toFixed(1)}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
+                      {item.location}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
 
+              <p className="text-xs text-muted-foreground/90 line-clamp-2 italic bg-muted/30 p-2 rounded-lg border border-border/30">
+                &quot;{item.review}&quot;
+              </p>
 
+              <div className="flex items-center justify-between pt-2 border-t border-border/40 text-xs">
+                <span className="text-muted-foreground truncate max-w-[140px] font-medium">{item.ownerName}</span>
+                <div className="flex items-center gap-1.5">
+                  <Button variant="outline" size="sm" onClick={() => handleOpenEdit(item)} className="h-7 px-2.5 gap-1 text-xs font-semibold">
+                    <Edit3 className="h-3 w-3" /> Edit
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="h-7 px-2 text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Add / Edit Dialog */}
       <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
@@ -318,7 +335,7 @@ export default function TestimonialsAdminPage() {
               {editingItem ? 'Edit Testimonial' : 'Add Testimonial'}
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Enter restaurant testimonial details and 3D Carousel photo URL.
+              Configure testimonial text, client details, and 3D Carousel photo URL.
             </DialogDescription>
           </DialogHeader>
 
