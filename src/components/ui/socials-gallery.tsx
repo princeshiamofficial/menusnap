@@ -61,10 +61,13 @@ export function SocialsGallery() {
               transition={{ duration: 0.3 }}
               className="relative h-[160px] sm:h-[180px] rounded-[24px] bg-[#f4f4f2] dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800 p-4 flex items-center justify-center shadow-sm group cursor-pointer overflow-hidden"
             >
-              <div className="relative w-20 h-28 rounded-lg shadow-md overflow-hidden bg-white dark:bg-neutral-800 p-2 flex flex-col items-center justify-between border border-neutral-200 dark:border-neutral-700 group-hover:scale-105 transition-transform duration-500">
-                <span className="text-[9px] font-serif tracking-widest uppercase text-neutral-700 dark:text-neutral-300 font-semibold mt-1">Book Cover</span>
-                <div className="w-full h-14 rounded bg-gradient-to-tr from-amber-400 via-rose-400 to-indigo-500 opacity-90 overflow-hidden relative">
-                  <div className="absolute inset-0 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:8px_8px] opacity-30" />
+              <div className="relative w-20 h-28 rounded-xl shadow-md overflow-hidden bg-white dark:bg-neutral-800 p-2.5 flex flex-col justify-between border border-neutral-200/80 dark:border-neutral-700 group-hover:scale-105 transition-transform duration-500">
+                <div className="flex flex-col text-left pl-0.5 pt-0.5">
+                  <span className="text-[9px] font-mono tracking-[0.2em] font-extrabold uppercase text-neutral-800 dark:text-neutral-200 leading-none mb-0.5">BOOK</span>
+                  <span className="text-[9px] font-mono tracking-[0.2em] font-extrabold uppercase text-neutral-800 dark:text-neutral-200 leading-none">COVER</span>
+                </div>
+                <div className="w-full h-14 rounded-lg bg-gradient-to-tr from-amber-400 via-rose-400 to-indigo-500 overflow-hidden relative shadow-inner">
+                  <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.7)_1.5px,transparent_1.5px)] [background-size:6px_6px]" />
                 </div>
               </div>
             </motion.div>
@@ -154,10 +157,13 @@ export function SocialsGallery() {
               transition={{ duration: 0.3 }}
               className="relative h-[160px] sm:h-[180px] rounded-[24px] bg-[#f4f4f2] dark:bg-neutral-900 border border-neutral-200/60 dark:border-neutral-800 p-4 flex items-center justify-center shadow-sm group cursor-pointer overflow-hidden"
             >
-              <div className="relative w-20 h-28 rounded-lg shadow-md overflow-hidden bg-[#1e3a2b] p-2 flex flex-col items-center justify-between border border-emerald-800 group-hover:scale-105 transition-transform duration-500">
-                <span className="text-[9px] font-serif tracking-widest uppercase text-emerald-200 font-semibold mt-1">Book Cover</span>
-                <div className="w-full h-14 rounded bg-gradient-to-br from-red-600 via-rose-700 to-amber-600 opacity-90 overflow-hidden relative">
-                  <div className="absolute inset-0 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:6px_6px] opacity-20" />
+              <div className="relative w-20 h-28 rounded-xl shadow-md overflow-hidden bg-[#1a382b] p-2.5 flex flex-col justify-between border border-emerald-700/60 group-hover:scale-105 transition-transform duration-500">
+                <div className="flex flex-col text-left pl-0.5 pt-0.5">
+                  <span className="text-[9px] font-mono tracking-[0.2em] font-extrabold uppercase text-emerald-100 leading-none mb-0.5">BOOK</span>
+                  <span className="text-[9px] font-mono tracking-[0.2em] font-extrabold uppercase text-emerald-100 leading-none">COVER</span>
+                </div>
+                <div className="w-full h-14 rounded-lg bg-gradient-to-br from-red-600 via-rose-700 to-amber-600 overflow-hidden relative shadow-inner">
+                  <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.5)_1.5px,transparent_1.5px)] [background-size:5px_5px]" />
                 </div>
               </div>
             </motion.div>
