@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useCallback, useRef, memo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef, memo, use } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { checkClientPermission } from '@/lib/admin-permissions';
@@ -616,14 +616,15 @@ function OrderPreviewDialog({ isOpen, onOpenChange, initialOrder, allCategories,
 
 type SaveStatus = "unsaved" | "saving" | "saved";
 
-export default function OrderDetailsClient() {
-    const params = useParams();
+export default function OrderDetailsClient({ params }: { params?: Promise<{ id: string }> }) {
+    const routeParams = useParams();
+    const unwrappedParams = params ? use(params) : null;
+    const orderIdFromUrl = unwrappedParams?.id || (routeParams?.id as string);
     const router = useRouter();
     const { toast } = useToast();
     const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
     const canEdit = checkClientPermission(adminUser, 'manage-orders', 'edit');
     const canDelete = checkClientPermission(adminUser, 'manage-orders', 'delete');
-    const orderIdFromUrl = params.id as string;
 
     const [order, setOrder] = useState<ApiOrder | null>(null);
     const [allCategories, setAllCategories] = useState<any[]>([]);

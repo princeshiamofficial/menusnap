@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { getOrderByIdFromMySql } from "@/app/actions/orders";
 import EditorClient from "./editor-client";
 import { decodeHtmlEntities } from "@/lib/utils";
@@ -24,5 +25,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default function PublicEditorPage() {
-  return <EditorClient />;
+  return (
+    <Suspense fallback={
+      <div className="h-screen w-full bg-[#f8f9fa] flex items-center justify-center animate-pulse text-gray-500 font-medium font-sans text-xl">
+        Loading Editor...
+      </div>
+    }>
+      <EditorClient />
+    </Suspense>
+  );
 }

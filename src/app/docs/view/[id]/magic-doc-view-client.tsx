@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import dynamic from "next/dynamic";
 import { getMagicDocByIdFromMySql } from "@/app/actions/magic-docs";
 import Image from "next/image";
@@ -22,8 +22,10 @@ interface MagicDocument {
     createdAt?: string;
 }
 
-export default function MagicDocViewClient() {
-    const { id } = useParams() as { id: string };
+export default function MagicDocViewClient({ params }: { params?: Promise<{ id: string }> }) {
+    const routeParams = useParams() as { id: string };
+    const unwrappedParams = params ? use(params) : null;
+    const id = unwrappedParams?.id || routeParams.id;
     const router = useRouter();
     const [doc, setDoc] = useState<MagicDocument | null>(null);
     const [loading, setLoading] = useState(true);

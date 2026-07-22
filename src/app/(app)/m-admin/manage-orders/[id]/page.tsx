@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { getOrderByIdFromMySql } from "@/app/actions/orders";
 import OrderDetailsClient from "./order-details-client";
 
@@ -22,6 +23,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function OrderPage() {
-  return <OrderDetailsClient />;
+export default function OrderPage({ params }: Props) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-medium animate-pulse">
+        Loading Order Details...
+      </div>
+    }>
+      <OrderDetailsClient params={params} />
+    </Suspense>
+  );
 }

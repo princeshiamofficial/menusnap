@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { getMagicDocByIdFromMySql } from "@/app/actions/magic-docs";
 import MagicDocViewClient from "./magic-doc-view-client";
 
@@ -21,6 +22,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function MagicDocViewPage() {
-  return <MagicDocViewClient />;
+export default function MagicDocViewPage({ params }: Props) {
+  return (
+    <Suspense fallback={
+      <div className="h-screen w-full bg-[#f8f9fa] flex items-center justify-center animate-pulse text-gray-500 font-medium font-sans text-xl">
+        Loading Magic Doc...
+      </div>
+    }>
+      <MagicDocViewClient params={params} />
+    </Suspense>
+  );
 }

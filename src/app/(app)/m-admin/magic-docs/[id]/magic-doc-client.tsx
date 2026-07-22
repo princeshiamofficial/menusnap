@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import dynamic from "next/dynamic";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { AdminLoginForm } from "@/components/auth/admin-login-form";
@@ -20,8 +20,10 @@ interface MagicDocument {
     lastUpdated: string;
 }
 
-export default function MagicDocClient() {
-    const { id } = useParams() as { id: string };
+export default function MagicDocClient({ params }: { params?: Promise<{ id: string }> }) {
+    const routeParams = useParams() as { id: string };
+    const unwrappedParams = params ? use(params) : null;
+    const id = unwrappedParams?.id || routeParams.id;
     const router = useRouter();
     const { isAdminLoggedIn, adminLoading } = useAdminAuth();
     const [doc, setDoc] = useState<MagicDocument | null>(null);
