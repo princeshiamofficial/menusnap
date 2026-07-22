@@ -58,7 +58,6 @@ import * as z from "zod";
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { getCategoriesFromMySql, getMenuItemsFromMySql } from '@/app/actions/orders';
 import { ClientGate } from '@/components/auth/ClientGate';
-import { HuidouPet } from '@/components/ui/huidou-pet';
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
@@ -1425,8 +1424,6 @@ export default function MagicTabPage() {
         selectedMenuType={selectedMenuType}
         clientUser={clientUser}
       />
-
-      <HuidouPet />
     </>
     </ClientGate>
   );
