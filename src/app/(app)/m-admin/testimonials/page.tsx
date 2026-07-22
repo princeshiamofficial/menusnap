@@ -307,28 +307,18 @@ export default function TestimonialsAdminPage() {
 
 
       {/* Featured 3D Spotlight Carousel Section */}
-      <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm overflow-hidden">
-        <div className="mb-2 pb-3 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
-            <span className="text-sm font-bold text-foreground uppercase tracking-wider">Spotlight 3D Carousel Showcase</span>
-          </div>
-          <Badge variant="outline" className="text-primary border-primary">Live Front-End Sync</Badge>
-        </div>
-        
-        <div className="w-full max-w-5xl mx-auto py-2">
-          <TeamCarousel 
-            members={spotlightCarouselMembers} 
-            title="HAPPY CLIENTS"
-            titleColor="rgba(245, 158, 11, 0.8)"
-            cardWidth={300}
-            cardHeight={400}
-            autoPlay={4000}
-            infoTextColor="hsl(var(--foreground))"
-            infoPosition="bottom"
-            className="min-h-0 py-4"
-          />
-        </div>
+      <div className="w-full max-w-6xl mx-auto">
+        <TeamCarousel 
+          members={spotlightCarouselMembers} 
+          title="HAPPY CLIENTS"
+          titleColor="rgba(245, 158, 11, 0.8)"
+          cardWidth={300}
+          cardHeight={400}
+          autoPlay={4000}
+          infoTextColor="hsl(var(--foreground))"
+          infoPosition="bottom"
+          className="min-h-0 py-4"
+        />
       </div>
 
 
