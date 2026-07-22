@@ -28,8 +28,8 @@ export async function getMagicDocsFromMySql(options?: GetMagicDocsOptions) {
     const queryParams: any[] = [];
 
     if (search) {
-      whereClause += ' AND (title LIKE ? OR id LIKE ?)';
-      queryParams.push(`%${search}%`, `%${search}%`);
+      whereClause += ' AND (title LIKE ? OR id LIKE ? OR created_by LIKE ?)';
+      queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     let orderBy = 'ORDER BY last_updated DESC';
@@ -54,7 +54,8 @@ export async function getMagicDocsFromMySql(options?: GetMagicDocsOptions) {
        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at,
        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
        DATE_FORMAT(deleted_at, '%Y-%m-%d %H:%i:%s') as deleted_at,
-       DATE_FORMAT(deleted_at, '%Y-%m-%d %H:%i:%s') as deletedAt
+       DATE_FORMAT(deleted_at, '%Y-%m-%d %H:%i:%s') as deletedAt,
+       COALESCE(created_by, 'Admin') as createdBy
        FROM magic_docs ${whereClause} ${orderBy} LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
     const [rows]: any = await pool.execute(sql, queryParams);
@@ -66,7 +67,8 @@ export async function getMagicDocsFromMySql(options?: GetMagicDocsOptions) {
        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at,
        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
        DATE_FORMAT(deleted_at, '%Y-%m-%d %H:%i:%s') as deleted_at,
-       DATE_FORMAT(deleted_at, '%Y-%m-%d %H:%i:%s') as deletedAt
+       DATE_FORMAT(deleted_at, '%Y-%m-%d %H:%i:%s') as deletedAt,
+       COALESCE(created_by, 'Admin') as createdBy
        FROM magic_docs WHERE is_deleted = 1 ORDER BY deleted_at DESC`
     );
 
@@ -95,7 +97,8 @@ export async function getMagicDocByIdFromMySql(id: string) {
       `SELECT *, DATE_FORMAT(last_updated, '%Y-%m-%d %H:%i:%s') as last_updated,
        DATE_FORMAT(last_updated, '%Y-%m-%d %H:%i:%s') as lastUpdated,
        DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at,
-       DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt
+       DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as createdAt,
+       COALESCE(created_by, 'Admin') as createdBy
        FROM magic_docs WHERE id = ? AND is_deleted = 0`,
       [id]
     );
@@ -111,17 +114,18 @@ export async function getMagicDocByIdFromMySql(id: string) {
 export async function upsertMagicDocToMySql(doc: any) {
   try {
     await initMagicDocsTable();
-    const { id, title, content, isDeleted, deletedAt } = doc;
+    const { id, title, content, createdBy, created_by, isDeleted, deletedAt } = doc;
+    const author = createdBy || created_by || 'Admin';
     const now = formatUtcDateTime();
     const finalDeletedAt = deletedAt ? formatUtcDateTime(deletedAt) : null;
 
     await pool.execute(
-      `INSERT INTO magic_docs (id, title, content, last_updated, created_at, is_deleted, deleted_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO magic_docs (id, title, content, created_by, last_updated, created_at, is_deleted, deleted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
-       title = VALUES(title), content = VALUES(content), last_updated = VALUES(last_updated),
+       title = VALUES(title), content = VALUES(content), created_by = VALUES(created_by), last_updated = VALUES(last_updated),
        is_deleted = VALUES(is_deleted), deleted_at = VALUES(deleted_at)`,
-      [id, title, content, now, now, isDeleted ? 1 : 0, finalDeletedAt]
+      [id, title, content, author, now, now, isDeleted ? 1 : 0, finalDeletedAt]
     );
 
     revalidatePath('/m-admin/magic-docs');
@@ -164,12 +168,19 @@ export async function initMagicDocsTable() {
         id VARCHAR(255) PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         content LONGTEXT,
+        created_by VARCHAR(255) DEFAULT 'Admin',
         last_updated DATETIME,
         created_at DATETIME,
         is_deleted TINYINT(1) DEFAULT 0,
         deleted_at DATETIME
       )
     `);
+
+    const [cols]: any = await pool.execute("SHOW COLUMNS FROM magic_docs LIKE 'created_by'");
+    if (cols.length === 0) {
+      await pool.execute("ALTER TABLE magic_docs ADD COLUMN created_by VARCHAR(255) DEFAULT 'Admin' AFTER content");
+    }
+
     return { success: true };
   } catch (error: any) {
     console.error('MySQL Init Table Error:', error);

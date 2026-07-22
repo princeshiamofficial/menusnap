@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { checkClientPermission } from '@/lib/admin-permissions';
 import { AdminLoginForm } from '@/components/auth/admin-login-form';
-import { Plus, FileText, Trash2, Search, ArrowUpDown, MoreVertical, Eye, Edit3, RefreshCw, AlertTriangle, CalendarDays, Undo2, History } from "lucide-react";
+import { Plus, FileText, Trash2, Search, ArrowUpDown, MoreVertical, Eye, Edit3, RefreshCw, AlertTriangle, CalendarDays, Undo2, History, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from "next/navigation";
@@ -56,6 +56,7 @@ interface MagicDocument {
     content: string;
     lastUpdated: string;
     createdAt?: string;
+    createdBy?: string;
     isDeleted?: boolean;
     deletedAt?: string;
 }
@@ -118,6 +119,7 @@ export default function MagicDocsPage(): ReactNode {
                     content: d.content || '',
                     lastUpdated: d.lastUpdated || d.last_updated || '',
                     createdAt: d.createdAt || d.created_at || '',
+                    createdBy: d.createdBy || d.created_by || 'Admin',
                     isDeleted: !!d.is_deleted,
                     deletedAt: d.deletedAt || d.deleted_at || null
                 }));
@@ -131,6 +133,7 @@ export default function MagicDocsPage(): ReactNode {
                         content: d.content || '',
                         lastUpdated: d.lastUpdated || d.last_updated || '',
                         createdAt: d.createdAt || d.created_at || '',
+                        createdBy: d.createdBy || d.created_by || 'Admin',
                         isDeleted: true,
                         deletedAt: d.deletedAt || d.deleted_at || null
                     }));
@@ -159,10 +162,12 @@ export default function MagicDocsPage(): ReactNode {
 
     const handleCreateNew = async () => {
         const id = crypto.randomUUID();
+        const authorName = adminUser?.name || adminUser?.email || "Admin";
         const newDoc = {
             id,
             title: "Untitled Document",
             content: "",
+            createdBy: authorName
         };
 
         const result = await upsertMagicDocToMySql(newDoc);
@@ -243,6 +248,7 @@ export default function MagicDocsPage(): ReactNode {
         >
             <TableCell><Skeleton className="h-5 w-8" /></TableCell>
             <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
             <TableCell><Skeleton className="h-5 w-24" /></TableCell>
             <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
@@ -328,6 +334,7 @@ export default function MagicDocsPage(): ReactNode {
                                 <TableRow>
                                     <TableHead className="w-[50px] text-center">SL</TableHead>
                                     <TableHead>Document Title</TableHead>
+                                    <TableHead className="w-[140px]">Created By</TableHead>
                                     <TableHead className="w-[180px]">Created</TableHead>
                                     <TableHead className="w-[180px]">Updated</TableHead>
                                     <TableHead className="w-[120px]">Docs ID</TableHead>
@@ -367,6 +374,7 @@ export default function MagicDocsPage(): ReactNode {
                                     <TableRow>
                                         <TableHead className="w-[50px] text-center">SL</TableHead>
                                         <TableHead>Document Title</TableHead>
+                                        <TableHead className="w-[140px]">Created By</TableHead>
                                         <TableHead className="w-[180px]">Created</TableHead>
                                         <TableHead className="w-[180px]">Updated</TableHead>
                                         <TableHead className="w-[120px]">Docs ID</TableHead>
@@ -398,6 +406,12 @@ export default function MagicDocsPage(): ReactNode {
                                                     >
                                                         {doc.title}
                                                     </span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-xs font-medium text-foreground/80">
+                                                    <div className="flex items-center gap-1.5" title="Created By">
+                                                        <User className="h-3.5 w-3.5 text-muted-foreground/70" />
+                                                        <span>{doc.createdBy || (doc as any).created_by || 'Admin'}</span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="text-xs text-muted-foreground">
