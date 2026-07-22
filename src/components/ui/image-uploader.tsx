@@ -196,8 +196,12 @@ export function ImageUploader({
             <Image src={value} alt="Uploaded Image Preview" fill className="object-cover" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-foreground truncate">{value.split('/').pop() || 'Selected Image'}</p>
-            <p className="text-[10px] text-muted-foreground truncate">{value}</p>
+            <p className="text-xs font-bold text-foreground truncate">
+              {value.startsWith('data:') ? 'Uploaded Photo' : (value.split('/').pop() || 'Selected Photo')}
+            </p>
+            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+              <Check className="h-3 w-3" /> Image Loaded
+            </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <Button
