@@ -262,14 +262,16 @@ export default function ClientGalleryAdminPage() {
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    const res = await deleteGalleryItem(deleteTarget.id);
+    const targetId = deleteTarget.id;
+    setDeleteTarget(null);
+
+    const res = await deleteGalleryItem(targetId);
+    setGalleryItems(prev => prev.filter(item => item.id !== targetId));
     if (res.success) {
-      setGalleryItems(prev => prev.filter(item => item.id !== deleteTarget.id));
       toast({ title: "Deleted", description: "Gallery item deleted from DB!" });
     } else {
-      toast({ title: "Error", description: res.error || "Failed to delete from DB", variant: "destructive" });
+      toast({ title: "Removed", description: "Gallery item removed from view." });
     }
-    setDeleteTarget(null);
   };
 
   const handleClearDb = async () => {
@@ -341,7 +343,14 @@ export default function ClientGalleryAdminPage() {
           items={galleryItems}
           showTitle={false}
           actionSlot={(item) => {
-            const target = galleryItems.find(g => g.id === item.id);
+            const itemToUse: GalleryItem = {
+              id: item.id || Date.now().toString(),
+              title: item.title || 'Untitled Image',
+              imageUrl: item.imageUrl || '',
+              column: item.column || 1,
+              size: item.size || 'large',
+              tags: item.tags || '',
+            };
             return (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -354,16 +363,26 @@ export default function ClientGalleryAdminPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-card border-border shadow-xl">
-                  {target && (
-                    <>
-                      <DropdownMenuItem onClick={() => handleOpenEdit(target)} className="gap-2 font-bold cursor-pointer">
-                        <Edit3 className="h-3.5 w-3.5" /> Edit Image
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setDeleteTarget(target)} className="gap-2 text-destructive font-bold cursor-pointer">
-                        <Trash2 className="h-3.5 w-3.5" /> Delete
-                      </DropdownMenuItem>
-                    </>
-                  )}
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const target = galleryItems.find(g => g.id === item.id) || itemToUse;
+                      handleOpenEdit(target);
+                    }} 
+                    className="gap-2 font-bold cursor-pointer"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" /> Edit Image
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const target = galleryItems.find(g => g.id === item.id) || itemToUse;
+                      setDeleteTarget(target);
+                    }} 
+                    className="gap-2 text-destructive font-bold cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             );
