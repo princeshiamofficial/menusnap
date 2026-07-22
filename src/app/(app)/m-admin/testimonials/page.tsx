@@ -12,12 +12,19 @@ import {
   Star, 
   HeartHandshake, 
   Sparkles,
+  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -335,35 +342,32 @@ export default function TestimonialsAdminPage() {
           actionSlot={(member) => {
             const item = testimonials.find(t => t.id === member.id);
             return (
-              <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={handleOpenAdd}
-                  className="h-8 px-3 gap-1.5 font-bold text-xs shadow-md"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Add New
-                </Button>
-                {item && (
-                  <>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => handleOpenEdit(item)}
-                      className="h-8 px-3 gap-1.5 font-bold text-xs bg-background/80 backdrop-blur-md shadow-md border-border hover:bg-accent"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" /> Edit
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="destructive" 
-                      onClick={() => setDeleteTarget(item)}
-                      className="h-8 px-3 gap-1.5 font-bold text-xs shadow-md"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> Delete
-                    </Button>
-                  </>
-                )}
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-8 w-8 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 shadow-md"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-card border-border shadow-xl">
+                  <DropdownMenuItem onClick={handleOpenAdd} className="gap-2 font-bold cursor-pointer">
+                    <Plus className="h-3.5 w-3.5 text-primary" /> Add New Testimonial
+                  </DropdownMenuItem>
+                  {item && (
+                    <>
+                      <DropdownMenuItem onClick={() => handleOpenEdit(item)} className="gap-2 font-bold cursor-pointer">
+                        <Edit3 className="h-3.5 w-3.5" /> Edit Testimonial
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeleteTarget(item)} className="gap-2 text-destructive font-bold cursor-pointer">
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             );
           }}
         />

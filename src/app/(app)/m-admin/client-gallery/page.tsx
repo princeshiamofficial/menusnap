@@ -317,32 +317,34 @@ export default function ClientGalleryAdminPage() {
         <SocialsGallery 
           items={galleryItems}
           showTitle={false}
-          actionSlot={(item) => (
-            <div className="flex items-center gap-1.5">
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={() => {
-                  const target = galleryItems.find(g => g.id === item.id);
-                  if (target) handleOpenEdit(target);
-                }}
-                className="h-7 px-2.5 gap-1 font-bold text-xs bg-background/90 backdrop-blur-md border-border text-foreground hover:bg-accent"
-              >
-                <Edit3 className="h-3 w-3" /> Edit
-              </Button>
-              <Button 
-                size="sm" 
-                variant="destructive" 
-                onClick={() => {
-                  const target = galleryItems.find(g => g.id === item.id);
-                  if (target) setDeleteTarget(target);
-                }}
-                className="h-7 px-2 gap-1 font-bold text-xs shadow-md"
-              >
-                <Trash2 className="h-3 w-3" /> Delete
-              </Button>
-            </div>
-          )}
+          actionSlot={(item) => {
+            const target = galleryItems.find(g => g.id === item.id);
+            return (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-8 w-8 rounded-full bg-black/60 backdrop-blur-md text-white border border-white/20 hover:bg-black/80 shadow-md"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-card border-border shadow-xl">
+                  {target && (
+                    <>
+                      <DropdownMenuItem onClick={() => handleOpenEdit(target)} className="gap-2 font-bold cursor-pointer">
+                        <Edit3 className="h-3.5 w-3.5" /> Edit Image
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDeleteTarget(target)} className="gap-2 text-destructive font-bold cursor-pointer">
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            );
+          }}
         />
       </div>
 
