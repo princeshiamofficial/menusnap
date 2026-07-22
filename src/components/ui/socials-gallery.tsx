@@ -43,6 +43,75 @@ function BentoCard({ item, height, actionSlot }: CardProps) {
   );
 }
 
+function Column1Layout({ items, actionSlot }: { items: GalleryItemData[]; actionSlot?: (item: GalleryItemData) => React.ReactNode }) {
+  if (items.length === 0) return null;
+  const largeCard = items.find(i => i.size === 'large') || items[0];
+  const smallCards = items.filter(i => i.id !== largeCard?.id).slice(0, 2);
+  const extraCards = items.filter(i => i.id !== largeCard?.id && !smallCards.some(s => s.id === i.id));
+
+  return (
+    <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
+      {largeCard && <BentoCard item={largeCard} height="h-[340px] sm:h-[380px]" actionSlot={actionSlot} />}
+      {smallCards.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 sm:gap-5">
+          {smallCards.map((item, idx) => (
+            <BentoCard key={item.id || idx} item={item} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />
+          ))}
+        </div>
+      )}
+      {extraCards.map((item, idx) => (
+        <BentoCard key={item.id || idx} item={item} height={item.size === 'small' ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} actionSlot={actionSlot} />
+      ))}
+    </div>
+  );
+}
+
+function Column2Layout({ items, actionSlot }: { items: GalleryItemData[]; actionSlot?: (item: GalleryItemData) => React.ReactNode }) {
+  if (items.length === 0) return null;
+  const largeCard = items.find(i => i.size === 'large') || items[2] || items[0];
+  const smallCards = items.filter(i => i.id !== largeCard?.id).slice(0, 2);
+  const extraCards = items.filter(i => i.id !== largeCard?.id && !smallCards.some(s => s.id === i.id));
+
+  return (
+    <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
+      {smallCards.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 sm:gap-5">
+          {smallCards.map((item, idx) => (
+            <BentoCard key={item.id || idx} item={item} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />
+          ))}
+        </div>
+      )}
+      {largeCard && <BentoCard item={largeCard} height="h-[340px] sm:h-[380px]" actionSlot={actionSlot} />}
+      {extraCards.map((item, idx) => (
+        <BentoCard key={item.id || idx} item={item} height={item.size === 'small' ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} actionSlot={actionSlot} />
+      ))}
+    </div>
+  );
+}
+
+function Column3Layout({ items, actionSlot }: { items: GalleryItemData[]; actionSlot?: (item: GalleryItemData) => React.ReactNode }) {
+  if (items.length === 0) return null;
+  const largeCard = items.find(i => i.size === 'large') || items[0];
+  const smallCards = items.filter(i => i.id !== largeCard?.id).slice(0, 2);
+  const extraCards = items.filter(i => i.id !== largeCard?.id && !smallCards.some(s => s.id === i.id));
+
+  return (
+    <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
+      {largeCard && <BentoCard item={largeCard} height="h-[340px] sm:h-[380px]" actionSlot={actionSlot} />}
+      {smallCards.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 sm:gap-5">
+          {smallCards.map((item, idx) => (
+            <BentoCard key={item.id || idx} item={item} height="h-[160px] sm:h-[180px]" actionSlot={actionSlot} />
+          ))}
+        </div>
+      )}
+      {extraCards.map((item, idx) => (
+        <BentoCard key={item.id || idx} item={item} height={item.size === 'small' ? "h-[160px] sm:h-[180px]" : "h-[340px] sm:h-[380px]"} actionSlot={actionSlot} />
+      ))}
+    </div>
+  );
+}
+
 export function SocialsGallery({ items: propItems, actionSlot, showTitle = true }: SocialsGalleryProps) {
   const [galleryItems, setGalleryItems] = useState<GalleryItemData[]>(propItems && propItems.length > 0 ? propItems : []);
 
@@ -84,45 +153,11 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
         </div>
       )}
 
-      {/* Dynamic Responsive Bento Grid */}
+      {/* Exact Bento Grid UI with Side-by-Side Small Cards */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
-        
-        {/* ================= COLUMN 1 (LEFT) ================= */}
-        <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
-          {col1.map((item, idx) => (
-            <BentoCard 
-              key={item.id || `col1-${idx}`} 
-              item={item} 
-              height={item.size === 'small' ? "h-[180px] sm:h-[200px]" : "h-[340px] sm:h-[380px]"} 
-              actionSlot={actionSlot} 
-            />
-          ))}
-        </div>
-
-        {/* ================= COLUMN 2 (CENTER) ================= */}
-        <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
-          {col2.map((item, idx) => (
-            <BentoCard 
-              key={item.id || `col2-${idx}`} 
-              item={item} 
-              height={item.size === 'small' ? "h-[180px] sm:h-[200px]" : "h-[340px] sm:h-[380px]"} 
-              actionSlot={actionSlot} 
-            />
-          ))}
-        </div>
-
-        {/* ================= COLUMN 3 (RIGHT) ================= */}
-        <div className="md:col-span-4 flex flex-col gap-4 sm:gap-5">
-          {col3.map((item, idx) => (
-            <BentoCard 
-              key={item.id || `col3-${idx}`} 
-              item={item} 
-              height={item.size === 'small' ? "h-[180px] sm:h-[200px]" : "h-[340px] sm:h-[380px]"} 
-              actionSlot={actionSlot} 
-            />
-          ))}
-        </div>
-
+        <Column1Layout items={col1} actionSlot={actionSlot} />
+        <Column2Layout items={col2} actionSlot={actionSlot} />
+        <Column3Layout items={col3} actionSlot={actionSlot} />
       </div>
     </section>
   );
