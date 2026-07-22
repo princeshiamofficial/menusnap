@@ -111,13 +111,13 @@ export function HuidouPet({ className = "" }: HuidouPetProps) {
           </motion.div>
         ))}
 
-        {/* Mascot Avatar Container (Clean Animated WebP without grid leaks) */}
-        <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+        {/* Mascot Avatar Container (Full-body 192x384 pre-cropped animated WebP) */}
+        <div className="relative w-24 h-40 sm:w-28 sm:h-48 flex items-center justify-center">
           <Image
             src="/huidou-idle.webp"
             alt="Huidou 灰豆"
-            width={112}
-            height={112}
+            width={192}
+            height={384}
             className="w-full h-full object-contain filter drop-shadow-2xl transition-transform group-hover:scale-110 pointer-events-none"
             priority
             unoptimized
