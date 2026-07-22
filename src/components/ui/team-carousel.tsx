@@ -50,6 +50,8 @@ export interface TeamCarouselProps {
   sideCardScale?: number;
   /** Opacity for side cards */
   sideCardOpacity?: number;
+  /** Optional action slot for custom admin buttons (e.g. Edit/Delete) */
+  actionSlot?: (member: TeamMember, index: number) => React.ReactNode;
   /** Apply grayscale filter to side cards */
   grayscaleEffect?: boolean;
   /** Custom className for container */
@@ -91,6 +93,7 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
   visibleCards = 2,
   sideCardScale = 0.9,
   sideCardOpacity = 0.8,
+  actionSlot,
   grayscaleEffect = true,
   className,
   cardClassName,
@@ -405,6 +408,16 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
                     className="w-full h-full object-cover"
                   />
 
+                  {/* Active Card Admin Action Overlay */}
+                  {isCurrent && actionSlot && (
+                    <div 
+                      className="absolute top-2.5 right-2.5 z-30 flex items-center gap-1.5 pointer-events-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {actionSlot(member, index)}
+                    </div>
+                  )}
+
                   {/* Overlay Info */}
                   {infoPosition === 'overlay' && (
                     <div
@@ -455,6 +468,13 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
             <p className="text-xs sm:text-sm mt-3 max-w-lg mx-auto opacity-75 leading-relaxed px-4">
               {members[currentIndex].bio}
             </p>
+          )}
+
+          {/* Action Slot under member info */}
+          {actionSlot && (
+            <div className="mt-4 flex items-center justify-center gap-2 z-20 relative pointer-events-auto">
+              {actionSlot(members[currentIndex], currentIndex)}
+            </div>
           )}
         </motion.div>
       )}
