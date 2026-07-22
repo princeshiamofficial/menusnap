@@ -15,8 +15,7 @@ import {
   CheckCircle2, 
   Sparkles,
   MoreVertical,
-  Eye,
-  Layers
+  Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +54,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from '@/hooks/use-toast';
 import { TeamCarousel, TeamMember } from "@/components/ui/team-carousel";
+import { SocialsGallery } from "@/components/ui/socials-gallery";
 
 interface TestimonialItem {
   id: string;
@@ -76,71 +76,71 @@ const INITIAL_TESTIMONIALS: TestimonialItem[] = [
     id: '1',
     name: "Sultan's Dine",
     category: 'restaurant',
-    categoryLabel: 'Traditional Biryani',
-    location: 'Kacchi & Biryani • Dhaka',
+    categoryLabel: 'Traditional Kacchi & Biryani',
+    location: 'Dhaka',
     rating: 5.0,
     ordersCount: '50K+',
     joinedYear: '2023',
     review: 'Serving over 50,000+ happy diners monthly with instant digital table menus and zero order bottlenecks.',
-    ownerName: 'Sultan Ahmed (Founder)',
+    ownerName: 'Tanvir Hossain (Operations Head)',
     isSpotlight: true,
-    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
   },
   {
     id: '2',
     name: 'North End Coffee',
     category: 'cafe',
     categoryLabel: 'Specialty Roastery & Cafe',
-    location: 'Gulshan, Dhaka',
+    location: 'Gulshan',
     rating: 4.9,
     ordersCount: '35K+',
     joinedYear: '2023',
     review: 'Dynamic seasonal menu updates published in real-time across 12 outlets in Bangladesh.',
     ownerName: 'Rick Hubbard (CEO)',
     isSpotlight: true,
-    image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
   },
   {
     id: '3',
-    name: 'Tasty Treat',
+    name: 'Chillox Gourmet Burgers',
+    category: 'fast-food',
+    categoryLabel: 'Fast Casual Dining',
+    location: 'Banani',
+    rating: 4.9,
+    ordersCount: '80K+',
+    joinedYear: '2023',
+    review: 'Processing over 80,000+ digital orders with lightning-fast QR code table scans and customizable toppings.',
+    ownerName: 'Jubair Ahmed (Co-founder)',
+    isSpotlight: true,
+    image: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: '4',
+    name: 'Secret Recipe',
     category: 'bakery',
-    categoryLabel: 'Bakery & Pastry',
-    location: 'Dhanmondi, Dhaka',
+    categoryLabel: 'Fine Cakes & Western Cuisine',
+    location: 'Uttara',
     rating: 4.8,
     ordersCount: '42K+',
     joinedYear: '2024',
-    review: 'Fast setup and extremely responsive interface. Managing orders via WhatsApp and digital table menus has doubled our peak-hour turnover.',
+    review: 'Streamlined WhatsApp order dispatch and table reservation sync for seamless peak-hour turnover.',
     ownerName: 'Sharmin Akter (Branch Manager)',
     isSpotlight: true,
     image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80',
   },
   {
-    id: '4',
-    name: 'Chillox',
-    category: 'fast-food',
-    categoryLabel: 'Fast Food Burgers',
-    location: 'Banani, Dhaka',
-    rating: 4.9,
-    ordersCount: '80K+',
-    joinedYear: '2023',
-    review: 'MenuSnap is lighting fast for our burger-hungry youth crowd. The order customization options and instantaneous loading are top-notch.',
-    ownerName: 'Jubair Ahmed (Co-founder)',
-    isSpotlight: true,
-    image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80',
-  },
-  {
     id: '5',
     name: 'The Garden Bistro',
     category: 'fine-dining',
-    categoryLabel: 'Fine Dining & Grill',
-    location: 'Sylhet Sadar, Sylhet',
+    categoryLabel: 'Continental Fine Dining',
+    location: 'Sylhet',
     rating: 5.0,
     ordersCount: '20K+',
     joinedYear: '2024',
-    review: 'The dark-mode glassmorphism aesthetics perfectly align with our high-end restaurant ambiance.',
+    review: 'Delighting guests with glassmorphism digital menus that perfectly complement the luxury dining vibe.',
     ownerName: 'Dr. Faisal Rahman (Owner)',
     isSpotlight: true,
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
   },
 ];
 
@@ -203,15 +203,15 @@ export default function TestimonialsAdminPage() {
     setFormData({
       name: '',
       category: 'restaurant',
-      categoryLabel: 'Restaurant & Cafe',
-      location: 'Dhaka',
+      categoryLabel: 'Specialty Roastery & Cafe',
+      location: 'Gulshan',
       rating: 5.0,
       ordersCount: '10K+',
       joinedYear: '2024',
       review: '',
       ownerName: '',
       isSpotlight: true,
-      image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
     });
     setIsAddEditOpen(true);
   };
@@ -244,7 +244,7 @@ export default function TestimonialsAdminPage() {
         review: formData.review || '',
         ownerName: formData.ownerName || '',
         isSpotlight: Boolean(formData.isSpotlight),
-        image: formData.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+        image: formData.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
       };
       setTestimonials(prev => [newItem, ...prev]);
       toast({ title: "Success", description: "New testimonial added successfully!" });
@@ -297,7 +297,7 @@ export default function TestimonialsAdminPage() {
             Testimonials Management
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage Happy Client reviews, spotlight 3D carousel items, and restaurant ratings.
+            Manage Happy Client reviews, 3D spotlight carousel items, and restaurant ratings.
           </p>
         </div>
 
@@ -357,16 +357,17 @@ export default function TestimonialsAdminPage() {
       </div>
 
       {activeTab === 'carousel' ? (
-        /* Live 3D Carousel Preview Section */
-        <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm overflow-hidden">
-          <div className="mb-4 pb-3 border-b border-border flex items-center justify-between">
+        /* Live 3D Carousel & Gallery Preview Section */
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm overflow-hidden space-y-8">
+          <div className="pb-3 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-amber-500" />
-              <span className="text-sm font-bold text-foreground uppercase tracking-wider">Live 3D Spotlight Carousel Preview</span>
+              <span className="text-sm font-bold text-foreground uppercase tracking-wider">Live Page Preview (3D Carousel &amp; Gallery)</span>
             </div>
-            <Badge variant="outline" className="text-primary border-primary">Live Interactive Component</Badge>
+            <Badge variant="outline" className="text-primary border-primary">100% Identical to Public Page</Badge>
           </div>
-          <div className="w-full max-w-5xl mx-auto py-4">
+          
+          <div className="w-full max-w-5xl mx-auto py-2">
             <TeamCarousel 
               members={spotlightCarouselMembers} 
               title="HAPPY CLIENTS"
@@ -378,6 +379,10 @@ export default function TestimonialsAdminPage() {
               infoPosition="bottom"
               className="min-h-0 py-4"
             />
+          </div>
+
+          <div className="w-full pt-6 border-t border-border/50">
+            <SocialsGallery />
           </div>
         </div>
       ) : (
@@ -415,7 +420,7 @@ export default function TestimonialsAdminPage() {
               <TableHeader className="bg-muted/40">
                 <TableRow>
                   <TableHead className="font-bold">Client Name</TableHead>
-                  <TableHead className="font-bold">Category</TableHead>
+                  <TableHead className="font-bold">Category &amp; Subtitle</TableHead>
                   <TableHead className="font-bold">Location</TableHead>
                   <TableHead className="font-bold">Rating</TableHead>
                   <TableHead className="font-bold">Owner / Representative</TableHead>
@@ -435,9 +440,12 @@ export default function TestimonialsAdminPage() {
                     <TableRow key={item.id} className="hover:bg-muted/30">
                       <TableCell className="font-bold text-foreground">{item.name}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="capitalize text-[11px]">
-                          {item.category.replace('-', ' ')}
-                        </Badge>
+                        <div className="flex flex-col">
+                          <Badge variant="outline" className="capitalize text-[11px] w-max mb-1">
+                            {item.category.replace('-', ' ')}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{item.categoryLabel}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{item.location}</TableCell>
                       <TableCell>
@@ -500,17 +508,27 @@ export default function TestimonialsAdminPage() {
               <Input 
                 value={formData.name || ''} 
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g. Sultan's Dine"
+                placeholder="e.g. North End Coffee"
                 className="mt-1"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Carousel Photo URL</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Category / Subtitle Label</label>
+              <Input 
+                value={formData.categoryLabel || ''} 
+                onChange={(e) => setFormData(prev => ({ ...prev, categoryLabel: e.target.value }))}
+                placeholder="e.g. Specialty Roastery & Cafe"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-muted-foreground uppercase">3D Carousel Photo URL</label>
               <Input 
                 value={formData.image || ''} 
                 onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                placeholder="https://images.unsplash.com/..."
+                placeholder="https://images.unsplash.com/photo-1501339847302..."
                 className="mt-1"
               />
             </div>
@@ -545,11 +563,11 @@ export default function TestimonialsAdminPage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Location / Subtitle</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Location / Branch</label>
               <Input 
                 value={formData.location || ''} 
                 onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="e.g. Banani, Dhaka"
+                placeholder="e.g. Gulshan"
                 className="mt-1"
               />
             </div>
@@ -559,13 +577,13 @@ export default function TestimonialsAdminPage() {
               <Input 
                 value={formData.ownerName || ''} 
                 onChange={(e) => setFormData(prev => ({ ...prev, ownerName: e.target.value }))}
-                placeholder="e.g. Sharmin Akter (Branch Manager)"
+                placeholder="e.g. Rick Hubbard (CEO)"
                 className="mt-1"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Review Content</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Review / Bio Content</label>
               <textarea 
                 value={formData.review || ''} 
                 onChange={(e) => setFormData(prev => ({ ...prev, review: e.target.value }))}
