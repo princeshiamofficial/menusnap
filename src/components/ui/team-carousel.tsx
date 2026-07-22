@@ -408,15 +408,7 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
                     className="w-full h-full object-cover"
                   />
 
-                  {/* Active Card Admin Action Overlay */}
-                  {isCurrent && actionSlot && (
-                    <div 
-                      className="absolute top-2.5 right-2.5 z-30 flex items-center gap-1.5 pointer-events-auto"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {actionSlot(member, index)}
-                    </div>
-                  )}
+
 
                   {/* Overlay Info */}
                   {infoPosition === 'overlay' && (
