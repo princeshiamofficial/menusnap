@@ -127,11 +127,15 @@ export const TeamCarousel: React.FC<TeamCarouselProps> = ({
     (newDirection: number) => {
       if (totalMembers === 0) return;
       setDirection(newDirection);
-      const nextIndex = (currentIndex + newDirection + totalMembers) % totalMembers;
-      setCurrentIndex(nextIndex);
-      onMemberChange?.(members[nextIndex], nextIndex);
+      setCurrentIndex((prevIndex) => {
+        const nextIndex = (prevIndex + newDirection + totalMembers) % totalMembers;
+        if (members[nextIndex]) {
+          onMemberChange?.(members[nextIndex], nextIndex);
+        }
+        return nextIndex;
+      });
     },
-    [currentIndex, totalMembers, members, onMemberChange]
+    [totalMembers, members, onMemberChange]
   );
 
   const wrapIndex = (index: number) => {
