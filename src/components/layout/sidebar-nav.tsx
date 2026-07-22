@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   UploadCloud,
   ShoppingBag,
+  HeartHandshake,
 } from 'lucide-react';
 import {
   SidebarMenu,
@@ -32,6 +33,7 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
   { href: '/templates/', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/draft/', label: 'Draft', icon: FileEdit, hasChevron: true },
   { href: '/order-history/', label: 'Order History', icon: HistoryIcon, hasChevron: true },
+  { href: '/happy-clients/', label: 'Happy Clients', icon: HeartHandshake, hasChevron: true },
   { href: 'https://store.colorhutbd.xyz', label: 'Store', icon: ShoppingBag },
 ];
 
