@@ -106,7 +106,7 @@ export function BottomNavigation() {
           })}
 
           {/* Center Notch Spacer */}
-          <div className="w-[24px] h-full" />
+          <div className="w-[80px] h-full" />
 
           {/* Right Nav Items */}
           {navItemsRight.map((item) => {

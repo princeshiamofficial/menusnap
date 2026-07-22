@@ -239,7 +239,7 @@
 .rd-navbar {
   position: relative;
   display: grid !important;
-  grid-template-columns: 1fr 1fr 24px 1fr 1fr !important;
+  grid-template-columns: 1fr 1fr 80px 1fr 1fr !important;
   align-items: center;
   justify-items: center;
   width: 100%;
