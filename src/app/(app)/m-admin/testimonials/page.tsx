@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -317,95 +318,97 @@ export default function TestimonialsAdminPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Client Name</label>
-              <Input 
-                value={formData.name || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g. North End Coffee"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Category / Subtitle Label</label>
-              <Input 
-                value={formData.categoryLabel || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, categoryLabel: e.target.value }))}
-                placeholder="e.g. Specialty Roastery & Cafe"
-                className="mt-1"
-              />
-            </div>
-
-            {/* Image Uploader with File Select, Drag & Drop, and Clipboard Paste */}
-            <ImageUploader 
-              value={formData.image || ''} 
-              onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
-              label="3D Carousel Photo"
-              subDir="spotlights"
-            />
-
-            <div className="grid grid-cols-2 gap-3">
+          <ScrollArea className="max-h-[65vh] pr-3 my-2">
+            <div className="space-y-4 py-1">
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase">Category</label>
-                <select
-                  value={formData.category || 'restaurant'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
-                  className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
-                >
-                  <option value="restaurant">Restaurant</option>
-                  <option value="cafe">Cafe</option>
-                  <option value="bakery">Bakery</option>
-                  <option value="fast-food">Fast Food</option>
-                  <option value="fine-dining">Fine Dining</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase">Rating (1-5)</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase">Client Name</label>
                 <Input 
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="5"
-                  value={formData.rating || 5.0} 
-                  onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
+                  value={formData.name || ''} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g. North End Coffee"
                   className="mt-1"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Location / Branch</label>
-              <Input 
-                value={formData.location || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="e.g. Gulshan"
-                className="mt-1"
-              />
-            </div>
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase">Category / Subtitle Label</label>
+                <Input 
+                  value={formData.categoryLabel || ''} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, categoryLabel: e.target.value }))}
+                  placeholder="e.g. Specialty Roastery & Cafe"
+                  className="mt-1"
+                />
+              </div>
 
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Owner / Representative Name</label>
-              <Input 
-                value={formData.ownerName || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, ownerName: e.target.value }))}
-                placeholder="e.g. Rick Hubbard (CEO)"
-                className="mt-1"
+              {/* Image Uploader with File Select, Drag & Drop, and Clipboard Paste */}
+              <ImageUploader 
+                value={formData.image || ''} 
+                onChange={(url) => setFormData(prev => ({ ...prev, image: url }))}
+                label="3D Carousel Photo"
+                subDir="spotlights"
               />
-            </div>
 
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Review / Bio Content</label>
-              <textarea 
-                value={formData.review || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, review: e.target.value }))}
-                placeholder="Enter client testimonial text..."
-                rows={3}
-                className="w-full mt-1 p-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase">Category</label>
+                  <select
+                    value={formData.category || 'restaurant'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
+                    className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
+                  >
+                    <option value="restaurant">Restaurant</option>
+                    <option value="cafe">Cafe</option>
+                    <option value="bakery">Bakery</option>
+                    <option value="fast-food">Fast Food</option>
+                    <option value="fine-dining">Fine Dining</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase">Rating (1-5)</label>
+                  <Input 
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    max="5"
+                    value={formData.rating || 5.0} 
+                    onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) }))}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase">Location / Branch</label>
+                <Input 
+                  value={formData.location || ''} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  placeholder="e.g. Gulshan"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase">Owner / Representative Name</label>
+                <Input 
+                  value={formData.ownerName || ''} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, ownerName: e.target.value }))}
+                  placeholder="e.g. Rick Hubbard (CEO)"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase">Review / Bio Content</label>
+                <textarea 
+                  value={formData.review || ''} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, review: e.target.value }))}
+                  placeholder="Enter client testimonial text..."
+                  rows={3}
+                  className="w-full mt-1 p-3 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
             </div>
-          </div>
+          </ScrollArea>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setIsAddEditOpen(false)}>Cancel</Button>

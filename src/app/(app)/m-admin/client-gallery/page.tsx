@@ -58,6 +58,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { SocialsGallery } from '@/components/ui/socials-gallery';
 import { ImageUploader } from "@/components/ui/image-uploader";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface GalleryItem {
   id: string;
@@ -401,61 +402,63 @@ export default function ClientGalleryAdminPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Image Title / Caption</label>
-              <Input 
-                value={formData.title || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g. Sultan's Dine Menu Mockup"
-                className="mt-1"
-              />
-            </div>
-
-            {/* Image Uploader with File Select, Drag & Drop, and Clipboard Paste */}
-            <ImageUploader 
-              value={formData.imageUrl || ''} 
-              onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
-              label="Gallery Image Photo"
-              subDir="spotlights"
-            />
-
-            <div className="grid grid-cols-2 gap-3">
+          <ScrollArea className="max-h-[65vh] pr-3 my-2">
+            <div className="space-y-4 py-1">
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase">Bento Column</label>
-                <select
-                  value={formData.column || 1}
-                  onChange={(e) => setFormData(prev => ({ ...prev, column: Number(e.target.value) }))}
-                  className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
-                >
-                  <option value={1}>Column 1 (Left)</option>
-                  <option value={2}>Column 2 (Center)</option>
-                  <option value={3}>Column 3 (Right)</option>
-                </select>
+                <label className="text-xs font-bold text-muted-foreground uppercase">Image Title / Caption</label>
+                <Input 
+                  value={formData.title || ''} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="e.g. Sultan's Dine Menu Mockup"
+                  className="mt-1"
+                />
               </div>
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase">Card Size</label>
-                <select
-                  value={formData.size || 'large'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, size: e.target.value as any }))}
-                  className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
-                >
-                  <option value="large">Large (380px)</option>
-                  <option value="small">Small (180px)</option>
-                </select>
-              </div>
-            </div>
 
-            <div>
-              <label className="text-xs font-bold text-muted-foreground uppercase">Tags / Keywords</label>
-              <Input 
-                value={formData.tags || ''} 
-                onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-                placeholder="e.g. Menu Cover, Esthetique, Green"
-                className="mt-1"
+              {/* Image Uploader with File Select, Drag & Drop, and Clipboard Paste */}
+              <ImageUploader 
+                value={formData.imageUrl || ''} 
+                onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
+                label="Gallery Image Photo"
+                subDir="spotlights"
               />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase">Bento Column</label>
+                  <select
+                    value={formData.column || 1}
+                    onChange={(e) => setFormData(prev => ({ ...prev, column: Number(e.target.value) }))}
+                    className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
+                  >
+                    <option value={1}>Column 1 (Left)</option>
+                    <option value={2}>Column 2 (Center)</option>
+                    <option value={3}>Column 3 (Right)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase">Card Size</label>
+                  <select
+                    value={formData.size || 'large'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, size: e.target.value as any }))}
+                    className="w-full h-10 mt-1 px-3 rounded-md border border-input bg-background text-sm font-medium"
+                  >
+                    <option value="large">Large (380px)</option>
+                    <option value="small">Small (180px)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-muted-foreground uppercase">Tags / Keywords</label>
+                <Input 
+                  value={formData.tags || ''} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+                  placeholder="e.g. Menu Cover, Esthetique, Green"
+                  className="mt-1"
+                />
+              </div>
             </div>
-          </div>
+          </ScrollArea>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setIsAddEditOpen(false)}>Cancel</Button>
