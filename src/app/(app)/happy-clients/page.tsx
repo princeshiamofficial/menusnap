@@ -191,16 +191,6 @@ export default function HappyClientsPage() {
 
       {/* Featured Spotlight Team Carousel */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-amber-400" />
-              <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Featured Partners Spotlight</h2>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground">Swipe or click to explore our flagship restaurant partners</p>
-          </div>
-        </div>
-
         <div className="bg-card/40 border border-border rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
           <TeamCarousel 
             members={SPOTLIGHT_CLIENTS} 
