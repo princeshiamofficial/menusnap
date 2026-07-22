@@ -1,113 +1,164 @@
-
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ListOrdered, Layers, FileEdit, History } from 'lucide-react';
+import { LayoutGrid, ListOrdered, Layers, FileEdit, History, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 
-const navItems = [
+const navItemsLeft = [
   { href: '/dashboard/', label: 'Dashboard', icon: LayoutGrid },
   { href: '/magictab/', label: 'MagicTab', icon: ListOrdered },
-  { href: '/templates/', label: 'Templates', icon: Layers },
+];
+
+const centerNavItem = { href: '/templates/', label: 'Templates', icon: Layers };
+
+const navItemsRight = [
   { href: '/draft/', label: 'Drafts', icon: FileEdit },
   { href: '/order-history/', label: 'History', icon: History },
 ];
 
+const allNavItems = [...navItemsLeft, centerNavItem, ...navItemsRight];
+
 export function BottomNavigation() {
   const pathname = usePathname();
-  const navItemsRef = useRef<Map<string, HTMLAnchorElement | null>>(new Map());
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
 
   const activeItem = useMemo(() => {
     let activeItemHref: string | undefined;
-    const sortedNavItems = [...navItems].sort((a, b) => b.href.length - a.href.length);
-    for (const item of sortedNavItems) {
+    const sorted = [...allNavItems].sort((a, b) => b.href.length - a.href.length);
+    for (const item of sorted) {
       if (pathname.startsWith(item.href)) {
         activeItemHref = item.href;
         break;
       }
     }
-    return navItems.find(item => item.href === activeItemHref) || navItems[0];
+    return allNavItems.find((item) => item.href === activeItemHref) || allNavItems[0];
   }, [pathname]);
 
-  useEffect(() => {
-    const activeElement = navItemsRef.current.get(activeItem.href);
-    if (activeElement) {
-      const timeoutId = setTimeout(() => {
-        setIndicatorStyle({
-          left: activeElement.offsetLeft,
-          width: activeElement.offsetWidth,
-          opacity: 1,
-        });
-      }, 10);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [activeItem]);
+  const isCenterActive = activeItem.href === centerNavItem.href;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card md:hidden">
-      <div className="relative mx-auto flex h-16 max-w-md items-stretch justify-around px-2 border-t border-border">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            ref={(el) => { navItemsRef.current.set(item.href, el); }}
-            className="relative z-10 flex flex-col items-center justify-center p-2 text-xs font-medium w-1/5 h-full"
-            aria-current={activeItem.href === item.href ? "page" : undefined}
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden pointer-events-none">
+      <div className="relative w-full max-w-lg mx-auto h-20 flex items-end justify-between px-3 pb-2 pointer-events-auto">
+        {/* Curved Notch SVG Background */}
+        <div className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_-8px_20px_rgba(0,0,0,0.15)]">
+          <svg
+            viewBox="0 0 375 92"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full text-card/95 backdrop-blur-xl transition-colors duration-300"
+            preserveAspectRatio="none"
           >
+            <path
+              d="M150 8C150 3.58172 146.418 0 142 0H18C8.05908 0 0 8.05859 0 18V92H375V18C375 8.05859 366.941 0 357 0H232C227.582 0 224 3.58172 224 8V21C224 34.8066 218.307 46 204.5 46H170C156.193 46 150 34.8066 150 21V8Z"
+              fill="currentColor"
+            />
+          </svg>
+        </div>
+
+        {/* Left Nav Items */}
+        <div className="relative z-10 flex items-center justify-around flex-1 h-14 pr-3">
+          {navItemsLeft.map((item) => {
+            const isActive = activeItem.href === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center w-full h-full transition-colors relative group",
+                  isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  className="flex flex-col items-center"
+                >
+                  <Icon className={cn("h-5 w-5 transition-transform duration-200", isActive && "scale-110")} />
+                  <span className="text-[10px] font-medium leading-tight mt-0.5 tracking-tight">
+                    {item.label}
+                  </span>
+                </motion.div>
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTabDot"
+                    className="absolute -top-1 w-1.5 h-1.5 bg-primary rounded-full shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Center Action Button (Elevated in Notch Curve) */}
+        <div className="relative z-20 flex flex-col items-center -mt-8 mx-1">
+          <Link href={centerNavItem.href} className="relative group">
+            {/* Animated Conic Gradient Glow Ring */}
+            <div className={cn(
+              "absolute -inset-1 rounded-full blur-sm opacity-75 group-hover:opacity-100 transition-opacity animate-spin-slow bg-gradient-to-r",
+              isCenterActive 
+                ? "from-amber-400 via-primary to-orange-500 opacity-100 blur-md" 
+                : "from-primary/50 via-amber-500/40 to-primary/50"
+            )} />
+
+            {/* Main Center Button */}
             <motion.div
-              className="flex flex-col items-center text-muted-foreground"
-              animate={{ opacity: activeItem.href === item.href ? 0 : 1, y: activeItem.href === item.href ? 10 : 0 }}
-              transition={{ duration: 0.2 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className={cn(
+                "relative w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl border border-white/20 transition-all duration-300",
+                isCenterActive
+                  ? "bg-gradient-to-br from-primary via-amber-500 to-amber-600 text-primary-foreground shadow-primary/40 scale-105"
+                  : "bg-gradient-to-br from-card to-muted text-foreground hover:text-primary hover:border-primary/50"
+              )}
             >
-              <item.icon className="h-5 w-5 flex-shrink-0" />
-              <span className="block text-center truncate text-[10px] leading-tight sm:text-xs pt-0.5">
-                {item.label}
-              </span>
+              <centerNavItem.icon className={cn("w-6 h-6 transition-transform", isCenterActive && "rotate-6")} />
             </motion.div>
           </Link>
-        ))}
+          <span className={cn(
+            "text-[10px] font-bold mt-1 tracking-tight transition-colors",
+            isCenterActive ? "text-primary" : "text-muted-foreground"
+          )}>
+            {centerNavItem.label}
+          </span>
+        </div>
 
-        <AnimatePresence>
-          {indicatorStyle.opacity === 1 && (
-            <motion.div
-              className="absolute h-16 flex flex-col items-center"
-              style={{
-                left: indicatorStyle.left,
-                width: indicatorStyle.width,
-                top: '-1px', // Position the indicator to perfectly cover the top border
-              }}
-              transition={{
-                type: "spring",
-                stiffness: 350,
-                damping: 30,
-              }}
-            >
-              {/* This div creates the cutout illusion. It MUST match the page background. */}
-              <div className="absolute top-0 w-20 h-4 bg-background" />
-
-              <div className="w-14 h-14 -mt-5 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg relative z-10">
-                <AnimatePresence mode="wait">
+        {/* Right Nav Items */}
+        <div className="relative z-10 flex items-center justify-around flex-1 h-14 pl-3">
+          {navItemsRight.map((item) => {
+            const isActive = activeItem.href === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center w-full h-full transition-colors relative group",
+                  isActive ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <motion.div
+                  whileTap={{ scale: 0.9 }}
+                  className="flex flex-col items-center"
+                >
+                  <Icon className={cn("h-5 w-5 transition-transform duration-200", isActive && "scale-110")} />
+                  <span className="text-[10px] font-medium leading-tight mt-0.5 tracking-tight">
+                    {item.label}
+                  </span>
+                </motion.div>
+                {isActive && (
                   <motion.div
-                    key={`indicator-icon-${activeItem.href}`}
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1, transition: { delay: 0.1 } }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                  >
-                    <activeItem.icon className="h-6 w-6" />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              <span className="text-xs text-primary font-bold mt-1 relative z-10">
-                {activeItem.label}
-              </span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                    layoutId="activeTabDot"
+                    className="absolute -top-1 w-1.5 h-1.5 bg-primary rounded-full shadow-sm"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
