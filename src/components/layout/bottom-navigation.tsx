@@ -8,15 +8,15 @@ import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 
 const navItemsLeft = [
-  { href: '/templates/', label: 'Templates', icon: Layers },
+  { href: '/dashboard/', label: 'Dashboard', icon: LayoutGrid },
   { href: '/magictab/', label: 'MagicTab', icon: ListOrdered },
 ];
 
-const centerNavItem = { href: '/dashboard/', label: 'Dashboard', icon: LayoutGrid };
+const centerNavItem = { href: '/happy-clients/', label: 'More', icon: Layers };
 
 const navItemsRight = [
-  { href: '/draft/', label: 'Drafts', icon: FileEdit },
-  { href: '/order-history/', label: 'History', icon: History },
+  { href: '/templates/', label: 'Templates', icon: Layers },
+  { href: '/draft/', label: 'Draft', icon: FileEdit },
 ];
 
 const allNavItems = [...navItemsLeft, centerNavItem, ...navItemsRight];
