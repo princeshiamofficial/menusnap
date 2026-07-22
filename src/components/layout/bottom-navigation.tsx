@@ -2,17 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, ListOrdered, FileEdit, History, MoreHorizontal, Layers } from 'lucide-react';
+import { LayoutGrid, ListOrdered, Layers, FileEdit, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
 
 const navItemsLeft = [
-  { href: '/dashboard/', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/templates/', label: 'Templates', icon: Layers },
   { href: '/magictab/', label: 'MagicTab', icon: ListOrdered },
 ];
 
-const centerNavItem = { href: '/templates/', label: 'More', icon: MoreHorizontal };
+const centerNavItem = { href: '/dashboard/', label: 'Dashboard', icon: LayoutGrid };
 
 const navItemsRight = [
   { href: '/draft/', label: 'Drafts', icon: FileEdit },
@@ -127,7 +127,7 @@ export function BottomNavigation() {
           })}
         </nav>
 
-        {/* Center Action Button (Direct Link without Sheet) */}
+        {/* Center Action Button (Absolute Centered in Notch) */}
         <Link href={centerNavItem.href} className="rd-navbar_btn group">
           <div className="rd-navbar_btn_bg" />
           <div className={cn("rd-navbar_btn_content", isCenterActive && "is-active")}>
