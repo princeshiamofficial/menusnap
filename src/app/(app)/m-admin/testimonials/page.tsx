@@ -304,39 +304,7 @@ export default function TestimonialsAdminPage() {
         </Button>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold uppercase">
-            <span>Total Clients</span>
-            <Building2 className="h-4 w-4 text-primary" />
-          </div>
-          <p className="text-2xl font-black text-foreground mt-2">{testimonials.length}</p>
-        </div>
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold uppercase">
-            <span>Average Rating</span>
-            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-          </div>
-          <p className="text-2xl font-black text-foreground mt-2">4.9 / 5.0</p>
-        </div>
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold uppercase">
-            <span>Spotlight Carousel</span>
-            <Sparkles className="h-4 w-4 text-amber-400" />
-          </div>
-          <p className="text-2xl font-black text-foreground mt-2">
-            {testimonials.filter(t => t.isSpotlight).length} Cards
-          </p>
-        </div>
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-semibold uppercase">
-            <span>Sync Status</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-          </div>
-          <p className="text-2xl font-black text-emerald-500 mt-2">Active</p>
-        </div>
-      </div>
+
 
       {/* Featured 3D Spotlight Carousel Section */}
       <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm overflow-hidden">
