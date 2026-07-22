@@ -127,15 +127,44 @@ const INITIAL_TESTIMONIALS: TestimonialItem[] = [
   },
 ];
 
+import { getTestimonials, createTestimonial, updateTestimonial, deleteTestimonial, TestimonialData } from '@/app/actions/testimonials';
+
 export default function TestimonialsAdminPage() {
   const { adminUser, adminLoading } = useAdminAuth();
   const { toast } = useToast();
   const [testimonials, setTestimonials] = useState<TestimonialItem[]>(INITIAL_TESTIMONIALS);
+  const [dbLoading, setDbLoading] = useState(true);
   
   // Modal states
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TestimonialItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TestimonialItem | null>(null);
+
+  // Load testimonials from DB on mount
+  React.useEffect(() => {
+    async function loadData() {
+      setDbLoading(true);
+      const res = await getTestimonials();
+      if (res.success && res.data) {
+        setTestimonials(res.data.map(item => ({
+          id: item.id || Date.now().toString(),
+          name: item.name,
+          category: 'restaurant',
+          categoryLabel: item.categoryLabel || '',
+          location: item.location || '',
+          rating: 5.0,
+          ordersCount: '10K+',
+          joinedYear: '2024',
+          review: item.review,
+          ownerName: item.ownerName,
+          isSpotlight: item.isSpotlight ?? true,
+          image: item.image,
+        })));
+      }
+      setDbLoading(false);
+    }
+    loadData();
+  }, []);
 
   // Form states
   const [formData, setFormData] = useState<Partial<TestimonialItem>>({
@@ -162,7 +191,7 @@ export default function TestimonialsAdminPage() {
       .map((t) => ({
         id: t.id,
         name: t.name,
-        role: `${t.categoryLabel || t.category.toUpperCase()} • ${t.location}`,
+        role: t.categoryLabel || t.location || 'HAPPY CLIENT',
         bio: t.review,
         image: t.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
       }));
@@ -192,40 +221,76 @@ export default function TestimonialsAdminPage() {
     setIsAddEditOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.review || !formData.ownerName) {
       toast({ title: "Validation Error", description: "Please fill in all required fields (Name, Review, Owner Name)", variant: "destructive" });
       return;
     }
 
     if (editingItem) {
-      setTestimonials(prev => prev.map(item => item.id === editingItem.id ? { ...item, ...formData } as TestimonialItem : item));
-      toast({ title: "Success", description: "Testimonial updated successfully!" });
+      const updatePayload: Partial<TestimonialData> = {
+        name: formData.name,
+        categoryLabel: formData.categoryLabel,
+        location: formData.location,
+        ownerName: formData.ownerName,
+        review: formData.review,
+        image: formData.image,
+        isSpotlight: formData.isSpotlight,
+      };
+      
+      const res = await updateTestimonial(editingItem.id, updatePayload);
+      if (res.success) {
+        setTestimonials(prev => prev.map(item => item.id === editingItem.id ? { ...item, ...formData } as TestimonialItem : item));
+        toast({ title: "Success", description: "Testimonial updated and saved to DB!" });
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to update in DB", variant: "destructive" });
+      }
     } else {
-      const newItem: TestimonialItem = {
+      const newPayload: TestimonialData = {
         id: Date.now().toString(),
         name: formData.name || '',
-        category: (formData.category as any) || 'restaurant',
-        categoryLabel: formData.categoryLabel || formData.category || 'Restaurant',
+        categoryLabel: formData.categoryLabel || '',
         location: formData.location || 'Dhaka',
-        rating: Number(formData.rating) || 5.0,
-        ordersCount: formData.ordersCount || '10K+',
-        joinedYear: formData.joinedYear || '2024',
-        review: formData.review || '',
         ownerName: formData.ownerName || '',
-        isSpotlight: Boolean(formData.isSpotlight),
+        review: formData.review || '',
         image: formData.image || 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
+        isSpotlight: Boolean(formData.isSpotlight),
       };
-      setTestimonials(prev => [newItem, ...prev]);
-      toast({ title: "Success", description: "New testimonial added successfully!" });
+      
+      const res = await createTestimonial(newPayload);
+      if (res.success && res.data) {
+        const newItem: TestimonialItem = {
+          id: res.data.id || Date.now().toString(),
+          name: res.data.name,
+          category: 'restaurant',
+          categoryLabel: res.data.categoryLabel || '',
+          location: res.data.location || '',
+          rating: 5.0,
+          ordersCount: '10K+',
+          joinedYear: '2024',
+          review: res.data.review,
+          ownerName: res.data.ownerName,
+          isSpotlight: res.data.isSpotlight ?? true,
+          image: res.data.image,
+        };
+        setTestimonials(prev => [newItem, ...prev]);
+        toast({ title: "Success", description: "New testimonial saved to DB!" });
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to save to DB", variant: "destructive" });
+      }
     }
     setIsAddEditOpen(false);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    setTestimonials(prev => prev.filter(item => item.id !== deleteTarget.id));
-    toast({ title: "Deleted", description: "Testimonial deleted successfully!" });
+    const res = await deleteTestimonial(deleteTarget.id);
+    if (res.success) {
+      setTestimonials(prev => prev.filter(item => item.id !== deleteTarget.id));
+      toast({ title: "Deleted", description: "Testimonial deleted from DB!" });
+    } else {
+      toast({ title: "Error", description: res.error || "Failed to delete from DB", variant: "destructive" });
+    }
     setDeleteTarget(null);
   };
 

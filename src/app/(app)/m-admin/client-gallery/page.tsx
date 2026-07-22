@@ -136,12 +136,35 @@ const INITIAL_GALLERY: GalleryItem[] = [
   },
 ];
 
+import { getClientGallery, createGalleryItem, updateGalleryItem, deleteGalleryItem, GalleryItemData } from '@/app/actions/client-gallery';
+
 export default function ClientGalleryAdminPage() {
   const { adminUser, adminLoading } = useAdminAuth();
   const { toast } = useToast();
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(INITIAL_GALLERY);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'manage' | 'preview'>('manage');
+  const [dbLoading, setDbLoading] = useState(true);
+
+  // Load from database on mount
+  React.useEffect(() => {
+    async function loadGalleryData() {
+      setDbLoading(true);
+      const res = await getClientGallery();
+      if (res.success && res.data) {
+        setGalleryItems(res.data.map(item => ({
+          id: item.id || Date.now().toString(),
+          title: item.title,
+          imageUrl: item.imageUrl,
+          column: item.column || 1,
+          size: item.size || 'large',
+          tags: item.tags || '',
+        })));
+      }
+      setDbLoading(false);
+    }
+    loadGalleryData();
+  }, []);
 
   // Modal states
   const [isAddEditOpen, setIsAddEditOpen] = useState(false);
@@ -186,17 +209,30 @@ export default function ClientGalleryAdminPage() {
     setIsAddEditOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title || !formData.imageUrl) {
       toast({ title: "Validation Error", description: "Please fill in Title and Image URL", variant: "destructive" });
       return;
     }
 
     if (editingItem) {
-      setGalleryItems(prev => prev.map(item => item.id === editingItem.id ? { ...item, ...formData } as GalleryItem : item));
-      toast({ title: "Success", description: "Gallery item updated!" });
+      const updatePayload: Partial<GalleryItemData> = {
+        title: formData.title,
+        imageUrl: formData.imageUrl,
+        column: formData.column,
+        size: formData.size,
+        tags: formData.tags,
+      };
+
+      const res = await updateGalleryItem(editingItem.id, updatePayload);
+      if (res.success) {
+        setGalleryItems(prev => prev.map(item => item.id === editingItem.id ? { ...item, ...formData } as GalleryItem : item));
+        toast({ title: "Success", description: "Gallery item updated and saved to DB!" });
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to update in DB", variant: "destructive" });
+      }
     } else {
-      const newItem: GalleryItem = {
+      const newPayload: GalleryItemData = {
         id: Date.now().toString(),
         title: formData.title || '',
         imageUrl: formData.imageUrl || '',
@@ -204,16 +240,35 @@ export default function ClientGalleryAdminPage() {
         size: (formData.size as any) || 'large',
         tags: formData.tags || '',
       };
-      setGalleryItems(prev => [newItem, ...prev]);
-      toast({ title: "Success", description: "New gallery item added!" });
+
+      const res = await createGalleryItem(newPayload);
+      if (res.success && res.data) {
+        const newItem: GalleryItem = {
+          id: res.data.id || Date.now().toString(),
+          title: res.data.title,
+          imageUrl: res.data.imageUrl,
+          column: res.data.column || 1,
+          size: res.data.size || 'large',
+          tags: res.data.tags || '',
+        };
+        setGalleryItems(prev => [newItem, ...prev]);
+        toast({ title: "Success", description: "New gallery item saved to DB!" });
+      } else {
+        toast({ title: "Error", description: res.error || "Failed to save to DB", variant: "destructive" });
+      }
     }
     setIsAddEditOpen(false);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    setGalleryItems(prev => prev.filter(item => item.id !== deleteTarget.id));
-    toast({ title: "Deleted", description: "Gallery item deleted!" });
+    const res = await deleteGalleryItem(deleteTarget.id);
+    if (res.success) {
+      setGalleryItems(prev => prev.filter(item => item.id !== deleteTarget.id));
+      toast({ title: "Deleted", description: "Gallery item deleted from DB!" });
+    } else {
+      toast({ title: "Error", description: res.error || "Failed to delete from DB", variant: "destructive" });
+    }
     setDeleteTarget(null);
   };
 
