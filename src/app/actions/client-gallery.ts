@@ -14,27 +14,99 @@ export interface GalleryItemData {
 const INITIAL_GALLERY: GalleryItemData[] = [
   {
     id: '1',
-    title: "Sultan's Dine Menu Mockup",
+    title: "Sultan's Dine Royal Menu",
     imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
     column: 1,
     size: 'large',
-    tags: 'Biryani, Luxury Gold',
+    tags: 'Biryani, Royal Gold, Traditional',
   },
   {
     id: '2',
-    title: 'North End Specialty Drinks',
-    imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
-    column: 2,
+    title: 'Artisanal Open Menu Showcase',
+    imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80',
+    column: 1,
     size: 'small',
-    tags: 'Cafe, Minimalist, Brown',
+    tags: 'Open Book, Table Scene',
   },
   {
     id: '3',
-    title: 'Chillox Gourmet Monster Burger',
+    title: 'Vintage Bistro Spread',
+    imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+    column: 1,
+    size: 'large',
+    tags: 'Italian, Pasta, Fine Dining',
+  },
+  {
+    id: '4',
+    title: 'Gourmet Dessert & Pastry Card',
+    imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80',
+    column: 1,
+    size: 'small',
+    tags: 'Pastry, Cakes, Bakery',
+  },
+  {
+    id: '5',
+    title: 'North End Roastery & Cafe',
+    imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
+    column: 2,
+    size: 'small',
+    tags: 'Cafe, Specialty Coffee',
+  },
+  {
+    id: '6',
+    title: 'Chillox Monster Burger',
     imageUrl: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80',
+    column: 2,
+    size: 'large',
+    tags: 'Fast Food, Gourmet Burgers',
+  },
+  {
+    id: '7',
+    title: 'Minimalist Digital QR Menu',
+    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+    column: 2,
+    size: 'small',
+    tags: 'Green Cover, Digital QR',
+  },
+  {
+    id: '8',
+    title: 'Rustic Wood Table Mockup',
+    imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80',
+    column: 2,
+    size: 'large',
+    tags: 'Wood Texture, Menu Pages',
+  },
+  {
+    id: '9',
+    title: 'Continental Fine Dining',
+    imageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80',
     column: 3,
     size: 'large',
-    tags: 'Fast Food, Neon Red',
+    tags: 'Continental, Floral, Luxury',
+  },
+  {
+    id: '10',
+    title: 'Handi Traditional Spices',
+    imageUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80',
+    column: 3,
+    size: 'small',
+    tags: 'Indian Curry, Spices',
+  },
+  {
+    id: '11',
+    title: 'Craft Beverage & Mocktail',
+    imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80',
+    column: 3,
+    size: 'large',
+    tags: 'Mocktails, Refreshing Drinks',
+  },
+  {
+    id: '12',
+    title: 'Outdoor Patio Dining Ambience',
+    imageUrl: 'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?auto=format&fit=crop&w=800&q=80',
+    column: 3,
+    size: 'small',
+    tags: 'Outdoor Patio, Ambience',
   },
 ];
 
@@ -56,12 +128,12 @@ async function ensureClientGalleryTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // Seed if empty
+    // Seed or sync missing items
     const [rows]: any = await pool.execute('SELECT COUNT(*) as count FROM client_gallery');
-    if (rows && rows[0] && Number(rows[0].count) === 0) {
+    if (rows && rows[0] && Number(rows[0].count) < 12) {
       for (const item of INITIAL_GALLERY) {
         await pool.execute(
-          `INSERT INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
+          `INSERT IGNORE INTO client_gallery (id, title, image_url, bento_column, card_size, tags)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [item.id || '', item.title, item.imageUrl, item.column || 1, item.size || 'large', item.tags || '']
         );

@@ -12,14 +12,18 @@ interface SocialsGalleryProps {
 }
 
 const FALLBACK_ITEMS: GalleryItemData[] = [
-  { id: '1', title: 'Card A', imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80', column: 1, size: 'large' },
-  { id: '2', title: 'Card B', imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80', column: 1, size: 'small' },
-  { id: '3', title: 'Card C1', imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80', column: 2, size: 'small' },
-  { id: '4', title: 'Card C2', imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80', column: 2, size: 'small' },
-  { id: '5', title: 'Card D', imageUrl: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80', column: 2, size: 'large' },
-  { id: '6', title: 'Card E', imageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80', column: 3, size: 'large' },
-  { id: '7', title: 'Card F', imageUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=600&q=80', column: 3, size: 'small' },
-  { id: '8', title: 'Card G', imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80', column: 3, size: 'small' },
+  { id: '1', title: "Sultan's Dine Royal Menu", imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80', column: 1, size: 'large' },
+  { id: '2', title: 'Artisanal Open Menu Showcase', imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80', column: 1, size: 'small' },
+  { id: '3', title: 'Vintage Bistro Spread', imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80', column: 1, size: 'large' },
+  { id: '4', title: 'Gourmet Dessert & Pastry Card', imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80', column: 1, size: 'small' },
+  { id: '5', title: 'North End Roastery & Cafe', imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80', column: 2, size: 'small' },
+  { id: '6', title: 'Chillox Monster Burger', imageUrl: 'https://images.unsplash.com/photo-1586190848861-99aa4a171e90?auto=format&fit=crop&w=800&q=80', column: 2, size: 'large' },
+  { id: '7', title: 'Minimalist Digital QR Menu', imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80', column: 2, size: 'small' },
+  { id: '8', title: 'Rustic Wood Table Mockup', imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80', column: 2, size: 'large' },
+  { id: '9', title: 'Continental Fine Dining', imageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=800&q=80', column: 3, size: 'large' },
+  { id: '10', title: 'Handi Traditional Spices', imageUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=800&q=80', column: 3, size: 'small' },
+  { id: '11', title: 'Craft Beverage & Mocktail', imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80', column: 3, size: 'large' },
+  { id: '12', title: 'Outdoor Patio Dining Ambience', imageUrl: 'https://images.unsplash.com/photo-1537047902294-62a40c20a6ae?auto=format&fit=crop&w=800&q=80', column: 3, size: 'small' },
 ];
 
 export function SocialsGallery({ items: propItems, actionSlot, showTitle = true }: SocialsGalleryProps) {
