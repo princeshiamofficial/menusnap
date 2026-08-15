@@ -12,6 +12,43 @@ export interface GetMagicDocsOptions {
   sort?: 'newest' | 'oldest' | 'title-asc' | 'title-desc';
 }
 
+function sanitizeDocRow(row: any) {
+  if (!row) return null;
+  
+  let content = '';
+  if (row.content !== null && row.content !== undefined) {
+    if (Buffer.isBuffer(row.content)) {
+      content = row.content.toString('utf-8');
+    } else {
+      content = String(row.content);
+    }
+  }
+
+  const formatVal = (v: any) => {
+    if (v === null || v === undefined) return null;
+    if (v instanceof Date) return v.toISOString().replace('T', ' ').substring(0, 19);
+    return String(v);
+  };
+
+  return {
+    id: String(row.id || ''),
+    title: String(row.title || ''),
+    content,
+    last_updated: formatVal(row.last_updated || row.lastUpdated) || '',
+    lastUpdated: formatVal(row.lastUpdated || row.last_updated) || '',
+    created_at: formatVal(row.created_at || row.createdAt) || '',
+    createdAt: formatVal(row.createdAt || row.created_at) || '',
+    deleted_at: formatVal(row.deleted_at || row.deletedAt),
+    deletedAt: formatVal(row.deletedAt || row.deleted_at),
+    created_by: String(row.created_by || row.createdBy || 'Admin'),
+    createdBy: String(row.createdBy || row.created_by || 'Admin'),
+    createdByUserId: row.createdByUserId !== undefined && row.createdByUserId !== null ? Number(row.createdByUserId) : (row.created_by_user_id !== undefined && row.created_by_user_id !== null ? Number(row.created_by_user_id) : null),
+    creatorAvatarUrl: row.creatorAvatarUrl ? String(row.creatorAvatarUrl) : (row.avatar_url ? String(row.avatar_url) : null),
+    is_deleted: Number(row.is_deleted || 0),
+    isDeleted: !!row.is_deleted,
+  };
+}
+
 export async function getMagicDocsFromMySql(options?: GetMagicDocsOptions) {
   try {
     await initMagicDocsTable();
@@ -84,8 +121,8 @@ export async function getMagicDocsFromMySql(options?: GetMagicDocsOptions) {
        WHERE m.is_deleted = 1 ORDER BY m.deleted_at DESC`
     );
 
-    const plainDocs = (rows as any[]).map((row: any) => ({ ...row }));
-    const plainTrashDocs = (trashRows as any[]).map((row: any) => ({ ...row }));
+    const plainDocs = (rows as any[]).map((row: any) => sanitizeDocRow(row));
+    const plainTrashDocs = (trashRows as any[]).map((row: any) => sanitizeDocRow(row));
 
     return { 
       success: true, 
@@ -121,7 +158,7 @@ export async function getMagicDocByIdFromMySql(id: string) {
     );
 
     if (rows.length === 0) return { success: false, message: 'Document not found' };
-    return { success: true, data: { ...rows[0] } };
+    return { success: true, data: sanitizeDocRow(rows[0]) };
   } catch (error: any) {
     console.error('MySQL Magic Doc Get Error:', error);
     return { success: false, message: error.message };

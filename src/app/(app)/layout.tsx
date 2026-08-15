@@ -104,7 +104,8 @@ function GlobalLoginSuccessTracker() {
 }
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname || '';
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
