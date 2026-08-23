@@ -128,7 +128,7 @@ export async function uploadFileLocally(
 }
 
 /**
- * Uploads an image file to ImgBB API using the API key.
+ * Uploads an image file to ImgBB API (with FreeImageHost CDN fallback).
  * Automatically compresses the image buffer with Sharp first for ultra-fast, reliable uploads.
  * @param formData FormData containing 'file'
  */
@@ -154,7 +154,7 @@ export async function uploadToImgBB(formData: FormData) {
       else fileExt = '.png';
     }
 
-    // 1. Ultra-fast Sharp compression (compresses 10MB -> ~150KB for fast transfer)
+    // 1. Ultra-fast Sharp compression
     const { buffer: compressedBuffer } = await compressBufferWithSharp(
       originalBuffer,
       file.type,
@@ -162,45 +162,80 @@ export async function uploadToImgBB(formData: FormData) {
       { maxWidth: 1200, maxHeight: 1200, quality: 80 }
     );
 
-    const apiKey = '523b6fbc5a59e66844acb1fa9e13bd8b';
     const base64Str = compressedBuffer.toString('base64');
+    const apiKey = '523b6fbc5a59e66844acb1fa9e13bd8b';
 
-    // 2. AbortController with 5-second timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    // 2. Try ImgBB API upload
+    try {
+      const imgbbBody = new FormData();
+      imgbbBody.append('key', apiKey);
+      imgbbBody.append('image', base64Str);
 
-    const bodyParams = new URLSearchParams();
-    bodyParams.append('key', apiKey);
-    bodyParams.append('image', base64Str);
+      const controller1 = new AbortController();
+      const timeoutId1 = setTimeout(() => controller1.abort(), 6000);
 
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: bodyParams.toString(),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: 'POST',
+        body: imgbbBody,
+        signal: controller1.signal,
+      });
+      clearTimeout(timeoutId1);
 
-    const data = await response.json();
-    if (data.success && data.data?.url) {
-      const imageUrl = data.data.display_url || data.data.url;
-      return {
-        success: true,
-        data: {
-          url: imageUrl,
-          thumb: data.data.thumb?.url,
-          deleteUrl: data.data.delete_url,
-        },
-      };
-    } else {
-      console.error('ImgBB API returned error:', data.error);
-      return { success: false, message: data.error?.message || 'Image upload failed' };
+      const data = await response.json();
+      if (data.success && data.data?.url) {
+        const imageUrl = data.data.display_url || data.data.url;
+        return {
+          success: true,
+          data: {
+            url: imageUrl,
+            thumb: data.data.thumb?.url,
+            deleteUrl: data.data.delete_url,
+          },
+        };
+      }
+      console.warn('ImgBB API returned non-success response:', data);
+    } catch (imgbbErr) {
+      console.warn('ImgBB API upload attempt failed:', imgbbErr);
     }
+
+    // 3. Fallback to FreeImageHost CDN API if ImgBB key fails
+    try {
+      const fihKey = '6d207e260ce005d8f0713e5b4c456860';
+      const fihBody = new FormData();
+      fihBody.append('key', fihKey);
+      fihBody.append('action', 'upload');
+      fihBody.append('source', base64Str);
+      fihBody.append('format', 'json');
+
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), 6000);
+
+      const response2 = await fetch(`https://freeimage.host/api/1/upload`, {
+        method: 'POST',
+        body: fihBody,
+        signal: controller2.signal,
+      });
+      clearTimeout(timeoutId2);
+
+      const data2 = await response2.json();
+      if (data2.status_code === 200 && data2.image?.url) {
+        return {
+          success: true,
+          data: {
+            url: data2.image.display_url || data2.image.url,
+            thumb: data2.image.thumb?.url,
+          },
+        };
+      }
+      console.warn('FreeImageHost API error:', data2);
+    } catch (fihErr) {
+      console.warn('FreeImageHost upload attempt failed:', fihErr);
+    }
+
+    // 4. Local File Upload Fallback
+    return await uploadFileLocally(formData, 'spotlights');
   } catch (error: any) {
-    console.error('ImgBB Upload Exception:', error);
+    console.error('Image CDN Upload Exception:', error);
     return { success: false, message: error?.message || 'Failed to upload image' };
   }
 }
-
