@@ -129,6 +129,7 @@ export async function uploadFileLocally(
 
 /**
  * Uploads an image file to ImgBB API using the API key.
+ * Automatically compresses the image buffer with Sharp first for ultra-fast, reliable uploads.
  * @param formData FormData containing 'file'
  */
 export async function uploadToImgBB(formData: FormData) {
@@ -138,14 +139,43 @@ export async function uploadToImgBB(formData: FormData) {
       return { success: false, message: 'No image file provided' };
     }
 
+    const bytes = await file.arrayBuffer();
+    if (!bytes || bytes.byteLength === 0) {
+      return { success: false, message: 'Uploaded file is empty' };
+    }
+    const originalBuffer = Buffer.from(bytes);
+
+    // Extract file extension
+    const rawName = file.name || 'image.png';
+    let fileExt = path.extname(rawName);
+    if (!fileExt) {
+      if (file.type === 'image/jpeg') fileExt = '.jpg';
+      else if (file.type === 'image/webp') fileExt = '.webp';
+      else fileExt = '.png';
+    }
+
+    // 1. Ultra-fast Sharp compression (compresses 10MB -> ~150KB for fast transfer)
+    const { buffer: compressedBuffer } = await compressBufferWithSharp(
+      originalBuffer,
+      file.type,
+      fileExt,
+      { maxWidth: 1200, maxHeight: 1200, quality: 80 }
+    );
+
     const apiKey = '523b6fbc5a59e66844acb1fa9e13bd8b';
     const body = new FormData();
-    body.append('image', file);
+    body.append('image', compressedBuffer.toString('base64'));
+
+    // 2. AbortController with 6-second timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
     const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
       method: 'POST',
       body,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     const data = await response.json();
     if (data.success && data.data?.url) {
