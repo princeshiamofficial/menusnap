@@ -6,7 +6,7 @@ import { Upload, Image as ImageIcon, X, Link as LinkIcon, Check, Loader2 } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { uploadFileLocally } from '@/app/actions/uploads';
+import { uploadFileLocally, uploadToImgBB } from '@/app/actions/uploads';
 import { toast } from '@/hooks/use-toast';
 
 interface ImageUploaderProps {
@@ -15,6 +15,7 @@ interface ImageUploaderProps {
   subDir?: string;
   label?: string;
   className?: string;
+  useImgBB?: boolean;
 }
 
 export function ImageUploader({
@@ -23,6 +24,7 @@ export function ImageUploader({
   subDir = 'spotlights',
   label = 'Carousel Photo',
   className,
+  useImgBB = false,
 }: ImageUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -46,14 +48,20 @@ export function ImageUploader({
         setIsUploading(true);
         const formData = new FormData();
         formData.append('file', file);
-        const result = await uploadFileLocally(formData, subDir);
+
+        let result = useImgBB ? await uploadToImgBB(formData) : await uploadFileLocally(formData, subDir);
+
+        if (!result.success && useImgBB) {
+          console.warn('ImgBB upload failed, falling back to local file upload:', result.message);
+          result = await uploadFileLocally(formData, subDir);
+        }
 
         if (result.success && result.data?.url) {
           onChange(result.data.url);
           setUrlInput(result.data.url);
           toast({ title: 'Success', description: 'Image uploaded successfully!' });
         } else {
-          // Fallback to FileReader base64 data URL if local file upload failed
+          // Fallback to FileReader base64 data URL if file upload failed
           const reader = new FileReader();
           reader.onload = (e) => {
             const base64Url = e.target?.result as string;
@@ -81,7 +89,7 @@ export function ImageUploader({
         setIsUploading(false);
       }
     },
-    [onChange, subDir]
+    [onChange, subDir, useImgBB]
   );
 
   // Drag & Drop Handlers
