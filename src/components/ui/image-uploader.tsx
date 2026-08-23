@@ -18,6 +18,78 @@ interface ImageUploaderProps {
   useImgBB?: boolean;
 }
 
+/**
+ * Compresses an image file on HTML5 canvas in the browser.
+ * Downscales image to max 1000px and 75% WebP quality (~60KB).
+ */
+function compressImageClient(file: File, maxWidth = 1000, quality = 0.75): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/webp', quality));
+        } else {
+          resolve(e.target?.result as string);
+        }
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Attempts direct client-side upload to ImgBB from browser.
+ */
+async function uploadToImgBBClient(base64DataUrl: string): Promise<string | null> {
+  try {
+    const base64Str = base64DataUrl.replace(/^data:image\/\w+;base64,/, '');
+    const apiKey = '523b6fbc5a59e66844acb1fa9e13bd8b';
+
+    const bodyParams = new URLSearchParams();
+    bodyParams.append('key', apiKey);
+    bodyParams.append('image', base64Str);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+    const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: bodyParams.toString(),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+    if (data.success && data.data?.url) {
+      return data.data.display_url || data.data.url;
+    }
+  } catch (err) {
+    console.warn('Browser direct ImgBB upload failed/timed out:', err);
+  }
+  return null;
+}
+
 export function ImageUploader({
   value = '',
   onChange,
@@ -44,52 +116,53 @@ export function ImageUploader({
         return;
       }
 
+      setIsUploading(true);
+
       try {
-        setIsUploading(true);
-        const formData = new FormData();
-        formData.append('file', file);
+        // 1. Instant client-side canvas compression (~60KB)
+        const compressedBase64 = await compressImageClient(file);
+        
+        let finalUrl: string | null = null;
 
-        let result = useImgBB ? await uploadToImgBB(formData) : await uploadFileLocally(formData, subDir);
-
-        if (!result.success && useImgBB) {
-          console.warn('ImgBB upload failed, falling back to local file upload:', result.message);
-          result = await uploadFileLocally(formData, subDir);
+        // 2. Try direct browser upload to ImgBB if enabled
+        if (useImgBB && compressedBase64) {
+          finalUrl = await uploadToImgBBClient(compressedBase64);
         }
 
-        if (result.success && result.data?.url) {
-          onChange(result.data.url);
-          setUrlInput(result.data.url);
-          toast({ title: 'Success', description: 'Image uploaded successfully!' });
-          setIsUploading(false);
-        } else {
-          // Fallback to FileReader base64 data URL if file upload failed
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const base64Url = e.target?.result as string;
-            if (base64Url) {
-              onChange(base64Url);
-              setUrlInput(base64Url);
-              toast({ title: 'Success', description: 'Image loaded successfully!' });
+        // 3. If ImgBB didn't return URL, try server action upload
+        if (!finalUrl) {
+          try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const serverRes = useImgBB ? await uploadToImgBB(formData) : await uploadFileLocally(formData, subDir);
+            if (serverRes.success && serverRes.data?.url) {
+              finalUrl = serverRes.data.url;
+            } else if (useImgBB) {
+              const localRes = await uploadFileLocally(formData, subDir);
+              if (localRes.success && localRes.data?.url) {
+                finalUrl = localRes.data.url;
+              }
             }
-            setIsUploading(false);
-          };
-          reader.onerror = () => setIsUploading(false);
-          reader.readAsDataURL(file);
+          } catch (serverErr) {
+            console.warn('Server upload action error:', serverErr);
+          }
+        }
+
+        // 4. Fallback to client-side compressed base64 if server/ImgBB failed
+        if (!finalUrl && compressedBase64) {
+          finalUrl = compressedBase64;
+        }
+
+        if (finalUrl) {
+          onChange(finalUrl);
+          setUrlInput(finalUrl);
+          toast({ title: 'Success', description: 'Image uploaded successfully!' });
+        } else {
+          toast({ title: 'Upload Failed', description: 'Could not process image file', variant: 'destructive' });
         }
       } catch (error) {
         console.error('File upload error:', error);
-        // Fallback to FileReader base64
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const base64Url = e.target?.result as string;
-          if (base64Url) {
-            onChange(base64Url);
-            setUrlInput(base64Url);
-          }
-          setIsUploading(false);
-        };
-        reader.onerror = () => setIsUploading(false);
-        reader.readAsDataURL(file);
+        toast({ title: 'Upload Error', description: 'An error occurred during file upload', variant: 'destructive' });
       } finally {
         setIsUploading(false);
       }
