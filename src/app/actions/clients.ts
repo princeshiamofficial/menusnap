@@ -49,8 +49,12 @@ async function ensureClientsTable() {
     if (districtCol.length === 0) {
       await pool.execute("ALTER TABLE clients ADD COLUMN district VARCHAR(100) AFTER division");
     }
+    const [emailCol]: any = await pool.execute("SHOW COLUMNS FROM clients LIKE 'email'");
+    if (emailCol.length === 0) {
+      await pool.execute("ALTER TABLE clients ADD COLUMN email VARCHAR(255) AFTER district");
+    }
 
-    // 4. Create client_notes table for history
+    // 5. Create client_notes table for history
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS client_notes (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -63,7 +67,7 @@ async function ensureClientsTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // 5. Check if the 'updated_by' column exists in client_notes
+    // 6. Check if the 'updated_by' column exists in client_notes
     const [updatedByCol]: any = await pool.execute("SHOW COLUMNS FROM client_notes LIKE 'updated_by'");
     if (updatedByCol.length === 0) {
       console.log("Adding 'updated_by' column to client_notes table...");
@@ -78,7 +82,7 @@ async function ensureClientsTable() {
 /**
  * Saves or updates a client record in the database upon login.
  */
-export async function saveClientLogin(businessName: string, businessType: string, whatsappNumber: string, division?: string, district?: string) {
+export async function saveClientLogin(businessName: string, businessType: string, whatsappNumber: string, division?: string, district?: string, email?: string) {
   try {
     await ensureClientsTable();
 
@@ -91,15 +95,15 @@ export async function saveClientLogin(businessName: string, businessType: string
     if (rows.length > 0) {
       // Update existing client last login and name/type if changed
       await pool.execute(
-        'UPDATE clients SET business_name = ?, business_type = ?, division = ?, district = ?, last_login = CURRENT_TIMESTAMP WHERE id = ?',
-        [businessName, businessType, division || null, district || null, rows[0].id]
+        'UPDATE clients SET business_name = ?, business_type = ?, division = ?, district = ?, email = ?, last_login = CURRENT_TIMESTAMP WHERE id = ?',
+        [businessName, businessType, division || null, district || null, email || null, rows[0].id]
       );
       return { success: true, clientId: rows[0].id, action: 'updated' };
     } else {
       // Insert new client
       const [result]: any = await pool.execute(
-        'INSERT INTO clients (business_name, business_type, whatsapp_number, division, district) VALUES (?, ?, ?, ?, ?)',
-        [businessName, businessType, whatsappNumber, division || null, district || null]
+        'INSERT INTO clients (business_name, business_type, whatsapp_number, division, district, email) VALUES (?, ?, ?, ?, ?, ?)',
+        [businessName, businessType, whatsappNumber, division || null, district || null, email || null]
       );
 
       // --- SEND GREETING MESSAGE ---
@@ -176,7 +180,7 @@ export async function getLeads(
     }
 
     const query = `
-      SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.stage, c.division, c.district,
+      SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.email, c.stage, c.division, c.district,
       (SELECT note FROM client_notes WHERE client_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_note,
       (SELECT a.id FROM client_notes cn JOIN admins a ON cn.updated_by = a.id WHERE cn.client_id = c.id ORDER BY cn.created_at DESC LIMIT 1) as updated_by_id,
       DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i:%s') as last_login,

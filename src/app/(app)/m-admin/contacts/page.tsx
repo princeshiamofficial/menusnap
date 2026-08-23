@@ -39,7 +39,10 @@ import {
   Package,
   FolderOpen,
   LogOut,
-  FileEdit
+  FileEdit,
+  Download,
+  FileSpreadsheet,
+  Facebook
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -65,6 +68,12 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -217,6 +226,7 @@ interface Contact {
   whatsapp_number: string;
   division?: string;
   district?: string;
+  email?: string;
   latest_note: string | null;
   updated_by_id?: number | null;
   stage: string;
@@ -660,6 +670,82 @@ export default function ContactsPage() {
     }
   };
 
+  const downloadCSV = (filename: string, csvContent: string) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportMetaCSV = () => {
+    if (filteredContacts.length === 0) {
+      toast({ title: "No contacts to export", variant: "destructive" });
+      return;
+    }
+
+    const headers = ['email', 'phone', 'fn', 'ct', 'st', 'country'];
+    const rows = filteredContacts.map(c => {
+      const cleanPhone = (c.whatsapp_number || '').replace(/\D/g, '');
+      const formattedPhone = cleanPhone ? (cleanPhone.startsWith('01') ? '88' + cleanPhone : cleanPhone) : '';
+      const email = c.email ? c.email.trim().toLowerCase() : '';
+      const name = c.business_name ? c.business_name.replace(/"/g, '""') : '';
+      const district = c.district ? c.district.replace(/"/g, '""') : '';
+      const division = c.division ? c.division.replace(/"/g, '""') : '';
+
+      return [
+        email,
+        formattedPhone,
+        `"${name}"`,
+        `"${district}"`,
+        `"${division}"`,
+        'BD'
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    downloadCSV(`meta_custom_audience_${format(new Date(), 'yyyy-MM-dd')}.csv`, csvContent);
+    toast({
+      title: "Meta Audience CSV Exported",
+      description: `Successfully exported ${filteredContacts.length} contacts formatted for Meta Ads.`,
+    });
+  };
+
+  const handleExportFullCSV = () => {
+    if (filteredContacts.length === 0) {
+      toast({ title: "No contacts to export", variant: "destructive" });
+      return;
+    }
+
+    const headers = ['SL', 'Business Name', 'Business Type', 'WhatsApp', 'Email', 'Division', 'District', 'Joined Date', 'Last Activity', 'Status', 'Latest Comment'];
+    const rows = filteredContacts.map((c, idx) => {
+      return [
+        c.id || (idx + 1),
+        `"${(c.business_name || '').replace(/"/g, '""')}"`,
+        `"${(c.business_type || '').replace(/"/g, '""')}"`,
+        `"${(c.whatsapp_number || '').replace(/"/g, '""')}"`,
+        `"${(c.email || '').replace(/"/g, '""')}"`,
+        `"${(c.division || '').replace(/"/g, '""')}"`,
+        `"${(c.district || '').replace(/"/g, '""')}"`,
+        `"${formatDate(c.created_at)}"`,
+        `"${formatDate(c.last_login, true)}"`,
+        `"${(c.stage || '').replace(/"/g, '""')}"`,
+        `"${(c.latest_note || '').replace(/"/g, '""')}"`
+      ].join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    downloadCSV(`contacts_directory_${format(new Date(), 'yyyy-MM-dd')}.csv`, csvContent);
+    toast({
+      title: "Full Directory CSV Exported",
+      description: `Successfully exported ${filteredContacts.length} contacts.`,
+    });
+  };
+
   const openWhatsApp = (number: string) => {
     const cleanNumber = number.replace(/\D/g, '');
     const finalNumber = cleanNumber.startsWith('01') ? '88' + cleanNumber : cleanNumber;
@@ -697,6 +783,40 @@ export default function ContactsPage() {
                         {totalContacts} Total
                     </div>
                 </div>
+
+                {/* Export CSV Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2 rounded-full h-9 px-4 border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all font-semibold text-[10px] sm:text-sm whitespace-nowrap">
+                      <Download className="h-3.5 w-3.5 shrink-0 text-slate-700" />
+                      Export CSV
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-60 rounded-2xl p-1.5 shadow-2xl bg-white border border-slate-100">
+                    <DropdownMenuItem 
+                      onClick={handleExportMetaCSV}
+                      className="rounded-xl px-3 py-2.5 text-xs font-semibold cursor-pointer focus:bg-slate-50 text-slate-700 flex items-center gap-2"
+                    >
+                      <Facebook className="h-4 w-4 text-blue-600 shrink-0" />
+                      <div>
+                        <div className="font-bold text-slate-900">Meta Audience CSV</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Formatted for Facebook Ads</div>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={handleExportFullCSV}
+                      className="rounded-xl px-3 py-2.5 text-xs font-semibold cursor-pointer focus:bg-slate-50 text-slate-700 flex items-center gap-2"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <div>
+                        <div className="font-bold text-slate-900">Full Directory CSV</div>
+                        <div className="text-[10px] text-slate-400 font-normal">Complete customer data export</div>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading} className="gap-2 rounded-full h-9 px-4 border-slate-200 hover:bg-slate-50 hover:text-slate-900 transition-all font-semibold text-[10px] sm:text-sm whitespace-nowrap">
                     <RefreshCw className={cn("h-3.5 w-3.5 shrink-0", loading && "animate-spin")} />
                     Sync Data

@@ -16,13 +16,14 @@ export interface ClientUser {
   whatsappNumber?: string;
   division?: string;
   district?: string;
+  email?: string;
 }
 
 export interface ClientAuthContextType {
   clientUser: ClientUser | null;
   isClientLoggedIn: boolean;
   clientLoading: boolean;
-  login: (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string, redirectTo?: string | null) => Promise<boolean>;
+  login: (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string, email?: string, redirectTo?: string | null) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -48,7 +49,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string, redirectTo?: string | null) => {
+  const login = useCallback(async (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string, email?: string, redirectTo?: string | null) => {
     setClientLoading(true);
     
     // 1. WhatsApp Presence Check using Green API (with Bypass & Cache)
@@ -89,7 +90,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     let loginAction: 'created' | 'updated' = 'created';
     if (whatsappNumber) {
         try {
-            const dbResult = await saveClientLogin(businessName.trim(), type, whatsappNumber.trim(), division, district);
+            const dbResult = await saveClientLogin(businessName.trim(), type, whatsappNumber.trim(), division, district, email?.trim());
             if (dbResult.success && dbResult.action) {
                 loginAction = dbResult.action as 'created' | 'updated';
                 console.log(`Client synced to DB successfully (${dbResult.action})`);
@@ -109,7 +110,8 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         type,
         whatsappNumber: whatsappNumber?.trim(),
         division,
-        district
+        district,
+        email: email?.trim(),
       };
       localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
       setClientUser(userToStore);

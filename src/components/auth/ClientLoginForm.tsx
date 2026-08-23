@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building, Utensils, Sparkles, LogIn, AlertCircle, MapPin } from 'lucide-react';
+import { Building, Utensils, Sparkles, LogIn, AlertCircle, MapPin, Mail } from 'lucide-react';
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { useTheme } from '@/context/ThemeContext';
 import { isValidWhatsApp } from '@/lib/utils';
@@ -37,6 +37,7 @@ const BD_ADDRESS_DATA: Record<string, string[]> = {
 
 export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
   const [businessName, setBusinessName] = useState('');
+  const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [type, setType] = useState<'restaurant' | 'parlour' | ''>('');
   const [division, setDivision] = useState<string>('');
@@ -55,9 +56,36 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
       if (!isValidWhatsApp(whatsapp)) {
         return;
       }
-      const success = await login(businessName, type, whatsapp, division, district, null);
-      if (success && onSuccess) {
-        onSuccess();
+
+      // Push GTM login_attempt event
+      if (typeof window !== 'undefined') {
+        (window as any).dataLayer = (window as any).dataLayer || [];
+        (window as any).dataLayer.push({
+          event: 'login_attempt',
+          business_type: type,
+          business_name: businessName,
+          email: email,
+          division: division,
+          district: district,
+        });
+      }
+
+      const success = await login(businessName, type, whatsapp, division, district, email, null);
+      if (success) {
+        if (typeof window !== 'undefined') {
+          // Push GTM login_success event
+          (window as any).dataLayer = (window as any).dataLayer || [];
+          (window as any).dataLayer.push({
+            event: 'login_success',
+            method: 'whatsapp',
+            business_type: type,
+            business_name: businessName,
+            email: email,
+          });
+        }
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     }
   };
@@ -156,6 +184,23 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="email" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
+                <Mail className="h-4 w-4 mr-2" />
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                name="email"
+                autoComplete="email"
+                className="h-12 border-gray-200 dark:border-slate-800 rounded-xl focus-visible:ring-orange-500 transition-all bg-transparent"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
 
             <div className="space-y-1">
