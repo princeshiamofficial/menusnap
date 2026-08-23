@@ -100,7 +100,7 @@ async function ensureClientGalleryTable() {
       CREATE TABLE IF NOT EXISTS client_gallery (
         id VARCHAR(64) PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
-        image_url TEXT NOT NULL,
+        image_url LONGTEXT NOT NULL,
         bento_column INT DEFAULT 1,
         card_size VARCHAR(50) DEFAULT 'large',
         tags VARCHAR(255) NULL,
@@ -109,7 +109,11 @@ async function ensureClientGalleryTable() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
-    // Table initialization without automatic sample seeding
+    try {
+      await pool.execute(`ALTER TABLE client_gallery MODIFY COLUMN image_url LONGTEXT NOT NULL`);
+    } catch {
+      // Column already LONGTEXT
+    }
   } catch (err) {
     console.error("Failed to initialize client_gallery table:", err);
   }

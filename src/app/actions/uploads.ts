@@ -163,17 +163,22 @@ export async function uploadToImgBB(formData: FormData) {
     );
 
     const apiKey = '523b6fbc5a59e66844acb1fa9e13bd8b';
-    const body = new FormData();
-    body.append('key', apiKey);
-    body.append('image', compressedBuffer.toString('base64'));
+    const base64Str = compressedBuffer.toString('base64');
 
-    // 2. AbortController with 1.5-second fast timeout to prevent waiting/hanging
+    // 2. AbortController with 5-second timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const bodyParams = new URLSearchParams();
+    bodyParams.append('key', apiKey);
+    bodyParams.append('image', base64Str);
 
     const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
       method: 'POST',
-      body,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: bodyParams.toString(),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
