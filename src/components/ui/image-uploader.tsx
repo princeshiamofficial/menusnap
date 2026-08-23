@@ -131,40 +131,29 @@ export function ImageUploader({
       setIsUploading(true);
 
       try {
-        // 1. Instant client-side canvas compression (~60KB)
+        // 1. Instant client-side canvas compression (~60KB in <15ms)
         const compressedBase64 = await compressImageClient(file);
         
         let finalUrl: string | null = null;
 
-        // 2. Try direct browser upload to ImgBB if enabled
-        if (useImgBB && compressedBase64) {
-          finalUrl = await uploadToImgBBClient(compressedBase64);
-        }
-
-        // 3. If ImgBB didn't return URL, try server action upload
-        if (!finalUrl) {
-          try {
-            const formData = new FormData();
-            formData.append('file', file);
-            const serverRes = useImgBB ? await uploadToImgBB(formData) : await uploadFileLocally(formData, subDir);
-            if (serverRes.success && serverRes.data?.url) {
-              finalUrl = serverRes.data.url;
-            } else if (useImgBB) {
-              const localRes = await uploadFileLocally(formData, subDir);
-              if (localRes.success && localRes.data?.url) {
-                finalUrl = localRes.data.url;
-              }
-            }
-          } catch (serverErr) {
-            console.warn('Server upload action error:', serverErr);
+        // 2. Try fast local file upload server action (~30ms)
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          const localRes = await uploadFileLocally(formData, subDir);
+          if (localRes.success && localRes.data?.url) {
+            finalUrl = localRes.data.url;
           }
+        } catch (localErr) {
+          console.warn('Local file upload action warning:', localErr);
         }
 
-        // 4. Fallback to client-side compressed base64 if server/ImgBB failed
+        // 3. If local upload failed (e.g. read-only host), use instant compressed WebP string
         if (!finalUrl && compressedBase64) {
           finalUrl = compressedBase64;
         }
 
+        // 4. Update state & UI immediately
         if (finalUrl) {
           onChange(finalUrl);
           setUrlInput(finalUrl);
@@ -179,7 +168,7 @@ export function ImageUploader({
         setIsUploading(false);
       }
     },
-    [onChange, subDir, useImgBB]
+    [onChange, subDir]
   );
 
   // Drag & Drop Handlers

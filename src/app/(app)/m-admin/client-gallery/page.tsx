@@ -357,7 +357,6 @@ export default function ClientGalleryAdminPage() {
               {/* Image Uploader with File Select, Drag & Drop, and Clipboard Paste */}
               <ImageUploader 
                 value={formData.imageUrl || ''} 
-                useImgBB={true}
                 onChange={(url) => {
                   setFormData(prev => ({
                     ...prev,
