@@ -15,6 +15,8 @@ interface HeaderProps {
     isConnected?: boolean
     customActions?: React.ReactNode
     onShare?: (mode: 'editor' | 'viewer') => void
+    editorMode?: 'google-docs' | 'summernote'
+    onModeChange?: (mode: 'google-docs' | 'summernote') => void
 }
 
 export default function Header({ 
@@ -26,7 +28,9 @@ export default function Header({
     onlineUsers = [],
     isConnected = false,
     customActions,
-    onShare
+    onShare,
+    editorMode = 'google-docs',
+    onModeChange
 }: HeaderProps) {
     const [isStarred, setIsStarred] = useState(false)
     const [showShareMenu, setShowShareMenu] = useState(false)
@@ -138,6 +142,24 @@ export default function Header({
 
                 {/* Share button with dropdown */}
                 <div className="flex items-center gap-3">
+                    {onModeChange && !readOnly && (
+                        <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg text-[11px] font-medium border border-slate-300/60 shadow-inner">
+                            <button
+                                type="button"
+                                onClick={() => onModeChange('google-docs')}
+                                className={`px-2.5 py-1 rounded-md transition-all duration-200 ${editorMode === 'google-docs' ? 'bg-white text-blue-600 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                            >
+                                Google Docs
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onModeChange('summernote')}
+                                className={`px-2.5 py-1 rounded-md transition-all duration-200 ${editorMode === 'summernote' ? 'bg-white text-amber-600 shadow-sm font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                            >
+                                Summernote
+                            </button>
+                        </div>
+                    )}
                     {customActions}
                     {/* Presence Icons - Only shown on edit pages */}
                         <div className="flex -space-x-3 mr-4">

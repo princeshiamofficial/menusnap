@@ -196,21 +196,39 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
   const [galleryItems, setGalleryItems] = useState<GalleryItemData[]>(propItems || []);
 
   useEffect(() => {
-    if (propItems && propItems.length > 0) {
+    if (propItems !== undefined) {
       setGalleryItems(propItems);
       return;
     }
 
     async function loadData() {
       const res = await getClientGallery();
-      if (res.success && res.data && res.data.length > 0) {
+      if (res.success && res.data) {
         setGalleryItems(res.data);
       }
     }
     loadData();
   }, [propItems]);
 
-  const activeItems = galleryItems.length > 0 ? galleryItems : DEFAULT_REFERENCE_BENTO_ITEMS;
+  const activeItems = galleryItems;
+
+  if (activeItems.length === 0) {
+    return (
+      <section className="w-full py-12 px-4 text-center bg-background">
+        {showTitle && (
+          <div className="w-full mb-6 text-center">
+            <h2 className="text-3xl sm:text-4xl font-serif tracking-tight text-foreground">
+              Client Gallery
+            </h2>
+          </div>
+        )}
+        <div className="p-12 border border-dashed border-border/60 rounded-3xl max-w-md mx-auto bg-card/40">
+          <p className="text-sm font-semibold text-muted-foreground">No gallery images available.</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">Click &quot;Add Gallery Image&quot; to add new photos.</p>
+        </div>
+      </section>
+    );
+  }
 
   // Organize active items into 3 columns dynamically
   const col1: GalleryItemData[] = [];
@@ -225,10 +243,10 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
   });
 
   return (
-    <section className="w-full py-6 px-4 sm:px-6 lg:px-8 bg-background">
+    <section className="w-full py-6 bg-background">
       {/* Optional Title */}
       {showTitle && (
-        <div className="max-w-6xl mx-auto mb-10 text-center">
+        <div className="w-full mb-8 text-center">
           <h2 className="text-4xl sm:text-5xl md:text-6xl font-serif font-normal tracking-tight text-foreground">
             Client Gallery
           </h2>
@@ -236,7 +254,7 @@ export function SocialsGallery({ items: propItems, actionSlot, showTitle = true 
       )}
 
       {/* Exact Match Bento Grid */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
+      <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
         <Column1Layout items={col1} actionSlot={actionSlot} />
         <Column2Layout items={col2} actionSlot={actionSlot} />
         <Column3Layout items={col3} actionSlot={actionSlot} />

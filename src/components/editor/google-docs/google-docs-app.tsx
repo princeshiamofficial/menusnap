@@ -33,6 +33,15 @@ const EditorComponent = dynamic(() => import('./editor'), {
   )
 })
 
+const SummernoteEditorComponent = dynamic(() => import('@/components/editor/summernote/summernote-editor'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex justify-center w-full bg-[#f8f9fa] min-h-[450px] p-8 items-center text-slate-500 font-medium">
+      Loading Summernote Editor...
+    </div>
+  )
+})
+
 export default function GoogleDocsApp({
   initialTitle = "Untitled Document",
   initialContent = "",
@@ -64,6 +73,7 @@ export default function GoogleDocsApp({
   hideRuler?: boolean;
   onShare?: (mode: 'editor' | 'viewer') => void;
 }) {
+  const [editorMode, setEditorMode] = useState<'google-docs' | 'summernote'>('google-docs')
   const [title, setTitle] = useState(initialTitle)
   const [content, setContent] = useState(initialContent)
   const [editor, setEditor] = useState<Editor | null>(null)
@@ -186,8 +196,10 @@ export default function GoogleDocsApp({
             isConnected={isConnected}
             customActions={customActions}
             onShare={onShare}
+            editorMode={editorMode}
+            onModeChange={setEditorMode}
           />
-          {!readOnly && (
+          {!readOnly && editorMode === 'google-docs' && (
             <div className="flex flex-col">
               <Toolbar editor={editor} title={title} isVibeMode={isVibeMode} />
               {!hideRuler && <Ruler onMarginsChange={setMargins} />}
@@ -198,19 +210,34 @@ export default function GoogleDocsApp({
 
       <main className="flex-1 overflow-y-auto scroll-smooth no-scrollbar">
         <div className="flex justify-center py-6 px-2 sm:py-10 sm:px-4">
-          <EditorComponent
-            content={content}
-            onChange={setContent}
-            onReady={setEditor}
-            readOnly={readOnly}
-            showWatermark={showWatermark}
-            customPaperHeader={customPaperHeader}
-            tabStops={margins.tabStops}
-            docId={docId}
-            socket={socket}
-            onlineUsers={onlineUsers}
-            onUpdateContent={onUpdateContent}
-          />
+          {editorMode === 'summernote' ? (
+            <div className="w-full max-w-5xl">
+              <SummernoteEditorComponent
+                initialContent={content}
+                readOnly={readOnly}
+                hideRuler={hideRuler}
+                minHeight={500}
+                onChange={(html) => {
+                  setContent(html);
+                  if (onUpdateContent) onUpdateContent(html);
+                }}
+              />
+            </div>
+          ) : (
+            <EditorComponent
+              content={content}
+              onChange={setContent}
+              onReady={setEditor}
+              readOnly={readOnly}
+              showWatermark={showWatermark}
+              customPaperHeader={customPaperHeader}
+              tabStops={margins.tabStops}
+              docId={docId}
+              socket={socket}
+              onlineUsers={onlineUsers}
+              onUpdateContent={onUpdateContent}
+            />
+          )}
         </div>
       </main>
 

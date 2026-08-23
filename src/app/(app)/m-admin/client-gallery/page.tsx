@@ -128,10 +128,10 @@ export default function ClientGalleryAdminPage() {
     setEditingItem(null);
     setFormData({
       title: '',
-      imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+      imageUrl: '',
       column: 1,
       size: 'large',
-      tags: 'Client, Menu Showcase',
+      tags: '',
     });
     setIsAddEditOpen(true);
   };
@@ -143,35 +143,45 @@ export default function ClientGalleryAdminPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.imageUrl) {
-      toast({ title: "Validation Error", description: "Please fill in Title and Image URL", variant: "destructive" });
+    if (!formData.imageUrl) {
+      toast({ title: "Validation Error", description: "Please upload or select an image URL", variant: "destructive" });
       return;
     }
 
+    const autoTitle = formData.title?.trim() || 'Menu Showcase';
+
     if (editingItem) {
       const updatePayload: Partial<GalleryItemData> = {
-        title: formData.title,
+        title: autoTitle,
         imageUrl: formData.imageUrl,
         column: formData.column,
         size: formData.size,
-        tags: formData.tags,
+        tags: formData.tags || '',
       };
 
       const res = await updateGalleryItem(editingItem.id, updatePayload);
       if (res.success) {
-        setGalleryItems(prev => prev.map(item => item.id === editingItem.id ? { ...item, ...formData } as GalleryItem : item));
-        toast({ title: "Success", description: "Gallery item updated and saved to DB!" });
+        setGalleryItems(prev => prev.map(item => item.id === editingItem.id ? { ...item, ...formData, title: autoTitle } as GalleryItem : item));
+        toast({ title: "Success", description: "Gallery item updated!" });
       } else {
         toast({ title: "Error", description: res.error || "Failed to update in DB", variant: "destructive" });
       }
     } else {
+      // Auto balance column distribution across 3 columns
+      const colCounts = [0, 0, 0];
+      galleryItems.forEach(item => {
+        const c = (item.column && [1, 2, 3].includes(item.column)) ? item.column - 1 : 0;
+        colCounts[c]++;
+      });
+      const autoColumn = colCounts.indexOf(Math.min(...colCounts)) + 1;
+
       const newPayload: GalleryItemData = {
         id: Date.now().toString(),
-        title: formData.title || '',
+        title: autoTitle,
         imageUrl: formData.imageUrl || '',
-        column: (galleryItems.length % 3) + 1,
+        column: autoColumn,
         size: galleryItems.length % 2 === 0 ? 'large' : 'small',
-        tags: '',
+        tags: formData.tags || '',
       };
 
       const res = await createGalleryItem(newPayload);
@@ -180,12 +190,12 @@ export default function ClientGalleryAdminPage() {
           id: res.data.id || Date.now().toString(),
           title: res.data.title,
           imageUrl: res.data.imageUrl,
-          column: res.data.column || 1,
+          column: res.data.column || autoColumn,
           size: res.data.size || 'large',
           tags: res.data.tags || '',
         };
         setGalleryItems(prev => [newItem, ...prev]);
-        toast({ title: "Success", description: "New gallery item saved to DB!" });
+        toast({ title: "Success", description: "New gallery item added!" });
       } else {
         toast({ title: "Error", description: res.error || "Failed to save to DB", variant: "destructive" });
       }
@@ -246,9 +256,9 @@ export default function ClientGalleryAdminPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 bg-background min-h-screen w-full">
       {/* Top Action Bar */}
-      <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-4 border-b border-border/40 pb-2">
+      <div className="w-full flex items-center justify-between gap-4 border-b border-border/40 pb-2">
         <div className="flex items-center gap-2">
           <ImageIcon className="h-6 w-6 text-primary" />
           <span className="text-lg font-bold text-foreground tracking-tight">Client&apos;s Gallery Management</span>
@@ -264,7 +274,7 @@ export default function ClientGalleryAdminPage() {
       </div>
 
       {/* Same-to-Same Bento Gallery View with Hover Edit/Delete Controls */}
-      <div className="w-full max-w-6xl mx-auto">
+      <div className="w-full">
         <SocialsGallery 
           items={galleryItems}
           showTitle={false}
@@ -347,7 +357,13 @@ export default function ClientGalleryAdminPage() {
               {/* Image Uploader with File Select, Drag & Drop, and Clipboard Paste */}
               <ImageUploader 
                 value={formData.imageUrl || ''} 
-                onChange={(url) => setFormData(prev => ({ ...prev, imageUrl: url }))}
+                onChange={(url) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    imageUrl: url,
+                    title: prev.title?.trim() ? prev.title : 'Menu Showcase'
+                  }));
+                }}
                 label="Gallery Image Photo"
                 subDir="spotlights"
               />

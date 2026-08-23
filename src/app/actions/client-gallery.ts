@@ -135,7 +135,7 @@ export async function getClientGallery() {
     return { success: true, data: items };
   } catch (error: any) {
     console.error("Database Error fetching client gallery:", error);
-    return { success: false, error: error?.message || "Failed to fetch gallery", data: INITIAL_GALLERY };
+    return { success: false, error: error?.message || "Failed to fetch gallery", data: [] };
   }
 }
 

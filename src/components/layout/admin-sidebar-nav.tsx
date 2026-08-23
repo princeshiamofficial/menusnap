@@ -43,6 +43,7 @@ const adminNavItems: { href: string, label: string, icon: React.ElementType, has
   { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers, hasChevron: true },
   { href: '/m-admin/magic-docs', label: 'Magic Docs', icon: FolderOpen, hasChevron: true },
+  { href: '/m-admin/summernote-docs', label: 'Summernote Docs', icon: ClipboardList, hasChevron: true },
   { href: '/m-admin/testimonials', label: 'Testimonials', icon: HeartHandshake, hasChevron: true },
   { href: '/m-admin/client-gallery', label: "Client's Gallery", icon: ImageIcon, hasChevron: true },
   { href: '/m-admin/manage-users', label: 'Manage Users', icon: UserCog, hasChevron: true },

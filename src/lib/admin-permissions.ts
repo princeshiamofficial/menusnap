@@ -13,6 +13,7 @@ export function getPermissionKey(pathname: string): string {
   if (cleanPath.startsWith('/m-admin/manage-magictab')) return 'manage-magictab';
   if (cleanPath.startsWith('/m-admin/manage-templates')) return 'manage-templates';
   if (cleanPath.startsWith('/m-admin/magic-docs')) return 'magic-docs';
+  if (cleanPath.startsWith('/m-admin/summernote-docs')) return 'summernote-docs';
   if (cleanPath.startsWith('/m-admin/testimonials')) return 'testimonials';
   if (cleanPath.startsWith('/m-admin/client-gallery')) return 'client-gallery';
   if (cleanPath.startsWith('/m-admin/settings')) return 'settings';
@@ -49,6 +50,7 @@ export function checkClientPermission(
       'manage-magictab': ['view', 'create', 'edit', 'delete'],
       'manage-templates': ['view', 'create', 'edit', 'delete'],
       'magic-docs': ['view', 'create', 'edit', 'delete'],
+      'summernote-docs': ['view', 'create', 'edit', 'delete'],
       'testimonials': ['view', 'create', 'edit', 'delete'],
       'client-gallery': ['view', 'create', 'edit', 'delete'],
       'settings': [],
