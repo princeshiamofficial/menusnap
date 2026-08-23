@@ -136,24 +136,19 @@ export function ImageUploader({
         
         let finalUrl: string | null = null;
 
-        // 2. Try CDN / ImgBB Server Action upload first
+        // 2. Local file upload server action (~30ms)
         try {
           const formData = new FormData();
           formData.append('file', file);
-          const uploadRes = useImgBB ? await uploadToImgBB(formData) : await uploadFileLocally(formData, subDir);
+          const uploadRes = await uploadFileLocally(formData, subDir);
           if (uploadRes.success && uploadRes.data?.url) {
             finalUrl = uploadRes.data.url;
-          } else if (useImgBB) {
-            const fallbackRes = await uploadFileLocally(formData, subDir);
-            if (fallbackRes.success && fallbackRes.data?.url) {
-              finalUrl = fallbackRes.data.url;
-            }
           }
         } catch (uploadErr) {
           console.warn('File upload action warning:', uploadErr);
         }
 
-        // 3. If remote CDN & local upload failed, use instant compressed WebP string
+        // 3. Fallback to instant compressed WebP string if local upload failed
         if (!finalUrl && compressedBase64) {
           finalUrl = compressedBase64;
         }
@@ -173,7 +168,7 @@ export function ImageUploader({
         setIsUploading(false);
       }
     },
-    [onChange, subDir, useImgBB]
+    [onChange, subDir]
   );
 
   // Drag & Drop Handlers
