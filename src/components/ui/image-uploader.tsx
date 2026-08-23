@@ -49,19 +49,37 @@ export function ImageUploader({
       try {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('subDir', subDir);
 
-        // 1. Try fast local server action upload (~30ms)
         let finalUrl: string | null = null;
+
+        // 1. Post to API Route Handler /api/upload (ProNextJS Solution)
         try {
-          const uploadRes = await uploadFileLocally(formData, subDir);
-          if (uploadRes.success && uploadRes.data?.url) {
-            finalUrl = uploadRes.data.url;
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          if (data.success && data.data?.url) {
+            finalUrl = data.data.url;
           }
-        } catch (uploadErr) {
-          console.warn('Local file upload action error:', uploadErr);
+        } catch (apiErr) {
+          console.warn('API Route Upload failed:', apiErr);
         }
 
-        // 2. If local upload failed (e.g. read-only host), use instant FileReader data URL (1ms)
+        // 2. Fallback to server action upload if API route fails
+        if (!finalUrl) {
+          try {
+            const serverRes = await uploadFileLocally(formData, subDir);
+            if (serverRes.success && serverRes.data?.url) {
+              finalUrl = serverRes.data.url;
+            }
+          } catch (serverErr) {
+            console.warn('Server action upload failed:', serverErr);
+          }
+        }
+
+        // 3. Fallback to FileReader data URL if server/API failed
         if (!finalUrl) {
           finalUrl = await new Promise<string>((resolve) => {
             const reader = new FileReader();
@@ -71,11 +89,11 @@ export function ImageUploader({
           });
         }
 
-        // 3. Update state & UI immediately
+        // 4. Update state & UI immediately
         if (finalUrl) {
           onChange(finalUrl);
           setUrlInput(finalUrl);
-          toast({ title: 'Success', description: 'Image loaded successfully!' });
+          toast({ title: 'Success', description: 'Image uploaded successfully!' });
         } else {
           toast({ title: 'Upload Failed', description: 'Could not process image file', variant: 'destructive' });
         }
