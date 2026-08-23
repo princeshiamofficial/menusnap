@@ -164,6 +164,7 @@ export async function uploadToImgBB(formData: FormData) {
 
     const apiKey = '523b6fbc5a59e66844acb1fa9e13bd8b';
     const body = new FormData();
+    body.append('key', apiKey);
     body.append('image', compressedBuffer.toString('base64'));
 
     // 2. AbortController with 6-second timeout to prevent hanging

@@ -201,7 +201,7 @@ export function ImageUploader({
       {value ? (
         <div className="relative group rounded-2xl overflow-hidden border border-border/80 bg-card p-1 shadow-sm">
           <div className="relative h-44 w-full rounded-xl overflow-hidden border border-border/40 bg-muted">
-            <Image src={value} alt="Uploaded Image Preview" fill className="object-cover" />
+            <Image src={value} alt="Uploaded Image Preview" fill unoptimized className="object-cover" />
             <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
               <Button
                 type="button"

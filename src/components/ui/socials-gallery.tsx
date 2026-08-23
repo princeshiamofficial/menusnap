@@ -108,6 +108,7 @@ function BentoCard({ item, height, actionSlot }: CardProps) {
         src={item.imageUrl}
         alt={item.title || 'Client Gallery Showcase'}
         fill
+        unoptimized
         sizes="(max-width: 768px) 100vw, 33vw"
         className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
       />
