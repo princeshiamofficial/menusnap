@@ -18,90 +18,6 @@ interface ImageUploaderProps {
   useImgBB?: boolean;
 }
 
-/**
- * Compresses an image file on HTML5 canvas in the browser.
- * Downscales image to max 1000px and 75% WebP quality (~60KB).
- */
-function compressImageClient(file: File, maxWidth = 1000, quality = 0.75): Promise<string> {
-  return new Promise((resolve) => {
-    try {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const img = document.createElement('img');
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              let width = img.width || 800;
-              let height = img.height || 600;
-
-              if (width > maxWidth) {
-                height = Math.round((height * maxWidth) / width);
-                width = maxWidth;
-              }
-
-              canvas.width = width;
-              canvas.height = height;
-              const ctx = canvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/webp', quality));
-              } else {
-                resolve((e.target?.result as string) || '');
-              }
-            } catch {
-              resolve((e.target?.result as string) || '');
-            }
-          };
-          img.onerror = () => resolve((e.target?.result as string) || '');
-          img.src = (e.target?.result as string) || '';
-        } catch {
-          resolve('');
-        }
-      };
-      reader.onerror = () => resolve('');
-      reader.readAsDataURL(file);
-    } catch {
-      resolve('');
-    }
-  });
-}
-
-/**
- * Attempts direct client-side upload to ImgBB from browser.
- */
-async function uploadToImgBBClient(base64DataUrl: string): Promise<string | null> {
-  try {
-    const base64Str = base64DataUrl.replace(/^data:image\/\w+;base64,/, '');
-    const apiKey = '523b6fbc5a59e66844acb1fa9e13bd8b';
-
-    const bodyParams = new URLSearchParams();
-    bodyParams.append('key', apiKey);
-    bodyParams.append('image', base64Str);
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: bodyParams.toString(),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    const data = await response.json();
-    if (data.success && data.data?.url) {
-      return data.data.display_url || data.data.url;
-    }
-  } catch (err) {
-    console.warn('Browser direct ImgBB upload failed/timed out:', err);
-  }
-  return null;
-}
-
 export function ImageUploader({
   value = '',
   onChange,
@@ -131,33 +47,35 @@ export function ImageUploader({
       setIsUploading(true);
 
       try {
-        // 1. Instant client-side canvas compression (~60KB in <15ms)
-        const compressedBase64 = await compressImageClient(file);
-        
-        let finalUrl: string | null = null;
+        const formData = new FormData();
+        formData.append('file', file);
 
-        // 2. Local file upload server action (~30ms)
+        // 1. Try fast local server action upload (~30ms)
+        let finalUrl: string | null = null;
         try {
-          const formData = new FormData();
-          formData.append('file', file);
           const uploadRes = await uploadFileLocally(formData, subDir);
           if (uploadRes.success && uploadRes.data?.url) {
             finalUrl = uploadRes.data.url;
           }
         } catch (uploadErr) {
-          console.warn('File upload action warning:', uploadErr);
+          console.warn('Local file upload action error:', uploadErr);
         }
 
-        // 3. Fallback to instant compressed WebP string if local upload failed
-        if (!finalUrl && compressedBase64) {
-          finalUrl = compressedBase64;
+        // 2. If local upload failed (e.g. read-only host), use instant FileReader data URL (1ms)
+        if (!finalUrl) {
+          finalUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve((e.target?.result as string) || '');
+            reader.onerror = () => resolve('');
+            reader.readAsDataURL(file);
+          });
         }
 
-        // 4. Update state & UI immediately
+        // 3. Update state & UI immediately
         if (finalUrl) {
           onChange(finalUrl);
           setUrlInput(finalUrl);
-          toast({ title: 'Success', description: 'Image uploaded successfully!' });
+          toast({ title: 'Success', description: 'Image loaded successfully!' });
         } else {
           toast({ title: 'Upload Failed', description: 'Could not process image file', variant: 'destructive' });
         }
