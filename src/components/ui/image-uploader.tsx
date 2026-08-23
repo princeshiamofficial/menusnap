@@ -24,34 +24,46 @@ interface ImageUploaderProps {
  */
 function compressImageClient(file: File, maxWidth = 1000, quality = 0.75): Promise<string> {
   return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new window.Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const img = document.createElement('img');
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              let width = img.width || 800;
+              let height = img.height || 600;
 
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/webp', quality));
-        } else {
-          resolve(e.target?.result as string);
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/webp', quality));
+              } else {
+                resolve((e.target?.result as string) || '');
+              }
+            } catch {
+              resolve((e.target?.result as string) || '');
+            }
+          };
+          img.onerror = () => resolve((e.target?.result as string) || '');
+          img.src = (e.target?.result as string) || '';
+        } catch {
+          resolve('');
         }
       };
-      img.onerror = () => resolve(e.target?.result as string);
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => resolve('');
-    reader.readAsDataURL(file);
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    } catch {
+      resolve('');
+    }
   });
 }
 
@@ -68,7 +80,7 @@ async function uploadToImgBBClient(base64DataUrl: string): Promise<string | null
     bodyParams.append('image', base64Str);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
 
     const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
       method: 'POST',
