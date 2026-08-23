@@ -60,6 +60,7 @@ export function ImageUploader({
           onChange(result.data.url);
           setUrlInput(result.data.url);
           toast({ title: 'Success', description: 'Image uploaded successfully!' });
+          setIsUploading(false);
         } else {
           // Fallback to FileReader base64 data URL if file upload failed
           const reader = new FileReader();
@@ -70,7 +71,9 @@ export function ImageUploader({
               setUrlInput(base64Url);
               toast({ title: 'Success', description: 'Image loaded successfully!' });
             }
+            setIsUploading(false);
           };
+          reader.onerror = () => setIsUploading(false);
           reader.readAsDataURL(file);
         }
       } catch (error) {
@@ -83,7 +86,9 @@ export function ImageUploader({
             onChange(base64Url);
             setUrlInput(base64Url);
           }
+          setIsUploading(false);
         };
+        reader.onerror = () => setIsUploading(false);
         reader.readAsDataURL(file);
       } finally {
         setIsUploading(false);
