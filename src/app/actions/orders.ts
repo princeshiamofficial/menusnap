@@ -434,120 +434,190 @@ export async function getOrderItemsAndCategories(limit = 0) {
       };
     }
 
-    // 1. Fetch catalog categories to match and merge against
+    // 1. Fetch catalog categories to match and merge against dynamically
     const [catLookupRows]: any = await pool.execute("SELECT id, name, icon FROM categories").catch(() => [[]]);
-    const catalogList = (Array.isArray(catLookupRows) ? catLookupRows : []).map((c: any) => {
-      const englishBase = c.name.replace(/\s*\([^)]*\)/g, '').trim();
-      return {
-        id: String(c.id),
-        fullName: c.name.trim(),
-        englishBase: englishBase,
-        icon: c.icon || 'UtensilsCrossed',
-        cleanLower: englishBase.toLowerCase()
-      };
-    });
 
-    const cleanString = (str: string) => {
-      return (str || '')
-        .replace(/&amp;/g, '&')
-        .replace(/&#039;/g, "'")
-        .replace(/&quot;/g, '"')
-        .replace(/\s*\([^)]*\)/g, '')
+    // Helpers for dynamic string distance, stemming, and noise stripping
+    const levenshteinDistance = (s1: string, s2: string): number => {
+      const m = s1.length, n = s2.length;
+      const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) dp[i][0] = i;
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return dp[m][n];
+    };
+
+    const stringSimilarity = (s1: string, s2: string): number => {
+      if (s1 === s2) return 1;
+      if (!s1 || !s2) return 0;
+      const maxLen = Math.max(s1.length, s2.length);
+      if (maxLen === 0) return 1;
+      return (maxLen - levenshteinDistance(s1, s2)) / maxLen;
+    };
+
+    const stemWord = (word: string): string => {
+      let w = word.toLowerCase().trim();
+      if (w.endsWith("'s") || w.endsWith("’s")) w = w.slice(0, -2);
+      if (w.endsWith("ies") && w.length > 4) return w.slice(0, -3) + "y";
+      if (w.endsWith("es") && w.length > 4) return w.slice(0, -2);
+      if (w.endsWith("s") && !w.endsWith("ss") && w.length > 3) return w.slice(0, -1);
+      if (w.endsWith("ing") && w.length > 5) return w.slice(0, -3);
+      return w;
+    };
+
+    const cleanCategoryNoise = (str: string): string => {
+      if (!str) return '';
+      return str
+        .replace(/&amp;/gi, '&')
+        .replace(/&#039;/gi, "'")
+        .replace(/&quot;/gi, '"')
+        // Remove Bengali script inside parentheses e.g. (অ্যাপেটাইজার)
+        .replace(/\s*\([\u0980-\u09FF\s,.\-]+\)/g, '')
+        // Remove portion annotations like (1:2), (1:3), (4 person)
+        .replace(/\s*\([0-9\s:personx\-_]+\)/gi, '')
+        // Strip standalone ratios e.g. 1:2
+        .replace(/\b[0-9]+:[0-9]+\b/g, '')
+        // Strip leading numbering e.g. 1. or 01-
         .replace(/^[0-9]+[.\-)]\s*/g, '')
-        .replace(/\s*item(s)?$/i, '')
-        .replace(/\s*dish(es)?$/i, '')
-        .replace(/\s*&?\s*starter(s)?$/i, '')
-        .replace(/\s*&?\s*snack(s)?$/i, '')
-        .replace(/\s*gallery$/i, '')
-        .replace(/'s$/i, '')
+        // Strip generic filler words at word boundaries
+        .replace(/\b(items?|dishes|dish|gallery|delight|corner|zone|platter|menu|exclusive|special|hot|delicious)\b/gi, '')
+        .replace(/\b(ala\s*carte|master\s*chef)\b/gi, '')
+        .replace(/&?\s*(starters?|snacks?)\b/gi, '')
+        .replace(/['’]s\b/gi, '')
+        .replace(/[()\[\]{}&/\\+\-_|,:]+/g, ' ')
+        .replace(/\s+/g, ' ')
         .trim();
     };
 
-    const canonicalRules: { target: string; targetId?: string; regex: RegExp }[] = [
-      { target: 'Appetizers', targetId: 'appetizers', regex: /\b(?:app[eir]{1,3}ti[sz]er|starter)s?\b/i },
-      { target: 'Burger', targetId: 'burger', regex: /\b(?:burg[eu]r)s?\b/i },
-      { target: 'Pizza', targetId: 'pizza', regex: /\b(?:pizz?a)s?\b/i },
-      { target: 'Chow Mein (চাউমিন)', targetId: 'chowmein', regex: /\b(?:chow\s*mein|chao\s*mein|chowmin|চাউমিন)\b/i },
-      { target: 'Noodles', targetId: 'restaurant-noodles-1748939912547', regex: /\b(?:noodle|noodles|নুডলস)\b/i },
-      { target: 'Pasta (পাস্তা)', targetId: 'pasta', regex: /\b(?:pasta|পাস্তা)\b/i },
-      { target: 'Biriyani (বিরিয়ানি)', targetId: 'biryani', regex: /\b(?:bir[iy]ani|briyani|বিরিয়ানি)\b/i },
-      { target: 'Tehari (তেহারি)', targetId: '1751515311583', regex: /\b(?:tehari|tehori|তেহারি)\b/i },
-      { target: 'Kabab', targetId: '1750656745107', regex: /\b(?:k[ea]bab)s?\b/i },
-      { target: 'Soup (স্যুপ)', targetId: 'soup', regex: /\b(?:soup|স্যুপ)\b/i },
-      { target: 'Salad (সালাদ)', targetId: 'salad', regex: /\b(?:salad|সালাদ)\b/i },
-      { target: 'Sandwich (স্যান্ডউইচ)', targetId: 'sandwich', regex: /\b(?:sandwich|স্যান্ডউইচ)\b/i },
-      { target: 'Sub', targetId: 'restaurant-sub-1748935097696', regex: /\b(?:sub\s*sandwich|সাব\s*স্যান্ডউইচ)\b/i },
-      { target: 'Shawarma (শর্মা)', targetId: '1751458964181', regex: /\b(?:sha?wa?r?ma|shorma|শর্মা)\b/i },
-      { target: 'Beverage', targetId: '1752315376103', regex: /\b(?:beverage|soft\s*drink|cold\s*drink)s?\b/i },
-      { target: 'Juice (জুস)', targetId: '1752300028513', regex: /\b(?:juice|জুস)s?\b/i },
-      { target: 'Coffee', targetId: 'coffee', regex: /\b(?:coffee|espresso|cappuccino|latte|কফি)s?\b/i },
-      { target: 'Dessert', targetId: 'dessert', regex: /\b(?:dessert|sweet|sweets)s?\b/i },
-      { target: 'Falooda (ফালুদা)', targetId: '1750658574737', regex: /\b(?:fal[ou]{2}da|ফালুদা)\b/i },
-      { target: 'Fuchka (ফুচকা)', targetId: '1751456637740', regex: /\b(?:fuch?ka|fuska|phuchka|ফুচকা)\b/i },
-      { target: 'Chotpoti', targetId: '1750739155324', regex: /\b(?:chotpoti|চটপটি)\b/i },
-      { target: 'Waffle (ওয়াফেল)', targetId: 'restaurant-waffle-1748943651359', regex: /\b(?:waffle|ওয়াফেল)\b/i },
-      { target: 'Momo (মোমো)', targetId: 'momo', regex: /\b(?:momo|মোমো)\b/i },
-      { target: 'Nachos (নাচোস)', targetId: 'nachos', regex: /\b(?:nacho|nachos|নাচো|নাচোস)\b/i },
-      { target: 'Wings', targetId: 'wings', regex: /\b(?:wings|উইংস)\b/i },
-      { target: 'Fry (ফ্রাই)', targetId: '1751462075077', regex: /\b(?:french\s*fr[iy]|fries|ফ্রাই)\b/i },
-      { target: 'Platter', targetId: 'platter', regex: /\b(?:platter|প্ল্যাটার)\b/i },
-      { target: 'Set Menu', targetId: 'setMenu', regex: /\b(?:set\s*menu|সেট\s*মেনু)\b/i },
-      { target: 'Chicken Item', targetId: 'chickenItem', regex: /\b(?:chicken)\b/i },
-      { target: 'Beef Item', targetId: 'beefItem', regex: /\b(?:beef)\b/i },
-      { target: 'Fish Item', targetId: 'fishItem', regex: /\b(?:fish)\b/i },
-      { target: 'Prawn', targetId: 'prawn', regex: /\b(?:prawn|shrimp|চিংড়ি)\b/i },
-      { target: 'Rice', targetId: 'rice', regex: /\b(?:fried\s*rice|plain\s*rice)\b/i },
-      // Parlour canonical targets
-      { target: 'Facial', targetId: 'facial-basic', regex: /\b(?:facial|hydra\s*facial|ফেসিয়াল)\b/i },
-      { target: 'Hair Cut', targetId: 'hair-cutting', regex: /\b(?:hair\s*cut|haircut|হেয়ার\s*কাটিং)\b/i },
-      { target: 'Hair Color', targetId: 'hair-coloring', regex: /\b(?:hair\s*col[ou]{1,2}r|হেয়ার\s*কালার)\b/i },
-      { target: 'Hair Treatment', targetId: 'hair-treatment', regex: /\b(?:hair\s*treatment|hair\s*spa|হেয়ার\s*ট্রিটমেন্ট)\b/i },
-      { target: 'Hair Rebonding', targetId: 'eyelash-extensions', regex: /\b(?:rebonding|hair\s*straight|হেয়ার\s*স্ট্রেইট)\b/i },
-      { target: 'Pedicure & Manicure', targetId: '1752391035133', regex: /\b(?:pedicure|manicure|পেডিকিউর|মেনিকিউর)\b/i },
-      { target: 'Makeup', targetId: 'makeup', regex: /\b(?:makeup|make\s*up|makeover|মেকআপ)\b/i },
-      { target: 'Mehendi & Henna', targetId: 'mehendi-henna', regex: /\b(?:mehendi|mehndi|mehedi|মেহেদী)\b/i },
-      { target: 'Wax', targetId: 'body-waxing', regex: /\b(?:waxing|wax|ওয়াক্সিং|ওয়াক্স)\b/i },
-      { target: 'Threading', targetId: 'eyebrow-threading', regex: /\b(?:threading|থ্রেডিং)\b/i },
-    ];
+    const catalogList = (Array.isArray(catLookupRows) ? catLookupRows : []).map((c: any) => {
+      const rawName = String(c.name || '').trim();
+      const englishBase = rawName.replace(/\s*\([\u0980-\u09FF\s,.\-]+\)/g, '').trim();
+      const cleanedBase = cleanCategoryNoise(englishBase).toLowerCase();
+      const tokens = cleanedBase.split(/\s+/).filter(t => t.length > 1);
+      const stems = tokens.map(stemWord);
+      const bengaliMatches = rawName.match(/[\u0980-\u09FF]+/g);
+      const bengaliAlt = bengaliMatches ? bengaliMatches.join(' ').trim() : '';
 
-    const canonicalMap = new Map<string, typeof catalogList[0]>();
-    canonicalRules.forEach(rule => {
-      const match = catalogList.find(c => 
-        (rule.targetId && c.id === rule.targetId) ||
-        c.fullName.toLowerCase() === rule.target.toLowerCase() ||
-        c.englishBase.toLowerCase() === rule.target.toLowerCase()
-      );
-      if (match) canonicalMap.set(rule.target, match);
+      return {
+        id: String(c.id),
+        fullName: rawName,
+        englishBase: englishBase,
+        icon: c.icon || '🍽️',
+        cleanLower: cleanedBase,
+        tokens: tokens,
+        stems: stems,
+        bengaliAlt: bengaliAlt
+      };
     });
 
+    // Fully dynamic category resolver with zero hardcoded category names
     const resolveCategory = (rawCategory: string) => {
       if (!rawCategory) return null;
-      const clean = cleanString(rawCategory);
 
-      // Direct exact match
-      const exact = catalogList.find(c => 
-        c.fullName.toLowerCase() === clean.toLowerCase() ||
-        c.englishBase.toLowerCase() === clean.toLowerCase()
-      );
-      if (exact) return exact;
+      const rawLower = rawCategory.toLowerCase().trim();
+      const cleaned = cleanCategoryNoise(rawCategory).toLowerCase();
 
-      // Regex canonical rules
-      for (const rule of canonicalRules) {
-        if (rule.regex.test(clean) || rule.regex.test(rawCategory)) {
-          if (canonicalMap.has(rule.target)) {
-            return canonicalMap.get(rule.target)!;
+      // 0. Bengali match if present
+      const rawBengaliMatches = rawCategory.match(/[\u0980-\u09FF]+/g);
+      if (rawBengaliMatches) {
+        const rawBengaliStr = rawBengaliMatches.join(' ').trim();
+        for (const cat of catalogList) {
+          if (cat.bengaliAlt && (cat.bengaliAlt === rawBengaliStr || cat.fullName.includes(rawBengaliStr) || rawBengaliStr.includes(cat.bengaliAlt))) {
+            return cat;
           }
         }
       }
 
-      // Substring matching
-      const lowerClean = clean.toLowerCase();
+      if (!cleaned) return null;
+
+      const rawTokens = cleaned.split(/\s+/).filter(t => t.length > 1);
+      const rawStems = rawTokens.map(stemWord);
+      const rawStemStr = rawStems.join(' ');
+
+      // 1. Direct exact match on full name or cleaned base
       for (const cat of catalogList) {
-        const catLower = cat.englishBase.toLowerCase();
-        if (catLower.length >= 4 && (lowerClean.includes(catLower) || catLower.includes(lowerClean))) {
+        if (cat.cleanLower === cleaned || cat.cleanLower === rawLower || cat.fullName.toLowerCase() === rawLower) {
           return cat;
         }
       }
+
+      // 2. Exact stem-string match
+      for (const cat of catalogList) {
+        const catStemStr = cat.stems.join(' ');
+        if (catStemStr && (catStemStr === rawStemStr || catStemStr === stemWord(cleaned))) {
+          return cat;
+        }
+      }
+
+      // 3. Token Stem Inclusion (prioritize longest stem match >= 4 characters)
+      let bestStemMatch: typeof catalogList[0] | null = null;
+      let maxMatchedStemLen = 0;
+
+      for (const cat of catalogList) {
+        if (cat.stems.length === 0) continue;
+        for (const catStem of cat.stems) {
+          if (catStem.length >= 3 && rawStems.includes(catStem)) {
+            if (catStem.length > maxMatchedStemLen) {
+              maxMatchedStemLen = catStem.length;
+              bestStemMatch = cat;
+            }
+          }
+        }
+      }
+      if (bestStemMatch && maxMatchedStemLen >= 4) {
+        return bestStemMatch;
+      }
+
+      // 4. Whole-word substring inclusion for multi-word categories
+      for (const cat of catalogList) {
+        if (cat.cleanLower.length >= 4) {
+          const wordRegex = new RegExp(`\\b${cat.cleanLower}\\b`, 'i');
+          if (wordRegex.test(cleaned)) {
+            return cat;
+          }
+        }
+      }
+
+      // 5. Dynamic Levenshtein / Fuzzy matching for typos (e.g., "Appitizer", "Apprtizer", "Burgur")
+      let bestFuzzyMatch: typeof catalogList[0] | null = null;
+      let highestSim = 0;
+
+      for (const cat of catalogList) {
+        const wholeSim = stringSimilarity(cleaned, cat.cleanLower);
+        if (wholeSim >= 0.82 && wholeSim > highestSim) {
+          highestSim = wholeSim;
+          bestFuzzyMatch = cat;
+        }
+
+        // Token-level fuzzy
+        for (const rStem of rawStems) {
+          if (rStem.length >= 5) {
+            for (const cStem of cat.stems) {
+              if (cStem.length >= 5) {
+                const tokenSim = stringSimilarity(rStem, cStem);
+                if (tokenSim >= 0.82 && tokenSim > highestSim) {
+                  highestSim = tokenSim;
+                  bestFuzzyMatch = cat;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (bestFuzzyMatch && highestSim >= 0.82) {
+        return bestFuzzyMatch;
+      }
+
       return null;
     };
 
@@ -586,7 +656,7 @@ export async function getOrderItemsAndCategories(limit = 0) {
             catName = resolved.fullName;
             catIcon = resolved.icon || '🍽️';
           } else {
-            const cleaned = cleanString(rawCat) || 'Popular Items';
+            const cleaned = cleanCategoryNoise(rawCat) || 'Popular Items';
             catId = slugify(cleaned) || 'popular-items';
             catName = titleCase(cleaned.replace(/-/g, ' '));
           }
