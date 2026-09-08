@@ -52,11 +52,11 @@ export async function getAdminDashboardSummary(): Promise<{
       pool.execute("SELECT COUNT(*) as count FROM dashboard_spotlights").then(([rows]: any) => Number(rows?.[0]?.count || 0)).catch(() => 0),
       
       // 5: Exclusive offers count
-      pool.execute("SELECT COUNT(*) as count FROM exclusive_offers").then(([rows]: any) => Number(rows?.[0]?.count || 0)).catch(() => 0),
+      pool.execute("SELECT COUNT(*) as count FROM dashboard_exclusive_offers").then(([rows]: any) => Number(rows?.[0]?.count || 0)).catch(() => 0),
       
       // 6: Orders (only date and amounts needed for metrics & charts, no bulky JSON parsing)
       pool.execute(
-        "SELECT id, total, totalAmount, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as orderDate FROM orders ORDER BY orderDate DESC LIMIT 2000"
+        "SELECT id, totalAmount, DATE_FORMAT(orderDate, '%Y-%m-%d %H:%i:%s') as orderDate FROM orders ORDER BY orderDate DESC LIMIT 2000"
       ).then(([rows]: any) => (Array.isArray(rows) ? rows : [])).catch(() => []),
 
       // 7: Leads (only id and creation date needed for metrics & charts, NO subqueries)

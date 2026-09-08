@@ -183,8 +183,15 @@ export default function MAdminDashboardPage() {
         const res = await getAdminDashboardSummary();
         if (res.success && res.data) {
           setCounts(res.data.counts);
-          setAllApiOrders((res.data.orders || []) as any[]);
-          setAllApiLeads((res.data.leads || []) as any[]);
+          const orders = (res.data.orders || []) as any[];
+          const leads = (res.data.leads || []) as any[];
+          setAllApiOrders(orders);
+          setAllApiLeads(leads);
+          setStatsData({
+            totalLeads: leads.length,
+            totalOrders: orders.length,
+            ...res.data.counts,
+          });
         } else {
           setStatsError(res.error || "Failed to load dashboard statistics.");
         }
@@ -205,10 +212,6 @@ export default function MAdminDashboardPage() {
 
 
   useEffect(() => {
-    if (!allApiOrders.length && !isLoadingStats) {
-      setChartData([]);
-      return;
-    }
     if (isLoadingStats) return;
 
     let dateFilterRange: { start: Date; end: Date } | null = null;
