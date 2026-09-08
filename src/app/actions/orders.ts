@@ -413,3 +413,77 @@ export async function deleteTemplateFromMySql(id: string) {
   }
 }
 
+/**
+ * Fetches unique items and categories extracted from past customer orders.
+ * Allows public visitors to view and select popular ordered items on MagicTab.
+ */
+export async function getOrderItemsAndCategories(limit = 150) {
+  try {
+    const [rows]: any = await pool.execute(
+      "SELECT items FROM orders WHERE items IS NOT NULL AND items != '' ORDER BY orderDate DESC LIMIT ?",
+      [limit]
+    );
+
+    const categoriesMap = new Map<string, { id: string; name: string; icon: string; visibleToUsers: boolean }>();
+    const itemsMap = new Map<string, any>();
+
+    const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const titleCase = (text: string) => text.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+
+    (Array.isArray(rows) ? rows : []).forEach((r: any) => {
+      let items: any[] = [];
+      try {
+        items = typeof r.items === 'string' ? JSON.parse(r.items) : r.items;
+      } catch {}
+      if (Array.isArray(items)) {
+        items.forEach((it: any) => {
+          if (!it || !it.name || typeof it.name !== 'string') return;
+          const cleanName = it.name.trim();
+          if (!cleanName || cleanName.length < 2) return;
+
+          let rawCat = (it.category || '').trim();
+          if (!rawCat || rawCat.toLowerCase() === 'uncategorized' || rawCat.toLowerCase() === 'null') {
+            rawCat = 'Popular Items';
+          }
+          const catSlug = slugify(rawCat) || 'popular-items';
+          const catName = titleCase(rawCat.replace(/-/g, ' '));
+
+          if (!categoriesMap.has(catSlug)) {
+            categoriesMap.set(catSlug, {
+              id: catSlug,
+              name: catName,
+              icon: '🍽️',
+              visibleToUsers: true
+            });
+          }
+
+          const itemKey = (cleanName + '|||' + catSlug).toLowerCase();
+          if (!itemsMap.has(itemKey)) {
+            itemsMap.set(itemKey, {
+              id: `order-${catSlug}-${slugify(cleanName)}`,
+              name: cleanName,
+              price: parseFloat(it.price) || 0,
+              category: catSlug,
+              imageUrl: it.image || it.imageUrl || '',
+              description: it.options || it.description || '',
+              subItems: Array.isArray(it.subItems) ? it.subItems : [],
+              visibleToUsers: true,
+              fromOrder: true
+            });
+          }
+        });
+      }
+    });
+
+    return {
+      success: true,
+      categories: Array.from(categoriesMap.values()),
+      items: Array.from(itemsMap.values())
+    };
+  } catch (error: any) {
+    console.error('Error fetching order items and categories:', error);
+    return { success: false, categories: [], items: [], error: error.message };
+  }
+}
+
+

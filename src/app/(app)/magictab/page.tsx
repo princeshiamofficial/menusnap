@@ -56,8 +56,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useClientAuth } from '@/hooks/use-client-auth';
-import { getCategoriesFromMySql, getMenuItemsFromMySql } from '@/app/actions/orders';
-import { ClientGate } from '@/components/auth/ClientGate';
+import { getCategoriesFromMySql, getMenuItemsFromMySql, getOrderItemsAndCategories } from '@/app/actions/orders';
 
 const DRAFTS_STORAGE_KEY = 'menuBuilderDrafts';
 const CUSTOM_CATEGORIES_STORAGE_KEY = 'colorHutCustomCategories';
@@ -620,7 +619,7 @@ export default function MagicTabPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
-  const [selectedMenuType, setSelectedMenuType] = useState<string>('');
+  const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
   const [itemsToSelectFromDraft, setItemsToSelectFromDraft] = useState<string[] | null>(null);
 
   const [loadingCategories, setLoadingCategories] = useState(true);
@@ -719,16 +718,32 @@ export default function MagicTabPage() {
       const type = menuType === 'parlour' ? 'parlour' : 'restaurant';
       const result = await getCategoriesFromMySql(type, true); // true for visibleOnly
       
-      if (!result.success) throw new Error(result.message || "Failed to fetch categories from local MySQL.");
+      const serverCategories: Category[] = (result?.success && Array.isArray(result.data))
+        ? (result.data as any[]).map((cat: any) => ({
+            ...cat,
+            id: String(cat.id),
+            icon: cat.icon || 'UtensilsCrossed',
+            visibleToUsers: true,
+          }))
+        : [];
 
-      const serverCategories: Category[] = (result.data as any[])
-        .map((cat: any) => ({ ...cat, id: String(cat.id) }));
+      // Fetch extra categories from orders table
+      const orderData = await getOrderItemsAndCategories(150);
+      const orderCategories: Category[] = (orderData?.success && Array.isArray(orderData.categories))
+        ? orderData.categories.map((c: any) => ({
+            id: String(c.id),
+            name: c.name,
+            icon: 'UtensilsCrossed',
+            visibleToUsers: true,
+          }))
+        : [];
 
       const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
-      const combinedCategories = [...serverCategories, ...localCategories];
+      const combinedCategories = [...serverCategories, ...orderCategories, ...localCategories];
       const uniqueCategories = Array.from(new Map(combinedCategories.map(cat => [cat.id, cat])).values());
 
       setApiCategories(uniqueCategories);
+      setActiveCategoryId(prev => prev && uniqueCategories.some(c => c.id === prev) ? prev : (uniqueCategories[0]?.id || null));
 
     } catch (err: any) {
       console.error("Local Categories Error:", err);
@@ -747,17 +762,32 @@ export default function MagicTabPage() {
       const type = menuType === 'parlour' ? 'parlour' : 'restaurant';
       const result = await getMenuItemsFromMySql(type, true); // true for visibleOnly
       
-      if (!result.success) throw new Error(result.message || "Failed to fetch items from local MySQL.");
+      const serverItems: MenuItem[] = (result?.success && Array.isArray(result.data))
+        ? (result.data as any[]).map((item: any) => ({
+            ...item,
+            id: String(item.id),
+            price: parseFloat(item.price) || 0,
+            category: String(item.categoryId)
+          }))
+        : [];
 
-      const serverItems: MenuItem[] = (result.data as any[]).map((item: any) => ({
-          ...item,
-          id: String(item.id),
-          price: parseFloat(item.price) || 0,
-          category: String(item.categoryId)
-        }));
+      // Fetch extra items from orders table
+      const orderData = await getOrderItemsAndCategories(150);
+      const orderItems: MenuItem[] = (orderData?.success && Array.isArray(orderData.items))
+        ? orderData.items.map((it: any) => ({
+            id: String(it.id),
+            name: it.name,
+            price: parseFloat(it.price) || 0,
+            category: String(it.category),
+            image: it.imageUrl || it.image || undefined,
+            description: it.description || null,
+            subItems: Array.isArray(it.subItems) ? it.subItems : [],
+            visibleToUsers: true,
+          }))
+        : [];
 
       const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
-      const combinedItems = [...serverItems, ...localItems];
+      const combinedItems = [...serverItems, ...orderItems, ...localItems];
       const uniqueItems = Array.from(new Map(combinedItems.map(item => [item.id, item])).values());
       setAllMenuItems(uniqueItems);
 
@@ -771,11 +801,11 @@ export default function MagicTabPage() {
   }, []);
 
   useEffect(() => {
-    if (isClientLoggedIn && selectedMenuType) {
+    if (selectedMenuType) {
       loadCategories(selectedMenuType);
       loadItems(selectedMenuType);
     }
-  }, [isClientLoggedIn, selectedMenuType, loadCategories, loadItems]);
+  }, [selectedMenuType, loadCategories, loadItems]);
 
 
   // Effect to handle restoring a draft on page load
@@ -1018,17 +1048,15 @@ export default function MagicTabPage() {
   }, [apiCategories, setActiveCategoryId]);
 
   const currentMenuItems = useMemo(() => {
+    if (debouncedSearchTerm) {
+      return allMenuItems.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+    }
+
     if (!activeCategoryId) {
-      return [];
+      return allMenuItems;
     }
 
-    let itemsToFilter = allMenuItems.filter(item => item.category === activeCategoryId);
-
-    if (!debouncedSearchTerm) {
-      return itemsToFilter;
-    }
-
-    return itemsToFilter.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+    return allMenuItems.filter(item => item.category === activeCategoryId);
   }, [activeCategoryId, allMenuItems, debouncedSearchTerm]);
 
   const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => {
@@ -1136,7 +1164,6 @@ export default function MagicTabPage() {
   const loading = loadingCategories || loadingItems;
 
   return (
-    <ClientGate>
     <>
       {isMounted && createPortal(
         <AnimatePresence>
@@ -1425,6 +1452,5 @@ export default function MagicTabPage() {
         clientUser={clientUser}
       />
     </>
-    </ClientGate>
   );
 }
