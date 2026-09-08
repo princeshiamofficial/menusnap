@@ -672,9 +672,34 @@ export default function MagicTabPage() {
     return () => cancelAnimationFrame(animationId);
   }, [searchTerm]);
 
+  // Dynamically sort categories by item count descending (whichever category has the most items stays on top)
+  const sortedCategories = useMemo(() => {
+    const countMap = new Map<string, number>();
+    for (const item of allMenuItems) {
+      if (item.category) {
+        countMap.set(item.category, (countMap.get(item.category) || 0) + 1);
+      }
+    }
+
+    return [...apiCategories].map(cat => ({
+      ...cat,
+      itemCount: countMap.has(cat.id) ? countMap.get(cat.id)! : (cat.itemCount || 0)
+    })).sort((a, b) => {
+      const diff = (b.itemCount || 0) - (a.itemCount || 0);
+      if (diff !== 0) return diff;
+      return a.name.localeCompare(b.name);
+    });
+  }, [apiCategories, allMenuItems]);
+
   const selectedCategory = useMemo(() => {
-    return apiCategories.find(c => c.id === activeCategoryId) || null;
-  }, [apiCategories, activeCategoryId]);
+    return sortedCategories.find(c => c.id === activeCategoryId) || null;
+  }, [sortedCategories, activeCategoryId]);
+
+  useEffect(() => {
+    if (sortedCategories.length > 0 && (!activeCategoryId || !sortedCategories.some(c => c.id === activeCategoryId))) {
+      setActiveCategoryId(sortedCategories[0].id);
+    }
+  }, [sortedCategories, activeCategoryId]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -745,6 +770,7 @@ export default function MagicTabPage() {
             id: String(c.id),
             name: c.name,
             icon: c.icon || 'UtensilsCrossed',
+            itemCount: c.itemCount || 0,
             visibleToUsers: true,
           });
         }
@@ -765,6 +791,13 @@ export default function MagicTabPage() {
           uniqueCategories.push(cat);
         }
       }
+
+      // Sort with highest item count at the top
+      uniqueCategories.sort((a, b) => {
+        const diff = (b.itemCount || 0) - (a.itemCount || 0);
+        if (diff !== 0) return diff;
+        return a.name.localeCompare(b.name);
+      });
 
       setApiCategories(uniqueCategories);
       setActiveCategoryId(prev => prev && uniqueCategories.some(c => c.id === prev) ? prev : (uniqueCategories[0]?.id || null));
@@ -1220,7 +1253,7 @@ export default function MagicTabPage() {
 
         <div className="hidden md:block h-full">
           <CategoryList
-            categories={apiCategories}
+            categories={sortedCategories}
             onCategoryChange={setActiveCategoryId}
             onEditCategory={handleOpenEditCategory}
             onQuickAdd={handleQuickAddCategory}
@@ -1392,9 +1425,8 @@ export default function MagicTabPage() {
                                 </div>
                               )}
 
-                              {apiCategories
+                              {sortedCategories
                                 .filter(cat => decodeHtmlEntities(cat.name).toLowerCase().includes(categorySearchTerm.toLowerCase()))
-                                .sort((a,b) => a.name.localeCompare(b.name))
                                 .map(cat => (
                                   <Button
                                     key={cat.id}
@@ -1411,7 +1443,12 @@ export default function MagicTabPage() {
                                   >
                                     <span className="text-xl flex-shrink-0">{cat.icon}</span>
                                     <span className="font-semibold">{decodeHtmlEntities(cat.name)}</span>
-                                    {activeCategoryId === cat.id && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                                    {cat.itemCount !== undefined && cat.itemCount > 0 && (
+                                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-auto mr-1">
+                                        {cat.itemCount}
+                                      </span>
+                                    )}
+                                    {activeCategoryId === cat.id && <div className={cn("w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0", (cat.itemCount && cat.itemCount > 0) ? "" : "ml-auto")} />}
                                   </Button>
                                 ))}
                             </div>
@@ -1482,7 +1519,7 @@ export default function MagicTabPage() {
         isOpen={isPreviewDialogOpen}
         onOpenChange={setIsPreviewDialogOpen}
         selectedItems={preparedSelectedItemsForPreview}
-        allCategories={apiCategories}
+        allCategories={sortedCategories}
         onRemoveItem={handleRemoveItemFromPreview}
         selectedMenuType={selectedMenuType}
         clientUser={clientUser}

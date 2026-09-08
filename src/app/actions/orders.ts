@@ -689,9 +689,24 @@ export async function getOrderItemsAndCategories(limit = 0) {
       }
     });
 
+    // Count items per category to place categories with the most items at the top
+    const categoryItemCounts = new Map<string, number>();
+    for (const it of itemsMap.values()) {
+      if (it.category) {
+        categoryItemCounts.set(it.category, (categoryItemCounts.get(it.category) || 0) + 1);
+      }
+    }
+
+    const sortedCategories = Array.from(categoriesMap.values())
+      .map(cat => ({
+        ...cat,
+        itemCount: categoryItemCounts.get(cat.id) || 0
+      }))
+      .sort((a, b) => (b.itemCount || 0) - (a.itemCount || 0));
+
     const result = {
       success: true,
-      categories: Array.from(categoriesMap.values()),
+      categories: sortedCategories,
       items: Array.from(itemsMap.values())
     };
 

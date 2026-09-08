@@ -51,11 +51,17 @@ function CategoryListComponent({
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // If there's no selection or the current selection is no longer valid, select the first category
+    // If there's no selection or the current selection is no longer valid, select the top category (by item count)
     if (categories.length > 0 && (!selectedCategoryId || !categories.some(c => c.id === selectedCategoryId))) {
-      const firstCategoryId = [...categories].sort((a,b) => a.name.localeCompare(b.name))[0].id; // Create a copy to sort
-      setSelectedCategoryId(firstCategoryId);
-      onCategoryChange(firstCategoryId);
+      const sorted = [...categories].sort((a, b) => {
+        const diff = (b.itemCount || 0) - (a.itemCount || 0);
+        return diff !== 0 ? diff : a.name.localeCompare(b.name);
+      });
+      const firstCategoryId = sorted[0]?.id;
+      if (firstCategoryId) {
+        setSelectedCategoryId(firstCategoryId);
+        onCategoryChange(firstCategoryId);
+      }
     } else if (categories.length === 0) {
       setSelectedCategoryId(null);
       onCategoryChange(null);
@@ -78,7 +84,11 @@ function CategoryListComponent({
   };
 
   const filteredCategories = useMemo(() => {
-    const sorted = [...categories].sort((a,b) => a.name.localeCompare(b.name));
+    // Categories with the most items stay at the top
+    const sorted = [...categories].sort((a, b) => {
+      const diff = (b.itemCount || 0) - (a.itemCount || 0);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name);
+    });
     if (!catSearch.trim()) return sorted;
     
     const term = catSearch.toLowerCase();
@@ -176,6 +186,11 @@ function CategoryListComponent({
                 <span className="flex-1 font-medium truncate text-sm">
                   {decodeHtmlEntities(category.name)}
                 </span>
+                {category.itemCount !== undefined && category.itemCount > 0 && (
+                  <span className="text-[11px] font-semibold text-muted-foreground/70 px-1.5 py-0.5 rounded-full bg-muted/60 shrink-0 group-hover:bg-muted/90 transition-colors">
+                    {category.itemCount}
+                  </span>
+                )}
                 
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
