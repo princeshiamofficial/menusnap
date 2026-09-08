@@ -52,9 +52,7 @@ import {
   eachDayOfInterval,
   getHours
 } from 'date-fns';
-import { getOrdersFromMySql, getTemplatesFromMySql, getCategoriesFromMySql, getMenuItemsFromMySql } from '@/app/actions/orders';
-import { getLeads, getLeadsTrend } from '@/app/actions/clients';
-import { getDashboardSlides, getDashboardSpotlights, getExclusiveOffers } from '@/app/actions/storefront';
+import { getAdminDashboardSummary } from '@/app/actions/dashboard';
 import { AdminSendNotification } from '@/components/admin/admin-send-notification';
 
 interface StatCardAdminProps {
@@ -146,12 +144,16 @@ export default function MAdminDashboardPage() {
 
   const [allApiOrders, setAllApiOrders] = useState<ApiOrder[]>([]);
   const [allApiLeads, setAllApiLeads] = useState<any[]>([]);
-  const [allApiCategories, setAllApiCategories] = useState<any[]>([]);
-  const [allApiItems, setAllApiItems] = useState<any[]>([]);
-  const [allApiTemplates, setAllApiTemplates] = useState<any[]>([]);
-  const [allApiSlides, setAllApiSlides] = useState<any[]>([]);
-  const [allApiSpotlights, setAllApiSpotlights] = useState<any[]>([]);
-  const [allApiOffers, setAllApiOffers] = useState<any[]>([]);
+  const [counts, setCounts] = useState({
+    totalTemplates: 0,
+    totalRestaurantCategories: 0,
+    totalParlourCategories: 0,
+    totalRestaurantItems: 0,
+    totalParlourItems: 0,
+    totalSlides: 0,
+    totalSpotlights: 0,
+    totalOffers: 0,
+  });
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [leadsChartData, setLeadsChartData] = useState<any[]>([]);
 
@@ -178,41 +180,16 @@ export default function MAdminDashboardPage() {
       setStatsError(null);
 
       try {
-        const [
-          catResult,
-          itemResult,
-          templateResult,
-          orderResult,
-          leadsResult,
-          leadsTrendResult,
-          slidesResult,
-          spotlightsResult,
-          offersResult
-        ] = await Promise.all([
-          getCategoriesFromMySql(),
-          getMenuItemsFromMySql(),
-          getTemplatesFromMySql(),
-          getOrdersFromMySql(),
-          getLeads(1, 5000),
-          getLeadsTrend(),
-          getDashboardSlides(),
-          getDashboardSpotlights(),
-          getExclusiveOffers(),
-        ]);
-
-        if (catResult.success) setAllApiCategories(catResult.data as any[]);
-        if (itemResult.success) setAllApiItems(itemResult.data as any[]);
-        if (templateResult.success) setAllApiTemplates(templateResult.data as any[]);
-        if (orderResult.success) setAllApiOrders(orderResult.data as any[]);
-        if (leadsResult.success) setAllApiLeads(leadsResult.leads);
-        if (slidesResult.success) setAllApiSlides(slidesResult.slides);
-        if (spotlightsResult.success) setAllApiSpotlights(spotlightsResult.spotlights);
-        if (offersResult.success) setAllApiOffers(offersResult.offers);
-
-        // We don't need to put anything else in combinedStatsData here,
-        // because setStatsData is now handled in the main processing useEffect.
-
+        const res = await getAdminDashboardSummary();
+        if (res.success && res.data) {
+          setCounts(res.data.counts);
+          setAllApiOrders((res.data.orders || []) as any[]);
+          setAllApiLeads((res.data.leads || []) as any[]);
+        } else {
+          setStatsError(res.error || "Failed to load dashboard statistics.");
+        }
       } catch (e: any) {
+        console.error("Dashboard stats error:", e);
         setStatsError(e.message || "An unexpected error occurred.");
         const defaultErrorStats: Record<string, number | string> = {};
         adminStatConfigs.forEach(config => defaultErrorStats[config.id] = 0);
@@ -405,25 +382,19 @@ export default function MAdminDashboardPage() {
     // Total Orders (Filtered)
     dynamicStats.totalOrders = ordersToProcess.length;
 
-    // Remaining stats (mostly static or computed from the full data, but we can filter if needed)
-    // For now, these are the current catalog totals
-    dynamicStats.totalTemplates = (allApiTemplates || []).length;
-    
-    const catData = allApiCategories || [];
-    dynamicStats.totalRestaurantCategories = catData.filter((c: any) => c.type === 'restaurant').length;
-    dynamicStats.totalParlourCategories = catData.filter((c: any) => c.type === 'parlour').length;
-
-    const itemData = allApiItems || [];
-    dynamicStats.totalRestaurantItems = itemData.filter((i: any) => i.type === 'restaurant').length;
-    dynamicStats.totalParlourItems = itemData.filter((i: any) => i.type === 'parlour').length;
-
-    dynamicStats.totalSlides = (allApiSlides || []).length;
-    dynamicStats.totalSpotlights = (allApiSpotlights || []).length;
-    dynamicStats.totalOffers = (allApiOffers || []).length;
+    // Catalog & Content Totals
+    dynamicStats.totalTemplates = counts.totalTemplates;
+    dynamicStats.totalRestaurantCategories = counts.totalRestaurantCategories;
+    dynamicStats.totalParlourCategories = counts.totalParlourCategories;
+    dynamicStats.totalRestaurantItems = counts.totalRestaurantItems;
+    dynamicStats.totalParlourItems = counts.totalParlourItems;
+    dynamicStats.totalSlides = counts.totalSlides;
+    dynamicStats.totalSpotlights = counts.totalSpotlights;
+    dynamicStats.totalOffers = counts.totalOffers;
 
     setStatsData(dynamicStats);
 
-  }, [allApiOrders, allApiLeads, allApiCategories, allApiItems, allApiTemplates, allApiSlides, allApiSpotlights, allApiOffers, selectedDateRange, isLoadingStats]);
+  }, [allApiOrders, allApiLeads, counts, selectedDateRange, isLoadingStats]);
 
 
   // No local auth checks needed anymore, handled by layout

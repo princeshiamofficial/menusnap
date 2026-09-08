@@ -133,7 +133,7 @@ export function AdminSidebarNav() {
                     sideOffset: 10
                   }}
                 >
-                  <Link href={item.href}>
+                  <Link href={item.href} prefetch={false}>
                     <item.icon className="h-5 w-5" />
                     <span className="group-data-[collapsible=icon]:hidden flex-1">{item.label}</span>
                     {item.hasChevron && <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden" />}
