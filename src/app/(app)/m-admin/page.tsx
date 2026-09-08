@@ -164,18 +164,6 @@ export default function MAdminDashboardPage() {
 
   useEffect(() => {
     async function fetchAllAdminStats() {
-      if (adminLoading) {
-        setIsLoadingStats(false);
-        setChartData([]);
-        setAllApiOrders([]);
-        const initialStats: Record<string, number | string> = {};
-        adminStatConfigs.forEach(config => {
-          initialStats[config.id] = 0;
-        });
-        setStatsData(initialStats);
-        return;
-      }
-
       setIsLoadingStats(true);
       setStatsError(null);
 
@@ -207,8 +195,7 @@ export default function MAdminDashboardPage() {
       }
     }
     fetchAllAdminStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminLoading]);
+  }, []);
 
 
   useEffect(() => {
