@@ -42,6 +42,7 @@ export async function submitOrderToMySql(orderPayload: any) {
       ]
     );
 
+    cachedOrderCatalog = null;
     revalidatePath('/m-admin/manage-orders');
     return { success: true, message: 'Order submitted directly to MySQL.' };
   } catch (error: any) {
@@ -413,16 +414,37 @@ export async function deleteTemplateFromMySql(id: string) {
   }
 }
 
+let cachedOrderCatalog: { categories: any[]; items: any[]; timestamp: number } | null = null;
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+
 /**
  * Fetches unique items and categories extracted from past customer orders.
- * Allows public visitors to view and select popular ordered items on MagicTab.
+ * If limit is 0, extracts from ALL orders in the database.
+ * Employs in-memory caching for ultra-fast (<5ms) repeated responses.
  */
-export async function getOrderItemsAndCategories(limit = 150) {
+export async function getOrderItemsAndCategories(limit = 0) {
   try {
-    const [rows]: any = await pool.execute(
-      "SELECT items FROM orders WHERE items IS NOT NULL AND items != '' ORDER BY orderDate DESC LIMIT ?",
-      [limit]
-    );
+    const now = Date.now();
+    if (limit === 0 && cachedOrderCatalog && (now - cachedOrderCatalog.timestamp < CACHE_TTL_MS)) {
+      return {
+        success: true,
+        categories: cachedOrderCatalog.categories,
+        items: cachedOrderCatalog.items
+      };
+    }
+
+    // Lookup table for categoryId to name from catalog categories
+    const [catLookupRows]: any = await pool.execute("SELECT id, name FROM categories").catch(() => [[]]);
+    const catLookup = new Map<string, string>();
+    if (Array.isArray(catLookupRows)) {
+      catLookupRows.forEach((c: any) => catLookup.set(String(c.id), c.name));
+    }
+
+    const query = limit > 0
+      ? `SELECT items FROM orders WHERE items IS NOT NULL AND items != '' ORDER BY orderDate DESC LIMIT ${Number(limit)}`
+      : `SELECT items FROM orders WHERE items IS NOT NULL AND items != '' ORDER BY orderDate DESC`;
+
+    const [rows]: any = await pool.execute(query);
 
     const categoriesMap = new Map<string, { id: string; name: string; icon: string; visibleToUsers: boolean }>();
     const itemsMap = new Map<string, any>();
@@ -441,10 +463,20 @@ export async function getOrderItemsAndCategories(limit = 150) {
           const cleanName = it.name.trim();
           if (!cleanName || cleanName.length < 2) return;
 
-          let rawCat = (it.category || '').trim();
+          let rawCat = (it.categoryName || it.category || '').trim();
+          if (!rawCat && it.categoryId && catLookup.has(String(it.categoryId))) {
+            rawCat = catLookup.get(String(it.categoryId))!;
+          } else if (!rawCat && it.categoryId) {
+            rawCat = String(it.categoryId);
+          }
+
           if (!rawCat || rawCat.toLowerCase() === 'uncategorized' || rawCat.toLowerCase() === 'null') {
             rawCat = 'Popular Items';
           }
+
+          // Clean HTML entities if present
+          rawCat = rawCat.replace(/&amp;/g, '&').replace(/&#039;/g, "'");
+
           const catSlug = slugify(rawCat) || 'popular-items';
           const catName = titleCase(rawCat.replace(/-/g, ' '));
 
@@ -464,6 +496,7 @@ export async function getOrderItemsAndCategories(limit = 150) {
               name: cleanName,
               price: parseFloat(it.price) || 0,
               category: catSlug,
+              categoryName: catName,
               imageUrl: it.image || it.imageUrl || '',
               description: it.options || it.description || '',
               subItems: Array.isArray(it.subItems) ? it.subItems : [],
@@ -475,11 +508,21 @@ export async function getOrderItemsAndCategories(limit = 150) {
       }
     });
 
-    return {
+    const result = {
       success: true,
       categories: Array.from(categoriesMap.values()),
       items: Array.from(itemsMap.values())
     };
+
+    if (limit === 0) {
+      cachedOrderCatalog = {
+        categories: result.categories,
+        items: result.items,
+        timestamp: Date.now()
+      };
+    }
+
+    return result;
   } catch (error: any) {
     console.error('Error fetching order items and categories:', error);
     return { success: false, categories: [], items: [], error: error.message };

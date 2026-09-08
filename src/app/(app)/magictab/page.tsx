@@ -727,16 +727,25 @@ export default function MagicTabPage() {
           }))
         : [];
 
-      // Fetch extra categories from orders table
-      const orderData = await getOrderItemsAndCategories(150);
-      const orderCategories: Category[] = (orderData?.success && Array.isArray(orderData.categories))
-        ? orderData.categories.map((c: any) => ({
+      // Fetch all categories from orders table (0 = unlimited / all orders)
+      const orderData = await getOrderItemsAndCategories(0);
+
+      // Deduplicate order categories against server categories by normalized name
+      const existingNames = new Set(serverCategories.map(c => decodeHtmlEntities(c.name).trim().toLowerCase()));
+      const orderCategories: Category[] = [];
+
+      (orderData?.categories || []).forEach((c: any) => {
+        const norm = decodeHtmlEntities(c.name).trim().toLowerCase();
+        if (!existingNames.has(norm)) {
+          existingNames.add(norm);
+          orderCategories.push({
             id: String(c.id),
             name: c.name,
-            icon: 'UtensilsCrossed',
+            icon: c.icon || 'UtensilsCrossed',
             visibleToUsers: true,
-          }))
-        : [];
+          });
+        }
+      });
 
       const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
       const combinedCategories = [...serverCategories, ...orderCategories, ...localCategories];
@@ -771,20 +780,32 @@ export default function MagicTabPage() {
           }))
         : [];
 
-      // Fetch extra items from orders table
-      const orderData = await getOrderItemsAndCategories(150);
-      const orderItems: MenuItem[] = (orderData?.success && Array.isArray(orderData.items))
-        ? orderData.items.map((it: any) => ({
-            id: String(it.id),
-            name: it.name,
-            price: parseFloat(it.price) || 0,
-            category: String(it.category),
-            image: it.imageUrl || it.image || undefined,
-            description: it.description || null,
-            subItems: Array.isArray(it.subItems) ? it.subItems : [],
-            visibleToUsers: true,
-          }))
-        : [];
+      // Fetch all items from orders table (0 = unlimited / all orders)
+      const orderData = await getOrderItemsAndCategories(0);
+
+      // Build mapping from normalized category name -> catalog category id
+      const catNameToId = new Map<string, string>();
+      const catsRes = await getCategoriesFromMySql(type, true);
+      if (catsRes?.success && Array.isArray(catsRes.data)) {
+        catsRes.data.forEach((c: any) => {
+          catNameToId.set(decodeHtmlEntities(c.name).trim().toLowerCase(), String(c.id));
+        });
+      }
+
+      const orderItems: MenuItem[] = (orderData?.items || []).map((it: any) => {
+        const normCatName = decodeHtmlEntities(it.categoryName || it.category || '').trim().toLowerCase();
+        const resolvedCategory = catNameToId.get(normCatName) || String(it.category);
+        return {
+          id: String(it.id),
+          name: it.name,
+          price: parseFloat(it.price) || 0,
+          category: resolvedCategory,
+          image: it.imageUrl || it.image || undefined,
+          description: it.description || null,
+          subItems: Array.isArray(it.subItems) ? it.subItems : [],
+          visibleToUsers: true,
+        };
+      });
 
       const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
       const combinedItems = [...serverItems, ...orderItems, ...localItems];
