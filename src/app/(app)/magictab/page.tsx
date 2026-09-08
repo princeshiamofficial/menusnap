@@ -730,14 +730,17 @@ export default function MagicTabPage() {
       // Fetch all categories from orders table (0 = unlimited / all orders)
       const orderData = await getOrderItemsAndCategories(0);
 
-      // Deduplicate order categories against server categories by normalized name
+      // Deduplicate order categories against server categories by normalized name and ID
       const existingNames = new Set(serverCategories.map(c => decodeHtmlEntities(c.name).trim().toLowerCase()));
+      const existingIds = new Set(serverCategories.map(c => String(c.id).toLowerCase()));
       const orderCategories: Category[] = [];
 
       (orderData?.categories || []).forEach((c: any) => {
         const norm = decodeHtmlEntities(c.name).trim().toLowerCase();
-        if (!existingNames.has(norm)) {
+        const idLower = String(c.id).toLowerCase();
+        if (!existingNames.has(norm) && !existingIds.has(idLower)) {
           existingNames.add(norm);
+          existingIds.add(idLower);
           orderCategories.push({
             id: String(c.id),
             name: c.name,
@@ -749,7 +752,19 @@ export default function MagicTabPage() {
 
       const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
       const combinedCategories = [...serverCategories, ...orderCategories, ...localCategories];
-      const uniqueCategories = Array.from(new Map(combinedCategories.map(cat => [cat.id, cat])).values());
+      
+      const seenIds = new Set<string>();
+      const seenNames = new Set<string>();
+      const uniqueCategories: Category[] = [];
+      for (const cat of combinedCategories) {
+        const idKey = String(cat.id).toLowerCase();
+        const nameKey = decodeHtmlEntities(cat.name).trim().toLowerCase();
+        if (!seenIds.has(idKey) && !seenNames.has(nameKey)) {
+          seenIds.add(idKey);
+          seenNames.add(nameKey);
+          uniqueCategories.push(cat);
+        }
+      }
 
       setApiCategories(uniqueCategories);
       setActiveCategoryId(prev => prev && uniqueCategories.some(c => c.id === prev) ? prev : (uniqueCategories[0]?.id || null));

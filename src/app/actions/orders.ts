@@ -419,7 +419,8 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
 
 /**
  * Fetches unique items and categories extracted from past customer orders.
- * If limit is 0, extracts from ALL orders in the database.
+ * Automatically resolves and merges similar category names into standard canonical categories
+ * (e.g. "Appetizer & Starter", "Appetizers (1:3)", "Appitizer" all merge into "Appetizers").
  * Employs in-memory caching for ultra-fast (<5ms) repeated responses.
  */
 export async function getOrderItemsAndCategories(limit = 0) {
@@ -433,12 +434,122 @@ export async function getOrderItemsAndCategories(limit = 0) {
       };
     }
 
-    // Lookup table for categoryId to name from catalog categories
-    const [catLookupRows]: any = await pool.execute("SELECT id, name FROM categories").catch(() => [[]]);
-    const catLookup = new Map<string, string>();
-    if (Array.isArray(catLookupRows)) {
-      catLookupRows.forEach((c: any) => catLookup.set(String(c.id), c.name));
-    }
+    // 1. Fetch catalog categories to match and merge against
+    const [catLookupRows]: any = await pool.execute("SELECT id, name, icon FROM categories").catch(() => [[]]);
+    const catalogList = (Array.isArray(catLookupRows) ? catLookupRows : []).map((c: any) => {
+      const englishBase = c.name.replace(/\s*\([^)]*\)/g, '').trim();
+      return {
+        id: String(c.id),
+        fullName: c.name.trim(),
+        englishBase: englishBase,
+        icon: c.icon || 'UtensilsCrossed',
+        cleanLower: englishBase.toLowerCase()
+      };
+    });
+
+    const cleanString = (str: string) => {
+      return (str || '')
+        .replace(/&amp;/g, '&')
+        .replace(/&#039;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/\s*\([^)]*\)/g, '')
+        .replace(/^[0-9]+[.\-)]\s*/g, '')
+        .replace(/\s*item(s)?$/i, '')
+        .replace(/\s*dish(es)?$/i, '')
+        .replace(/\s*&?\s*starter(s)?$/i, '')
+        .replace(/\s*&?\s*snack(s)?$/i, '')
+        .replace(/\s*gallery$/i, '')
+        .replace(/'s$/i, '')
+        .trim();
+    };
+
+    const canonicalRules: { target: string; targetId?: string; regex: RegExp }[] = [
+      { target: 'Appetizers', targetId: 'appetizers', regex: /\b(?:app[eir]{1,3}ti[sz]er|starter)s?\b/i },
+      { target: 'Burger', targetId: 'burger', regex: /\b(?:burg[eu]r)s?\b/i },
+      { target: 'Pizza', targetId: 'pizza', regex: /\b(?:pizz?a)s?\b/i },
+      { target: 'Chow Mein (চাউমিন)', targetId: 'chowmein', regex: /\b(?:chow\s*mein|chao\s*mein|chowmin|চাউমিন)\b/i },
+      { target: 'Noodles', targetId: 'restaurant-noodles-1748939912547', regex: /\b(?:noodle|noodles|নুডলস)\b/i },
+      { target: 'Pasta (পাস্তা)', targetId: 'pasta', regex: /\b(?:pasta|পাস্তা)\b/i },
+      { target: 'Biriyani (বিরিয়ানি)', targetId: 'biryani', regex: /\b(?:bir[iy]ani|briyani|বিরিয়ানি)\b/i },
+      { target: 'Tehari (তেহারি)', targetId: '1751515311583', regex: /\b(?:tehari|tehori|তেহারি)\b/i },
+      { target: 'Kabab', targetId: '1750656745107', regex: /\b(?:k[ea]bab)s?\b/i },
+      { target: 'Soup (স্যুপ)', targetId: 'soup', regex: /\b(?:soup|স্যুপ)\b/i },
+      { target: 'Salad (সালাদ)', targetId: 'salad', regex: /\b(?:salad|সালাদ)\b/i },
+      { target: 'Sandwich (স্যান্ডউইচ)', targetId: 'sandwich', regex: /\b(?:sandwich|স্যান্ডউইচ)\b/i },
+      { target: 'Sub', targetId: 'restaurant-sub-1748935097696', regex: /\b(?:sub\s*sandwich|সাব\s*স্যান্ডউইচ)\b/i },
+      { target: 'Shawarma (শর্মা)', targetId: '1751458964181', regex: /\b(?:sha?wa?r?ma|shorma|শর্মা)\b/i },
+      { target: 'Beverage', targetId: '1752315376103', regex: /\b(?:beverage|soft\s*drink|cold\s*drink)s?\b/i },
+      { target: 'Juice (জুস)', targetId: '1752300028513', regex: /\b(?:juice|জুস)s?\b/i },
+      { target: 'Coffee', targetId: 'coffee', regex: /\b(?:coffee|espresso|cappuccino|latte|কফি)s?\b/i },
+      { target: 'Dessert', targetId: 'dessert', regex: /\b(?:dessert|sweet|sweets)s?\b/i },
+      { target: 'Falooda (ফালুদা)', targetId: '1750658574737', regex: /\b(?:fal[ou]{2}da|ফালুদা)\b/i },
+      { target: 'Fuchka (ফুচকা)', targetId: '1751456637740', regex: /\b(?:fuch?ka|fuska|phuchka|ফুচকা)\b/i },
+      { target: 'Chotpoti', targetId: '1750739155324', regex: /\b(?:chotpoti|চটপটি)\b/i },
+      { target: 'Waffle (ওয়াফেল)', targetId: 'restaurant-waffle-1748943651359', regex: /\b(?:waffle|ওয়াফেল)\b/i },
+      { target: 'Momo (মোমো)', targetId: 'momo', regex: /\b(?:momo|মোমো)\b/i },
+      { target: 'Nachos (নাচোস)', targetId: 'nachos', regex: /\b(?:nacho|nachos|নাচো|নাচোস)\b/i },
+      { target: 'Wings', targetId: 'wings', regex: /\b(?:wings|উইংস)\b/i },
+      { target: 'Fry (ফ্রাই)', targetId: '1751462075077', regex: /\b(?:french\s*fr[iy]|fries|ফ্রাই)\b/i },
+      { target: 'Platter', targetId: 'platter', regex: /\b(?:platter|প্ল্যাটার)\b/i },
+      { target: 'Set Menu', targetId: 'setMenu', regex: /\b(?:set\s*menu|সেট\s*মেনু)\b/i },
+      { target: 'Chicken Item', targetId: 'chickenItem', regex: /\b(?:chicken)\b/i },
+      { target: 'Beef Item', targetId: 'beefItem', regex: /\b(?:beef)\b/i },
+      { target: 'Fish Item', targetId: 'fishItem', regex: /\b(?:fish)\b/i },
+      { target: 'Prawn', targetId: 'prawn', regex: /\b(?:prawn|shrimp|চিংড়ি)\b/i },
+      { target: 'Rice', targetId: 'rice', regex: /\b(?:fried\s*rice|plain\s*rice)\b/i },
+      // Parlour canonical targets
+      { target: 'Facial', targetId: 'facial-basic', regex: /\b(?:facial|hydra\s*facial|ফেসিয়াল)\b/i },
+      { target: 'Hair Cut', targetId: 'hair-cutting', regex: /\b(?:hair\s*cut|haircut|হেয়ার\s*কাটিং)\b/i },
+      { target: 'Hair Color', targetId: 'hair-coloring', regex: /\b(?:hair\s*col[ou]{1,2}r|হেয়ার\s*কালার)\b/i },
+      { target: 'Hair Treatment', targetId: 'hair-treatment', regex: /\b(?:hair\s*treatment|hair\s*spa|হেয়ার\s*ট্রিটমেন্ট)\b/i },
+      { target: 'Hair Rebonding', targetId: 'eyelash-extensions', regex: /\b(?:rebonding|hair\s*straight|হেয়ার\s*স্ট্রেইট)\b/i },
+      { target: 'Pedicure & Manicure', targetId: '1752391035133', regex: /\b(?:pedicure|manicure|পেডিকিউর|মেনিকিউর)\b/i },
+      { target: 'Makeup', targetId: 'makeup', regex: /\b(?:makeup|make\s*up|makeover|মেকআপ)\b/i },
+      { target: 'Mehendi & Henna', targetId: 'mehendi-henna', regex: /\b(?:mehendi|mehndi|mehedi|মেহেদী)\b/i },
+      { target: 'Wax', targetId: 'body-waxing', regex: /\b(?:waxing|wax|ওয়াক্সিং|ওয়াক্স)\b/i },
+      { target: 'Threading', targetId: 'eyebrow-threading', regex: /\b(?:threading|থ্রেডিং)\b/i },
+    ];
+
+    const canonicalMap = new Map<string, typeof catalogList[0]>();
+    canonicalRules.forEach(rule => {
+      const match = catalogList.find(c => 
+        (rule.targetId && c.id === rule.targetId) ||
+        c.fullName.toLowerCase() === rule.target.toLowerCase() ||
+        c.englishBase.toLowerCase() === rule.target.toLowerCase()
+      );
+      if (match) canonicalMap.set(rule.target, match);
+    });
+
+    const resolveCategory = (rawCategory: string) => {
+      if (!rawCategory) return null;
+      const clean = cleanString(rawCategory);
+
+      // Direct exact match
+      const exact = catalogList.find(c => 
+        c.fullName.toLowerCase() === clean.toLowerCase() ||
+        c.englishBase.toLowerCase() === clean.toLowerCase()
+      );
+      if (exact) return exact;
+
+      // Regex canonical rules
+      for (const rule of canonicalRules) {
+        if (rule.regex.test(clean) || rule.regex.test(rawCategory)) {
+          if (canonicalMap.has(rule.target)) {
+            return canonicalMap.get(rule.target)!;
+          }
+        }
+      }
+
+      // Substring matching
+      const lowerClean = clean.toLowerCase();
+      for (const cat of catalogList) {
+        const catLower = cat.englishBase.toLowerCase();
+        if (catLower.length >= 4 && (lowerClean.includes(catLower) || catLower.includes(lowerClean))) {
+          return cat;
+        }
+      }
+      return null;
+    };
 
     const query = limit > 0
       ? `SELECT items FROM orders WHERE items IS NOT NULL AND items != '' ORDER BY orderDate DESC LIMIT ${Number(limit)}`
@@ -463,39 +574,39 @@ export async function getOrderItemsAndCategories(limit = 0) {
           const cleanName = it.name.trim();
           if (!cleanName || cleanName.length < 2) return;
 
-          let rawCat = (it.categoryName || it.category || '').trim();
-          if (!rawCat && it.categoryId && catLookup.has(String(it.categoryId))) {
-            rawCat = catLookup.get(String(it.categoryId))!;
-          } else if (!rawCat && it.categoryId) {
-            rawCat = String(it.categoryId);
+          const rawCat = (it.categoryName || it.category || '').trim();
+          const resolved = resolveCategory(rawCat);
+
+          let catId = '';
+          let catName = '';
+          let catIcon = '🍽️';
+
+          if (resolved) {
+            catId = resolved.id;
+            catName = resolved.fullName;
+            catIcon = resolved.icon || '🍽️';
+          } else {
+            const cleaned = cleanString(rawCat) || 'Popular Items';
+            catId = slugify(cleaned) || 'popular-items';
+            catName = titleCase(cleaned.replace(/-/g, ' '));
           }
 
-          if (!rawCat || rawCat.toLowerCase() === 'uncategorized' || rawCat.toLowerCase() === 'null') {
-            rawCat = 'Popular Items';
-          }
-
-          // Clean HTML entities if present
-          rawCat = rawCat.replace(/&amp;/g, '&').replace(/&#039;/g, "'");
-
-          const catSlug = slugify(rawCat) || 'popular-items';
-          const catName = titleCase(rawCat.replace(/-/g, ' '));
-
-          if (!categoriesMap.has(catSlug)) {
-            categoriesMap.set(catSlug, {
-              id: catSlug,
+          if (!categoriesMap.has(catId)) {
+            categoriesMap.set(catId, {
+              id: catId,
               name: catName,
-              icon: '🍽️',
+              icon: catIcon,
               visibleToUsers: true
             });
           }
 
-          const itemKey = (cleanName + '|||' + catSlug).toLowerCase();
+          const itemKey = (cleanName + '|||' + catId).toLowerCase();
           if (!itemsMap.has(itemKey)) {
             itemsMap.set(itemKey, {
-              id: `order-${catSlug}-${slugify(cleanName)}`,
+              id: `order-${catId}-${slugify(cleanName)}`,
               name: cleanName,
               price: parseFloat(it.price) || 0,
-              category: catSlug,
+              category: catId,
               categoryName: catName,
               imageUrl: it.image || it.imageUrl || '',
               description: it.options || it.description || '',
