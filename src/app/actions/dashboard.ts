@@ -1,6 +1,7 @@
 "use server";
 
 import pool from "@/lib/mysql";
+import { getOrderItemsAndCategories } from "@/app/actions/orders";
 
 export interface AdminDashboardData {
   counts: {
@@ -12,6 +13,9 @@ export interface AdminDashboardData {
     totalSlides: number;
     totalSpotlights: number;
     totalOffers: number;
+    totalOrderItems: number;
+    totalOrderCategories: number;
+    totalCombinedItems: number;
   };
   orders: Array<{
     id: string | number;
@@ -27,7 +31,7 @@ export interface AdminDashboardData {
 
 /**
  * Optimized single round-trip fetch for admin dashboard statistics.
- * Replaces 9 individual heavy client-side requests with fast index-friendly queries.
+ * Replaces individual heavy client-side requests with fast index-friendly queries.
  */
 export async function getAdminDashboardSummary(): Promise<{
   success: boolean;
@@ -62,7 +66,10 @@ export async function getAdminDashboardSummary(): Promise<{
       // 7: Leads (only id and creation date needed for metrics & charts, NO subqueries)
       pool.execute(
         "SELECT id, DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at FROM clients ORDER BY created_at DESC LIMIT 5000"
-      ).then(([rows]: any) => (Array.isArray(rows) ? rows : [])).catch(() => [])
+      ).then(([rows]: any) => (Array.isArray(rows) ? rows : [])).catch(() => []),
+
+      // 8: Order items and categories (from in-memory cache)
+      getOrderItemsAndCategories(0).catch(() => ({ success: false, items: [], categories: [] }))
     ]);
 
     const totalTemplates = results[0].status === "fulfilled" ? results[0].value : 0;
@@ -73,6 +80,7 @@ export async function getAdminDashboardSummary(): Promise<{
     const totalOffers = results[5].status === "fulfilled" ? results[5].value : 0;
     const orders = results[6].status === "fulfilled" ? results[6].value : [];
     const leads = results[7].status === "fulfilled" ? results[7].value : [];
+    const orderData = results[8].status === "fulfilled" ? (results[8].value as any) : { items: [], categories: [] };
 
     let totalRestaurantCategories = 0;
     let totalParlourCategories = 0;
@@ -88,6 +96,10 @@ export async function getAdminDashboardSummary(): Promise<{
       else if (r.type === "parlour") totalParlourItems = Number(r.count || 0);
     }
 
+    const totalOrderItems = orderData?.items?.length || 0;
+    const totalOrderCategories = orderData?.categories?.length || 0;
+    const totalCombinedItems = totalRestaurantItems + totalParlourItems + totalOrderItems;
+
     return {
       success: true,
       data: {
@@ -100,6 +112,9 @@ export async function getAdminDashboardSummary(): Promise<{
           totalSlides,
           totalSpotlights,
           totalOffers,
+          totalOrderItems,
+          totalOrderCategories,
+          totalCombinedItems,
         },
         orders,
         leads,

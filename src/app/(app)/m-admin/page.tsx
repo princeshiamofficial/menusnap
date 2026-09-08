@@ -24,7 +24,10 @@ import {
   Menu,
   Users,
   Image as ImageIcon,
-  Tag
+  Tag,
+  PackageCheck,
+  FolderPlus,
+  Flame
 } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
@@ -94,11 +97,14 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass }: StatCardAdminP
 const adminStatConfigs: (Omit<StatCardAdminProps, 'value'> & { id: string })[] = [
   { id: "totalLeads", title: "Total Leads", icon: Users, iconBgClass: "bg-blue-600" },
   { id: "totalOrders", title: "Total Orders", icon: ShoppingCart, iconBgClass: "bg-orange-500" },
+  { id: "totalOrderItems", title: "Order DB Items", icon: PackageCheck, iconBgClass: "bg-emerald-600" },
+  { id: "totalOrderCategories", title: "Order DB Categories", icon: FolderPlus, iconBgClass: "bg-violet-600" },
+  { id: "totalCombinedItems", title: "Total Available Items", icon: Flame, iconBgClass: "bg-rose-600" },
   { id: "totalTemplates", title: "Total Templates", icon: Layers, iconBgClass: "bg-teal-600" },
-  { id: "totalRestaurantItems", title: "Total Restaurant Items", icon: UtensilsCrossed, iconBgClass: "bg-amber-600" },
-  { id: "totalParlourItems", title: "Total Parlour Items", icon: Sparkles, iconBgClass: "bg-indigo-500" },
-  { id: "totalRestaurantCategories", title: "Total Restaurant Categories", icon: LayoutList, iconBgClass: "bg-emerald-500" },
-  { id: "totalParlourCategories", title: "Total Parlour Categories", icon: FolderHeart, iconBgClass: "bg-rose-500" },
+  { id: "totalRestaurantItems", title: "Catalog Restaurant Items", icon: UtensilsCrossed, iconBgClass: "bg-amber-600" },
+  { id: "totalParlourItems", title: "Catalog Parlour Items", icon: Sparkles, iconBgClass: "bg-indigo-500" },
+  { id: "totalRestaurantCategories", title: "Catalog Rest. Categories", icon: LayoutList, iconBgClass: "bg-emerald-500" },
+  { id: "totalParlourCategories", title: "Catalog Parl. Categories", icon: FolderHeart, iconBgClass: "bg-rose-500" },
   { id: "totalSlides", title: "Slide Images", icon: ImageIcon, iconBgClass: "bg-blue-400" },
   { id: "totalSpotlights", title: "Spotlight Stories", icon: Sparkles, iconBgClass: "bg-red-500" },
   { id: "totalOffers", title: "Exclusive Offers", icon: Tag, iconBgClass: "bg-indigo-600" },
@@ -153,6 +159,9 @@ export default function MAdminDashboardPage() {
     totalSlides: 0,
     totalSpotlights: 0,
     totalOffers: 0,
+    totalOrderItems: 0,
+    totalOrderCategories: 0,
+    totalCombinedItems: 0,
   });
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [leadsChartData, setLeadsChartData] = useState<any[]>([]);
@@ -381,6 +390,9 @@ export default function MAdminDashboardPage() {
     dynamicStats.totalSlides = counts.totalSlides;
     dynamicStats.totalSpotlights = counts.totalSpotlights;
     dynamicStats.totalOffers = counts.totalOffers;
+    dynamicStats.totalOrderItems = counts.totalOrderItems;
+    dynamicStats.totalOrderCategories = counts.totalOrderCategories;
+    dynamicStats.totalCombinedItems = counts.totalCombinedItems;
 
     setStatsData(dynamicStats);
 
