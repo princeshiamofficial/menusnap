@@ -56,3 +56,7 @@ auth_info_baileys/
 
 # User Uploads
 /public/uploads/
+
+# Local Agents Configuration
+.agents/
+

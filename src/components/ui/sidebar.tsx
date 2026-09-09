@@ -158,6 +158,7 @@ const Sidebar = React.forwardRef<
     side?: "left" | "right"
     variant?: "sidebar" | "floating" | "inset"
     collapsible?: "offcanvas" | "icon" | "none"
+    innerClassName?: string
   }
 >(
   (
@@ -166,6 +167,7 @@ const Sidebar = React.forwardRef<
       variant = "sidebar",
       collapsible = "offcanvas",
       className,
+      innerClassName,
       children,
       ...props
     },
@@ -214,7 +216,7 @@ const Sidebar = React.forwardRef<
           >
             <SheetTitle className="sr-only">Menu</SheetTitle>
             <SheetDescription className="sr-only">Navigation for Admin Panel</SheetDescription>
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <div className={cn("flex h-full w-full flex-col", innerClassName)}>{children}</div>
           </SheetContent>
         </Sheet>
       );
@@ -254,7 +256,10 @@ const Sidebar = React.forwardRef<
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className={cn(
+              "flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow",
+              innerClassName
+            )}
           >
             {children}
           </div>

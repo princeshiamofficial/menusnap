@@ -63,11 +63,20 @@ function AdminLayoutContent({ children }: { children: ReactNode }) {
   const hasAccess = pageKey ? checkClientPermission(adminUser, pageKey, 'view') : true;
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <Sidebar collapsible="icon" variant="sidebar" side="left" className="border-r border-sidebar-border shadow-md bg-sidebar">
+    <SidebarProvider 
+      defaultOpen={true}
+      style={{ "--sidebar-width": "244px", "--sidebar-width-icon": "4rem" } as React.CSSProperties}
+    >
+      <Sidebar 
+        collapsible="icon" 
+        variant="floating" 
+        side="left" 
+        className="p-3 bg-transparent border-none shadow-none"
+        innerClassName="!bg-[#0c0e14] !rounded-[28px] !border !border-slate-800/90 !shadow-[0_12px_40px_-5px_rgba(0,0,0,0.5)] overflow-hidden"
+      >
         <AdminSidebarNav />
       </Sidebar>
-      <SidebarInset className="bg-background min-w-0 w-full max-w-full">
+      <SidebarInset className="bg-slate-50/70 min-w-0 w-full max-w-full">
         <main className="flex-1 flex flex-col min-w-0 w-full max-w-full relative">
           <AdminNotificationPopup />
           {hasAccess ? (

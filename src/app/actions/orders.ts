@@ -5,6 +5,9 @@ import { revalidatePath } from 'next/cache';
 import pool from '@/lib/mysql';
 import { formatUtcDateTime } from '@/lib/dateUtils';
 
+let cachedOrderCatalog: Record<string, { categories: any[]; items: any[]; timestamp: number }> = {};
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+
 /**
  * Direct MySQL implementation for order submission.
  * Replaces the external PHP API for XAMPP Localhost.
@@ -42,7 +45,7 @@ export async function submitOrderToMySql(orderPayload: any) {
       ]
     );
 
-    cachedOrderCatalog = null;
+    cachedOrderCatalog = {};
     revalidatePath('/m-admin/manage-orders');
     return { success: true, message: 'Order submitted directly to MySQL.' };
   } catch (error: any) {
@@ -314,15 +317,17 @@ export async function getTemplatesFromMySql() {
  */
 export async function upsertCategoryToMySql(category: any) {
   try {
-    const { id, name, icon, type, itemCount, visibleToUsers, sortOrder } = category;
+    const { id, name, icon, type, itemCount, visibleToUsers, sortOrder, keywords, description, status } = category;
     await pool.execute(
-      `INSERT INTO categories (id, name, icon, type, itemCount, visibleToUsers, sortOrder)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO categories (id, name, icon, type, itemCount, visibleToUsers, sortOrder, keywords, description, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
        name = VALUES(name), icon = VALUES(icon), type = VALUES(type), 
-       itemCount = VALUES(itemCount), visibleToUsers = VALUES(visibleToUsers), sortOrder = VALUES(sortOrder)`,
-      [id, name, icon || '', type || 'restaurant', itemCount || 0, visibleToUsers !== false, sortOrder || 0]
+       itemCount = VALUES(itemCount), visibleToUsers = VALUES(visibleToUsers), sortOrder = VALUES(sortOrder),
+       keywords = VALUES(keywords), description = VALUES(description), status = VALUES(status)`,
+      [id, name, icon || '', type || 'restaurant', itemCount || 0, visibleToUsers !== false, sortOrder || 0, keywords || '', description || null, status || 'active']
     );
+    cachedOrderCatalog = {};
     return { success: true };
   } catch (error: any) {
     console.error('MySQL Category Upsert Error:', error);
@@ -379,6 +384,77 @@ export async function deleteMenuItemFromMySql(id: string) {
 }
 
 /**
+ * Remap a menu item to a different category.
+ */
+export async function remapMenuItemCategory(itemId: string, newCategoryId: string) {
+  try {
+    await pool.execute('UPDATE menu_items SET categoryId = ? WHERE id = ?', [newCategoryId, itemId]);
+    await pool.execute(`
+      UPDATE categories c
+      SET c.itemCount = (
+        SELECT COUNT(*) FROM menu_items m WHERE m.categoryId = c.id
+      )
+    `);
+    return { success: true };
+  } catch (error: any) {
+    console.error('MySQL Item Remap Error:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Fetch all items mapped to a specific category.
+ */
+export async function getCategoryMappedItems(categoryId: string) {
+  try {
+    const [rows]: any = await pool.execute(
+      'SELECT *, DATE_FORMAT(createdAt, "%Y-%m-%d %H:%i:%s") as createdAt FROM menu_items WHERE categoryId = ? ORDER BY sortOrder ASC, name ASC',
+      [categoryId]
+    );
+    const formatted = (Array.isArray(rows) ? rows : []).map((item: any) => ({
+      ...item,
+      subItems: typeof item.subItems === 'string' ? JSON.parse(item.subItems) : (item.subItems || [])
+    }));
+    return { success: true, data: formatted };
+  } catch (error: any) {
+    console.error('MySQL Category Mapped Items Error:', error);
+    return { success: false, message: error.message, data: [] };
+  }
+}
+
+/**
+ * Update keywords for a category used in auto-matching items from orders.
+ */
+export async function updateCategoryKeywords(categoryId: string, keywords: string) {
+  try {
+    await pool.execute(
+      'UPDATE categories SET keywords = ? WHERE id = ?',
+      [keywords.trim(), categoryId]
+    );
+    cachedOrderCatalog = {};
+    return { success: true, message: 'Category keywords updated successfully.' };
+  } catch (error: any) {
+    console.error('MySQL Category Keywords Update Error:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Fetch items mapped from orders for a specific category.
+ */
+export async function getCategoryOrderItems(categoryId: string, type: 'restaurant' | 'parlour' = 'restaurant') {
+  try {
+    const result = await getOrderItemsAndCategories(500, type);
+    if (!result.success || !result.items) return { success: true, data: [] };
+    const items = result.items.filter((it: any) => it.category === categoryId);
+    return { success: true, data: items };
+  } catch (error: any) {
+    console.error('MySQL Category Order Items Error:', error);
+    return { success: false, message: error.message, data: [] };
+  }
+}
+
+/**
  * Upsert a template.
  */
 export async function upsertTemplateToMySql(template: any) {
@@ -414,28 +490,51 @@ export async function deleteTemplateFromMySql(id: string) {
   }
 }
 
-let cachedOrderCatalog: { categories: any[]; items: any[]; timestamp: number } | null = null;
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
-
 /**
  * Fetches unique items and categories extracted from past customer orders.
  * Automatically resolves and merges similar category names into standard canonical categories
  * (e.g. "Appetizer & Starter", "Appetizers (1:3)", "Appitizer" all merge into "Appetizers").
+ * Strictly filters by business type ('restaurant' | 'parlour') to avoid cross-contamination.
  * Employs in-memory caching for ultra-fast (<5ms) repeated responses.
  */
-export async function getOrderItemsAndCategories(limit = 0) {
+export async function getOrderItemsAndCategories(limit = 0, type?: 'restaurant' | 'parlour') {
   try {
     const now = Date.now();
-    if (limit === 0 && cachedOrderCatalog && (now - cachedOrderCatalog.timestamp < CACHE_TTL_MS)) {
+    const cacheKey = `${type || 'all'}_${limit}`;
+    if (cachedOrderCatalog[cacheKey] && (now - cachedOrderCatalog[cacheKey].timestamp < CACHE_TTL_MS)) {
       return {
         success: true,
-        categories: cachedOrderCatalog.categories,
-        items: cachedOrderCatalog.items
+        categories: cachedOrderCatalog[cacheKey].categories,
+        items: cachedOrderCatalog[cacheKey].items
       };
     }
 
-    // 1. Fetch catalog categories to match and merge against dynamically
-    const [catLookupRows]: any = await pool.execute("SELECT id, name, icon FROM categories").catch(() => [[]]);
+    // 1. Fetch catalog categories for matching based on requested type
+    let catQuery = "SELECT id, name, icon, type, keywords FROM categories";
+    const catParams: any[] = [];
+    if (type) {
+      catQuery += " WHERE type = ?";
+      catParams.push(type);
+    }
+    const [catLookupRows]: any = await pool.execute(catQuery, catParams).catch(() => [[]]);
+
+    // Also fetch opposite type categories and signature words to prevent any cross-type leakage
+    const oppositeWords = new Set<string>();
+    if (type) {
+      const oppositeType = type === 'restaurant' ? 'parlour' : 'restaurant';
+      const [oppRows]: any = await pool.execute("SELECT id, name FROM categories WHERE type = ?", [oppositeType]).catch(() => [[]]);
+      const cleanOppNoise = (str: string) => String(str || '').toLowerCase().replace(/[()[\]{}&/\\+\-_|,:]+/g, ' ').replace(/\s+/g, ' ').trim();
+      for (const r of (Array.isArray(oppRows) ? oppRows : [])) {
+        cleanOppNoise(r.name).split(/\s+/).forEach(w => {
+          if (w.length > 2) oppositeWords.add(w);
+        });
+      }
+      if (type === 'restaurant') {
+        ['facial', 'haircut', 'hair cut', 'makeup', 'parlor', 'parlour', 'waxing', 'bleach', 'manicure', 'pedicure', 'threading', 'mehendi', 'bridal', 'salon', 'spa', 'makeover', 'ফেসিয়াল', 'পিয়ার্সিং', 'ওয়াক্সিং', 'থ্রেডিং', 'বউ সাজ'].forEach(w => oppositeWords.add(w.toLowerCase()));
+      } else {
+        ['biryani', 'kacchi', 'burger', 'pizza', 'curry', 'kabab', 'kebab', 'soup', 'salad', 'chowmein', 'noodles', 'pasta', 'fried rice', 'platter', 'appetizer', 'beverage', 'dessert', 'বিরিয়ানি', 'কাচ্চি', 'বার্গার', 'পিজ্জা', 'খিচুড়ি'].forEach(w => oppositeWords.add(w.toLowerCase()));
+      }
+    }
 
     // Helpers for dynamic string distance, stemming, and noise stripping
     const levenshteinDistance = (s1: string, s2: string): number => {
@@ -474,28 +573,167 @@ export async function getOrderItemsAndCategories(limit = 0) {
       return w;
     };
 
+    const RESTAURANT_BENGALI_MAP: Record<string, string> = {
+      'বার্গার': 'burger',
+      'বার্গার মেনু': 'burger',
+      'বার্গার আইটেম': 'burger',
+      'বার্গারস': 'burger',
+      'বার্গার্স': 'burger',
+      'পিজ্জা': 'pizza',
+      'পিৎজা': 'pizza',
+      'পাস্তা': 'pasta',
+      'স্যান্ডউইচ': 'sandwich',
+      'স্যান্ডউইচ আইটেম': 'sandwich',
+      'সাব স্যান্ডউইচ': 'restaurant-sub-1748935097696',
+      'চাওমিন': 'chowmein',
+      'চাউমিন': 'chowmein',
+      'নুডলস': 'restaurant-noodles-1748939912547',
+      'বিরিয়ানি': 'biryani',
+      'বিরিয়ানী': 'biryani',
+      'বিরিয়ানি': 'biryani',
+      'বিরিয়ানী আইটেম': 'biryani',
+      'কাচ্চি': 'biryani',
+      'কাচ্চি বিরিয়ানি': 'biryani',
+      'তেহারি': '1751515311583',
+      'তেহারী': '1751515311583',
+      'খিচুড়ি': 'biryani',
+      'খিচুরি': 'biryani',
+      'পোলাও': '1750739924780',
+      'পোলাউ': '1750739924780',
+      'রাইস': 'rice',
+      'ভাত': 'rice',
+      'ফ্রাইড রাইস': 'rice',
+      'প্লেটার': 'platter',
+      'প্ল্যাটার': 'platter',
+      'প্লাটার': 'platter',
+      'ফ্যামিলি প্লেটার': 'platter',
+      'শেয়ারিং প্লেটার': 'platter',
+      'সেট মেন্যু': 'setMenu',
+      'সেট মেনু': 'setMenu',
+      'চাইনিজ সেট মেনু': 'setMenu',
+      'স্যুপ': 'soup',
+      'সুপ': 'soup',
+      'সালাদ': 'salad',
+      'কাবাব': '1750656745107',
+      'চিকেন ফ্রাই': '1751462075077',
+      'ফ্রাই': '1751462075077',
+      'উইংস': 'wings',
+      'চিকেন উইংস': 'wings',
+      'চিকেন': 'chickenItem',
+      'চিকেন আইটেম': 'chickenItem',
+      'বিফ': 'beefItem',
+      'বিফ আইটেম': 'beefItem',
+      'মাটন': 'restaurant-mutton-1748939942155',
+      'মাছ': 'fishItem',
+      'ফিশ': 'fishItem',
+      'চিংড়ি': 'prawn',
+      'প্রন': 'prawn',
+      'ড্রিংকস': 'drinks',
+      'ড্রিংস': 'drinks',
+      'পানীয়': 'drinks',
+      'সফট ড্রিংকস': '1752381964967',
+      'জুস': '1752300028513',
+      'জুস আইটেম': '1752300028513',
+      'কফি': 'coffee',
+      'হট কফি': 'coffee',
+      'কোল্ড কফি': 'coffee',
+      'চা': 'restaurant-tea-1748939239504',
+      'মিল্কশেক': 'milkShake',
+      'মিল্ক শেক': 'milkShake',
+      'শেক': 'milkShake',
+      'আইসক্রিম': 'restaurant-ice-cream-1748869674339',
+      'আইস ক্রিম': 'restaurant-ice-cream-1748869674339',
+      'ফালুদা': '1750658574737',
+      'মিষ্টি': 'dessert',
+      'ডেজার্ট': 'dessert',
+      'কেক': 'restaurant-cake-1748938658165',
+      'পেস্ট্রি': 'restaurant-cake-1748938658165',
+      'মোমো': 'momo',
+      'শর্মা': '1751458964181',
+      'মিট বক্স': 'meatBox',
+      'নাচোস': 'nachos',
+      'নাচোজ': 'nachos',
+      'ফুচকা': '1751456637740',
+      'চটপটি': '1750739155324',
+      'লাচ্ছি': 'lassi',
+      'বোরহানি': '1751355559932',
+      'বোরহানী': '1751355559932',
+      'মোজিতো': '1751355532501',
+      'রুটি': '1750828763710',
+      'নান': '1750737247234',
+      'ভর্তা': 'restaurant-ভর্তা-/ভাজি-1748939523062',
+      'ভাজি': 'restaurant-ভর্তা-/ভাজি-1748939523062',
+      'অ্যাপেটাইজার': 'appetizers',
+      'স্টার্টার': 'appetizers',
+      'স্টার্টাস': 'appetizers',
+      'স্ন্যাকস': 'appetizers',
+      'সিজলিং': '1750830836638',
+      'কারি': 'curry',
+      'কারী': 'curry',
+    };
+
+    const PARLOUR_BENGALI_MAP: Record<string, string> = {
+      'ফেসিয়াল': '1751265700816',
+      'ফেসিয়াল': '1751265700816',
+      'হাইড্রো ফেসিয়াল': '1751266665248',
+      'ফেয়ার পলিশ': '1751266644008',
+      'মেকআপ': '1751266937197',
+      'মেকাপ': '1751266937197',
+      'ব্রাইডাল': 'bridal-packages',
+      'হেয়ার কাট': '1751266580778',
+      'হেয়ার কাটিং': '1751266580778',
+      'চুল কাটা': '1751266580778',
+      'হেয়ার কালার': '1751266558297',
+      'চুল কালার': '1751266558297',
+      'হেয়ার ট্রিটমেন্ট': '1751266605058',
+      'হেয়ার ওয়াশ': '1751277419705',
+      'হেয়ার স্পা': 'hair-spa',
+      'হেয়ার স্টাইল': '1751430774199',
+      'হেয়ার স্ট্রেইট': '1751266625473',
+      'রিবন্ডিং': 'eyelash-extensions',
+      'কেরাটিন': 'keratin-treatment',
+      'ম্যানিকিউর': '1751266763040',
+      'মেনিকিউর': '1751266763040',
+      'পেডিকিউর': '1751266763040',
+      'মেনিকিউর ও পেডিকিউর': '1751266763040',
+      'ওয়াক্সিং': '1751266442194',
+      'ওয়াক্সিং': '1751266442194',
+      'ওয়াক্স': '1756108223205',
+      'ওয়াক্স': '1756108223205',
+      'থ্রেডিং': '1751266476497',
+      'পিয়ার্সিং': '1751265752015',
+      'পিয়ার্সিং': '1751265752015',
+      'মেহেদী': '1751266519977',
+      'মেহেন্দি': '1751266519977',
+      'ম্যাসাজ': '1751266700415',
+      'বডি ম্যাসাজ': 'bodyCare',
+      'নেইল আর্ট': 'nail-art',
+      'নেইল কেয়ার': 'nailCare',
+      'স্কিন হোয়াইটনিং': 'skin-whitening',
+      'লেজার': 'laser-treatment',
+      'প্যাকেজ': '1751349403111',
+    };
+
     const cleanCategoryNoise = (str: string): string => {
       if (!str) return '';
-      return str
+      const cleaned = str
         .replace(/&amp;/gi, '&')
         .replace(/&#039;/gi, "'")
         .replace(/&quot;/gi, '"')
-        // Remove Bengali script inside parentheses e.g. (অ্যাপেটাইজার)
-        .replace(/\s*\([\u0980-\u09FF\s,.\-]+\)/g, '')
         // Remove portion annotations like (1:2), (1:3), (4 person)
         .replace(/\s*\([0-9\s:personx\-_]+\)/gi, '')
         // Strip standalone ratios e.g. 1:2
         .replace(/\b[0-9]+:[0-9]+\b/g, '')
         // Strip leading numbering e.g. 1. or 01-
         .replace(/^[0-9]+[.\-)]\s*/g, '')
-        // Strip generic filler words at word boundaries
-        .replace(/\b(items?|dishes|dish|gallery|delight|corner|zone|platter|menu|exclusive|special|hot|delicious)\b/gi, '')
+        // Strip generic fluff only (preserve domain categories like platter, menu, starters, snacks, hot)
+        .replace(/\b(items?|dishes|dish|gallery|delight|corner|zone|exclusive|delicious)\b/gi, '')
         .replace(/\b(ala\s*carte|master\s*chef)\b/gi, '')
-        .replace(/&?\s*(starters?|snacks?)\b/gi, '')
         .replace(/['’]s\b/gi, '')
-        .replace(/[()\[\]{}&/\\+\-_|,:]+/g, ' ')
+        .replace(/[()[\]{}&/\\+\-_|,:]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
+      return cleaned || str.trim();
     };
 
     const catalogList = (Array.isArray(catLookupRows) ? catLookupRows : []).map((c: any) => {
@@ -506,32 +744,61 @@ export async function getOrderItemsAndCategories(limit = 0) {
       const stems = tokens.map(stemWord);
       const bengaliMatches = rawName.match(/[\u0980-\u09FF]+/g);
       const bengaliAlt = bengaliMatches ? bengaliMatches.join(' ').trim() : '';
+      const rawKeywords = String(c.keywords || '').trim();
+      const keywords = rawKeywords
+        ? rawKeywords.split(/[,;\n]+/).map((k: string) => k.trim().toLowerCase()).filter(Boolean)
+        : [];
 
       return {
         id: String(c.id),
         fullName: rawName,
         englishBase: englishBase,
-        icon: c.icon || '🍽️',
+        icon: c.icon || (type === 'parlour' ? '✨' : '🍽️'),
         cleanLower: cleanedBase,
         tokens: tokens,
         stems: stems,
-        bengaliAlt: bengaliAlt
+        bengaliAlt: bengaliAlt,
+        keywords: keywords
       };
     });
 
-    // Fully dynamic category resolver with zero hardcoded category names
+    // Fully dynamic category resolver with custom keywords, Bengali dictionary & stem matching
     const resolveCategory = (rawCategory: string) => {
       if (!rawCategory) return null;
 
-      const rawLower = rawCategory.toLowerCase().trim();
+      const rawTrimmed = rawCategory.trim();
+      const rawLower = rawTrimmed.toLowerCase();
       const cleaned = cleanCategoryNoise(rawCategory).toLowerCase();
 
-      // 0. Bengali match if present
-      const rawBengaliMatches = rawCategory.match(/[\u0980-\u09FF]+/g);
+      // Custom User-Defined Category Keywords (Highest Priority)
+      for (const cat of catalogList) {
+        if (cat.keywords && cat.keywords.length > 0) {
+          for (const kw of cat.keywords) {
+            if (rawLower.includes(kw) || cleaned.includes(kw)) {
+              return cat;
+            }
+          }
+        }
+      }
+
+      // 0. Bengali match via dictionary and substring
+      const rawBengaliMatches = rawTrimmed.match(/[\u0980-\u09FF]+/g);
       if (rawBengaliMatches) {
-        const rawBengaliStr = rawBengaliMatches.join(' ').trim();
+        const fullBengali = rawBengaliMatches.join(' ').trim();
+        const bengaliMap = type === 'parlour' ? PARLOUR_BENGALI_MAP : RESTAURANT_BENGALI_MAP;
+
+        if (bengaliMap[fullBengali]) {
+          const match = catalogList.find(c => c.id === bengaliMap[fullBengali]);
+          if (match) return match;
+        }
+        for (const word of rawBengaliMatches) {
+          if (bengaliMap[word]) {
+            const match = catalogList.find(c => c.id === bengaliMap[word]);
+            if (match) return match;
+          }
+        }
         for (const cat of catalogList) {
-          if (cat.bengaliAlt && (cat.bengaliAlt === rawBengaliStr || cat.fullName.includes(rawBengaliStr) || rawBengaliStr.includes(cat.bengaliAlt))) {
+          if (cat.bengaliAlt && (cat.bengaliAlt === fullBengali || cat.fullName.includes(fullBengali) || fullBengali.includes(cat.bengaliAlt))) {
             return cat;
           }
         }
@@ -621,16 +888,45 @@ export async function getOrderItemsAndCategories(limit = 0) {
       return null;
     };
 
-    const query = limit > 0
-      ? `SELECT items FROM orders WHERE items IS NOT NULL AND items != '' ORDER BY orderDate DESC LIMIT ${Number(limit)}`
-      : `SELECT items FROM orders WHERE items IS NOT NULL AND items != '' ORDER BY orderDate DESC`;
+    // Filter orders strictly by business type
+    const orderConditions: string[] = ["items IS NOT NULL", "items != ''"];
+    if (type === 'restaurant') {
+      orderConditions.push(`(
+        (id LIKE 'RO-%' OR orderId LIKE 'RO-%' OR (id NOT LIKE 'PO-%' AND (orderId IS NULL OR orderId NOT LIKE 'PO-%') AND id NOT LIKE 'PARLOUR-%'))
+        AND LOWER(businessName) NOT LIKE '%parlor%'
+        AND LOWER(businessName) NOT LIKE '%parlour%'
+        AND LOWER(businessName) NOT LIKE '%makeover%'
+        AND LOWER(businessName) NOT LIKE '%salon%'
+        AND LOWER(businessName) NOT LIKE '%beauty%'
+        AND LOWER(businessName) NOT LIKE '%spa%'
+        AND LOWER(businessName) NOT LIKE '%pourler%'
+      )`);
+    } else if (type === 'parlour') {
+      orderConditions.push(`(
+        id LIKE 'PO-%' 
+        OR orderId LIKE 'PO-%' 
+        OR id LIKE 'PARLOUR-%'
+        OR LOWER(businessName) LIKE '%parlor%'
+        OR LOWER(businessName) LIKE '%parlour%'
+        OR LOWER(businessName) LIKE '%makeover%'
+        OR LOWER(businessName) LIKE '%salon%'
+        OR LOWER(businessName) LIKE '%beauty%'
+        OR LOWER(businessName) LIKE '%spa%'
+        OR LOWER(businessName) LIKE '%pourler%'
+      )`);
+    }
+
+    let query = `SELECT items FROM orders WHERE ${orderConditions.join(' AND ')} ORDER BY orderDate DESC`;
+    if (limit > 0) {
+      query += ` LIMIT ${Number(limit)}`;
+    }
 
     const [rows]: any = await pool.execute(query);
 
     const categoriesMap = new Map<string, { id: string; name: string; icon: string; visibleToUsers: boolean }>();
     const itemsMap = new Map<string, any>();
 
-    const slugify = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const slugify = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, '-').replace(/(^-|-$)+/g, '');
     const titleCase = (text: string) => text.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 
     (Array.isArray(rows) ? rows : []).forEach((r: any) => {
@@ -645,20 +941,48 @@ export async function getOrderItemsAndCategories(limit = 0) {
           if (!cleanName || cleanName.length < 2) return;
 
           const rawCat = (it.categoryName || it.category || '').trim();
-          const resolved = resolveCategory(rawCat);
+
+          // Reject items that match opposite business type
+          if (oppositeWords.size > 0) {
+            const checkText = (cleanName + ' ' + rawCat).toLowerCase();
+            const words = checkText.replace(/[()[\]{}&/\\+\-_|,:]+/g, ' ').split(/\s+/);
+            const hasOppositeWord = words.some(w => oppositeWords.has(w));
+            if (hasOppositeWord) {
+              return; // Skip cross-type contamination
+            }
+          }
+
+          const cleanNameLower = cleanName.toLowerCase();
+
+          // Check if item name directly matches any category's custom keywords (Highest Priority)
+          let customItemKeywordCat: typeof catalogList[0] | null = null;
+          for (const cat of catalogList) {
+            if (cat.keywords && cat.keywords.length > 0) {
+              for (const kw of cat.keywords) {
+                if (kw && cleanNameLower.includes(kw)) {
+                  customItemKeywordCat = cat;
+                  break;
+                }
+              }
+            }
+            if (customItemKeywordCat) break;
+          }
+
+          const resolved = customItemKeywordCat || resolveCategory(rawCat);
 
           let catId = '';
           let catName = '';
-          let catIcon = '🍽️';
+          let catIcon = type === 'parlour' ? '✨' : '🍽️';
 
           if (resolved) {
             catId = resolved.id;
             catName = resolved.fullName;
-            catIcon = resolved.icon || '🍽️';
+            catIcon = resolved.icon || (type === 'parlour' ? '✨' : '🍽️');
           } else {
-            const cleaned = cleanCategoryNoise(rawCat) || 'Popular Items';
-            catId = slugify(cleaned) || 'popular-items';
-            catName = titleCase(cleaned.replace(/-/g, ' '));
+            const cleaned = cleanCategoryNoise(rawCat);
+            const fallbackName = cleaned || (type === 'parlour' ? 'Popular Services' : 'Popular Items');
+            catId = slugify(fallbackName) || (type === 'parlour' ? 'popular-services' : 'popular-items');
+            catName = /[a-zA-Z]/.test(fallbackName) ? titleCase(fallbackName.replace(/-/g, ' ')) : fallbackName;
           }
 
           if (!categoriesMap.has(catId)) {
@@ -710,13 +1034,11 @@ export async function getOrderItemsAndCategories(limit = 0) {
       items: Array.from(itemsMap.values())
     };
 
-    if (limit === 0) {
-      cachedOrderCatalog = {
-        categories: result.categories,
-        items: result.items,
-        timestamp: Date.now()
-      };
-    }
+    cachedOrderCatalog[cacheKey] = {
+      categories: result.categories,
+      items: result.items,
+      timestamp: Date.now()
+    };
 
     return result;
   } catch (error: any) {

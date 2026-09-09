@@ -10,12 +10,21 @@ export interface AdminDashboardData {
     totalParlourCategories: number;
     totalRestaurantItems: number;
     totalParlourItems: number;
+    catalogRestaurantItems: number;
+    orderRestaurantItems: number;
+    catalogParlourItems: number;
+    orderParlourItems: number;
+    catalogRestaurantCategories: number;
+    orderRestaurantCategories: number;
+    catalogParlourCategories: number;
+    orderParlourCategories: number;
     totalSlides: number;
     totalSpotlights: number;
     totalOffers: number;
-    totalOrderItems: number;
-    totalOrderCategories: number;
-    totalCombinedItems: number;
+    totalDuplicateItems: number;
+    duplicateRestaurantItems: number;
+    duplicateParlourItems: number;
+    duplicateItemsSubtitle: string;
   };
   orders: Array<{
     id: string | number;
@@ -66,10 +75,16 @@ export async function getAdminDashboardSummary(): Promise<{
       // 7: Leads (only id and creation date needed for metrics & charts, NO subqueries)
       pool.execute(
         "SELECT id, DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at FROM clients ORDER BY created_at DESC LIMIT 5000"
-      ).then(([rows]: any) => (Array.isArray(rows) ? rows : [])).catch(() => []),
+      ).then(([rows]: any) => (Array.isArray(rows) ? rows : [])),
 
-      // 8: Order items and categories (from in-memory cache)
-      getOrderItemsAndCategories(0).catch(() => ({ success: false, items: [], categories: [] }))
+      // 8: Restaurant order items and categories
+      getOrderItemsAndCategories(0, 'restaurant').catch(() => ({ success: false, items: [], categories: [] })),
+
+      // 9: Parlour order items and categories
+      getOrderItemsAndCategories(0, 'parlour').catch(() => ({ success: false, items: [], categories: [] })),
+
+      // 10: Menu item names and types for duplicate calculation
+      pool.execute("SELECT name, type FROM menu_items").then(([rows]: any) => (Array.isArray(rows) ? rows : [])).catch(() => [])
     ]);
 
     const totalTemplates = results[0].status === "fulfilled" ? results[0].value : 0;
@@ -80,25 +95,63 @@ export async function getAdminDashboardSummary(): Promise<{
     const totalOffers = results[5].status === "fulfilled" ? results[5].value : 0;
     const orders = results[6].status === "fulfilled" ? results[6].value : [];
     const leads = results[7].status === "fulfilled" ? results[7].value : [];
-    const orderData = results[8].status === "fulfilled" ? (results[8].value as any) : { items: [], categories: [] };
+    const restOrderData = results[8].status === "fulfilled" ? (results[8].value as any) : { items: [], categories: [] };
+    const parlOrderData = results[9].status === "fulfilled" ? (results[9].value as any) : { items: [], categories: [] };
+    const catalogItemRows = results[10].status === "fulfilled" ? (results[10].value as any[]) : [];
 
-    let totalRestaurantCategories = 0;
-    let totalParlourCategories = 0;
+    let catalogRestaurantCategories = 0;
+    let catalogParlourCategories = 0;
     for (const r of catRows) {
-      if (r.type === "restaurant") totalRestaurantCategories = Number(r.count || 0);
-      else if (r.type === "parlour") totalParlourCategories = Number(r.count || 0);
+      if (r.type === "restaurant") catalogRestaurantCategories = Number(r.count || 0);
+      else if (r.type === "parlour") catalogParlourCategories = Number(r.count || 0);
     }
 
-    let totalRestaurantItems = 0;
-    let totalParlourItems = 0;
+    let catalogRestaurantItems = 0;
+    let catalogParlourItems = 0;
     for (const r of itemRows) {
-      if (r.type === "restaurant") totalRestaurantItems = Number(r.count || 0);
-      else if (r.type === "parlour") totalParlourItems = Number(r.count || 0);
+      if (r.type === "restaurant") catalogRestaurantItems = Number(r.count || 0);
+      else if (r.type === "parlour") catalogParlourItems = Number(r.count || 0);
     }
 
-    const totalOrderItems = orderData?.items?.length || 0;
-    const totalOrderCategories = orderData?.categories?.length || 0;
-    const totalCombinedItems = totalRestaurantItems + totalParlourItems + totalOrderItems;
+    const orderRestaurantItems = restOrderData?.items?.length || 0;
+    const orderParlourItems = parlOrderData?.items?.length || 0;
+    const orderRestaurantCategories = restOrderData?.categories?.length || 0;
+    const orderParlourCategories = parlOrderData?.categories?.length || 0;
+
+    const totalRestaurantItems = catalogRestaurantItems + orderRestaurantItems;
+    const totalParlourItems = catalogParlourItems + orderParlourItems;
+    const totalRestaurantCategories = catalogRestaurantCategories + orderRestaurantCategories;
+    const totalParlourCategories = catalogParlourCategories + orderParlourCategories;
+
+    // Calculate duplicate item names
+    const countDuplicateNames = (items: Array<{ name?: string }>) => {
+      const freq = new Map<string, number>();
+      for (const it of items) {
+        const name = String(it?.name || '').trim().toLowerCase();
+        if (!name) continue;
+        freq.set(name, (freq.get(name) || 0) + 1);
+      }
+      let duplicateCopies = 0;
+      let duplicateNamesCount = 0;
+      for (const count of freq.values()) {
+        if (count > 1) {
+          duplicateNamesCount += 1;
+          duplicateCopies += (count - 1);
+        }
+      }
+      return { duplicateCopies, duplicateNamesCount };
+    };
+
+    const restCatalogItems = catalogItemRows.filter(r => r.type === 'restaurant');
+    const parlCatalogItems = catalogItemRows.filter(r => r.type === 'parlour');
+
+    const allRestItems = [...restCatalogItems, ...(restOrderData?.items || [])];
+    const allParlItems = [...parlCatalogItems, ...(parlOrderData?.items || [])];
+    const allItems = [...catalogItemRows, ...(restOrderData?.items || []), ...(parlOrderData?.items || [])];
+
+    const totalDupes = countDuplicateNames(allItems);
+    const restDupes = countDuplicateNames(allRestItems);
+    const parlDupes = countDuplicateNames(allParlItems);
 
     return {
       success: true,
@@ -109,12 +162,21 @@ export async function getAdminDashboardSummary(): Promise<{
           totalParlourCategories,
           totalRestaurantItems,
           totalParlourItems,
+          catalogRestaurantItems,
+          orderRestaurantItems,
+          catalogParlourItems,
+          orderParlourItems,
+          catalogRestaurantCategories,
+          orderRestaurantCategories,
+          catalogParlourCategories,
+          orderParlourCategories,
           totalSlides,
           totalSpotlights,
           totalOffers,
-          totalOrderItems,
-          totalOrderCategories,
-          totalCombinedItems,
+          totalDuplicateItems: totalDupes.duplicateCopies,
+          duplicateRestaurantItems: restDupes.duplicateCopies,
+          duplicateParlourItems: parlDupes.duplicateCopies,
+          duplicateItemsSubtitle: `${totalDupes.duplicateNamesCount} names repeated (${restDupes.duplicateCopies} Rest, ${parlDupes.duplicateCopies} Parlour)`,
         },
         orders,
         leads,

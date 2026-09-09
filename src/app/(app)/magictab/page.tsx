@@ -747,13 +747,13 @@ export default function MagicTabPage() {
         ? (result.data as any[]).map((cat: any) => ({
             ...cat,
             id: String(cat.id),
-            icon: cat.icon || 'UtensilsCrossed',
+            icon: cat.icon || (type === 'parlour' ? '✨' : 'UtensilsCrossed'),
             visibleToUsers: true,
           }))
         : [];
 
-      // Fetch all categories from orders table (0 = unlimited / all orders)
-      const orderData = await getOrderItemsAndCategories(0);
+      // Fetch categories from orders table strictly filtered by current type (0 = unlimited / all orders of this type)
+      const orderData = await getOrderItemsAndCategories(0, type);
 
       // Deduplicate order categories against server categories by normalized name and ID
       const existingNames = new Set(serverCategories.map(c => decodeHtmlEntities(c.name).trim().toLowerCase()));
@@ -769,14 +769,17 @@ export default function MagicTabPage() {
           orderCategories.push({
             id: String(c.id),
             name: c.name,
-            icon: c.icon || 'UtensilsCrossed',
+            icon: c.icon || (type === 'parlour' ? '✨' : 'UtensilsCrossed'),
             itemCount: c.itemCount || 0,
             visibleToUsers: true,
           });
         }
       });
 
-      const localCategories: Category[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
+      const localCatsRaw = localStorage.getItem(`${CUSTOM_CATEGORIES_STORAGE_KEY}_${type}`) || localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]';
+      let parsedLocalCats: any[] = [];
+      try { parsedLocalCats = JSON.parse(localCatsRaw); } catch {}
+      const localCategories: Category[] = (Array.isArray(parsedLocalCats) ? parsedLocalCats : []).filter((c: any) => !c.type || c.type === type);
       const combinedCategories = [...serverCategories, ...orderCategories, ...localCategories];
       
       const seenIds = new Set<string>();
@@ -828,8 +831,8 @@ export default function MagicTabPage() {
           }))
         : [];
 
-      // Fetch all items from orders table (0 = unlimited / all orders)
-      const orderData = await getOrderItemsAndCategories(0);
+      // Fetch items from orders table strictly filtered by current type (0 = unlimited / all orders of this type)
+      const orderData = await getOrderItemsAndCategories(0, type);
 
       // Build mapping from normalized category name -> catalog category id
       const catNameToId = new Map<string, string>();
@@ -855,9 +858,40 @@ export default function MagicTabPage() {
         };
       });
 
-      const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
-      const combinedItems = [...serverItems, ...orderItems, ...localItems];
-      const uniqueItems = Array.from(new Map(combinedItems.map(item => [item.id, item])).values());
+      const localItemsRaw = localStorage.getItem(`${CUSTOM_MENU_ITEMS_STORAGE_KEY}_${type}`) || localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]';
+      let parsedLocalItems: any[] = [];
+      try { parsedLocalItems = JSON.parse(localItemsRaw); } catch {}
+      const localItems: MenuItem[] = (Array.isArray(parsedLocalItems) ? parsedLocalItems : []).filter((i: any) => !i.type || i.type === type);
+      
+      // Deduplicate items by normalized item name so clients never see duplicate items on MagicTab
+      const itemByName = new Map<string, MenuItem>();
+      const candidateItems = [...orderItems, ...localItems, ...serverItems];
+
+      for (const item of candidateItems) {
+        const normName = decodeHtmlEntities(item.name || '').trim().toLowerCase();
+        if (!normName) continue;
+
+        const existing = itemByName.get(normName);
+        if (!existing) {
+          itemByName.set(normName, item);
+        } else {
+          // Prefer items with images, descriptions, or official catalog assignments
+          const newHasImage = !!(item.image || (item as any).imageUrl);
+          const oldHasImage = !!(existing.image || (existing as any).imageUrl);
+          const newHasDesc = !!item.description;
+          const oldHasDesc = !!existing.description;
+
+          if ((newHasImage && !oldHasImage) || (newHasDesc && !oldHasDesc) || (item as any).categoryId) {
+            itemByName.set(normName, {
+              ...item,
+              image: item.image || existing.image,
+              description: item.description || existing.description,
+            });
+          }
+        }
+      }
+
+      const uniqueItems = Array.from(itemByName.values());
       setAllMenuItems(uniqueItems);
 
     } catch (err: any) {
@@ -1035,21 +1069,23 @@ export default function MagicTabPage() {
         id: `custom-item-${Date.now()}`,
         category: selectedCategory.id,
         visibleToUsers: true,
+        type: selectedMenuType,
         createdAt: new Date().toISOString(),
-      } as MenuItem;
+      } as MenuItem & { type: string };
       newItems = [...allMenuItems, itemToSave];
       setSelectedItems(prev => ({ ...prev, [itemToSave.id]: true }));
     }
 
     try {
-      const localItems: MenuItem[] = JSON.parse(localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
+      const storageKey = `${CUSTOM_MENU_ITEMS_STORAGE_KEY}_${selectedMenuType}`;
+      const localItems: MenuItem[] = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]');
       const existingIndex = localItems.findIndex(i => i.id === itemToSave.id);
       if (existingIndex > -1) {
         localItems[existingIndex] = itemToSave;
       } else {
         localItems.push(itemToSave);
       }
-      localStorage.setItem(CUSTOM_MENU_ITEMS_STORAGE_KEY, JSON.stringify(localItems));
+      localStorage.setItem(storageKey, JSON.stringify(localItems));
     } catch (e) {
       // Error handling without toast
     }
@@ -1097,20 +1133,22 @@ export default function MagicTabPage() {
     const newCategory: Category = {
       id: `custom-category-${customSlugify(formattedName)}-${Date.now()}`,
       name: formattedName,
-      icon: "📁",
+      icon: selectedMenuType === 'parlour' ? '✨' : '📁',
       visibleToUsers: true,
       itemCount: 0,
       createdAt: new Date().toISOString(),
-    };
+      type: selectedMenuType,
+    } as any;
 
     const updatedCategories = [...apiCategories, newCategory];
     setApiCategories(updatedCategories);
     setActiveCategoryId(newCategory.id);
 
     try {
-      const localCategories: any[] = JSON.parse(localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
+      const storageKey = `${CUSTOM_CATEGORIES_STORAGE_KEY}_${selectedMenuType}`;
+      const localCategories: any[] = JSON.parse(localStorage.getItem(storageKey) || localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]');
       localCategories.push(newCategory);
-      localStorage.setItem(CUSTOM_CATEGORIES_STORAGE_KEY, JSON.stringify(localCategories));
+      localStorage.setItem(storageKey, JSON.stringify(localCategories));
     } catch (e) {
       // Error handling without toast
     }

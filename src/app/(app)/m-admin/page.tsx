@@ -27,7 +27,8 @@ import {
   Tag,
   PackageCheck,
   FolderPlus,
-  Flame
+  Flame,
+  CopyCheck
 } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import {
@@ -63,9 +64,10 @@ interface StatCardAdminProps {
   value: string;
   icon: React.ElementType;
   iconBgClass: string;
+  subtitle?: string;
 }
 
-function StatCardAdmin({ title, value, icon: Icon, iconBgClass }: StatCardAdminProps): ReactNode {
+function StatCardAdmin({ title, value, icon: Icon, iconBgClass, subtitle }: StatCardAdminProps): ReactNode {
   // Extract base color from bg-xxx-500
   const parts = iconBgClass.split('-');
   const baseColor = parts[1]; // e.g. "orange" or "emerald"
@@ -88,26 +90,59 @@ function StatCardAdmin({ title, value, icon: Icon, iconBgClass }: StatCardAdminP
           <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight leading-none truncate">
             {value}
           </h2>
+          {subtitle && (
+            <p className="text-[9px] sm:text-[11px] text-slate-500 mt-1 font-medium leading-none truncate">
+              {subtitle}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-const adminStatConfigs: (Omit<StatCardAdminProps, 'value'> & { id: string })[] = [
+const adminStatConfigs: (Omit<StatCardAdminProps, 'value'> & { id: string; subtitleId?: string })[] = [
   { id: "totalLeads", title: "Total Leads", icon: Users, iconBgClass: "bg-blue-600" },
   { id: "totalOrders", title: "Total Orders", icon: ShoppingCart, iconBgClass: "bg-orange-500" },
-  { id: "totalOrderItems", title: "Order DB Items", icon: PackageCheck, iconBgClass: "bg-emerald-600" },
-  { id: "totalOrderCategories", title: "Order DB Categories", icon: FolderPlus, iconBgClass: "bg-violet-600" },
-  { id: "totalCombinedItems", title: "Total Available Items", icon: Flame, iconBgClass: "bg-rose-600" },
   { id: "totalTemplates", title: "Total Templates", icon: Layers, iconBgClass: "bg-teal-600" },
-  { id: "totalRestaurantItems", title: "Catalog Restaurant Items", icon: UtensilsCrossed, iconBgClass: "bg-amber-600" },
-  { id: "totalParlourItems", title: "Catalog Parlour Items", icon: Sparkles, iconBgClass: "bg-indigo-500" },
-  { id: "totalRestaurantCategories", title: "Catalog Rest. Categories", icon: LayoutList, iconBgClass: "bg-emerald-500" },
-  { id: "totalParlourCategories", title: "Catalog Parl. Categories", icon: FolderHeart, iconBgClass: "bg-rose-500" },
+  { 
+    id: "totalRestaurantItems", 
+    title: "Restaurant Items", 
+    icon: UtensilsCrossed, 
+    iconBgClass: "bg-amber-600",
+    subtitleId: "restaurantItemsSubtitle"
+  },
+  { 
+    id: "totalParlourItems", 
+    title: "Parlour Items", 
+    icon: Sparkles, 
+    iconBgClass: "bg-indigo-500",
+    subtitleId: "parlourItemsSubtitle"
+  },
+  { 
+    id: "totalRestaurantCategories", 
+    title: "Restaurant Categories", 
+    icon: LayoutList, 
+    iconBgClass: "bg-emerald-500",
+    subtitleId: "restaurantCategoriesSubtitle"
+  },
+  { 
+    id: "totalParlourCategories", 
+    title: "Parlour Categories", 
+    icon: FolderHeart, 
+    iconBgClass: "bg-rose-500",
+    subtitleId: "parlourCategoriesSubtitle"
+  },
   { id: "totalSlides", title: "Slide Images", icon: ImageIcon, iconBgClass: "bg-blue-400" },
   { id: "totalSpotlights", title: "Spotlight Stories", icon: Sparkles, iconBgClass: "bg-red-500" },
   { id: "totalOffers", title: "Exclusive Offers", icon: Tag, iconBgClass: "bg-indigo-600" },
+  { 
+    id: "totalDuplicateItems", 
+    title: "Duplicate Items", 
+    icon: CopyCheck, 
+    iconBgClass: "bg-purple-600",
+    subtitleId: "duplicateItemsSubtitle"
+  },
 ];
 
 interface ChartDataItem {
@@ -156,12 +191,21 @@ export default function MAdminDashboardPage() {
     totalParlourCategories: 0,
     totalRestaurantItems: 0,
     totalParlourItems: 0,
+    catalogRestaurantItems: 0,
+    orderRestaurantItems: 0,
+    catalogParlourItems: 0,
+    orderParlourItems: 0,
+    catalogRestaurantCategories: 0,
+    orderRestaurantCategories: 0,
+    catalogParlourCategories: 0,
+    orderParlourCategories: 0,
     totalSlides: 0,
     totalSpotlights: 0,
     totalOffers: 0,
-    totalOrderItems: 0,
-    totalOrderCategories: 0,
-    totalCombinedItems: 0,
+    totalDuplicateItems: 0,
+    duplicateRestaurantItems: 0,
+    duplicateParlourItems: 0,
+    duplicateItemsSubtitle: '',
   });
   const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const [leadsChartData, setLeadsChartData] = useState<any[]>([]);
@@ -382,17 +426,24 @@ export default function MAdminDashboardPage() {
     dynamicStats.totalOrders = ordersToProcess.length;
 
     // Catalog & Content Totals
+    const formatNumber = (num: number) => (num || 0).toLocaleString();
+
     dynamicStats.totalTemplates = counts.totalTemplates;
-    dynamicStats.totalRestaurantCategories = counts.totalRestaurantCategories;
-    dynamicStats.totalParlourCategories = counts.totalParlourCategories;
-    dynamicStats.totalRestaurantItems = counts.totalRestaurantItems;
-    dynamicStats.totalParlourItems = counts.totalParlourItems;
+    dynamicStats.totalRestaurantItems = formatNumber(counts.totalRestaurantItems);
+    dynamicStats.restaurantItemsSubtitle = `${formatNumber(counts.catalogRestaurantItems)} Catalog + ${formatNumber(counts.orderRestaurantItems)} Orders`;
+
+    dynamicStats.totalParlourItems = formatNumber(counts.totalParlourItems);
+    dynamicStats.parlourItemsSubtitle = `${formatNumber(counts.catalogParlourItems)} Catalog + ${formatNumber(counts.orderParlourItems)} Orders`;
+
+    dynamicStats.totalRestaurantCategories = formatNumber(counts.totalRestaurantCategories);
+    dynamicStats.restaurantCategoriesSubtitle = `${formatNumber(counts.catalogRestaurantCategories)} Catalog + ${formatNumber(counts.orderRestaurantCategories)} Orders`;
+
+    dynamicStats.totalParlourCategories = formatNumber(counts.totalParlourCategories);
+    dynamicStats.parlourCategoriesSubtitle = `${formatNumber(counts.catalogParlourCategories)} Catalog + ${formatNumber(counts.orderParlourCategories)} Orders`;
+
     dynamicStats.totalSlides = counts.totalSlides;
     dynamicStats.totalSpotlights = counts.totalSpotlights;
     dynamicStats.totalOffers = counts.totalOffers;
-    dynamicStats.totalOrderItems = counts.totalOrderItems;
-    dynamicStats.totalOrderCategories = counts.totalOrderCategories;
-    dynamicStats.totalCombinedItems = counts.totalCombinedItems;
 
     setStatsData(dynamicStats);
 
@@ -492,6 +543,7 @@ export default function MAdminDashboardPage() {
               key={statConfig.id}
               title={statConfig.title}
               value={String(statsData[statConfig.id] ?? '0')}
+              subtitle={statConfig.subtitleId ? String(statsData[statConfig.subtitleId] || "") : undefined}
               icon={statConfig.icon}
               iconBgClass={statConfig.iconBgClass}
             />

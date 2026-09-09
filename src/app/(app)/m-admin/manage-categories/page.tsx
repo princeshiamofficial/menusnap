@@ -49,6 +49,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
@@ -69,6 +70,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from "@/components/ui/tabs";
 import {
   ScrollArea
 } from '@/components/ui/scroll-area';
@@ -91,7 +98,18 @@ import {
   Trash2,
   Save,
   AlertTriangle,
-  GripVertical
+  GripVertical,
+  FolderTree,
+  ArrowRightLeft,
+  Plus,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Tags,
+  Tag,
+  X,
+  Check,
+  Sparkles
 } from "lucide-react";
 import {
   cn,
@@ -107,11 +125,18 @@ import {
 import { 
   getCategoriesFromMySql, 
   upsertCategoryToMySql, 
-  deleteCategoryFromMySql 
+  deleteCategoryFromMySql,
+  getCategoryMappedItems,
+  getMenuItemsFromMySql,
+  remapMenuItemCategory,
+  upsertMenuItemToMySql,
+  updateCategoryKeywords,
+  getCategoryOrderItems
 } from '@/app/actions/orders';
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { KeywordInput } from "@/components/ui/keyword-input";
 
 type CategoryType = "restaurant" | "parlour";
 
@@ -124,6 +149,7 @@ interface ApiCategory {
   visibleToUsers: boolean;
   createdAt: string;
   status?: string;
+  keywords?: string | null;
 }
 
 interface StatCardAdminPageProps {
@@ -160,6 +186,7 @@ const categoryFormSchema = z.object({
   description: z.string().max(250, "Description must be 250 characters or less").optional().nullable(),
   icon: z.string().min(1, "Icon is required (e.g., emoji or text)").max(10, "Icon must be 10 characters or less"),
   visibleToUsers: z.boolean().default(true),
+  keywords: z.string().optional().nullable(),
 });
 
 type CategoryFormValues = z.infer<typeof categoryFormSchema>;
@@ -179,6 +206,7 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
       description: decodeHtmlEntities(initialData?.description),
       icon: initialData?.icon || "📁",
       visibleToUsers: initialData?.visibleToUsers === undefined ? true : initialData.visibleToUsers,
+      keywords: initialData?.keywords || "",
     },
     mode: 'onChange',
   });
@@ -207,6 +235,25 @@ function CategoryForm({ initialData, onSubmit, onOpenChange, isEditMode }: Categ
             <Label htmlFor="category-icon">Icon (Emoji/Text)*</Label>
             <Input id="category-icon" {...form.register("icon")} placeholder="e.g., 🍔, 🥤, ✨" />
             {form.formState.errors.icon && <p className="text-sm text-destructive mt-1">{form.formState.errors.icon.message}</p>}
+          </div>
+          <div className="pt-1">
+            <Controller
+              control={form.control}
+              name="keywords"
+              render={({ field }) => {
+                const rawVal = field.value ? String(field.value) : '';
+                const kwList = rawVal ? rawVal.split(/[,;\n]+/).map(k => k.trim()).filter(Boolean) : [];
+                return (
+                  <KeywordInput
+                    keywords={kwList}
+                    onChange={(newKws) => field.onChange(newKws.join(', '))}
+                    label="Keywords"
+                    placeholder="Add your keywords"
+                    tooltipText="Keywords help auto-route incoming orders and search matching items."
+                  />
+                );
+              }}
+            />
           </div>
           <div className="flex items-center space-x-2 pt-2">
             <Controller
@@ -254,6 +301,7 @@ const sortOptionsList: { value: SortOption; label: string }[] = [
 ];
 
 const ITEMS_PER_PAGE = 10;
+const KEYMAP_ITEMS_PER_PAGE = 10;
 
 export default function ManageCategoriesPage(): ReactNode {
   const { isAdminLoggedIn, adminLoading, adminUser } = useAdminAuth();
@@ -277,6 +325,20 @@ export default function ManageCategoriesPage(): ReactNode {
   const [editingCategoryData, setEditingCategoryData] = useState<ApiCategory | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [categoryToDeleteInfo, setCategoryToDeleteInfo] = useState<{ id: string, name: string } | null>(null);
+
+  // Item Keymap state
+  const [isKeymapDialogOpen, setIsKeymapDialogOpen] = useState(false);
+  const [keymapCategory, setKeymapCategory] = useState<ApiCategory | null>(null);
+  const [keymapItems, setKeymapItems] = useState<any[]>([]);
+  const [isLoadingKeymap, setIsLoadingKeymap] = useState(false);
+  const [keymapSearchTerm, setKeymapSearchTerm] = useState('');
+  const [keymapPage, setKeymapPage] = useState(1);
+  const [categoryKeywords, setCategoryKeywords] = useState<string[]>([]);
+  const [isSavingKeywords, setIsSavingKeywords] = useState(false);
+  const [orderItemsForCategory, setOrderItemsForCategory] = useState<any[]>([]);
+  const [isLoadingOrderItems, setIsLoadingOrderItems] = useState(false);
+  const [orderItemsPage, setOrderItemsPage] = useState(1);
+  const [orderItemsSearchTerm, setOrderItemsSearchTerm] = useState('');
 
   const { toast } = useToast();
 
@@ -311,7 +373,8 @@ export default function ManageCategoriesPage(): ReactNode {
           itemCount: parseInt(cat.itemCount) || 0,
           visibleToUsers: cat.visibleToUsers === undefined ? true : Boolean(cat.visibleToUsers),
           createdAt: createdAtStr,
-          status: cat.status
+          status: cat.status,
+          keywords: cat.keywords || null
         };
       });
       setAllCategories(fetchedCategories);
@@ -465,6 +528,185 @@ export default function ManageCategoriesPage(): ReactNode {
     }
   };
 
+  const openItemKeymapDialog = async (category: ApiCategory) => {
+    setKeymapCategory(category);
+    setIsKeymapDialogOpen(true);
+    setIsLoadingKeymap(true);
+    setIsLoadingOrderItems(true);
+    setKeymapSearchTerm('');
+    setOrderItemsSearchTerm('');
+    setKeymapPage(1);
+    setOrderItemsPage(1);
+
+    // Initialize keywords from category
+    const rawKw = category.keywords ? String(category.keywords).trim() : '';
+    const initialKws = rawKw ? rawKw.split(/[,;\n]+/).map(k => k.trim()).filter(Boolean) : [];
+    setCategoryKeywords(initialKws);
+
+    try {
+      const [mappedRes, orderRes] = await Promise.all([
+        getCategoryMappedItems(category.id),
+        getCategoryOrderItems(category.id, categoryType)
+      ]);
+
+      if (mappedRes.success && mappedRes.data) {
+        setKeymapItems(mappedRes.data);
+      } else {
+        setKeymapItems([]);
+      }
+
+      if (orderRes.success && orderRes.data) {
+        setOrderItemsForCategory(orderRes.data);
+      } else {
+        setOrderItemsForCategory([]);
+      }
+    } catch (err: any) {
+      console.error('Error loading keymap items:', err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to load mapped items.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingKeymap(false);
+      setIsLoadingOrderItems(false);
+    }
+  };
+
+  const handleSaveKeywords = async () => {
+    if (!keymapCategory) return;
+    setIsSavingKeywords(true);
+    try {
+      const kwString = categoryKeywords.join(', ');
+      const res = await updateCategoryKeywords(keymapCategory.id, kwString);
+      if (!res.success) throw new Error(res.message || 'Failed to save keywords.');
+
+      // Update current category in local state
+      setKeymapCategory(prev => prev ? { ...prev, keywords: kwString } : null);
+      setAllCategories(prev => prev.map(c => c.id === keymapCategory.id ? { ...c, keywords: kwString } : c));
+
+      // Re-fetch matched order items
+      setIsLoadingOrderItems(true);
+      const orderRes = await getCategoryOrderItems(keymapCategory.id, categoryType);
+      if (orderRes.success && orderRes.data) {
+        setOrderItemsForCategory(orderRes.data);
+      }
+
+      toast({
+        title: 'Keywords Saved',
+        description: `Order items matching these keywords will now auto-route to "${decodeHtmlEntities(keymapCategory.name)}".`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Save Error',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingKeywords(false);
+      setIsLoadingOrderItems(false);
+    }
+  };
+
+  const handleRemapItem = async (itemId: string, newCategoryId: string, itemName: string) => {
+    try {
+      const res = await remapMenuItemCategory(itemId, newCategoryId);
+      if (!res.success) throw new Error(res.message || 'Failed to remap item.');
+
+      toast({
+        title: 'Item Remapped',
+        description: `"${itemName}" was successfully remapped.`,
+      });
+
+      if (keymapCategory) {
+        const mappedRes = await getCategoryMappedItems(keymapCategory.id);
+        if (mappedRes.success && mappedRes.data) {
+          setKeymapItems(mappedRes.data);
+        }
+        fetchCategories(categoryType);
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Remap Error',
+        description: err.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const filteredKeymapItems = useMemo(() => {
+    if (!keymapSearchTerm.trim()) return keymapItems;
+    const term = keymapSearchTerm.toLowerCase();
+    return keymapItems.filter(item => (item.name || '').toLowerCase().includes(term));
+  }, [keymapItems, keymapSearchTerm]);
+
+  const keymapTotalPages = Math.max(1, Math.ceil(filteredKeymapItems.length / KEYMAP_ITEMS_PER_PAGE));
+  const paginatedKeymapItems = useMemo(() => {
+    const startIndex = (keymapPage - 1) * KEYMAP_ITEMS_PER_PAGE;
+    return filteredKeymapItems.slice(startIndex, startIndex + KEYMAP_ITEMS_PER_PAGE);
+  }, [filteredKeymapItems, keymapPage]);
+
+  const filteredOrderItems = useMemo(() => {
+    if (!orderItemsSearchTerm.trim()) return orderItemsForCategory;
+    const term = orderItemsSearchTerm.toLowerCase();
+    return orderItemsForCategory.filter(it => (it.name || '').toLowerCase().includes(term));
+  }, [orderItemsForCategory, orderItemsSearchTerm]);
+
+  const orderItemsTotalPages = Math.max(1, Math.ceil(filteredOrderItems.length / KEYMAP_ITEMS_PER_PAGE));
+  const paginatedOrderItems = useMemo(() => {
+    const startIndex = (orderItemsPage - 1) * KEYMAP_ITEMS_PER_PAGE;
+    return filteredOrderItems.slice(startIndex, startIndex + KEYMAP_ITEMS_PER_PAGE);
+  }, [filteredOrderItems, orderItemsPage]);
+
+  const suggestedCategoryKeywords = useMemo(() => {
+    if (!keymapCategory) return [];
+    const suggestions = new Set<string>();
+
+    // Add category name keywords
+    const catWords = decodeHtmlEntities(keymapCategory.name)
+      .toLowerCase()
+      .replace(/[()[\]{}&/\\+\-_|,:]+/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2);
+    catWords.forEach(w => suggestions.add(w));
+
+    // Common category synonyms
+    const lowerName = keymapCategory.name.toLowerCase();
+    if (lowerName.includes('appetizer') || lowerName.includes('starter')) {
+      ['appetizer', 'starter', 'snacks', 'platter', 'bolani', 'mantu', 'roll', 'crispy'].forEach(w => suggestions.add(w));
+    } else if (lowerName.includes('burger')) {
+      ['burger', 'patty', 'cheeseburger', 'beef burger', 'chicken burger', 'bun'].forEach(w => suggestions.add(w));
+    } else if (lowerName.includes('beverage') || lowerName.includes('drink')) {
+      ['juice', 'shake', 'smoothie', 'mojito', 'soda', 'tea', 'coffee', 'cold drink'].forEach(w => suggestions.add(w));
+    } else if (lowerName.includes('dessert') || lowerName.includes('sweet')) {
+      ['cake', 'ice cream', 'pastry', 'pudding', 'sweet', 'falooda', 'waffle'].forEach(w => suggestions.add(w));
+    } else if (lowerName.includes('biryani') || lowerName.includes('rice')) {
+      ['biryani', 'kacchi', 'polao', 'fried rice', 'khichuri', 'basmati'].forEach(w => suggestions.add(w));
+    }
+
+    // Extract high-frequency words from order items in this category
+    if (orderItemsForCategory && orderItemsForCategory.length > 0) {
+      const stopWords = new Set(['the', 'and', 'with', 'for', 'pcs', 'piece', 'pieces', 'plate', 'special', 'box', 'set', 'hot', 'cold', 'half', 'full', 'regular', 'mini', 'from', 'order']);
+      const wordCounts: Record<string, number> = {};
+      for (const item of orderItemsForCategory) {
+        const words = String(item.name || '')
+          .toLowerCase()
+          .replace(/[()[\]{}&/\\+\-_|,.:0-9]+/g, ' ')
+          .split(/\s+/)
+          .filter(w => w.length >= 3 && !stopWords.has(w));
+        for (const w of words) {
+          wordCounts[w] = (wordCounts[w] || 0) + 1;
+        }
+      }
+      const sortedWords = Object.entries(wordCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([w]) => w);
+      sortedWords.forEach(w => suggestions.add(w));
+    }
+
+    return Array.from(suggestions).filter(s => !categoryKeywords.some(k => k.toLowerCase() === s.toLowerCase())).slice(0, 8);
+  }, [keymapCategory, orderItemsForCategory, categoryKeywords]);
 
   const filteredAndSortedCategories = useMemo(() => {
     let categories = allCategories
@@ -738,6 +980,9 @@ export default function ManageCategoriesPage(): ReactNode {
                                   {category.visibleToUsers ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
                                   {category.visibleToUsers ? "Set as Hidden" : "Set as Visible"}
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openItemKeymapDialog(category)}>
+                                  <FolderTree className="mr-2 h-4 w-4 text-orange-500" /> Item Keymap
+                                </DropdownMenuItem>
                               </>
                             )}
                             {canDelete && (
@@ -845,6 +1090,220 @@ export default function ManageCategoriesPage(): ReactNode {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Item Keymap Dialog */}
+      {keymapCategory && (
+        <Dialog open={isKeymapDialogOpen} onOpenChange={(open) => {
+          setIsKeymapDialogOpen(open);
+          if (!open) setKeymapCategory(null);
+        }}>
+          <DialogContent className="sm:max-w-3xl md:max-w-4xl flex flex-col max-h-[90vh] p-0 gap-0 overflow-hidden">
+            <DialogHeader className="p-5 pb-4 border-b bg-muted/20">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 flex items-center justify-center text-xl shadow-xs shrink-0">
+                    {keymapCategory.icon || '📁'}
+                  </div>
+                  <div>
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                      <span>Item Keymap:</span>
+                      <span className="text-primary">{decodeHtmlEntities(keymapCategory.name)}</span>
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                      Manage, map, or re-route items assigned to this {categoryTypeName.toLowerCase()} category.
+                    </DialogDescription>
+                  </div>
+                </div>
+                <Badge variant="secondary" className="px-3 py-1 font-semibold text-xs shrink-0">
+                  {keymapItems.length} items mapped
+                </Badge>
+              </div>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-hidden p-6">
+              <Tabs defaultValue="keywords" className="h-full flex flex-col">
+                <TabsList className="grid grid-cols-2 mb-4">
+                  <TabsTrigger value="keywords" className="text-xs flex items-center gap-1.5">
+                    <Tags className="w-3.5 h-3.5 text-primary" />
+                    Item Keywords ({categoryKeywords.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="mapped" className="text-xs">
+                    Mapped Items ({filteredKeymapItems.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Tab: Item Keywords (Order Auto-Mapping) */}
+                <TabsContent value="keywords" className="flex-1 flex flex-col min-h-0 space-y-4 mt-0 overflow-y-auto pr-1">
+                  <div className="bg-card border border-border/80 rounded-xl p-5 shadow-xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/40">
+                      <div>
+                        <h4 className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
+                          <Tags className="w-4 h-4 text-primary" />
+                          <span>Category Auto-Routing Keywords</span>
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Items from customer orders containing these keywords will automatically show under <strong className="text-foreground">{decodeHtmlEntities(keymapCategory.name)}</strong>.
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveKeywords}
+                        disabled={isSavingKeywords}
+                        className="font-semibold text-xs h-8.5 px-4 shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                      >
+                        {isSavingKeywords ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3.5 h-3.5 mr-1.5" /> Save Keywords
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    <KeywordInput
+                      keywords={categoryKeywords}
+                      onChange={setCategoryKeywords}
+                      label="Keywords"
+                      placeholder="Add your keywords"
+                      tooltipText={`Any items from customer orders containing these keywords will route to ${decodeHtmlEntities(keymapCategory.name)}.`}
+                      suggestions={suggestedCategoryKeywords}
+                    />
+
+                    {categoryKeywords.length === 0 && suggestedCategoryKeywords.length === 0 && (
+                      <div className="text-xs text-muted-foreground italic flex items-center gap-1.5 pt-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        No custom keywords added yet. Items from customer orders will use default matching.
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Tab 1: Mapped Items */}
+                <TabsContent value="mapped" className="flex-1 flex flex-col min-h-0 space-y-3 mt-0">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search mapped items..."
+                      value={keymapSearchTerm}
+                      onChange={(e) => {
+                        setKeymapSearchTerm(e.target.value);
+                        setKeymapPage(1);
+                      }}
+                      className="pl-9 h-9 text-xs"
+                    />
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto border rounded-xl divide-y min-h-[300px] max-h-[420px]">
+                    {isLoadingKeymap ? (
+                      <div className="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        <span className="text-xs">Loading items...</span>
+                      </div>
+                    ) : filteredKeymapItems.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-48 text-muted-foreground text-xs gap-1">
+                        <FolderTree className="h-8 w-8 opacity-40 mb-1" />
+                        <p className="font-semibold">
+                          {keymapSearchTerm ? `No items matching "${keymapSearchTerm}"` : 'No items mapped to this category.'}
+                        </p>
+                        <p className="text-[11px] opacity-75">Switch to "Map From Catalog" or "Quick Add" to map items here.</p>
+                      </div>
+                    ) : (
+                      paginatedKeymapItems.map((item: any) => (
+                        <div key={item.id} className="p-3 flex items-center justify-between gap-4 hover:bg-muted/40 transition-colors">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm truncate">{decodeHtmlEntities(item.name)}</span>
+                              {item.subItems && item.subItems.length > 0 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {item.subItems.length} variations
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                              <span className="font-medium text-foreground">৳ {Number(item.price).toLocaleString()}</span>
+                              {item.description && (
+                                <>
+                                  <span>•</span>
+                                  <span className="truncate max-w-[280px]">{decodeHtmlEntities(item.description)}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Fast lightweight native select for instant rendering */}
+                            <div className="relative flex items-center">
+                              <ArrowRightLeft className="w-3.5 h-3.5 text-muted-foreground absolute left-2.5 pointer-events-none" />
+                              <select
+                                value={item.categoryId || keymapCategory.id}
+                                onChange={(e) => {
+                                  const newCatId = e.target.value;
+                                  if (newCatId && newCatId !== keymapCategory.id) {
+                                    handleRemapItem(item.id, newCatId, item.name);
+                                  }
+                                }}
+                                aria-label="Re-map category"
+                                className="h-8 pl-8 pr-2 text-xs rounded-md border border-input bg-background text-foreground hover:bg-muted/50 focus:outline-none focus:ring-1 focus:ring-ring max-w-[170px] truncate cursor-pointer shadow-xs"
+                              >
+                                {allCategories.map((c) => (
+                                  <option key={c.id} value={c.id} className="bg-popover text-popover-foreground py-1">
+                                    {c.icon ? `${c.icon} ` : ''}{decodeHtmlEntities(c.name)}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Tab 1 Pagination */}
+                  {filteredKeymapItems.length > KEYMAP_ITEMS_PER_PAGE && (
+                    <div className="flex items-center justify-between px-1 pt-2 text-xs text-muted-foreground shrink-0 border-t">
+                      <span>
+                        Showing {Math.min((keymapPage - 1) * KEYMAP_ITEMS_PER_PAGE + 1, filteredKeymapItems.length)} - {Math.min(keymapPage * KEYMAP_ITEMS_PER_PAGE, filteredKeymapItems.length)} of {filteredKeymapItems.length}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 text-xs gap-1"
+                          onClick={() => setKeymapPage(p => Math.max(1, p - 1))}
+                          disabled={keymapPage <= 1}
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" /> Prev
+                        </Button>
+                        <span className="font-medium text-foreground">
+                          {keymapPage} / {keymapTotalPages}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2.5 text-xs gap-1"
+                          onClick={() => setKeymapPage(p => Math.min(keymapTotalPages, p + 1))}
+                          disabled={keymapPage >= keymapTotalPages}
+                        >
+                          Next <ChevronRight className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            <DialogFooter className="p-4 border-t bg-muted/20 flex justify-end">
+              <Button variant="outline" size="sm" onClick={() => setIsKeymapDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       </div>
     </div>

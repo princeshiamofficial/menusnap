@@ -1,175 +1,337 @@
-
 "use client";
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  ChevronRight, 
-  ClipboardList, 
-  LayoutList, 
-  ShoppingCart, 
-  LogOut, 
-  Layers, 
-  Package, 
-  FolderOpen,
+  LayoutGrid, 
+  ArrowLeftRight,
+  BarChart3,
   Zap,
-  MessageSquare,
-  UserCog,
+  LayoutList,
+  Layers,
+  ClipboardList,
   CalendarCheck,
+  MessageSquare,
+  Settings,
+  UserCog,
   HeartHandshake,
-  Image as ImageIcon
+  Image as ImageIcon,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  FolderOpen
 } from 'lucide-react';
-import {
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
+import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { checkClientPermission, getPermissionKey } from '@/lib/admin-permissions';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
-const adminNavItems: { href: string, label: string, icon: React.ElementType, hasChevron?: boolean }[] = [
-  { href: '/m-admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/m-admin/quick-manager', label: 'Quick Manager', icon: Zap, hasChevron: true },
-  { href: '/m-admin/contacts', label: 'Contacts', icon: Users, hasChevron: true },
-  { href: '/m-admin/manage-orders', label: 'Orders', icon: ShoppingCart, hasChevron: true },
-  { href: '/m-admin/responses', label: 'Responses', icon: MessageSquare, hasChevron: true },
-  { href: '/m-admin/consultation-events', label: 'Consultations', icon: CalendarCheck, hasChevron: true },
-  { href: '/m-admin/manage-categories', label: 'Categories', icon: LayoutList, hasChevron: true },
-  { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList, hasChevron: true },
-  { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers, hasChevron: true },
-  { href: '/m-admin/magic-docs', label: 'Magic Docs', icon: FolderOpen, hasChevron: true },
-  { href: '/m-admin/summernote-docs', label: 'Summernote Docs', icon: ClipboardList, hasChevron: true },
-  { href: '/m-admin/testimonials', label: 'Testimonials', icon: HeartHandshake, hasChevron: true },
-  { href: '/m-admin/client-gallery', label: "Client's Gallery", icon: ImageIcon, hasChevron: true },
-  { href: '/m-admin/manage-users', label: 'Manage Users', icon: UserCog, hasChevron: true },
-  { href: '/m-admin/settings', label: 'Settings', icon: Settings, hasChevron: true },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+}
+
+const menuNavItems: NavItem[] = [
+  { href: '/m-admin', label: 'Dashboard', icon: LayoutGrid },
+  { href: '/m-admin/manage-orders', label: 'Orders', icon: ArrowLeftRight },
+  { href: '/m-admin/contacts', label: 'Analytics & Leads', icon: BarChart3 },
+  { href: '/m-admin/quick-manager', label: 'Quick Manager', icon: Zap },
+  { href: '/m-admin/manage-categories', label: 'Categories', icon: LayoutList },
+  { href: '/m-admin/manage-templates', label: 'Templates', icon: Layers },
+  { href: '/m-admin/manage-magictab', label: 'MagicTab', icon: ClipboardList },
+  { href: '/m-admin/consultation-events', label: 'Consultations', icon: CalendarCheck },
+  { href: '/m-admin/responses', label: 'Responses', icon: MessageSquare },
+];
+
+const accountNavItems: NavItem[] = [
+  { href: '/m-admin/settings', label: 'Settings', icon: Settings },
+  { href: '/m-admin/magic-docs', label: 'Magic Docs', icon: FolderOpen },
+  { href: '/m-admin/manage-users', label: 'Manage Users', icon: UserCog },
+  { href: '/m-admin/summernote-docs', label: 'Docs Editor', icon: FileText },
+  { href: '/m-admin/client-gallery', label: "Client Gallery", icon: ImageIcon },
+  { href: '/m-admin/testimonials', label: 'Testimonials', icon: HeartHandshake },
 ];
 
 export function AdminSidebarNav() {
   const pathname = usePathname();
   const normalizedPathname = pathname.replace(/^\/panel/, '/m-admin');
   const { adminLogout, adminUser } = useAdminAuth();
+  const { state, toggleSidebar } = useSidebar();
 
-  const filteredNavItems = adminNavItems.filter(item => {
-    const key = getPermissionKey(item.href);
-    return checkClientPermission(adminUser, key, 'view');
-  });
+  const isCollapsed = state === "collapsed";
+
+  const filterItems = (items: NavItem[]) => {
+    return items.filter(item => {
+      const key = getPermissionKey(item.href);
+      return checkClientPermission(adminUser, key, 'view');
+    });
+  };
+
+  const filteredMenuItems = filterItems(menuNavItems);
+  const filteredAccountItems = filterItems(accountNavItems);
+
+  const isItemActive = (href: string) => {
+    if (href === '/m-admin') {
+      return normalizedPathname === '/m-admin';
+    }
+    return normalizedPathname.startsWith(href);
+  };
 
   return (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      <div className={cn(
-        "flex flex-col border-b border-sidebar-border relative transition-all duration-300",
-        "p-4 group-data-[state=collapsed]:p-2 group-data-[state=collapsed]:items-center"
-      )}>
-        {/* Sidebar Trigger - Only visible when collapsed */}
-        <div className="hidden group-data-[state=collapsed]:block mb-2">
-          <SidebarTrigger className="text-sidebar-foreground/50 hover:text-sidebar-primary transition-all duration-300 h-8 w-8" />
+    <TooltipProvider delayDuration={150}>
+      <div className="flex flex-col h-full bg-[#0c0e14] select-none text-slate-200 transition-all duration-300">
+        {/* Top Header */}
+        <div className={cn(
+          "shrink-0 transition-all duration-300",
+          isCollapsed ? "pt-4 pb-2 px-2 flex justify-center" : "pt-4 pb-2 px-4 flex items-center justify-between"
+        )}>
+          {isCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={toggleSidebar}
+                  className="h-7 w-7 rounded-full border border-slate-800 bg-slate-900/90 hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white shadow-xs transition-transform active:scale-95 cursor-pointer"
+                  aria-label="Expand sidebar"
+                >
+                  <ChevronRight className="h-4 w-4 stroke-[2.2]" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="text-xs bg-slate-900 text-white border border-slate-800 rounded-lg px-2.5 py-1">
+                Expand sidebar
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <>
+              <span className="text-xs font-semibold text-slate-500 tracking-wider uppercase">
+                Menu
+              </span>
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="h-6 w-6 rounded-full border border-slate-800 bg-slate-900/90 hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white shadow-xs transition-transform active:scale-95 cursor-pointer"
+                aria-label="Collapse sidebar"
+              >
+                <ChevronLeft className="h-3.5 w-3.5 stroke-[2.2]" />
+              </button>
+            </>
+          )}
         </div>
 
-        {/* User Profile Card Section */}
-        {adminUser && (
-          <div className={cn(
-            "flex items-center gap-3 p-2.5 rounded-2xl bg-sidebar-accent/30 border border-sidebar-border/55 transition-all duration-300 w-full",
-            "group-data-[state=collapsed]:p-1 group-data-[state=collapsed]:bg-transparent group-data-[state=collapsed]:border-none group-data-[state=collapsed]:w-auto"
-          )}>
-            {/* Avatar */}
-            <div className="relative shrink-0">
-              {adminUser.avatar_url ? (
-                <img 
-                  src={adminUser.avatar_url} 
-                  alt={adminUser.name || adminUser.email} 
-                  className="h-10 w-10 group-data-[state=collapsed]:h-8 group-data-[state=collapsed]:w-8 rounded-xl object-cover border border-sidebar-border shadow-sm" 
-                />
-              ) : (
-                <div className="h-10 w-10 group-data-[state=collapsed]:h-8 group-data-[state=collapsed]:w-8 rounded-xl bg-sidebar-accent border border-sidebar-border flex items-center justify-center text-sidebar-foreground font-black text-xs uppercase">
-                  {(adminUser.name || adminUser.email).substring(0, 2)}
-                </div>
-              )}
-              {/* Online Indicator Badge */}
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-sidebar shadow" />
-            </div>
+        {/* Scrollable Navigation Items */}
+        <div className="flex-1 overflow-y-auto px-2.5 pb-4 space-y-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {/* Main Menu Items */}
+          <div className="space-y-1">
+            {filteredMenuItems.map((item) => {
+              const active = isItemActive(item.href);
+              const Icon = item.icon;
 
-            {/* User Info (Hidden when collapsed) */}
-            <div className="flex flex-col min-w-0 group-data-[state=collapsed]:hidden flex-1">
-              <span className="font-bold text-xs text-sidebar-foreground truncate leading-tight">
-                {adminUser.name || adminUser.email.split('@')[0]}
-              </span>
-              <span className="text-[10px] text-sidebar-foreground/50 font-medium truncate mt-0.5">
-                {adminUser.email}
-              </span>
-            </div>
+              if (isCollapsed) {
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 mx-auto",
+                          active
+                            ? "bg-white/10 text-white font-bold shadow-xs border border-white/10"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        )}
+                      >
+                        <Icon className={cn("w-5 h-5 stroke-[1.8]", active ? "text-white" : "text-slate-400")} />
+                        <span className="sr-only">{item.label}</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs font-medium bg-slate-900 text-white border border-slate-800 rounded-lg px-2.5 py-1">
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
 
-            {/* Sidebar Trigger - Only visible when expanded */}
-            <div className="group-data-[state=collapsed]:hidden shrink-0">
-              <SidebarTrigger className="text-sidebar-foreground/50 hover:text-sidebar-primary transition-all duration-300 h-8 w-8" />
-            </div>
-          </div>
-        )}
-      </div>
-      <nav className="flex-1 p-2 overflow-y-auto">
-        {filteredNavItems.length > 0 ? (
-          <SidebarMenu>
-            {filteredNavItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  variant="default"
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
                   className={cn(
-                    "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                    (normalizedPathname === item.href || (item.href !== '/m-admin' && normalizedPathname.startsWith(item.href)))
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground font-semibold"
-                      : "text-sidebar-foreground/80",
-                    "group-data-[collapsible=icon]:justify-center"
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-[13.5px]",
+                    active
+                      ? "bg-white/10 text-white font-bold shadow-xs border border-white/10"
+                      : "text-slate-400 hover:text-white hover:bg-white/5 font-medium"
                   )}
-                  isActive={normalizedPathname === item.href || (item.href !== '/m-admin' && normalizedPathname.startsWith(item.href))}
-                  tooltip={{
-                    children: item.label,
-                    className: "bg-popover text-popover-foreground border-border shadow-md",
-                    sideOffset: 10
-                  }}
                 >
-                  <Link href={item.href} prefetch={false}>
-                    <item.icon className="h-5 w-5" />
-                    <span className="group-data-[collapsible=icon]:hidden flex-1">{item.label}</span>
-                    {item.hasChevron && <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden" />}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        ) : (
-          <div className="p-4 text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
-            No admin navigation items.
+                  <Icon className={cn("w-5 h-5 shrink-0 stroke-[1.8]", active ? "text-white" : "text-slate-400")} />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
           </div>
+
+          {/* Account Section Divider & Title */}
+          <div className={cn(
+            "transition-all duration-200",
+            isCollapsed ? "my-2.5 border-t border-slate-800/80 w-8 mx-auto" : "pt-4 pb-1.5 px-3"
+          )}>
+            {!isCollapsed && (
+              <span className="text-xs font-semibold text-slate-500 tracking-wider uppercase block">
+                Account
+              </span>
+            )}
+          </div>
+
+          {/* Account Items */}
+          <div className="space-y-1">
+            {filteredAccountItems.map((item) => {
+              const active = isItemActive(item.href);
+              const Icon = item.icon;
+
+              if (isCollapsed) {
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 mx-auto",
+                          active
+                            ? "bg-white/10 text-white font-bold shadow-xs border border-white/10"
+                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                        )}
+                      >
+                        <Icon className={cn("w-5 h-5 stroke-[1.8]", active ? "text-white" : "text-slate-400")} />
+                        <span className="sr-only">{item.label}</span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="text-xs font-medium bg-slate-900 text-white border border-slate-800 rounded-lg px-2.5 py-1">
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 text-[13.5px]",
+                    active
+                      ? "bg-white/10 text-white font-bold shadow-xs border border-white/10"
+                      : "text-slate-400 hover:text-white hover:bg-white/5 font-medium"
+                  )}
+                >
+                  <Icon className={cn("w-5 h-5 shrink-0 stroke-[1.8]", active ? "text-white" : "text-slate-400")} />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
+
+          </div>
+        </div>
+
+        {/* User Profile Footer */}
+        {adminUser && (
+          isCollapsed ? (
+            <div className="shrink-0 p-2 border-t border-slate-800/80 mt-auto flex flex-col items-center gap-2.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="relative cursor-pointer">
+                    {adminUser.avatar_url ? (
+                      <img
+                        src={adminUser.avatar_url}
+                        alt={adminUser.name || adminUser.email}
+                        className="w-9 h-9 rounded-xl object-cover border border-slate-700/80 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-700/80 flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
+                        {(adminUser.name || adminUser.email || "AD").substring(0, 2)}
+                      </div>
+                    )}
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#0c0e14]" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs bg-slate-900 text-white border border-slate-800 rounded-lg px-3 py-2 space-y-0.5 shadow-xl">
+                  <p className="font-semibold text-white">{adminUser.name || adminUser.email.split('@')[0]}</p>
+                  <p className="text-slate-400 text-[10px]">{adminUser.email}</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={adminLogout}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                    aria-label="Log out"
+                  >
+                    <LogOut className="w-4 h-4 stroke-[1.8]" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs font-medium bg-red-600 text-white rounded-lg px-2.5 py-1">
+                  Log out
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          ) : (
+            <div className="shrink-0 p-2.5 border-t border-slate-800/80 mt-auto bg-[#0c0e14]">
+              <div className="flex items-center gap-2.5 p-2 rounded-2xl bg-white/[0.04] border border-white/[0.07] hover:bg-white/[0.07] transition-all group">
+                {/* Avatar with status indicator */}
+                <div className="relative shrink-0">
+                  {adminUser.avatar_url ? (
+                    <img
+                      src={adminUser.avatar_url}
+                      alt={adminUser.name || adminUser.email}
+                      className="w-9 h-9 rounded-xl object-cover border border-slate-700/80 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-700/80 flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
+                      {(adminUser.name || adminUser.email || "AD").substring(0, 2)}
+                    </div>
+                  )}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#0c0e14]" />
+                </div>
+
+                {/* User Info */}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-[13px] font-semibold text-white truncate leading-tight">
+                    {adminUser.name || adminUser.email.split('@')[0]}
+                  </span>
+                  <span className="text-[11px] text-slate-400 truncate mt-0.5" title={adminUser.email}>
+                    {adminUser.email}
+                  </span>
+                </div>
+
+                {/* Log Out Button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={adminLogout}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0 cursor-pointer"
+                      aria-label="Log out"
+                    >
+                      <LogOut className="w-4 h-4 stroke-[1.8]" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs font-medium bg-red-600 text-white rounded-lg px-2 py-1">
+                    Log out
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          )
         )}
-      </nav>
-      <div className="p-2 border-t border-sidebar-border mt-auto">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              variant="default"
-              className={cn(
-                "w-full justify-start text-sidebar-foreground hover:bg-destructive/80 hover:text-destructive-foreground",
-                "group-data-[collapsible=icon]:justify-center"
-              )}
-              onClick={adminLogout}
-              tooltip={{
-                children: "Logout",
-                className: "bg-popover text-popover-foreground border-border shadow-md",
-                sideOffset: 10
-              }}
-            >
-              <LogOut className="h-5 w-5" />
-              <span className="group-data-[collapsible=icon]:hidden flex-1">Logout</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
