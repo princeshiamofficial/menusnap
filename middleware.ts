@@ -38,16 +38,22 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/_next') || 
     pathname.startsWith('/api') || 
     pathname.startsWith('/m-admin') ||
+    pathname.startsWith('/panel') ||
     pathname.includes('.') || // Avoid slashing files like favicon.ico, images, etc.
     pathname === '/'          // Root already has a virtual slash or is fine
   ) {
-    const isPrivate = pathname.startsWith('/m-admin');
+    const isPrivate = pathname.startsWith('/m-admin') || pathname.startsWith('/panel');
     const robotsValue = isPrivate ? 'noindex, nofollow' : 'index, follow';
 
     const res = needsRewrite
       ? NextResponse.next({ request: { headers: requestHeaders } })
       : NextResponse.next();
     res.headers.set('X-Robots-Tag', robotsValue);
+    if (isPrivate) {
+      res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+      res.headers.set('Pragma', 'no-cache');
+      res.headers.set('Expires', '0');
+    }
     return res;
   }
 

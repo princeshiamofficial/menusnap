@@ -1,4 +1,3 @@
-
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -186,6 +185,7 @@ export async function upsertMagicDocToMySql(doc: any) {
     );
 
     revalidatePath('/m-admin/magic-docs');
+    revalidatePath('/m-admin/magic-docs/');
     return { success: true };
   } catch (error: any) {
     console.error('MySQL Magic Doc Upsert Error:', error);
@@ -199,6 +199,7 @@ export async function deleteMagicDocFromMySql(id: string) {
     const now = formatUtcDateTime();
     await pool.execute('UPDATE magic_docs SET is_deleted = 1, deleted_at = ? WHERE id = ?', [now, id]);
     revalidatePath('/m-admin/magic-docs');
+    revalidatePath('/m-admin/magic-docs/');
     return { success: true };
   } catch (error: any) {
     console.error('MySQL Magic Doc Delete Error:', error);
@@ -211,6 +212,7 @@ export async function permanentDeleteMagicDocFromMySql(id: string) {
     await initMagicDocsTable();
     await pool.execute('DELETE FROM magic_docs WHERE id = ?', [id]);
     revalidatePath('/m-admin/magic-docs');
+    revalidatePath('/m-admin/magic-docs/');
     return { success: true };
   } catch (error: any) {
     console.error('MySQL Magic Doc Permanent Delete Error:', error);

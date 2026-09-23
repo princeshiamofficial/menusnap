@@ -445,6 +445,9 @@ export default function MAdminDashboardPage() {
     dynamicStats.totalSpotlights = counts.totalSpotlights;
     dynamicStats.totalOffers = counts.totalOffers;
 
+    dynamicStats.totalDuplicateItems = formatNumber(counts.totalDuplicateItems);
+    dynamicStats.duplicateItemsSubtitle = counts.duplicateItemsSubtitle || '';
+
     setStatsData(dynamicStats);
 
   }, [allApiOrders, allApiLeads, counts, selectedDateRange, isLoadingStats]);

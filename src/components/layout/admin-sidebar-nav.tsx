@@ -65,9 +65,9 @@ export function AdminSidebarNav() {
   const pathname = usePathname();
   const normalizedPathname = pathname.replace(/^\/panel/, '/m-admin');
   const { adminLogout, adminUser } = useAdminAuth();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, isMobile } = useSidebar();
 
-  const isCollapsed = state === "collapsed";
+  const isCollapsed = !isMobile && state === "collapsed";
 
   const filterItems = (items: NavItem[]) => {
     return items.filter(item => {
