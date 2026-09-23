@@ -60,3 +60,6 @@ auth_info_baileys/
 # Local Agents Configuration
 .agents/
 
+.mcp.json
+.claude/
+.agentsroom/

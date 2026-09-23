@@ -16,41 +16,42 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://menusnap.colorhutbd.xyz'),
+  metadataBase: new URL('https://menusnap.io'),
   title: {
-    default: 'MenuSnap - Explore & Showcase Premium Restaurant & Parlour Menu Designs',
+    default: 'MenuSnap — Restaurant Menu Research & Menu Builder Bangladesh',
     template: '%s | MenuSnap',
   },
-  description: 'Discover and browse stunning restaurant, cafe, and beauty parlour menu designs. Explore creative templates, showcase your menu layouts, and get custom design inspirations with MenuSnap.',
+  description: 'Explore 3,000+ restaurant & parlor menu references, 30,000+ food items & categories, research market prices, and build your own restaurant menu with MenuSnap.',
   keywords: [
+    'Restaurant Menu Builder Bangladesh',
+    'Restaurant Menu Software',
+    'Menu Research Bangladesh',
+    'Food Menu Builder',
+    'Restaurant Menu Planning Software',
     'MenuSnap',
-    'menu design showcase',
-    'restaurant menu designs',
-    'parlour menu templates',
-    'menu design inspiration',
-    'browse menu designs',
+    'Restaurant pricing reference Bangladesh',
   ],
   alternates: {
     canonical: '/',
   },
   publisher: 'MenuSnap',
-  authors: [{ name: 'MenuSnap Team', url: 'https://menusnap.colorhutbd.xyz' }],
+  authors: [{ name: 'MenuSnap Team', url: 'https://menusnap.io' }],
   creator: 'MenuSnap',
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: 'MenuSnap - Explore & Showcase Premium Restaurant & Parlour Menu Designs',
-    description: 'Discover and browse stunning restaurant, cafe, and beauty parlour menu designs. Explore creative templates, showcase your menu layouts, and get custom design inspirations with MenuSnap.',
-    url: 'https://menusnap.colorhutbd.xyz',
+    title: 'MenuSnap — Restaurant Menu Research & Menu Builder Bangladesh',
+    description: 'Explore 3,000+ restaurant & parlor menu references, 30,000+ food items & categories, research market prices, and build your own restaurant menu with MenuSnap.',
+    url: 'https://menusnap.io',
     siteName: 'MenuSnap',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MenuSnap - Explore & Showcase Premium Restaurant & Parlour Menu Designs',
-    description: 'Discover and browse stunning restaurant, cafe, and beauty parlour menu designs. Explore creative templates, showcase your menu layouts, and get custom design inspirations with MenuSnap.',
+    title: 'MenuSnap — Restaurant Menu Research & Menu Builder Bangladesh',
+    description: 'Explore 3,000+ restaurant & parlor menu references, 30,000+ food items & categories, research market prices, and build your own restaurant menu with MenuSnap.',
   },
   manifest: '/manifest.json',
   appleWebApp: {
