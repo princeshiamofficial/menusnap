@@ -6,24 +6,47 @@ import { useState, useEffect, useCallback, createContext, useContext } from 'rea
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import { checkWhatsAppAvailability } from '@/app/actions/whatsapp';
-import { saveClientLogin } from '@/app/actions/clients';
+import { saveClientLogin, checkClientSubscription, clientLoginAction } from '@/app/actions/clients';
 
 const CLIENT_STORAGE_KEY = 'colorHutClientUser';
+export const REMEMBER_ME_STORAGE_KEY = 'menusnap_remember_me';
+export const REMEMBER_ID_STORAGE_KEY = 'menusnap_remembered_identifier';
 
 export interface ClientUser {
+  id?: number;
   businessName: string;
   type: 'restaurant' | 'parlour';
   whatsappNumber?: string;
   division?: string;
   district?: string;
   email?: string;
+  isSubscriber?: boolean;
 }
 
 export interface ClientAuthContextType {
   clientUser: ClientUser | null;
   isClientLoggedIn: boolean;
   clientLoading: boolean;
-  login: (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string, email?: string, redirectTo?: string | null) => Promise<boolean>;
+  isSubscriber: boolean;
+  subscriptionLoading: boolean;
+  refreshSubscription: (userToCheck?: ClientUser | null) => Promise<boolean>;
+  login: (
+    businessName: string,
+    type: 'restaurant' | 'parlour',
+    whatsappNumber: string,
+    password?: string,
+    division?: string,
+    district?: string,
+    email?: string,
+    redirectTo?: string | null,
+    rememberMe?: boolean
+  ) => Promise<boolean>;
+  loginWithCredentials: (
+    identifier: string,
+    password: string,
+    rememberMe?: boolean,
+    redirectTo?: string | null
+  ) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -32,14 +55,68 @@ const ClientAuthContext = createContext<ClientAuthContextType | undefined>(undef
 export function ClientAuthProvider({ children }: { children: ReactNode }) {
   const [clientUser, setClientUser] = useState<ClientUser | null>(null);
   const [clientLoading, setClientLoading] = useState(true);
+  const [isSubscriber, setIsSubscriber] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  const refreshSubscription = useCallback(async (userToCheck?: ClientUser | null) => {
+    const target = userToCheck !== undefined ? userToCheck : clientUser;
+    if (!target) {
+      setIsSubscriber(false);
+      return false;
+    }
+    setSubscriptionLoading(true);
+    try {
+      const res = await checkClientSubscription(target.whatsappNumber, target.email);
+      const isSub = Boolean(res.success && res.isSubscriber);
+      setIsSubscriber(isSub);
+
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem(CLIENT_STORAGE_KEY);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed.isSubscriber !== isSub) {
+              parsed.isSubscriber = isSub;
+              localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(parsed));
+              setClientUser(parsed);
+            }
+          } catch {}
+        }
+      }
+      return isSub;
+    } catch (e) {
+      console.error("Failed to check client subscription:", e);
+      return false;
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  }, [clientUser]);
 
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem(CLIENT_STORAGE_KEY);
       if (storedUser) {
-        setClientUser(JSON.parse(storedUser));
+        const parsed: ClientUser = JSON.parse(storedUser);
+        setClientUser(parsed);
+        if (parsed.isSubscriber !== undefined) {
+          setIsSubscriber(Boolean(parsed.isSubscriber));
+        }
+        // Verify with server in background
+        checkClientSubscription(parsed.whatsappNumber, parsed.email)
+          .then((res) => {
+            const isSub = Boolean(res.success && res.isSubscriber);
+            setIsSubscriber(isSub);
+            if (parsed.isSubscriber !== isSub) {
+              parsed.isSubscriber = isSub;
+              localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(parsed));
+              setClientUser(parsed);
+            }
+          })
+          .catch((err) => {
+            console.error("Failed background subscription check:", err);
+          });
       }
     } catch (error) {
       console.error("Failed to parse client user from localStorage", error);
@@ -49,7 +126,17 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (businessName: string, type: 'restaurant' | 'parlour', whatsappNumber?: string, division?: string, district?: string, email?: string, redirectTo?: string | null) => {
+  const login = useCallback(async (
+    businessName: string,
+    type: 'restaurant' | 'parlour',
+    whatsappNumber: string,
+    password?: string,
+    division?: string,
+    district?: string,
+    email?: string,
+    redirectTo?: string | null,
+    rememberMe?: boolean
+  ) => {
     setClientLoading(true);
     
     // 1. WhatsApp Presence Check using Green API (with Bypass & Cache)
@@ -86,37 +173,76 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         }
     }
 
-    // 2. Database Sync: Save client login details
+    // 2. Database Sync & Password Authentication
     let loginAction: 'created' | 'updated' = 'created';
+    let dbIsSubscriber = false;
+    let savedId: number | undefined;
     if (whatsappNumber) {
         try {
-            const dbResult = await saveClientLogin(businessName.trim(), type, whatsappNumber.trim(), division, district, email?.trim());
-            if (dbResult.success && dbResult.action) {
-                loginAction = dbResult.action as 'created' | 'updated';
-                console.log(`Client synced to DB successfully (${dbResult.action})`);
-            } else if (!dbResult.success) {
-                console.error("Failed to sync client to DB:", dbResult.error);
-                // We'll proceed with frontend login anyway to avoid blocking the user
+            const dbResult = await saveClientLogin(
+              businessName.trim(),
+              type,
+              whatsappNumber.trim(),
+              division,
+              district,
+              email?.trim(),
+              password
+            );
+            if (dbResult.success) {
+                loginAction = (dbResult.action as 'created' | 'updated') || 'updated';
+                dbIsSubscriber = Boolean(dbResult.isSubscriber);
+                savedId = dbResult.clientId;
+                console.log(`Client authenticated successfully (${dbResult.action})`);
+            } else {
+                toast({
+                  title: "Authentication Failed",
+                  description: dbResult.error || "Incorrect credentials or password.",
+                  variant: "destructive",
+                });
+                setClientLoading(false);
+                return false;
             }
-        } catch (dbErr) {
-            console.error("Database sync error:", dbErr);
+        } catch (dbErr: any) {
+            console.error("Database authentication error:", dbErr);
+            toast({
+              title: "Authentication Error",
+              description: dbErr.message || "Failed to authenticate.",
+              variant: "destructive",
+            });
+            setClientLoading(false);
+            return false;
         }
     }
 
-    // 3. Mock authentication
+    // 3. Client Session Storage
     if (businessName.trim() && (type === 'restaurant' || type === 'parlour')) {
       const userToStore: ClientUser = { 
+        id: savedId,
         businessName: businessName.trim(), 
         type,
         whatsappNumber: whatsappNumber?.trim(),
         division,
         district,
         email: email?.trim(),
+        isSubscriber: dbIsSubscriber,
       };
       localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
       setClientUser(userToStore);
+      setIsSubscriber(dbIsSubscriber);
+
+      // Handle Remember Me
+      if (typeof window !== 'undefined') {
+        if (rememberMe) {
+          localStorage.setItem(REMEMBER_ME_STORAGE_KEY, 'true');
+          localStorage.setItem(REMEMBER_ID_STORAGE_KEY, whatsappNumber?.trim() || email?.trim() || '');
+        } else {
+          localStorage.removeItem(REMEMBER_ME_STORAGE_KEY);
+          localStorage.removeItem(REMEMBER_ID_STORAGE_KEY);
+        }
+      }
+
       toast({
-        title: "Login Successful",
+        title: loginAction === 'created' ? "Registration Successful" : "Login Successful",
         description: `Welcome, ${businessName}!`,
         variant: "success",
       });
@@ -139,8 +265,85 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       return true;
     } else {
       toast({
-        title: "Login Failed",
+        title: "Registration Failed",
         description: "Please provide a valid business name and type.",
+        variant: "destructive",
+      });
+      setClientLoading(false);
+      return false;
+    }
+  }, [router, toast]);
+
+  const loginWithCredentials = useCallback(async (
+    identifier: string,
+    password: string,
+    rememberMe?: boolean,
+    redirectTo?: string | null
+  ) => {
+    setClientLoading(true);
+    try {
+      const cleanId = (identifier || '').trim();
+      const res = await clientLoginAction(cleanId, password);
+
+      if (!res.success || !res.client) {
+        toast({
+          title: "Login Failed",
+          description: res.error || "Incorrect credentials or password.",
+          variant: "destructive",
+        });
+        setClientLoading(false);
+        return false;
+      }
+
+      const client = res.client;
+      const userToStore: ClientUser = {
+        id: client.id,
+        businessName: client.businessName,
+        type: client.businessType,
+        whatsappNumber: client.whatsappNumber,
+        division: client.division,
+        district: client.district,
+        email: client.email,
+        isSubscriber: Boolean(client.isSubscriber),
+      };
+
+      localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
+      setClientUser(userToStore);
+      setIsSubscriber(Boolean(client.isSubscriber));
+
+      // Handle Remember Me
+      if (typeof window !== 'undefined') {
+        if (rememberMe) {
+          localStorage.setItem(REMEMBER_ME_STORAGE_KEY, 'true');
+          localStorage.setItem(REMEMBER_ID_STORAGE_KEY, cleanId);
+        } else {
+          localStorage.removeItem(REMEMBER_ME_STORAGE_KEY);
+          localStorage.removeItem(REMEMBER_ID_STORAGE_KEY);
+        }
+      }
+
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${client.businessName}!`,
+        variant: "success",
+      });
+
+      // Play welcome sound
+      try {
+        const welcomeSound = new Audio('/audio/welcome_back.mp3');
+        welcomeSound.play().catch(() => {});
+      } catch (e) {}
+
+      if (redirectTo !== null) {
+        router.push(redirectTo || '/dashboard');
+      }
+      setClientLoading(false);
+      return true;
+    } catch (error: any) {
+      console.error("Login with credentials error:", error);
+      toast({
+        title: "Authentication Error",
+        description: error.message || "Failed to log in. Please try again.",
         variant: "destructive",
       });
       setClientLoading(false);
@@ -151,6 +354,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem(CLIENT_STORAGE_KEY);
     setClientUser(null);
+    setIsSubscriber(false);
     router.push('/login');
     toast({
       title: "Logged Out",
@@ -162,7 +366,19 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
   const isClientLoggedIn = !!clientUser;
 
   return (
-    <ClientAuthContext.Provider value={{ clientUser, isClientLoggedIn, clientLoading, login, logout }}>
+    <ClientAuthContext.Provider
+      value={{
+        clientUser,
+        isClientLoggedIn,
+        clientLoading,
+        isSubscriber,
+        subscriptionLoading,
+        refreshSubscription,
+        login,
+        loginWithCredentials,
+        logout,
+      }}
+    >
       {children}
     </ClientAuthContext.Provider>
   );

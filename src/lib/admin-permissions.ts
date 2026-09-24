@@ -8,6 +8,7 @@ export function getPermissionKey(pathname: string): string {
   if (cleanPath.startsWith('/m-admin/quick-manager')) return 'quick-manager';
   if (cleanPath.startsWith('/m-admin/contacts')) return 'contacts';
   if (cleanPath.startsWith('/m-admin/manage-orders')) return 'manage-orders';
+  if (cleanPath.startsWith('/m-admin/payments')) return 'payments';
   if (cleanPath.startsWith('/m-admin/responses')) return 'responses';
   if (cleanPath.startsWith('/m-admin/manage-categories')) return 'manage-categories';
   if (cleanPath.startsWith('/m-admin/manage-magictab')) return 'manage-magictab';
@@ -45,6 +46,7 @@ export function checkClientPermission(
       'quick-manager': ['view', 'create', 'edit', 'delete'],
       'contacts': ['view', 'create', 'edit', 'delete'],
       'manage-orders': ['view', 'create', 'edit', 'delete'],
+      'payments': ['view', 'create', 'edit'],
       'responses': ['view', 'edit'],
       'manage-categories': ['view', 'create', 'edit', 'delete'],
       'manage-magictab': ['view', 'create', 'edit', 'delete'],

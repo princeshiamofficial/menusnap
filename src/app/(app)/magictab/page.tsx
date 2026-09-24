@@ -16,8 +16,18 @@ import {
   Plus,
   UtensilsCrossed,
   Folder,
+  Crown,
+  Lock,
+  Sparkles,
+  ShieldCheck,
+  ArrowRight,
+  Zap,
+  RefreshCw,
+  Share2,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { CheckoutModal } from '@/components/landing/checkout-modal';
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -613,7 +623,10 @@ const Typewriter = React.memo(function Typewriter({ words, className }: { words:
 
 
 export default function MagicTabPage() {
-  const { clientUser, clientLoading, isClientLoggedIn } = useClientAuth();
+  const { clientUser, clientLoading, isSubscriber, subscriptionLoading, refreshSubscription } = useClientAuth();
+  const { toast } = useToast();
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [refreshingAccess, setRefreshingAccess] = useState(false);
   const [apiCategories, setApiCategories] = useState<Category[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -621,6 +634,34 @@ export default function MagicTabPage() {
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [selectedMenuType, setSelectedMenuType] = useState<string>('restaurant');
   const [itemsToSelectFromDraft, setItemsToSelectFromDraft] = useState<string[] | null>(null);
+
+  const handleRefreshAccess = async () => {
+    setRefreshingAccess(true);
+    try {
+      const active = await refreshSubscription();
+      if (active) {
+        toast({
+          title: "Access Granted!",
+          description: "Your subscription has been verified. Welcome to MagicTab!",
+          variant: "success",
+        });
+      } else {
+        toast({
+          title: "No Active Subscription Found",
+          description: "Please subscribe to unlock MagicTab or verify your transaction details.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast({
+        title: "Error checking status",
+        description: "Please try again in a few moments.",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshingAccess(false);
+    }
+  };
 
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingItems, setLoadingItems] = useState(true);
@@ -904,11 +945,11 @@ export default function MagicTabPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedMenuType) {
+    if (selectedMenuType && isSubscriber) {
       loadCategories(selectedMenuType);
       loadItems(selectedMenuType);
     }
-  }, [selectedMenuType, loadCategories, loadItems]);
+  }, [selectedMenuType, isSubscriber, loadCategories, loadItems]);
 
 
   // Effect to handle restoring a draft on page load
@@ -1269,6 +1310,146 @@ export default function MagicTabPage() {
   }, [currentMenuItems.length]);
 
   const loading = loadingCategories || loadingItems;
+
+  if (clientLoading || (subscriptionLoading && !isSubscriber)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-slate-50/50">
+        <div className="relative w-16 h-16 mb-4">
+          <div className="absolute inset-0 rounded-full border-4 border-orange-200 border-t-[#FF5A36] animate-spin" />
+          <div className="absolute inset-2 rounded-full bg-orange-50 flex items-center justify-center text-[#FF5A36]">
+            <Sparkles className="w-5 h-5 animate-pulse" />
+          </div>
+        </div>
+        <p className="text-sm font-bold text-slate-800 tracking-wider uppercase">Checking MagicTab Access...</p>
+        <p className="text-xs text-slate-500 mt-1">Verifying your MenuSnap subscription status</p>
+      </div>
+    );
+  }
+
+  if (!isSubscriber) {
+    return (
+      <div className="min-h-screen bg-[#FDFDFC] text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 relative overflow-hidden">
+        {/* Background radial glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl aspect-square bg-orange-100/50 rounded-full blur-[140px] -z-10 pointer-events-none" />
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+          className="w-full max-w-2xl bg-white/95 backdrop-blur-xl border border-slate-200/90 shadow-2xl rounded-3xl overflow-hidden p-6 sm:p-10 text-center relative"
+        >
+          {/* Top highlight bar */}
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-[#FF5A36] to-rose-500" />
+
+          {/* Crown / Lock icon */}
+          <div className="relative mx-auto w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-xl shadow-orange-500/25 mb-6">
+            <Lock className="w-9 h-9" />
+            <div className="absolute -top-1.5 -right-1.5 w-7 h-7 rounded-full bg-white text-amber-500 flex items-center justify-center shadow-md border border-amber-100">
+              <Crown className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-orange-100/80 text-orange-900 border border-orange-200/80 text-xs font-bold uppercase tracking-wider mb-3">
+            <Sparkles className="w-3.5 h-3.5 text-[#FF5A36]" /> Subscribers Only
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            MagicTab is Locked
+          </h2>
+          <p className="text-slate-600 text-sm sm:text-base mt-2 max-w-lg mx-auto">
+            MagicTab AI Menu Builder & collaborative dish library is exclusively reserved for active MenuSnap subscribers.
+          </p>
+
+          {/* 4 Feature highlight pill grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 text-left">
+            <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-100 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-orange-100/70 text-[#FF5A36] flex items-center justify-center shrink-0 mt-0.5">
+                <UtensilsCrossed className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900">3,000+ Verified Dishes</p>
+                <p className="text-[11px] text-slate-500 leading-snug">Pre-loaded restaurant and parlour items with pricing.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-100 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-100/70 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900">AI Menu Generator</p>
+                <p className="text-[11px] text-slate-500 leading-snug">Instant categorization and automated catalog layouts.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-100 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-100/70 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                <Share2 className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900">WhatsApp Digital Menu</p>
+                <p className="text-[11px] text-slate-500 leading-snug">Interactive ordering links to share directly with customers.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-100 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900">Cloud Sync & Backup</p>
+                <p className="text-[11px] text-slate-500 leading-snug">Real-time collaborative editing across all devices.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action CTAs */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button
+              onClick={() => setIsCheckoutModalOpen(true)}
+              className="w-full sm:w-auto px-8 h-12 bg-gradient-to-r from-[#FF5A36] to-[#ff7b4b] hover:from-[#e64c29] hover:to-[#f06e3e] text-white font-bold rounded-2xl shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 group transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Subscribe to Unlock MagicTab</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => router.push('/dashboard')}
+              className="w-full sm:w-auto px-6 h-12 rounded-2xl border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold"
+            >
+              Back to Dashboard
+            </Button>
+          </div>
+
+          {/* Refresh Access Button */}
+          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center">
+            <button
+              onClick={handleRefreshAccess}
+              disabled={refreshingAccess}
+              className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", refreshingAccess && "animate-spin text-[#FF5A36]")} />
+              <span>Already paid? Click to refresh access</span>
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Subscription Checkout Modal */}
+        <CheckoutModal
+          isOpen={isCheckoutModalOpen}
+          onClose={() => {
+            setIsCheckoutModalOpen(false);
+            handleRefreshAccess();
+          }}
+          plan="pro"
+          duration="1_month"
+        />
+      </div>
+    );
+  }
 
   return (
     <>

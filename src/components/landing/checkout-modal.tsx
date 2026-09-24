@@ -12,9 +12,15 @@ import {
   Tag,
   CreditCard,
   Smartphone,
+  AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 import { PlanTier, BillingPeriod, PaymentGateway } from "@/lib/menusnap-types";
 import { trackEvent } from "@/lib/analytics";
+import {
+  initiatePayStationPaymentAction,
+  getPayStationPublicStatus,
+} from "@/app/actions/paystation";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -38,6 +44,20 @@ export function CheckoutModal({
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>("bkash");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [paystationActive, setPaystationActive] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    async function loadStatus() {
+      try {
+        const status = await getPayStationPublicStatus();
+        setPaystationActive(status.isEnabled);
+      } catch (e) {
+        console.error("Failed to load PayStation status", e);
+      }
+    }
+    loadStatus();
+  }, []);
 
   useEffect(() => {
     if (coupon) setCouponInput(coupon);
@@ -48,6 +68,7 @@ export function CheckoutModal({
       document.body.style.overflow = "hidden";
       setIsSuccess(false);
       setIsProcessing(false);
+      setErrorMessage(null);
       trackEvent("checkout_started", { plan, duration, coupon });
     } else {
       document.body.style.overflow = "unset";
@@ -83,22 +104,45 @@ export function CheckoutModal({
 
   const finalAmount = Math.max(0, basePrice - discount);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName || !email || !phone) return;
 
+    setErrorMessage(null);
     setIsProcessing(true);
-    // Simulate server-side payment verification pipeline
-    setTimeout(() => {
-      setIsProcessing(false);
-      setIsSuccess(true);
-      trackEvent("payment_success", {
+
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const response = await initiatePayStationPaymentAction({
         plan,
         duration,
         amount: finalAmount,
-        gateway: selectedGateway,
+        fullName,
+        email,
+        phone,
+        coupon: couponInput,
+        origin,
       });
-    }, 1200);
+
+      if (response.success && response.paymentUrl) {
+        trackEvent("checkout_initiated", {
+          plan,
+          duration,
+          amount: finalAmount,
+          invoice: response.invoiceNumber,
+        });
+        window.location.href = response.paymentUrl;
+        return;
+      }
+
+      setErrorMessage(
+        response.error || "Failed to initiate payment session. Please try again or contact support."
+      );
+      setIsProcessing(false);
+    } catch (err: any) {
+      setErrorMessage(err.message || "An unexpected error occurred connecting to payment gateway.");
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -128,7 +172,7 @@ export function CheckoutModal({
                 MenuSnap Subscription Checkout
               </h3>
               <p className="text-xs text-gray-500">
-                Secure Bangladesh Gateway Payment
+                PayStation Bangladesh Gateway Payment
               </p>
             </div>
             <button
@@ -145,8 +189,8 @@ export function CheckoutModal({
               <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h4 className="text-2xl font-black text-gray-950 font-bengali">
-                অভিনন্দন! আপনার সাবস্ক্রিপশন সম্পন্ন হয়েছে।
+              <h4 className="text-2xl font-black text-gray-950">
+                Congratulations! Your Subscription is Active.
               </h4>
               <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-sans max-w-md mx-auto">
                 We have verified your payment for the <strong className="text-gray-900">{planNames[plan]} ({duration === "1_month" ? "1 Month" : "3 Months"})</strong>.
@@ -242,34 +286,44 @@ export function CheckoutModal({
                 </div>
               </div>
 
-              {/* Payment Gateway Selector */}
+              {/* Payment Gateway Info */}
               <div>
-                <label className="text-xs font-bold text-gray-700 block mb-2">
-                  Select Payment Method
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(
-                    [
-                      { id: "bkash", name: "bKash" },
-                      { id: "nagad", name: "Nagad" },
-                      { id: "card", name: "Debit / Credit Card" },
-                    ] as const
-                  ).map((gw) => (
-                    <button
-                      key={gw.id}
-                      type="button"
-                      onClick={() => setSelectedGateway(gw.id)}
-                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all text-center ${
-                        selectedGateway === gw.id
-                          ? "border-[#FF5A36] bg-orange-50/50 text-[#FF5A36] shadow-2xs"
-                          : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {gw.name}
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-bold text-gray-700">
+                    Payment Gateway
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Auto Instant Activation
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-2xl border border-orange-200/90 bg-orange-50/40 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-[#FF5A36] text-white flex items-center justify-center font-black text-xs shadow-xs">
+                      P
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-gray-950 block">
+                        PayStation Bangladesh
+                      </span>
+                      <span className="text-[11px] text-gray-500">
+                        bKash • Nagad • Rocket • Visa / MasterCard / Amex
+                      </span>
+                    </div>
+                  </div>
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 </div>
               </div>
+
+              {/* Error Notice if any */}
+              {errorMessage && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <span className="font-bold block">Payment Notice</span>
+                    <span>{errorMessage}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Submit CTA */}
               <button
@@ -278,10 +332,10 @@ export function CheckoutModal({
                 className="w-full flex items-center justify-center gap-2 bg-[#FF5A36] hover:bg-[#e64c29] text-white font-extrabold text-sm py-3.5 px-6 rounded-xl shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
               >
                 {isProcessing ? (
-                  <span>Processing Secure Payment...</span>
+                  <span>Redirecting to PayStation Gateway...</span>
                 ) : (
                   <>
-                    <span>Pay ৳{finalAmount} & Activate Account</span>
+                    <span>Pay ৳{finalAmount} with PayStation</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

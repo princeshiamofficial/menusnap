@@ -266,6 +266,7 @@ function MobileImageSlider() {
 }
 
 function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean) => void }) {
+  const { isSubscriber } = useClientAuth();
   const actions = [
     {
       title: "eBook",
@@ -350,6 +351,11 @@ function MobileActionGrid({ setIsHiringOpen }: { setIsHiringOpen: (val: boolean)
                     <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-2.5 flex flex-col items-start justify-between shadow-sm relative overflow-hidden group">
                       <div className="flex flex-row items-center gap-1 text-foreground/90 font-black text-xs relative z-10 whitespace-nowrap">
                         MagicTab
+                        {!isSubscriber && (
+                          <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs">
+                            PRO
+                          </span>
+                        )}
                       </div>
                       <div className="absolute -right-1 -bottom-2 h-12 w-12 opacity-95">
                         <img src="/dashboard/magictab_3d_icon.png" alt="MagicTab" className="w-full h-full object-contain absolute inset-0" />

@@ -39,7 +39,7 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { clientUser, logout, clientLoading } = useClientAuth();
+  const { clientUser, logout, clientLoading, isSubscriber } = useClientAuth();
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -49,7 +49,7 @@ export function SidebarNav() {
         "group-data-[state=expanded]:p-4 group-data-[state=expanded]:h-[80px]"
       )}>
         <Link 
-          href="/magictab/" 
+          href="/dashboard" 
           className="group-data-[collapsible=icon]:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring rounded-sm flex items-center"
         >
           <div className="relative h-12 w-44 sm:w-48">
@@ -96,6 +96,11 @@ export function SidebarNav() {
                     >
                       <item.icon className="h-5 w-5" />
                       <span className="group-data-[collapsible=icon]:hidden flex-1">{item.label}</span>
+                      {item.href.includes('/magictab') && !isSubscriber && (
+                        <span className="group-data-[collapsible=icon]:hidden text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs mr-1">
+                          PRO
+                        </span>
+                      )}
                       {item.hasChevron && <ChevronRight className="h-4 w-4 text-sidebar-foreground/50 group-data-[collapsible=icon]:hidden" />}
                     </Link>
                   </SidebarMenuButton>

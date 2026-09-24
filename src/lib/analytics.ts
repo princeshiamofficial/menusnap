@@ -7,6 +7,7 @@ export type AnalyticsEvent =
   | "coupon_used"
   | "plan_selected"
   | "checkout_started"
+  | "checkout_initiated"
   | "payment_success"
   | "faq_opened"
   | "final_cta_clicked";

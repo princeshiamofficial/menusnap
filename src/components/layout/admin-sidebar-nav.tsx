@@ -21,7 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
-  FolderOpen
+  FolderOpen,
+  CreditCard
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -43,6 +44,7 @@ interface NavItem {
 const menuNavItems: NavItem[] = [
   { href: '/m-admin', label: 'Dashboard', icon: LayoutGrid },
   { href: '/m-admin/manage-orders', label: 'Orders', icon: ArrowLeftRight },
+  { href: '/m-admin/payments', label: 'Payments', icon: CreditCard },
   { href: '/m-admin/contacts', label: 'Analytics & Leads', icon: BarChart3 },
   { href: '/m-admin/quick-manager', label: 'Quick Manager', icon: Zap },
   { href: '/m-admin/manage-categories', label: 'Categories', icon: LayoutList },

@@ -230,6 +230,7 @@ interface Contact {
   latest_note: string | null;
   updated_by_id?: number | null;
   stage: string;
+  is_subscriber?: boolean;
   last_login: string;
   created_at: string;
   _createdAtTimestamp?: number;
@@ -1260,7 +1261,14 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, admi
       </TableCell>
       <TableCell>
         <div className="flex flex-col">
-          <span className="font-bold text-slate-700 text-sm tracking-tight capitalize">{contact.business_name}</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-bold text-slate-700 text-sm tracking-tight capitalize">{contact.business_name}</span>
+            {contact.is_subscriber && (
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-900 border border-amber-200/80 text-[10px] font-black uppercase tracking-wider">
+                👑 Subscribed
+              </span>
+            )}
+          </div>
           <span className="text-[11px] text-slate-500 font-semibold capitalize mt-0.5 tracking-tight">{contact.business_type || '-'}</span>
         </div>
       </TableCell>
@@ -1418,9 +1426,16 @@ const MobileContactCard = React.memo(function MobileContactCard({ contact, index
             </div>
             <div className="flex-1 min-w-0 pr-2">
                 <div className="flex items-center justify-between gap-2 mb-0.5">
-                    <h3 className="font-black text-[17px] text-slate-900 leading-none truncate capitalize tracking-tight">
-                        {contact.business_name}
-                    </h3>
+                    <div className="flex items-center gap-1.5 truncate">
+                      <h3 className="font-black text-[17px] text-slate-900 leading-none truncate capitalize tracking-tight">
+                          {contact.business_name}
+                      </h3>
+                      {contact.is_subscriber && (
+                        <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-900 border border-amber-200 text-[9px] font-black uppercase">
+                          👑 Subscribed
+                        </span>
+                      )}
+                    </div>
                     <Select 
                         value={contact.stage} 
                         onValueChange={onStageChange}
