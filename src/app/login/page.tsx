@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building, Utensils, Sparkles, LogIn, AlertCircle, MapPin, Mail, Lock, Eye, EyeOff, UserPlus, Phone } from 'lucide-react';
+import { Building, Utensils, Sparkles, LogIn, AlertCircle, MapPin, Mail, Lock, Eye, EyeOff, UserPlus, Phone, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { isValidWhatsApp } from '@/lib/utils';
 import { checkClientStatus } from '@/app/actions/clients';
@@ -37,8 +37,17 @@ const BD_ADDRESS_DATA: Record<string, string[]> = {
   "Mymensingh": ["Mymensingh", "Jamalpur", "Netrokona", "Sherpur"]
 };
 
-export default function LoginPage() {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const emailParam = searchParams.get('email');
+  const whatsappParam = searchParams.get('whatsapp') || searchParams.get('phone');
+  const nameParam = searchParams.get('name') || searchParams.get('business');
+  const fromParam = searchParams.get('from');
+
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>(
+    tabParam === 'register' || fromParam === 'checkout' ? 'register' : 'login'
+  );
 
   // Login form state
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -46,14 +55,14 @@ export default function LoginPage() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Register form state
-  const [businessName, setBusinessName] = useState('');
-  const [email, setEmail] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
+  const [businessName, setBusinessName] = useState(nameParam || '');
+  const [email, setEmail] = useState(emailParam || '');
+  const [whatsapp, setWhatsapp] = useState(whatsappParam || '');
   const [registerPassword, setRegisterPassword] = useState('');
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
-  const [type, setType] = useState<'restaurant' | 'parlour' | ''>('');
-  const [division, setDivision] = useState<string>('');
-  const [district, setDistrict] = useState<string>('');
+  const [type, setType] = useState<'restaurant' | 'parlour' | ''>('restaurant');
+  const [division, setDivision] = useState<string>('Dhaka');
+  const [district, setDistrict] = useState<string>('Dhaka');
 
   // Common state
   const [rememberMe, setRememberMe] = useState(true);
@@ -62,6 +71,19 @@ export default function LoginPage() {
   const { login, loginWithCredentials, clientLoading, isClientLoggedIn } = useClientAuth();
   const { setTheme } = useTheme();
   const router = useRouter();
+
+  // Initialize from searchParams
+  useEffect(() => {
+    if (tabParam === 'register' || fromParam === 'checkout') {
+      setActiveTab('register');
+    }
+    if (emailParam) setEmail(emailParam);
+    if (whatsappParam) {
+      setWhatsapp(whatsappParam);
+      setLoginIdentifier(whatsappParam);
+    }
+    if (nameParam) setBusinessName(nameParam);
+  }, [tabParam, emailParam, whatsappParam, nameParam, fromParam]);
 
   // Load Remember Me credentials on mount
   useEffect(() => {
@@ -234,6 +256,19 @@ export default function LoginPage() {
             <CardDescription className="text-[#64748b] font-medium text-center text-sm">
               Access your dedicated menu builder
             </CardDescription>
+
+            {/* If redirected from checkout, show welcome banner */}
+            {fromParam === 'checkout' && (
+              <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200/90 rounded-xl flex items-start gap-2.5 text-xs text-emerald-900 shadow-xs text-left">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-emerald-950">Payment Verified!</p>
+                  <p className="text-[11px] text-emerald-800 leading-snug">
+                    Please choose a password to complete your account registration.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Segmented Tab Switcher */}
             <div className="mt-4 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/80">
@@ -560,5 +595,19 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-black/25">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

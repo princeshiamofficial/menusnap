@@ -1,6 +1,7 @@
 'use server';
 
 import pool from '@/lib/mysql';
+import { recordCouponUsageAction } from '@/app/actions/coupons';
 
 export interface PayStationSettings {
   isEnabled: boolean;
@@ -389,12 +390,12 @@ export async function verifyPayStationTransaction(
 
     // Inspect verification response
     const dataObj = statusResponse?.data || statusResponse || {};
-    const trxStatus = (
+    const trxStatus = String(
       dataObj.trx_status ||
+      dataObj.status ||
       statusResponse?.trx_status ||
-      statusResponse?.status ||
       ''
-    ).toLowerCase();
+    ).trim().toLowerCase();
 
     const resolvedTrxId =
       trxId || dataObj.trx_id || statusResponse?.trx_id || null;
@@ -403,26 +404,16 @@ export async function verifyPayStationTransaction(
 
     let finalStatus: 'Successful' | 'Failed' | 'Cancelled' | 'Pending' = 'Failed';
 
-    if (
-      trxStatus === 'successful' ||
-      trxStatus === 'success' ||
-      statusResponse?.status_code === '200' ||
-      statusResponse?.status_code === 200
+    if (trxStatus === 'successful' || trxStatus === 'success') {
+      finalStatus = 'Successful';
+    } else if (
+      trxStatus === 'cancelled' ||
+      trxStatus === 'cancel' ||
+      trxStatus === 'canceled'
     ) {
-      // In some PayStation responses, status_code is 200 and trx_status is Success/Successful
-      if (
-        trxStatus.includes('success') ||
-        dataObj.status === 'success' ||
-        statusResponse?.status === 'success'
-      ) {
-        finalStatus = 'Successful';
-      } else if (trxStatus.includes('cancel')) {
-        finalStatus = 'Cancelled';
-      } else {
-        finalStatus = 'Failed';
-      }
-    } else if (trxStatus.includes('cancel')) {
       finalStatus = 'Cancelled';
+    } else if (trxStatus === 'pending') {
+      finalStatus = 'Pending';
     } else {
       finalStatus = 'Failed';
     }
@@ -443,7 +434,7 @@ export async function verifyPayStationTransaction(
       ]
     );
 
-    // 4. If Successful, register or upgrade client in `clients` CRM table
+    // 4. If Successful, register or upgrade client in `clients` CRM table & record coupon usage
     if (finalStatus === 'Successful') {
       try {
         await linkSubscriberToClientCRM({
@@ -458,6 +449,18 @@ export async function verifyPayStationTransaction(
         });
       } catch (crmErr) {
         console.error('Error linking subscriber to clients CRM:', crmErr);
+      }
+
+      // Record coupon usage if applied
+      if (currentTx.reference && currentTx.reference.startsWith('Coupon:')) {
+        const rawCode = currentTx.reference.replace('Coupon:', '').trim();
+        if (rawCode && rawCode.toUpperCase() !== 'NONE') {
+          try {
+            await recordCouponUsageAction(rawCode);
+          } catch (couponErr) {
+            console.error('Error recording coupon usage:', couponErr);
+          }
+        }
       }
     }
 

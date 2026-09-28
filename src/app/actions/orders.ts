@@ -994,10 +994,11 @@ export async function getOrderItemsAndCategories(limit = 0, type?: 'restaurant' 
             });
           }
 
-          const itemKey = (cleanName + '|||' + catId).toLowerCase();
+          const itemSlug = slugify(cleanName) || 'item';
+          const itemKey = (catId + '|||' + itemSlug).toLowerCase();
           if (!itemsMap.has(itemKey)) {
             itemsMap.set(itemKey, {
-              id: `order-${catId}-${slugify(cleanName)}`,
+              id: `order-${catId}-${itemSlug}`,
               name: cleanName,
               price: parseFloat(it.price) || 0,
               category: catId,

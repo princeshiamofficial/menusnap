@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { MapPin } from "lucide-react";
 
 export function Footer() {
@@ -12,14 +13,15 @@ export function Footer() {
           
           {/* Brand Info (Span 2) */}
           <div className="md:col-span-2 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#FF5A36] flex items-center justify-center text-white font-black text-lg shadow-sm">
-                M
-              </div>
-              <span className="text-xl font-extrabold tracking-tight text-white font-sans">
-                Menu<span className="text-[#FF5A36]">Snap</span>
-              </span>
-            </div>
+            <Link href="/" className="inline-flex items-center group select-none">
+              <Image
+                src="/menusnap-logo-white.png"
+                alt="MenuSnap Logo"
+                width={150}
+                height={32}
+                className="h-7 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+              />
+            </Link>
 
             <p className="text-base font-bold text-gray-200">
               Research Less. Build Smarter.
@@ -42,13 +44,13 @@ export function Footer() {
             </h4>
             <ul className="space-y-2">
               <li>
-                <Link href="#product" className="hover:text-white transition-colors">
-                  Explore 3,000+ Menus
+                <Link href="#how-it-works" className="hover:text-white transition-colors">
+                  How It Works
                 </Link>
               </li>
               <li>
-                <Link href="#features" className="hover:text-white transition-colors">
-                  Menu Builder Studio
+                <Link href="/free-design" className="hover:text-white transition-colors">
+                  Free Menu Design
                 </Link>
               </li>
               <li>

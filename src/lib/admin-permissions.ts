@@ -20,6 +20,8 @@ export function getPermissionKey(pathname: string): string {
   if (cleanPath.startsWith('/m-admin/settings')) return 'settings';
   if (cleanPath.startsWith('/m-admin/manage-users')) return 'manage-users';
   if (cleanPath.startsWith('/m-admin/consultation-events')) return 'consultation-events';
+  if (cleanPath.startsWith('/m-admin/coupons')) return 'coupons';
+  if (cleanPath.startsWith('/m-admin/packages') || cleanPath.startsWith('/m-admin/manage-packages')) return 'packages';
   return '';
 }
 
@@ -43,6 +45,8 @@ export function checkClientPermission(
   if (adminUser.role === 'User') {
     const defaultUserPermissions: Record<string, string[]> = {
       'dashboard': ['view'],
+      'packages': ['view', 'create', 'edit', 'delete'],
+      'coupons': ['view', 'create', 'edit', 'delete'],
       'quick-manager': ['view', 'create', 'edit', 'delete'],
       'contacts': ['view', 'create', 'edit', 'delete'],
       'manage-orders': ['view', 'create', 'edit', 'delete'],

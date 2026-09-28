@@ -1,26 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
-  ShieldCheck,
   CheckCircle2,
   Lock,
   ArrowRight,
-  Sparkles,
   Tag,
-  CreditCard,
-  Smartphone,
   AlertCircle,
-  ExternalLink,
+  Loader2,
+  Check,
 } from "lucide-react";
-import { PlanTier, BillingPeriod, PaymentGateway } from "@/lib/menusnap-types";
+import { PlanTier, BillingPeriod, PaymentGateway, PricingPackage } from "@/lib/menusnap-types";
 import { trackEvent } from "@/lib/analytics";
 import {
   initiatePayStationPaymentAction,
   getPayStationPublicStatus,
 } from "@/app/actions/paystation";
+import { getPublicPricingPackagesAction } from "@/app/actions/packages";
+import { validateCouponAction } from "@/app/actions/coupons";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -41,27 +41,153 @@ export function CheckoutModal({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [couponInput, setCouponInput] = useState(coupon || "");
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState<number>(0);
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>("bkash");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [paystationActive, setPaystationActive] = useState<boolean | null>(null);
 
+  // Dynamic Packages
+  const [packages, setPackages] = useState<PricingPackage[]>([]);
+
   useEffect(() => {
+    let isMounted = true;
     async function loadStatus() {
       try {
         const status = await getPayStationPublicStatus();
-        setPaystationActive(status.isEnabled);
-      } catch (e) {
-        console.error("Failed to load PayStation status", e);
+        if (isMounted && status) {
+          setPaystationActive(!!status.isEnabled);
+        }
+      } catch {
+        if (isMounted) setPaystationActive(false);
       }
     }
     loadStatus();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (coupon) setCouponInput(coupon);
-  }, [coupon]);
+    let isMounted = true;
+    getPublicPricingPackagesAction()
+      .then((res) => {
+        if (isMounted && res.success && res.data) {
+          setPackages(res.data);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setPackages([]);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Find matching package
+  const matchedPackage = packages.find(
+    (p) => p.package_id.toLowerCase() === plan.toLowerCase()
+  );
+
+  const planDisplayName = matchedPackage
+    ? `${matchedPackage.name} Plan`
+    : plan === "starter"
+    ? "Starter Plan"
+    : plan === "pro"
+    ? "Pro Plan"
+    : plan === "agency"
+    ? "Agency Plan"
+    : `${plan.toUpperCase()} Plan`;
+
+  // Base price calculation
+  let basePrice = 0;
+  if (matchedPackage) {
+    basePrice = matchedPackage.price;
+  } else {
+    if (plan === "starter") {
+      basePrice = 499;
+    } else if (plan === "pro") {
+      basePrice = 1499;
+    } else if (plan === "agency") {
+      basePrice = 4999;
+    }
+  }
+
+  // Handle coupon validation function
+  const handleApplyCoupon = useCallback(
+    async (codeToApply: string) => {
+      const cleanCode = (codeToApply || "").trim().toUpperCase();
+      if (!cleanCode) {
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+        setCouponError(null);
+        setCouponMessage(null);
+        return;
+      }
+
+      setIsValidatingCoupon(true);
+      setCouponError(null);
+      setCouponMessage(null);
+
+      try {
+        const targetPackageId = matchedPackage ? matchedPackage.package_id : plan;
+        const res = await validateCouponAction(cleanCode, targetPackageId, basePrice);
+
+        if (res.valid) {
+          setAppliedCoupon(cleanCode);
+          setCouponDiscount(res.discount);
+          setCouponMessage(res.message || `৳${res.discount.toLocaleString()} discount applied`);
+          setCouponError(null);
+        } else {
+          // Check package-specific fallback coupon
+          if (
+            matchedPackage &&
+            matchedPackage.coupon_code &&
+            cleanCode === matchedPackage.coupon_code.toUpperCase()
+          ) {
+            const fallbackDiscount = matchedPackage.coupon_discount || 0;
+            setAppliedCoupon(cleanCode);
+            setCouponDiscount(fallbackDiscount);
+            setCouponMessage(`৳${fallbackDiscount.toLocaleString()} package discount applied`);
+            setCouponError(null);
+          } else {
+            setAppliedCoupon(null);
+            setCouponDiscount(0);
+            setCouponError(res.message || "Invalid or expired coupon code");
+          }
+        }
+      } catch {
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+        setCouponError("Failed to validate coupon");
+      } finally {
+        setIsValidatingCoupon(false);
+      }
+    },
+    [basePrice, matchedPackage, plan]
+  );
+
+  // Auto-apply initial coupon if passed via props
+  useEffect(() => {
+    if (coupon && isOpen && basePrice > 0) {
+      setCouponInput(coupon);
+      handleApplyCoupon(coupon);
+    }
+  }, [coupon, isOpen, basePrice, handleApplyCoupon]);
+
+  const handleRemoveCoupon = () => {
+    setCouponInput("");
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    setCouponError(null);
+    setCouponMessage(null);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -80,29 +206,7 @@ export function CheckoutModal({
 
   if (!isOpen) return null;
 
-  // Calculate pricing
-  const planNames: Record<PlanTier, string> = {
-    starter: "Starter Plan",
-    pro: "Pro Plan",
-    agency: "Agency Plan",
-  };
-
-  let basePrice = 0;
-  if (plan === "starter") {
-    basePrice = duration === "1_month" ? 499 : 1299;
-  } else if (plan === "pro") {
-    basePrice = duration === "1_month" ? 999 : 1999;
-  } else if (plan === "agency") {
-    basePrice = duration === "1_month" ? 2499 : 4999;
-  }
-
-  // Discount rule
-  const discount =
-    couponInput.toUpperCase() === "MENUSNAP500" && plan === "pro" && duration === "3_months"
-      ? 500
-      : 0;
-
-  const finalAmount = Math.max(0, basePrice - discount);
+  const finalAmount = Math.max(0, basePrice - couponDiscount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,19 +219,19 @@ export function CheckoutModal({
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const response = await initiatePayStationPaymentAction({
         plan,
-        duration,
+        duration: "lifetime",
         amount: finalAmount,
         fullName,
         email,
         phone,
-        coupon: couponInput,
+        coupon: appliedCoupon || couponInput,
         origin,
       });
 
       if (response.success && response.paymentUrl) {
         trackEvent("checkout_initiated", {
           plan,
-          duration,
+          duration: "lifetime",
           amount: finalAmount,
           invoice: response.invoiceNumber,
         });
@@ -154,93 +258,172 @@ export function CheckoutModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         />
 
-        {/* Modal Window */}
+        {/* Modal Card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 15 }}
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 15 }}
-          transition={{ duration: 0.22 }}
-          className="relative w-full max-w-lg bg-white rounded-3xl border border-gray-200 shadow-2xl overflow-hidden z-10 text-left my-8"
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ duration: 0.2 }}
+          className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-10 my-8"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/80">
-            <div>
-              <h3 className="text-base font-extrabold text-gray-950">
-                MenuSnap Subscription Checkout
-              </h3>
-              <p className="text-xs text-gray-500">
-                PayStation Bangladesh Gateway Payment
-              </p>
+          <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-[#FAFAF8]">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-200/60 flex items-center justify-center text-[#FF5A36] font-bold">
+                💳
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-gray-900 leading-tight">
+                  Checkout Confirmation
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Instant Lifetime Access via PayStation
+                </p>
+              </div>
             </div>
             <button
-              type="button"
               onClick={onClose}
-              className="p-1.5 rounded-xl bg-gray-200/70 hover:bg-gray-200 text-gray-700 transition-colors"
+              className="w-8 h-8 rounded-full bg-gray-200/60 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {isSuccess ? (
             <div className="p-8 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
-                <CheckCircle2 className="w-8 h-8" />
+              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
+                <CheckCircle2 className="w-10 h-10" />
               </div>
-              <h4 className="text-2xl font-black text-gray-950">
-                Congratulations! Your Subscription is Active.
-              </h4>
-              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-sans max-w-md mx-auto">
-                We have verified your payment for the <strong className="text-gray-900">{planNames[plan]} ({duration === "1_month" ? "1 Month" : "3 Months"})</strong>.
-              </p>
-              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 text-xs text-gray-700 space-y-1 text-left">
-                <p className="font-bold text-gray-900">Next Steps:</p>
-                <p>1. We have dispatched your private magic activation link to <strong className="text-gray-900">{email}</strong>.</p>
-                <p>2. Open the link to set your secure password and start building your menu instantly.</p>
+              <div>
+                <h4 className="text-xl font-bold text-gray-900">Payment Successful!</h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  Your lifetime subscription to {planDisplayName} has been activated.
+                </p>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full py-3 bg-[#FF5A36] text-white font-bold text-sm rounded-xl hover:bg-[#e64c29] transition-all"
+              <Link
+                href={`/login?tab=register&email=${encodeURIComponent(
+                  email
+                )}&name=${encodeURIComponent(fullName)}&whatsapp=${encodeURIComponent(
+                  phone
+                )}&from=checkout`}
+                className="block w-full"
               >
-                Go to MenuSnap Login
-              </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-3 bg-[#FF5A36] text-white font-bold text-sm rounded-xl hover:bg-[#e64c29] transition-all cursor-pointer"
+                >
+                  Continue to Account Registration
+                </button>
+              </Link>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Order Summary Box */}
               <div className="bg-[#FAFAF8] rounded-2xl p-4 border border-gray-200 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-gray-900">{planNames[plan]}</span>
-                  <span className="font-semibold text-gray-600">
-                    {duration === "1_month" ? "1 Month Access" : "3 Months (Save More)"}
+                  <span className="font-bold text-gray-900">{planDisplayName}</span>
+                  <span className="font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    Lifetime Access (Pay Once)
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-200/60">
                   <span className="text-gray-500">Plan Subtotal</span>
-                  <span className="font-bold text-gray-800">৳{basePrice}</span>
+                  <span className="font-bold text-gray-800">৳{basePrice.toLocaleString()}</span>
                 </div>
 
-                {discount > 0 && (
+                {appliedCoupon && couponDiscount > 0 && (
                   <div className="flex items-center justify-between text-xs text-emerald-600 font-bold">
                     <span className="flex items-center gap-1">
-                      <Tag className="w-3 h-3" /> Coupon: {couponInput}
+                      <Tag className="w-3 h-3" /> Coupon: {appliedCoupon}
                     </span>
-                    <span>- ৳{discount}</span>
+                    <span>- ৳{couponDiscount.toLocaleString()}</span>
                   </div>
                 )}
 
                 <div className="flex items-center justify-between text-sm pt-2 border-t border-gray-200 font-black text-gray-950">
                   <span>Total Payable:</span>
-                  <span className="text-lg text-[#FF5A36]">৳{finalAmount}</span>
+                  <span className="text-lg text-[#FF5A36]">৳{finalAmount.toLocaleString()}</span>
                 </div>
               </div>
 
+              {/* Promo / Coupon Input Section */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-700 flex items-center justify-between">
+                  <span>Have a Promo Coupon?</span>
+                  {appliedCoupon && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="text-[11px] text-red-500 hover:text-red-700 font-medium cursor-pointer"
+                    >
+                      Remove Coupon
+                    </button>
+                  )}
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Enter promo code (e.g. MENUSNAP500)"
+                      value={couponInput}
+                      disabled={!!appliedCoupon || isValidatingCoupon}
+                      onChange={(e) => {
+                        setCouponInput(e.target.value.toUpperCase());
+                        setCouponError(null);
+                      }}
+                      className={`w-full bg-gray-50 border rounded-xl pl-8 pr-3.5 py-2 text-xs font-mono font-bold uppercase tracking-wider text-gray-900 focus:outline-none transition-colors ${
+                        appliedCoupon
+                          ? "border-emerald-300 bg-emerald-50/50 text-emerald-800"
+                          : couponError
+                          ? "border-red-300 bg-red-50/30"
+                          : "border-gray-200 focus:border-orange-500"
+                      }`}
+                    />
+                  </div>
+
+                  {appliedCoupon ? (
+                    <div className="h-9 px-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Applied</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!couponInput.trim() || isValidatingCoupon}
+                      onClick={() => handleApplyCoupon(couponInput)}
+                      className="h-9 px-4 bg-slate-900 hover:bg-black disabled:bg-gray-300 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
+                    >
+                      {isValidatingCoupon ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        "Apply"
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {couponMessage && (
+                  <p className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                    <Check className="w-3 h-3" /> {couponMessage}
+                  </p>
+                )}
+
+                {couponError && (
+                  <p className="text-[11px] text-red-500 font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {couponError}
+                  </p>
+                )}
+              </div>
+
               {/* Customer Info Fields */}
-              <div className="space-y-3">
+              <div className="space-y-3 pt-1">
                 <div>
                   <label className="text-xs font-bold text-gray-700 block mb-1">
                     Your Full Name *
@@ -286,34 +469,6 @@ export function CheckoutModal({
                 </div>
               </div>
 
-              {/* Payment Gateway Info */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-gray-700">
-                    Payment Gateway
-                  </label>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Auto Instant Activation
-                  </span>
-                </div>
-                <div className="p-3.5 rounded-2xl border border-orange-200/90 bg-orange-50/40 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-[#FF5A36] text-white flex items-center justify-center font-black text-xs shadow-xs">
-                      P
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-gray-950 block">
-                        PayStation Bangladesh
-                      </span>
-                      <span className="text-[11px] text-gray-500">
-                        bKash • Nagad • Rocket • Visa / MasterCard / Amex
-                      </span>
-                    </div>
-                  </div>
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                </div>
-              </div>
-
               {/* Error Notice if any */}
               {errorMessage && (
                 <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-start gap-2">
@@ -335,7 +490,7 @@ export function CheckoutModal({
                   <span>Redirecting to PayStation Gateway...</span>
                 ) : (
                   <>
-                    <span>Pay ৳{finalAmount} with PayStation</span>
+                    <span>Pay ৳{finalAmount.toLocaleString()} with PayStation</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

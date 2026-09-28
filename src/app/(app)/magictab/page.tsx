@@ -932,7 +932,20 @@ export default function MagicTabPage() {
         }
       }
 
-      const uniqueItems = Array.from(itemByName.values());
+      const rawUniqueItems = Array.from(itemByName.values());
+      const seenIds = new Set<string>();
+      const uniqueItems: MenuItem[] = rawUniqueItems.map((item, idx) => {
+        let itemId = item.id ? String(item.id) : `item-${idx}`;
+        if (seenIds.has(itemId)) {
+          itemId = `${itemId}-${idx}`;
+        }
+        seenIds.add(itemId);
+        return {
+          ...item,
+          id: itemId,
+        };
+      });
+
       setAllMenuItems(uniqueItems);
 
     } catch (err: any) {

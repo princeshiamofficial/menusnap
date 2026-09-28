@@ -102,6 +102,7 @@ export async function checkAdminPermission(pageKey: string, action: string): Pro
       // Default permissions for User: view access to most, no settings or manage-users
       const defaultUserPermissions: Record<string, string[]> = {
         'dashboard': ['view'],
+        'packages': ['view', 'create', 'edit', 'delete'],
         'quick-manager': ['view'],
         'contacts': ['view', 'edit'],
         'manage-orders': ['view', 'edit'],

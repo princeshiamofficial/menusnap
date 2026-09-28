@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ArrowRight, Sparkles } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
@@ -12,9 +13,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Product", href: "#product" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Features", href: "#features" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
 ];
@@ -43,19 +42,17 @@ export function Navbar() {
         {/* Brand Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 group select-none cursor-pointer"
+          className="flex items-center group select-none cursor-pointer"
         >
-          <div className="w-8 h-8 rounded-xl bg-[#FF5A36] flex items-center justify-center text-white font-black text-lg shadow-sm shadow-orange-500/20 group-hover:scale-105 transition-transform">
-            M
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xl font-extrabold tracking-tight text-gray-950 font-sans leading-none">
-              Menu<span className="text-[#FF5A36]">Snap</span>
-            </span>
-            <span className="text-[9.5px] font-semibold tracking-wider text-gray-400 uppercase leading-tight mt-0.5">
-              Menu Intelligence
-            </span>
-          </div>
+          <Image
+            src="/menusnap-logo-white.png"
+            alt="MenuSnap Logo"
+            width={160}
+            height={36}
+            priority
+            className="h-7 sm:h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+            style={{ filter: "url(#menusnap-white-to-black)" }}
+          />
         </Link>
 
         {/* Center Nav Items (Desktop) */}
@@ -148,6 +145,21 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* SVG filter converting white text in logo to dark while preserving orange accent */}
+      <svg xmlns="http://www.w3.org/2000/svg" className="hidden" aria-hidden="true">
+        <defs>
+          <filter id="menusnap-white-to-black">
+            <feColorMatrix
+              type="matrix"
+              values="1 -1 0 0 0
+                      0 0 0 0 0
+                      0 0 0 0 0
+                      0 0 0 1 0"
+            />
+          </filter>
+        </defs>
+      </svg>
     </header>
   );
 }

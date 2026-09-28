@@ -10,8 +10,30 @@ export interface User {
 }
 
 export type SubscriptionStatus = "active" | "expired" | "pending" | "cancelled";
-export type PlanTier = "starter" | "pro" | "agency";
-export type BillingPeriod = "1_month" | "3_months";
+export type PlanTier = "starter" | "pro" | "agency" | string;
+export type BillingPeriod = "lifetime" | "one_time" | "1_month" | "3_months" | string;
+
+export interface PricingPackage {
+  id: number;
+  package_id: string;
+  name: string;
+  tagline: string;
+  badge_text?: string | null;
+  price: number;
+  original_price?: number | null;
+  billing_period_text?: string | null;
+  discount_tag?: string | null;
+  coupon_code?: string | null;
+  coupon_discount?: number | null;
+  features: string[];
+  feature_highlight_title?: string | null;
+  button_text: string;
+  is_popular: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export interface Subscription {
   id: string;
@@ -76,16 +98,6 @@ export interface UserMenuItem {
   order: number;
 }
 
-export interface Coupon {
-  code: string;
-  discountType: "fixed" | "percentage";
-  discountValue: number;
-  validFrom: string;
-  validUntil: string;
-  usageLimit: number;
-  active: boolean;
-}
-
 export type PaymentGateway = "bkash" | "nagad" | "sslcommerz" | "card";
 export type PaymentStatus = "pending" | "verified" | "failed";
 
@@ -115,3 +127,21 @@ export interface PaymentVerificationResult {
   activationToken?: string;
   error?: string;
 }
+
+export interface Coupon {
+  id: number;
+  code: string;
+  discount_type: 'fixed' | 'percentage';
+  discount_value: number;
+  applicable_package: string; // 'all' or package_id
+  min_amount?: number | null;
+  max_discount?: number | null;
+  usage_limit?: number | null;
+  used_count: number;
+  expires_at?: string | null;
+  is_active: boolean;
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+

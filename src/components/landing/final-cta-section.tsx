@@ -6,11 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Play, Sparkles, ChefHat } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 
-interface FinalCTASectionProps {
-  onOpenDemo: () => void;
-}
-
-export function FinalCTASection({ onOpenDemo }: FinalCTASectionProps) {
+export function FinalCTASection() {
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-white overflow-hidden">
       <div className="max-w-[1240px] mx-auto">
@@ -50,13 +46,13 @@ export function FinalCTASection({ onOpenDemo }: FinalCTASectionProps) {
               <button
                 type="button"
                 onClick={() => {
-                  trackEvent("demo_started", { source: "final_cta" });
-                  onOpenDemo();
+                  const el = document.getElementById("database");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-bold text-base px-7 py-4 rounded-xl border border-white/15 active:scale-[0.98] transition-all cursor-pointer"
               >
-                <Play className="w-4 h-4 fill-white" />
-                <span>Watch Demo</span>
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>Explore Database</span>
               </button>
             </div>
 

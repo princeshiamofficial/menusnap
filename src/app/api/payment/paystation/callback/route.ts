@@ -34,6 +34,24 @@ export async function GET(request: NextRequest) {
 
     console.log('[PayStation Callback GET] Invoice:', invoiceNumber, 'TrxID:', trxId, 'StatusParam:', statusParam);
 
+    const statusLower = statusParam.toLowerCase();
+    if (statusLower.includes('cancel')) {
+      console.log('[PayStation Callback GET] User cancelled payment for invoice:', invoiceNumber);
+      const redirectUrl = new URL('/checkout/result', origin);
+      redirectUrl.searchParams.set('status', 'cancelled');
+      redirectUrl.searchParams.set('invoice', invoiceNumber);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (statusLower.includes('fail')) {
+      console.log('[PayStation Callback GET] Payment failed for invoice:', invoiceNumber);
+      const redirectUrl = new URL('/checkout/result', origin);
+      redirectUrl.searchParams.set('status', 'failed');
+      redirectUrl.searchParams.set('invoice', invoiceNumber);
+      redirectUrl.searchParams.set('message', 'Payment was not completed or was declined.');
+      return NextResponse.redirect(redirectUrl);
+    }
+
     const verification = await verifyPayStationTransaction(invoiceNumber, trxId);
 
     if (verification.success && verification.status === 'Successful') {
@@ -45,11 +63,14 @@ export async function GET(request: NextRequest) {
       if (verification.transaction?.plan) redirectUrl.searchParams.set('plan', verification.transaction.plan);
       if (verification.transaction?.duration) redirectUrl.searchParams.set('duration', verification.transaction.duration);
       if (verification.transaction?.paymentCategory) redirectUrl.searchParams.set('method', verification.transaction.paymentCategory);
+      if (verification.transaction?.customerEmail) redirectUrl.searchParams.set('email', verification.transaction.customerEmail);
+      if (verification.transaction?.customerPhone) redirectUrl.searchParams.set('phone', verification.transaction.customerPhone);
+      if (verification.transaction?.customerName) redirectUrl.searchParams.set('name', verification.transaction.customerName);
 
       return NextResponse.redirect(redirectUrl);
     }
 
-    if (verification.status === 'Cancelled' || statusParam.toLowerCase().includes('cancel')) {
+    if (verification.status === 'Cancelled' || statusLower.includes('cancel')) {
       const redirectUrl = new URL('/checkout/result', origin);
       redirectUrl.searchParams.set('status', 'cancelled');
       redirectUrl.searchParams.set('invoice', invoiceNumber);
@@ -120,11 +141,21 @@ export async function POST(request: NextRequest) {
 
     console.log('[PayStation Callback POST] Invoice:', invoiceNumber, 'TrxID:', trxId, 'StatusParam:', statusParam);
 
+    const statusLower = statusParam.toLowerCase();
+    const acceptHeader = request.headers.get('accept') || '';
+    const isBrowserRedirect = acceptHeader.includes('text/html') || !acceptHeader.includes('application/json');
+
+    if (isBrowserRedirect && statusLower.includes('cancel')) {
+      const redirectUrl = new URL('/checkout/result', origin);
+      redirectUrl.searchParams.set('status', 'cancelled');
+      redirectUrl.searchParams.set('invoice', invoiceNumber);
+      return NextResponse.redirect(redirectUrl);
+    }
+
     const verification = await verifyPayStationTransaction(invoiceNumber, trxId);
 
     // If request accepts HTML (browser redirect), redirect to result page
-    const acceptHeader = request.headers.get('accept') || '';
-    if (acceptHeader.includes('text/html') || !acceptHeader.includes('application/json')) {
+    if (isBrowserRedirect) {
       const redirectUrl = new URL('/checkout/result', origin);
       if (verification.success && verification.status === 'Successful') {
         redirectUrl.searchParams.set('status', 'success');
@@ -134,7 +165,10 @@ export async function POST(request: NextRequest) {
         if (verification.transaction?.plan) redirectUrl.searchParams.set('plan', verification.transaction.plan);
         if (verification.transaction?.duration) redirectUrl.searchParams.set('duration', verification.transaction.duration);
         if (verification.transaction?.paymentCategory) redirectUrl.searchParams.set('method', verification.transaction.paymentCategory);
-      } else if (verification.status === 'Cancelled' || statusParam.toLowerCase().includes('cancel')) {
+        if (verification.transaction?.customerEmail) redirectUrl.searchParams.set('email', verification.transaction.customerEmail);
+        if (verification.transaction?.customerPhone) redirectUrl.searchParams.set('phone', verification.transaction.customerPhone);
+        if (verification.transaction?.customerName) redirectUrl.searchParams.set('name', verification.transaction.customerName);
+      } else if (verification.status === 'Cancelled' || statusLower.includes('cancel')) {
         redirectUrl.searchParams.set('status', 'cancelled');
         redirectUrl.searchParams.set('invoice', invoiceNumber);
       } else {
