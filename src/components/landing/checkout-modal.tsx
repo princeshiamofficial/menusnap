@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Loader2,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { PlanTier, BillingPeriod, PaymentGateway, PricingPackage } from "@/lib/menusnap-types";
 import { trackEvent } from "@/lib/analytics";
@@ -433,7 +434,7 @@ export function CheckoutModal({
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Asif Mahmud"
+                    placeholder="e.g. Mr. Awal Khan"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 focus:outline-none focus:border-orange-500 transition-colors"
                   />
                 </div>
@@ -448,7 +449,7 @@ export function CheckoutModal({
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="asif@restaurant.com"
+                      placeholder="awal@restaurant.com"
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 focus:outline-none focus:border-orange-500 transition-colors"
                     />
                   </div>
@@ -484,10 +485,24 @@ export function CheckoutModal({
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="w-full flex items-center justify-center gap-2 bg-[#FF5A36] hover:bg-[#e64c29] text-white font-extrabold text-sm py-3.5 px-6 rounded-xl shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                className={`w-full flex items-center justify-center gap-2 text-white font-extrabold text-sm py-3.5 px-6 rounded-xl shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 ${
+                  finalAmount === 0
+                    ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                    : "bg-[#FF5A36] hover:bg-[#e64c29] shadow-orange-500/20"
+                }`}
               >
                 {isProcessing ? (
-                  <span>Redirecting to PayStation Gateway...</span>
+                  <span>
+                    {finalAmount === 0
+                      ? "Activating Free Lifetime Access..."
+                      : "Redirecting to PayStation Gateway..."}
+                  </span>
+                ) : finalAmount === 0 ? (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Claim Free Access (৳0)</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
                 ) : (
                   <>
                     <span>Pay ৳{finalAmount.toLocaleString()} with PayStation</span>
@@ -497,8 +512,17 @@ export function CheckoutModal({
               </button>
 
               <div className="flex items-center justify-center gap-2 text-[11px] text-gray-500 font-medium">
-                <Lock className="w-3.5 h-3.5 text-emerald-600" />
-                <span>256-Bit SSL Encrypted Verification • Instant Activation</span>
+                {finalAmount === 0 ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>100% Free Promo • Instant Lifetime Activation</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>256-Bit SSL Encrypted Verification • Instant Activation</span>
+                  </>
+                )}
               </div>
             </form>
           )}

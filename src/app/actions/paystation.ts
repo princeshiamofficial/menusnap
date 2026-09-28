@@ -185,6 +185,79 @@ export async function initiatePayStationPaymentAction(payload: {
 }> {
   try {
     await ensurePayStationTables();
+
+    // Handle 100% Free / 0 BDT orders (e.g. 100% discount promo coupons)
+    if (Number(payload.amount) <= 0) {
+      const timestamp = Date.now();
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const invoiceNumber = `MS-FREE-${timestamp}-${randomSuffix}`;
+      const trxId = `FREE-${timestamp}`;
+
+      // Insert successful 0-amount transaction in MySQL
+      await pool.execute(
+        `
+        INSERT INTO paystation_transactions (
+          invoice_number, trx_id, customer_name, customer_email, customer_phone,
+          plan, duration, amount, currency, status, payment_category, reference, raw_response
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'BDT', 'Successful', '100% Promo Coupon', ?, ?)
+      `,
+        [
+          invoiceNumber,
+          trxId,
+          payload.fullName.trim(),
+          payload.email.trim(),
+          payload.phone.trim(),
+          payload.plan,
+          payload.duration,
+          `Coupon: ${payload.coupon || '100% Discount'}`,
+          JSON.stringify({ note: 'Free promotion access activated', coupon: payload.coupon || 'N/A' }),
+        ]
+      );
+
+      // Link client to CRM
+      try {
+        await linkSubscriberToClientCRM({
+          fullName: payload.fullName.trim(),
+          email: payload.email.trim(),
+          phone: payload.phone.trim(),
+          plan: payload.plan,
+          duration: payload.duration,
+          amount: 0,
+          invoiceNumber,
+          trxId,
+        });
+      } catch (crmErr) {
+        console.error('Error linking free subscriber to CRM:', crmErr);
+      }
+
+      // Record coupon redemption
+      if (payload.coupon && payload.coupon.trim().toUpperCase() !== 'NONE') {
+        try {
+          await recordCouponUsageAction(payload.coupon.trim());
+        } catch (couponErr) {
+          console.error('Error recording free coupon redemption:', couponErr);
+        }
+      }
+
+      let siteUrl = payload.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+      siteUrl = siteUrl.replace(/\/$/, '');
+      const redirectUrl = `${siteUrl}/checkout/result?status=success&invoice=${encodeURIComponent(
+        invoiceNumber
+      )}&trx_id=${encodeURIComponent(trxId)}&amount=0&plan=${encodeURIComponent(
+        payload.plan
+      )}&duration=${encodeURIComponent(payload.duration)}&email=${encodeURIComponent(
+        payload.email.trim()
+      )}&phone=${encodeURIComponent(payload.phone.trim())}&name=${encodeURIComponent(
+        payload.fullName.trim()
+      )}`;
+
+      return {
+        success: true,
+        paymentUrl: redirectUrl,
+        invoiceNumber,
+      };
+    }
+
     const settings = await getPayStationSettings();
 
     if (!settings.isEnabled) {
