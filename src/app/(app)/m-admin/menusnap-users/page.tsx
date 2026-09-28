@@ -32,7 +32,9 @@ import {
   ExternalLink,
   Shield,
   Eye,
-  EyeOff
+  EyeOff,
+  ChevronRight,
+  Crown
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -434,37 +436,37 @@ export default function MenuSnapUsersAdminPage() {
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-slate-100 p-4 sm:p-6 lg:p-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/80 pb-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1400px] mx-auto w-full">
+      {/* 1. Ultra-Clean Minimalist Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500/20 via-orange-500/20 to-red-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-                MenuSnap Users
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
-                  Clients & Subscribers
-                </span>
-              </h1>
-              <p className="text-sm text-slate-400 mt-0.5">
-                Manage registered client restaurants, beauty parlours, subscriber statuses, and authentication.
-              </p>
-            </div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
+            <span>Admin</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-orange-600 font-medium">MenuSnap Users</span>
           </div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              MenuSnap Users
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-950/40 dark:border-orange-900/40">
+              <Crown className="w-3.5 h-3.5 text-orange-500" /> Clients & VIP Subscribers
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Manage restaurant & salon accounts, VIP subscriber permissions, passwords, and contact info.
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <Button
             variant="outline"
             size="sm"
             onClick={() => loadUsers(true)}
             disabled={loading || refreshing}
-            className="border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white"
+            className="rounded-xl h-9 px-3 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
 
@@ -483,110 +485,112 @@ export default function MenuSnapUsersAdminPage() {
               });
               setIsAddModalOpen(true);
             }}
-            className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium shadow-md shadow-orange-500/20"
+            className="rounded-xl h-9 px-4 bg-slate-900 hover:bg-slate-800 dark:bg-orange-600 dark:hover:bg-orange-700 text-white font-semibold text-xs shadow-sm"
           >
-            <UserPlus className="w-4 h-4 mr-2" />
+            <UserPlus className="w-3.5 h-3.5 mr-1.5" />
             Add New User
           </Button>
         </div>
       </div>
 
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
+      {/* 2. Sleek KPI Metrics Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         {/* Total Users */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-md relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Total Users</span>
-              <Users className="w-4 h-4 text-blue-400" />
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider">Total Users</span>
+            <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+              <Users className="w-4 h-4" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-black text-slate-900 dark:text-white">
               {loading ? <span className="animate-pulse">--</span> : stats.totalUsers}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">All registered accounts</p>
-          </CardContent>
-        </Card>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Registered clients</p>
+          </div>
+        </div>
 
-        {/* Subscribers */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-md relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-amber-300">VIP Subscribers</span>
-              <Sparkles className="w-4 h-4 text-amber-400" />
+        {/* VIP Subscribers */}
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20 border border-amber-200/80 dark:border-amber-900/40 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-amber-700 dark:text-amber-400">
+            <span className="text-xs font-semibold uppercase tracking-wider">VIP Subscribers</span>
+            <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Sparkles className="w-4 h-4" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-amber-400 tracking-tight">
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
               {loading ? <span className="animate-pulse">--</span> : stats.totalSubscribers}
             </div>
-            <p className="text-[11px] text-amber-300/80 mt-1">Full MagicTab & Pro access</p>
-          </CardContent>
-        </Card>
+            <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-0.5">Full MagicTab & Pro access</p>
+          </div>
+        </div>
 
         {/* Free Leads */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-md relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Free Leads</span>
-              <UserCheck className="w-4 h-4 text-emerald-400" />
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider">Free Leads</span>
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+              <UserCheck className="w-4 h-4" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-black text-slate-900 dark:text-white">
               {loading ? <span className="animate-pulse">--</span> : stats.totalFreeLeads}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Unpaid / Trial users</p>
-          </CardContent>
-        </Card>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Unpaid / Trial users</p>
+          </div>
+        </div>
 
         {/* Restaurants */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-md relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl pointer-events-none" />
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Restaurants</span>
-              <Utensils className="w-4 h-4 text-orange-400" />
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider">Restaurants</span>
+            <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center">
+              <Utensils className="w-4 h-4" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-black text-slate-900 dark:text-white">
               {loading ? <span className="animate-pulse">--</span> : stats.totalRestaurants}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Food & Dine clients</p>
-          </CardContent>
-        </Card>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Dine & Food businesses</p>
+          </div>
+        </div>
 
         {/* Parlours */}
-        <Card className="bg-slate-900/60 border-slate-800/80 backdrop-blur-md relative overflow-hidden col-span-2 sm:col-span-1">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 rounded-full blur-2xl pointer-events-none" />
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between text-slate-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Beauty Parlours</span>
-              <Scissors className="w-4 h-4 text-pink-400" />
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider">Beauty Parlours</span>
+            <div className="w-7 h-7 rounded-lg bg-pink-50 dark:bg-pink-950/40 text-pink-600 flex items-center justify-center">
+              <Scissors className="w-4 h-4" />
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-black text-slate-900 dark:text-white">
               {loading ? <span className="animate-pulse">--</span> : stats.totalParlours}
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Salon & Beauty clients</p>
-          </CardContent>
-        </Card>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Salon & Beauty clinics</p>
+          </div>
+        </div>
       </div>
 
-      {/* Main Table Card & Controls */}
-      <Card className="bg-slate-900/70 border-slate-800/90 shadow-xl backdrop-blur-md">
-        {/* Filters Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800/80 flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center">
-          {/* Search Input */}
+      {/* 3. Main Filter & Table Card */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
+        {/* Search & Filter Toolbar */}
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder="Search by name, phone, email, district..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-slate-950/60 border-slate-800 text-slate-200 placeholder:text-slate-500 rounded-xl focus-visible:ring-amber-500/30"
+              className="pl-9 h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus-visible:ring-orange-500/20"
             />
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Business Type */}
+          <div className="flex flex-wrap items-center gap-2">
             <Select
               value={typeFilter}
               onValueChange={(val: 'all' | 'restaurant' | 'parlour') => {
@@ -594,17 +598,16 @@ export default function MenuSnapUsersAdminPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[145px] bg-slate-950/60 border-slate-800 text-slate-200 rounded-xl">
+              <SelectTrigger className="w-[140px] h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium">
                 <SelectValue placeholder="Business Type" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+              <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="restaurant">Restaurants</SelectItem>
                 <SelectItem value="parlour">Parlours</SelectItem>
               </SelectContent>
             </Select>
 
-            {/* Subscriber Status */}
             <Select
               value={subscriberFilter}
               onValueChange={(val: 'all' | 'subscribers' | 'free') => {
@@ -612,10 +615,10 @@ export default function MenuSnapUsersAdminPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[155px] bg-slate-950/60 border-slate-800 text-slate-200 rounded-xl">
+              <SelectTrigger className="w-[150px] h-9 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium">
                 <SelectValue placeholder="Subscription" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+              <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                 <SelectItem value="all">All Access</SelectItem>
                 <SelectItem value="subscribers">VIP Subscribers</SelectItem>
                 <SelectItem value="free">Free Leads</SelectItem>
@@ -624,38 +627,38 @@ export default function MenuSnapUsersAdminPage() {
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Data Table */}
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-slate-950/40 border-b border-slate-800">
-              <TableRow className="hover:bg-transparent border-slate-800">
-                <TableHead className="text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5 pl-6">Business / Client</TableHead>
-                <TableHead className="text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5">Contact Details</TableHead>
-                <TableHead className="text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5">Location</TableHead>
-                <TableHead className="text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5">VIP Subscriber</TableHead>
-                <TableHead className="text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5">Auth / Password</TableHead>
-                <TableHead className="text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5 text-right pr-6">Actions</TableHead>
+            <TableHeader className="bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800">
+              <TableRow className="hover:bg-transparent border-slate-200 dark:border-slate-800">
+                <TableHead className="text-slate-600 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5 pl-6">Business / Client</TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5">Contact Details</TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5">Location</TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5">VIP Subscriber</TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5">Auth / Password</TableHead>
+                <TableHead className="text-slate-600 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider py-3.5 text-right pr-6">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <TableRow key={i} className="border-slate-800/50">
-                    <TableCell className="pl-6 py-4"><div className="h-5 w-40 bg-slate-800/60 rounded animate-pulse" /></TableCell>
-                    <TableCell><div className="h-5 w-32 bg-slate-800/60 rounded animate-pulse" /></TableCell>
-                    <TableCell><div className="h-5 w-24 bg-slate-800/60 rounded animate-pulse" /></TableCell>
-                    <TableCell><div className="h-5 w-24 bg-slate-800/60 rounded animate-pulse" /></TableCell>
-                    <TableCell><div className="h-5 w-20 bg-slate-800/60 rounded animate-pulse" /></TableCell>
-                    <TableCell className="text-right pr-6"><div className="h-8 w-8 bg-slate-800/60 rounded ml-auto animate-pulse" /></TableCell>
+                  <TableRow key={i} className="border-slate-100 dark:border-slate-800/50">
+                    <TableCell className="pl-6 py-4"><div className="h-5 w-40 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-32 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-24 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-24 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-slate-100 dark:bg-slate-800/60 rounded animate-pulse" /></TableCell>
+                    <TableCell className="text-right pr-6"><div className="h-8 w-8 bg-slate-100 dark:bg-slate-800/60 rounded ml-auto animate-pulse" /></TableCell>
                   </TableRow>
                 ))
               ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-12 text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <Users className="w-10 h-10 text-slate-600" />
-                      <p className="text-base font-medium text-slate-400">No MenuSnap users found</p>
-                      <p className="text-xs text-slate-500">Try adjusting your search terms or filters.</p>
+                      <Users className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No MenuSnap users found</p>
+                      <p className="text-xs text-slate-400">Try adjusting your search terms or filters.</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -663,35 +666,35 @@ export default function MenuSnapUsersAdminPage() {
                 users.map((user) => (
                   <TableRow 
                     key={user.id} 
-                    className="border-slate-800/50 hover:bg-slate-800/30 transition-colors group"
+                    className="border-slate-100 dark:border-slate-800/50 hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group"
                   >
                     {/* Business Info */}
-                    <TableCell className="pl-6 py-4 font-medium">
+                    <TableCell className="pl-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
                           user.businessType === 'parlour'
-                            ? 'bg-pink-500/10 border-pink-500/20 text-pink-400'
-                            : 'bg-orange-500/10 border-orange-500/20 text-orange-400'
+                            ? 'bg-pink-50 border-pink-200 text-pink-600 dark:bg-pink-950/30 dark:border-pink-900/40 dark:text-pink-400'
+                            : 'bg-orange-50 border-orange-200 text-orange-600 dark:bg-orange-950/30 dark:border-orange-900/40 dark:text-orange-400'
                         }`}>
                           {user.businessType === 'parlour' ? <Scissors className="w-4 h-4" /> : <Utensils className="w-4 h-4" />}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-white group-hover:text-amber-400 transition-colors">
+                            <span className="font-semibold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                               {user.businessName}
                             </span>
                             <Badge 
                               variant="outline" 
                               className={`text-[10px] uppercase font-bold tracking-wider px-1.5 py-0 rounded ${
                                 user.businessType === 'parlour'
-                                  ? 'border-pink-500/30 text-pink-400 bg-pink-500/5'
-                                  : 'border-orange-500/30 text-orange-400 bg-orange-500/5'
+                                  ? 'border-pink-200 text-pink-600 bg-pink-50/50 dark:border-pink-900/40 dark:text-pink-400 dark:bg-pink-950/20'
+                                  : 'border-orange-200 text-orange-600 bg-orange-50/50 dark:border-orange-900/40 dark:text-orange-400 dark:bg-orange-950/20'
                               }`}
                             >
                               {user.businessType}
                             </Badge>
                           </div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-2 mt-0.5">
                             <span>ID: #{user.id}</span>
                             <span>•</span>
                             <span title={`Joined: ${user.createdAt}`}>Joined {user.createdAt.split(' ')[0]}</span>
@@ -700,29 +703,29 @@ export default function MenuSnapUsersAdminPage() {
                       </div>
                     </TableCell>
 
-                    {/* Contact details & WhatsApp link */}
+                    {/* Contact & WhatsApp */}
                     <TableCell className="py-4">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div>
                           <a
                             href={getWhatsAppLink(user.whatsappNumber, user.businessName)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-mono hover:underline group/wa"
+                            className="inline-flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-mono font-medium hover:underline group/wa"
                             title="Chat on WhatsApp"
                           >
-                            <MessageCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0 group-hover/wa:scale-110 transition-transform" />
+                            <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 group-hover/wa:scale-110 transition-transform" />
                             <span>{user.whatsappNumber}</span>
                             <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                           </a>
                         </div>
                         {user.email ? (
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 truncate max-w-[200px]" title={user.email}>
-                            <Mail className="w-3 h-3 text-slate-500 shrink-0" />
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]" title={user.email}>
+                            <Mail className="w-3 h-3 text-slate-400 shrink-0" />
                             <span className="truncate">{user.email}</span>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-slate-600 italic">No email provided</span>
+                          <span className="text-[11px] text-slate-400 italic">No email</span>
                         )}
                       </div>
                     </TableCell>
@@ -730,14 +733,14 @@ export default function MenuSnapUsersAdminPage() {
                     {/* Location */}
                     <TableCell className="py-4">
                       {user.district || user.division ? (
-                        <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>
                             {[user.district, user.division].filter(Boolean).join(', ')}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-xs text-slate-600 italic">Location unassigned</span>
+                        <span className="text-xs text-slate-400 italic">Unassigned</span>
                       )}
                     </TableCell>
 
@@ -747,32 +750,32 @@ export default function MenuSnapUsersAdminPage() {
                         <Switch
                           checked={user.isSubscriber}
                           onCheckedChange={() => handleToggleSubscriber(user, user.isSubscriber)}
-                          className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-amber-500 data-[state=checked]:to-orange-500"
+                          className="data-[state=checked]:bg-orange-500"
                         />
                         {user.isSubscriber ? (
-                          <Badge className="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[11px] font-semibold flex items-center gap-1 shadow-xs">
-                            <Sparkles className="w-3 h-3" />
+                          <Badge className="bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800 text-[11px] font-semibold flex items-center gap-1 shadow-xs">
+                            <Sparkles className="w-3 h-3 text-amber-600" />
                             VIP Access
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="border-slate-800 text-slate-400 text-[11px]">
+                          <Badge variant="outline" className="border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
                             Free Lead
                           </Badge>
                         )}
                       </div>
                     </TableCell>
 
-                    {/* Password / Auth Status */}
+                    {/* Password Status */}
                     <TableCell className="py-4">
                       <div className="flex items-center gap-2">
                         {user.hasPassword ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
-                            <Lock className="w-3 h-3 text-emerald-400" />
+                          <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full font-medium">
+                            <Lock className="w-3 h-3 text-emerald-600" />
                             Password Set
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-800/40 border border-slate-700/40 px-2 py-0.5 rounded-full">
-                            <Unlock className="w-3 h-3 text-slate-500" />
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-full">
+                            <Unlock className="w-3 h-3 text-slate-400" />
                             No Password
                           </span>
                         )}
@@ -786,18 +789,18 @@ export default function MenuSnapUsersAdminPage() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 w-8 p-0 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                            className="h-8 w-8 p-0 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-white"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 bg-slate-900 border-slate-800 text-slate-200">
-                          <DropdownMenuLabel className="text-xs text-slate-400">User Actions</DropdownMenuLabel>
+                        <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-lg">
+                          <DropdownMenuLabel className="text-xs text-slate-500">User Options</DropdownMenuLabel>
                           <DropdownMenuItem
                             onClick={() => openEditModal(user)}
-                            className="text-xs cursor-pointer hover:bg-slate-800"
+                            className="text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
                           >
-                            <Edit3 className="w-3.5 h-3.5 mr-2 text-blue-400" />
+                            <Edit3 className="w-3.5 h-3.5 mr-2 text-blue-600" />
                             Edit Profile
                           </DropdownMenuItem>
 
@@ -807,39 +810,39 @@ export default function MenuSnapUsersAdminPage() {
                               setNewPassword('');
                               setIsPasswordModalOpen(true);
                             }}
-                            className="text-xs cursor-pointer hover:bg-slate-800"
+                            className="text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
                           >
-                            <KeyRound className="w-3.5 h-3.5 mr-2 text-amber-400" />
+                            <KeyRound className="w-3.5 h-3.5 mr-2 text-amber-600" />
                             {user.hasPassword ? "Reset Password" : "Set Password"}
                           </DropdownMenuItem>
 
                           <DropdownMenuItem
                             onClick={() => handleToggleSubscriber(user, user.isSubscriber)}
-                            className="text-xs cursor-pointer hover:bg-slate-800"
+                            className="text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
                           >
-                            <Sparkles className="w-3.5 h-3.5 mr-2 text-orange-400" />
+                            <Sparkles className="w-3.5 h-3.5 mr-2 text-orange-500" />
                             {user.isSubscriber ? "Revoke VIP Access" : "Grant VIP Access"}
                           </DropdownMenuItem>
 
                           <DropdownMenuItem
                             asChild
-                            className="text-xs cursor-pointer hover:bg-slate-800"
+                            className="text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
                           >
                             <a
                               href={getWhatsAppLink(user.whatsappNumber, user.businessName)}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
-                              <MessageCircle className="w-3.5 h-3.5 mr-2 text-emerald-400" />
+                              <MessageCircle className="w-3.5 h-3.5 mr-2 text-emerald-600" />
                               WhatsApp Chat
                             </a>
                           </DropdownMenuItem>
 
-                          <DropdownMenuSeparator className="bg-slate-800" />
+                          <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
 
                           <DropdownMenuItem
                             onClick={() => setUserToDelete(user)}
-                            className="text-xs text-red-400 cursor-pointer hover:bg-red-500/10 focus:text-red-400"
+                            className="text-xs text-red-600 dark:text-red-400 cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/30"
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-2" />
                             Delete Account
@@ -855,11 +858,11 @@ export default function MenuSnapUsersAdminPage() {
         </div>
 
         {/* Pagination Footer */}
-        <div className="p-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>
-            Showing <span className="text-white font-medium">{users.length > 0 ? (page - 1) * limit + 1 : 0}</span> to{' '}
-            <span className="text-white font-medium">{Math.min(page * limit, totalCount)}</span> of{' '}
-            <span className="text-white font-medium">{totalCount}</span> users
+            Showing <span className="text-slate-900 dark:text-white font-semibold">{users.length > 0 ? (page - 1) * limit + 1 : 0}</span> to{' '}
+            <span className="text-slate-900 dark:text-white font-semibold">{Math.min(page * limit, totalCount)}</span> of{' '}
+            <span className="text-slate-900 dark:text-white font-semibold">{totalCount}</span> users
           </div>
 
           <div className="flex items-center gap-2">
@@ -868,35 +871,35 @@ export default function MenuSnapUsersAdminPage() {
               size="sm"
               disabled={page <= 1 || loading}
               onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="h-8 border-slate-800 bg-slate-950/60 text-slate-300 hover:text-white"
+              className="h-8 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300"
             >
               Previous
             </Button>
-            <span className="px-2 text-slate-400">
-              Page <span className="text-white font-semibold">{page}</span> of {totalPages}
+            <span className="px-2 text-slate-600 dark:text-slate-400">
+              Page <span className="text-slate-900 dark:text-white font-semibold">{page}</span> of {totalPages}
             </span>
             <Button
               variant="outline"
               size="sm"
               disabled={page >= totalPages || loading}
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              className="h-8 border-slate-800 bg-slate-950/60 text-slate-300 hover:text-white"
+              className="h-8 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300"
             >
               Next
             </Button>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Add User Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="bg-[#0c0e14] border-slate-800 text-slate-200 max-w-lg">
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 max-w-lg shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-amber-400" />
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-orange-500" />
               Add MenuSnap Client User
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-slate-500">
               Register a new restaurant or beauty parlour account to the platform.
             </DialogDescription>
           </DialogHeader>
@@ -904,26 +907,26 @@ export default function MenuSnapUsersAdminPage() {
           <form onSubmit={handleCreateUser} className="space-y-4 pt-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-semibold text-slate-300">Business Name *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Business Name *</label>
                 <Input
                   required
                   placeholder="e.g. Sultan's Dine or Glamour Beauty Lounge"
                   value={formData.businessName}
                   onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Business Type *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Business Type *</label>
                 <Select
                   value={formData.businessType}
                   onValueChange={(val: 'restaurant' | 'parlour') => setFormData(prev => ({ ...prev, businessType: val }))}
                 >
-                  <SelectTrigger className="bg-slate-950/80 border-slate-800 text-slate-200">
+                  <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                     <SelectItem value="restaurant">Restaurant / Food</SelectItem>
                     <SelectItem value="parlour">Beauty Parlour / Salon</SelectItem>
                   </SelectContent>
@@ -931,84 +934,84 @@ export default function MenuSnapUsersAdminPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">WhatsApp Phone *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">WhatsApp Phone *</label>
                 <Input
                   required
                   placeholder="017XXXXXXXX"
                   value={formData.whatsappNumber}
                   onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200 font-mono"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-mono"
                 />
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-semibold text-slate-300">Email Address (Optional)</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Email Address (Optional)</label>
                 <Input
                   type="email"
                   placeholder="client@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Division</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Division</label>
                 <Input
                   placeholder="e.g. Dhaka"
                   value={formData.division}
                   onChange={(e) => setFormData(prev => ({ ...prev, division: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">District</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">District</label>
                 <Input
                   placeholder="e.g. Gulshan, Dhaka"
                   value={formData.district}
                   onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-semibold text-slate-300">Initial Password (Optional)</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Initial Password (Optional)</label>
                 <Input
                   type="password"
                   placeholder="Minimum 6 characters (or leave empty)"
                   value={formData.password}
                   onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
-              <div className="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+              <div className="sm:col-span-2 flex items-center justify-between p-3.5 rounded-xl bg-orange-50/70 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/40">
                 <div>
-                  <p className="text-xs font-semibold text-white">Grant VIP Subscriber Access</p>
-                  <p className="text-[11px] text-slate-400">Unlock full MagicTab builder & VIP perks immediately.</p>
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white">Grant VIP Subscriber Access</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Unlock full MagicTab builder & VIP perks immediately.</p>
                 </div>
                 <Switch
                   checked={formData.isSubscriber}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isSubscriber: checked }))}
-                  className="data-[state=checked]:bg-amber-500"
+                  className="data-[state=checked]:bg-orange-500"
                 />
               </div>
             </div>
 
-            <DialogFooter className="pt-3 border-t border-slate-800">
+            <DialogFooter className="pt-3 border-t border-slate-200 dark:border-slate-800">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsAddModalOpen(false)}
-                className="border-slate-800 bg-slate-900 text-slate-300"
+                className="border-slate-200 dark:border-slate-800"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium"
+                className="bg-orange-600 hover:bg-orange-700 text-white font-semibold"
               >
                 {isSubmitting ? "Creating..." : "Create Account"}
               </Button>
@@ -1019,13 +1022,13 @@ export default function MenuSnapUsersAdminPage() {
 
       {/* Edit User Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="bg-[#0c0e14] border-slate-800 text-slate-200 max-w-lg">
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 max-w-lg shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
-              <Edit3 className="w-5 h-5 text-blue-400" />
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Edit3 className="w-5 h-5 text-blue-600" />
               Edit Client Profile
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
+            <DialogDescription className="text-xs text-slate-500">
               Update information and subscription settings for {selectedUser?.businessName}.
             </DialogDescription>
           </DialogHeader>
@@ -1033,25 +1036,25 @@ export default function MenuSnapUsersAdminPage() {
           <form onSubmit={handleUpdateUser} className="space-y-4 pt-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-semibold text-slate-300">Business Name *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Business Name *</label>
                 <Input
                   required
                   value={formData.businessName}
                   onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Business Type *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Business Type *</label>
                 <Select
                   value={formData.businessType}
                   onValueChange={(val: 'restaurant' | 'parlour') => setFormData(prev => ({ ...prev, businessType: val }))}
                 >
-                  <SelectTrigger className="bg-slate-950/80 border-slate-800 text-slate-200">
+                  <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                     <SelectItem value="restaurant">Restaurant / Food</SelectItem>
                     <SelectItem value="parlour">Beauty Parlour / Salon</SelectItem>
                   </SelectContent>
@@ -1059,69 +1062,69 @@ export default function MenuSnapUsersAdminPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">WhatsApp Phone *</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">WhatsApp Phone *</label>
                 <Input
                   required
                   value={formData.whatsappNumber}
                   onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200 font-mono"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-mono"
                 />
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-xs font-semibold text-slate-300">Email Address</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Email Address</label>
                 <Input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Division</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Division</label>
                 <Input
                   value={formData.division}
                   onChange={(e) => setFormData(prev => ({ ...prev, division: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">District</label>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">District</label>
                 <Input
                   value={formData.district}
                   onChange={(e) => setFormData(prev => ({ ...prev, district: e.target.value }))}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800"
                 />
               </div>
 
-              <div className="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+              <div className="sm:col-span-2 flex items-center justify-between p-3.5 rounded-xl bg-orange-50/70 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/40">
                 <div>
-                  <p className="text-xs font-semibold text-white">VIP Subscriber Access</p>
-                  <p className="text-[11px] text-slate-400">Toggle active VIP access status.</p>
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white">VIP Subscriber Access</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Toggle active VIP access status.</p>
                 </div>
                 <Switch
                   checked={formData.isSubscriber}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isSubscriber: checked }))}
-                  className="data-[state=checked]:bg-amber-500"
+                  className="data-[state=checked]:bg-orange-500"
                 />
               </div>
             </div>
 
-            <DialogFooter className="pt-3 border-t border-slate-800">
+            <DialogFooter className="pt-3 border-t border-slate-200 dark:border-slate-800">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsEditModalOpen(false)}
-                className="border-slate-800 bg-slate-900 text-slate-300"
+                className="border-slate-200 dark:border-slate-800"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
               >
                 {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
@@ -1132,20 +1135,20 @@ export default function MenuSnapUsersAdminPage() {
 
       {/* Password Reset Modal */}
       <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
-        <DialogContent className="bg-[#0c0e14] border-slate-800 text-slate-200 max-w-md">
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 max-w-md shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-amber-400" />
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-amber-600" />
               Reset Password
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">
-              Set a new login password for <span className="text-white font-semibold">{selectedUser?.businessName}</span>.
+            <DialogDescription className="text-xs text-slate-500">
+              Set a new login password for <span className="font-semibold text-slate-900 dark:text-white">{selectedUser?.businessName}</span>.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleResetPassword} className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">New Password *</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">New Password *</label>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -1153,31 +1156,31 @@ export default function MenuSnapUsersAdminPage() {
                   placeholder="Enter new password (min 6 chars)"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="bg-slate-950/80 border-slate-800 text-slate-200 pr-10"
+                  className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            <DialogFooter className="pt-3 border-t border-slate-800">
+            <DialogFooter className="pt-3 border-t border-slate-200 dark:border-slate-800">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsPasswordModalOpen(false)}
-                className="border-slate-800 bg-slate-900 text-slate-300"
+                className="border-slate-200 dark:border-slate-800"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
+                className="bg-amber-600 hover:bg-amber-700 text-white font-semibold"
               >
                 {isSubmitting ? "Updating..." : "Update Password"}
               </Button>
@@ -1188,18 +1191,18 @@ export default function MenuSnapUsersAdminPage() {
 
       {/* Delete User Alert Dialog */}
       <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
-        <AlertDialogContent className="bg-[#0c0e14] border-slate-800 text-slate-200">
+        <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg font-bold text-white flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-red-400" />
+            <AlertDialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-600" />
               Delete Client User
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-slate-400">
-              Are you sure you want to permanently delete <strong className="text-white">{userToDelete?.businessName}</strong> ({userToDelete?.whatsappNumber})? This action cannot be undone.
+            <AlertDialogDescription className="text-xs text-slate-500">
+              Are you sure you want to permanently delete <strong>{userToDelete?.businessName}</strong> ({userToDelete?.whatsappNumber})? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="border-t border-slate-800 pt-3">
-            <AlertDialogCancel className="border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800">
+          <AlertDialogFooter className="border-t border-slate-200 dark:border-slate-800 pt-3">
+            <AlertDialogCancel className="border-slate-200 dark:border-slate-800">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
