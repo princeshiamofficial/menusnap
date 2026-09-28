@@ -776,62 +776,90 @@ export default function MagicTabPage() {
     }
   }, [debouncedSearchTerm]);
 
-  const loadCategories = useCallback(async (menuType: string) => {
+  const loadData = useCallback(async (menuType: string) => {
     if (!menuType) return;
     setLoadingCategories(true);
+    setLoadingItems(true);
     setError(null);
     try {
       const type = menuType === 'parlour' ? 'parlour' : 'restaurant';
-      const result = await getCategoriesFromMySql(type, true); // true for visibleOnly
       
-      const serverCategories: Category[] = (result?.success && Array.isArray(result.data))
-        ? (result.data as any[]).map((cat: any) => ({
+      const [catsRes, itemsRes] = await Promise.all([
+        getCategoriesFromMySql(type, true),
+        getMenuItemsFromMySql(type, true),
+      ]);
+
+      const serverCategories: Category[] = (catsRes?.success && Array.isArray(catsRes.data))
+        ? catsRes.data.map((cat: any) => ({
             ...cat,
             id: String(cat.id),
-            icon: cat.icon || (type === 'parlour' ? '✨' : 'UtensilsCrossed'),
+            icon: cat.icon || (type === 'parlour' ? '✨' : '🍽️'),
+            visibleToUsers: true,
+            itemCount: Number(cat.itemCount) || 0,
+          }))
+        : [];
+
+      const serverItems: MenuItem[] = (itemsRes?.success && Array.isArray(itemsRes.data))
+        ? itemsRes.data.map((item: any) => ({
+            ...item,
+            id: String(item.id),
+            price: parseFloat(item.price) || 0,
+            category: String(item.categoryId || item.category || ''),
+            image: item.imageUrl || item.image || undefined,
+            description: item.description || null,
+            subItems: Array.isArray(item.subItems) ? item.subItems : [],
             visibleToUsers: true,
           }))
         : [];
 
-      // Fetch categories from orders table strictly filtered by current type (0 = unlimited / all orders of this type)
-      const orderData = await getOrderItemsAndCategories(0, type);
-
-      // Deduplicate order categories against server categories by normalized name and ID
-      const existingNames = new Set(serverCategories.map(c => decodeHtmlEntities(c.name).trim().toLowerCase()));
-      const existingIds = new Set(serverCategories.map(c => String(c.id).toLowerCase()));
-      const orderCategories: Category[] = [];
-
-      (orderData?.categories || []).forEach((c: any) => {
-        const norm = decodeHtmlEntities(c.name).trim().toLowerCase();
-        const idLower = String(c.id).toLowerCase();
-        if (!existingNames.has(norm) && !existingIds.has(idLower)) {
-          existingNames.add(norm);
-          existingIds.add(idLower);
-          orderCategories.push({
-            id: String(c.id),
-            name: c.name,
-            icon: c.icon || (type === 'parlour' ? '✨' : 'UtensilsCrossed'),
-            itemCount: c.itemCount || 0,
-            visibleToUsers: true,
-          });
+      // Local custom categories
+      let localCategories: Category[] = [];
+      try {
+        const localCatsRaw = localStorage.getItem(`${CUSTOM_CATEGORIES_STORAGE_KEY}_${type}`) || localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]';
+        const parsed = JSON.parse(localCatsRaw);
+        if (Array.isArray(parsed)) {
+          localCategories = parsed.filter((c: any) => !c.type || c.type === type);
         }
+      } catch {}
+
+      // Local custom items
+      let localItems: MenuItem[] = [];
+      try {
+        const localItemsRaw = localStorage.getItem(`${CUSTOM_MENU_ITEMS_STORAGE_KEY}_${type}`) || localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]';
+        const parsed = JSON.parse(localItemsRaw);
+        if (Array.isArray(parsed)) {
+          localItems = parsed.filter((i: any) => !i.type || i.type === type);
+        }
+      } catch {}
+
+      // Calculate item count per category
+      const countByCatId = new Map<string, number>();
+      for (const it of [...serverItems, ...localItems]) {
+        const catKey = String(it.category || '').toLowerCase();
+        countByCatId.set(catKey, (countByCatId.get(catKey) || 0) + 1);
+      }
+
+      const combinedCategories = [...serverCategories, ...localCategories].map(cat => {
+        const calculatedCount =
+          countByCatId.get(String(cat.id).toLowerCase()) ||
+          countByCatId.get(decodeHtmlEntities(cat.name).trim().toLowerCase()) ||
+          Number(cat.itemCount) ||
+          0;
+        return {
+          ...cat,
+          itemCount: calculatedCount,
+        };
       });
 
-      const localCatsRaw = localStorage.getItem(`${CUSTOM_CATEGORIES_STORAGE_KEY}_${type}`) || localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]';
-      let parsedLocalCats: any[] = [];
-      try { parsedLocalCats = JSON.parse(localCatsRaw); } catch {}
-      const localCategories: Category[] = (Array.isArray(parsedLocalCats) ? parsedLocalCats : []).filter((c: any) => !c.type || c.type === type);
-      const combinedCategories = [...serverCategories, ...orderCategories, ...localCategories];
-      
-      const seenIds = new Set<string>();
-      const seenNames = new Set<string>();
+      const seenCatIds = new Set<string>();
+      const seenCatNames = new Set<string>();
       const uniqueCategories: Category[] = [];
       for (const cat of combinedCategories) {
         const idKey = String(cat.id).toLowerCase();
         const nameKey = decodeHtmlEntities(cat.name).trim().toLowerCase();
-        if (!seenIds.has(idKey) && !seenNames.has(nameKey)) {
-          seenIds.add(idKey);
-          seenNames.add(nameKey);
+        if (!seenCatIds.has(idKey) && !seenCatNames.has(nameKey)) {
+          seenCatIds.add(idKey);
+          seenCatNames.add(nameKey);
           uniqueCategories.push(cat);
         }
       }
@@ -844,125 +872,22 @@ export default function MagicTabPage() {
       });
 
       setApiCategories(uniqueCategories);
-      setActiveCategoryId(prev => prev && uniqueCategories.some(c => c.id === prev) ? prev : (uniqueCategories[0]?.id || null));
-
+      setActiveCategoryId(prev => (prev && uniqueCategories.some(c => c.id === prev) ? prev : uniqueCategories[0]?.id || null));
+      setAllMenuItems([...serverItems, ...localItems]);
     } catch (err: any) {
-      console.error("Local Categories Error:", err);
-      setError(err.message || "Could not load categories.");
-      setApiCategories([]);
-      setActiveCategoryId(null);
+      console.error("MagicTab Data Load Error:", err);
+      setError(err.message || "Could not load menu items and categories.");
     } finally {
       setLoadingCategories(false);
-    }
-  }, []);
-
-  const loadItems = useCallback(async (menuType: string) => {
-    if (!menuType) return;
-    setLoadingItems(true);
-    try {
-      const type = menuType === 'parlour' ? 'parlour' : 'restaurant';
-      const result = await getMenuItemsFromMySql(type, true); // true for visibleOnly
-      
-      const serverItems: MenuItem[] = (result?.success && Array.isArray(result.data))
-        ? (result.data as any[]).map((item: any) => ({
-            ...item,
-            id: String(item.id),
-            price: parseFloat(item.price) || 0,
-            category: String(item.categoryId)
-          }))
-        : [];
-
-      // Fetch items from orders table strictly filtered by current type (0 = unlimited / all orders of this type)
-      const orderData = await getOrderItemsAndCategories(0, type);
-
-      // Build mapping from normalized category name -> catalog category id
-      const catNameToId = new Map<string, string>();
-      const catsRes = await getCategoriesFromMySql(type, true);
-      if (catsRes?.success && Array.isArray(catsRes.data)) {
-        catsRes.data.forEach((c: any) => {
-          catNameToId.set(decodeHtmlEntities(c.name).trim().toLowerCase(), String(c.id));
-        });
-      }
-
-      const orderItems: MenuItem[] = (orderData?.items || []).map((it: any) => {
-        const normCatName = decodeHtmlEntities(it.categoryName || it.category || '').trim().toLowerCase();
-        const resolvedCategory = catNameToId.get(normCatName) || String(it.category);
-        return {
-          id: String(it.id),
-          name: it.name,
-          price: parseFloat(it.price) || 0,
-          category: resolvedCategory,
-          image: it.imageUrl || it.image || undefined,
-          description: it.description || null,
-          subItems: Array.isArray(it.subItems) ? it.subItems : [],
-          visibleToUsers: true,
-        };
-      });
-
-      const localItemsRaw = localStorage.getItem(`${CUSTOM_MENU_ITEMS_STORAGE_KEY}_${type}`) || localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]';
-      let parsedLocalItems: any[] = [];
-      try { parsedLocalItems = JSON.parse(localItemsRaw); } catch {}
-      const localItems: MenuItem[] = (Array.isArray(parsedLocalItems) ? parsedLocalItems : []).filter((i: any) => !i.type || i.type === type);
-      
-      // Deduplicate items by normalized item name so clients never see duplicate items on MagicTab
-      const itemByName = new Map<string, MenuItem>();
-      const candidateItems = [...orderItems, ...localItems, ...serverItems];
-
-      for (const item of candidateItems) {
-        const normName = decodeHtmlEntities(item.name || '').trim().toLowerCase();
-        if (!normName) continue;
-
-        const existing = itemByName.get(normName);
-        if (!existing) {
-          itemByName.set(normName, item);
-        } else {
-          // Prefer items with images, descriptions, or official catalog assignments
-          const newHasImage = !!(item.image || (item as any).imageUrl);
-          const oldHasImage = !!(existing.image || (existing as any).imageUrl);
-          const newHasDesc = !!item.description;
-          const oldHasDesc = !!existing.description;
-
-          if ((newHasImage && !oldHasImage) || (newHasDesc && !oldHasDesc) || (item as any).categoryId) {
-            itemByName.set(normName, {
-              ...item,
-              image: item.image || existing.image,
-              description: item.description || existing.description,
-            });
-          }
-        }
-      }
-
-      const rawUniqueItems = Array.from(itemByName.values());
-      const seenIds = new Set<string>();
-      const uniqueItems: MenuItem[] = rawUniqueItems.map((item, idx) => {
-        let itemId = item.id ? String(item.id) : `item-${idx}`;
-        if (seenIds.has(itemId)) {
-          itemId = `${itemId}-${idx}`;
-        }
-        seenIds.add(itemId);
-        return {
-          ...item,
-          id: itemId,
-        };
-      });
-
-      setAllMenuItems(uniqueItems);
-
-    } catch (err: any) {
-      console.error("Local Items Error:", err);
-      setError(err.message || "Could not load menu items.");
-      setAllMenuItems([]);
-    } finally {
       setLoadingItems(false);
     }
   }, []);
 
   useEffect(() => {
     if (selectedMenuType && isSubscriber) {
-      loadCategories(selectedMenuType);
-      loadItems(selectedMenuType);
+      loadData(selectedMenuType);
     }
-  }, [selectedMenuType, isSubscriber, loadCategories, loadItems]);
+  }, [selectedMenuType, isSubscriber, loadData]);
 
 
   // Effect to handle restoring a draft on page load
