@@ -15,6 +15,8 @@ export interface MenuSnapUser {
   district: string | null;
   stage: string;
   isSubscriber: boolean;
+  subscriptionPackage: string; // e.g. 'Pro Lifetime', 'Starter Lifetime', 'Enterprise', 'Free Plan'
+  subscriptionPrice?: number | null;
   hasPassword: boolean;
   lastLogin: string | null;
   createdAt: string;
@@ -26,6 +28,8 @@ export interface MenuSnapUserStats {
   totalFreeLeads: number;
   totalRestaurants: number;
   totalParlours: number;
+  proSubscribers: number;
+  starterSubscribers: number;
 }
 
 /**
@@ -46,6 +50,7 @@ async function ensureClientsSchema() {
         note TEXT NULL,
         stage VARCHAR(50) DEFAULT 'new-lead',
         is_subscriber TINYINT(1) DEFAULT 0,
+        subscription_package VARCHAR(100) NULL DEFAULT NULL,
         last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_whatsapp (whatsapp_number),
@@ -59,6 +64,9 @@ async function ensureClientsSchema() {
 
     if (!existingCols.has('is_subscriber')) {
       await pool.execute('ALTER TABLE clients ADD COLUMN is_subscriber TINYINT(1) DEFAULT 0 AFTER stage');
+    }
+    if (!existingCols.has('subscription_package')) {
+      await pool.execute('ALTER TABLE clients ADD COLUMN subscription_package VARCHAR(100) NULL DEFAULT NULL AFTER is_subscriber');
     }
     if (!existingCols.has('password_hash')) {
       await pool.execute('ALTER TABLE clients ADD COLUMN password_hash VARCHAR(255) NULL AFTER email');
@@ -84,6 +92,7 @@ export async function getMenuSnapUsersAction(params?: {
   search?: string;
   type?: 'all' | 'restaurant' | 'parlour';
   subscriberFilter?: 'all' | 'subscribers' | 'free';
+  packageFilter?: string;
   page?: number;
   limit?: number;
 }): Promise<{
@@ -91,6 +100,7 @@ export async function getMenuSnapUsersAction(params?: {
   users: MenuSnapUser[];
   total: number;
   stats: MenuSnapUserStats;
+  availablePackages: { id: string; name: string; price: number }[];
   error?: string;
 }> {
   try {
@@ -100,7 +110,8 @@ export async function getMenuSnapUsersAction(params?: {
         success: false,
         users: [],
         total: 0,
-        stats: { totalUsers: 0, totalSubscribers: 0, totalFreeLeads: 0, totalRestaurants: 0, totalParlours: 0 },
+        stats: { totalUsers: 0, totalSubscribers: 0, totalFreeLeads: 0, totalRestaurants: 0, totalParlours: 0, proSubscribers: 0, starterSubscribers: 0 },
+        availablePackages: [],
         error: 'Unauthorized admin access',
       };
     }
@@ -110,6 +121,7 @@ export async function getMenuSnapUsersAction(params?: {
     const search = (params?.search || '').trim();
     const typeFilter = params?.type || 'all';
     const subFilter = params?.subscriberFilter || 'all';
+    const pkgFilter = params?.packageFilter || 'all';
     const page = Math.max(1, params?.page || 1);
     const limit = Math.max(1, Math.min(100, params?.limit || 20));
     const offset = (page - 1) * limit;
@@ -134,6 +146,15 @@ export async function getMenuSnapUsersAction(params?: {
       conditions.push("(is_subscriber = 0 AND (stage IS NULL OR stage NOT IN ('customer', 'subscriber', 'subscribed', 'donated')))");
     }
 
+    if (pkgFilter !== 'all') {
+      if (pkgFilter === 'free') {
+        conditions.push("(subscription_package = 'Free Plan' OR (subscription_package IS NULL AND is_subscriber = 0 AND (stage IS NULL OR stage NOT IN ('customer', 'subscriber', 'subscribed', 'donated'))))");
+      } else {
+        conditions.push('subscription_package LIKE ?');
+        queryParams.push(`%${pkgFilter}%`);
+      }
+    }
+
     const whereClause = conditions.join(' AND ');
 
     // 1. Get filtered total count
@@ -147,7 +168,7 @@ export async function getMenuSnapUsersAction(params?: {
     const [rows]: any = await pool.execute(
       `SELECT 
         id, business_name, business_type, whatsapp_number, email, division, district,
-        stage, is_subscriber, password_hash,
+        stage, is_subscriber, subscription_package, password_hash,
         DATE_FORMAT(last_login, '%Y-%m-%d %H:%i:%s') as last_login,
         DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at
       FROM clients
@@ -167,6 +188,12 @@ export async function getMenuSnapUsersAction(params?: {
         stageLower === 'donated'
       );
 
+      // Determine package name
+      let pkgName = row.subscription_package;
+      if (!pkgName) {
+        pkgName = isSub ? 'Pro Lifetime' : 'Free Plan';
+      }
+
       return {
         id: row.id,
         businessName: row.business_name,
@@ -177,6 +204,7 @@ export async function getMenuSnapUsersAction(params?: {
         district: row.district || null,
         stage: row.stage || 'new-lead',
         isSubscriber: isSub,
+        subscriptionPackage: pkgName,
         hasPassword: Boolean(row.password_hash),
         lastLogin: row.last_login || null,
         createdAt: row.created_at,
@@ -190,7 +218,9 @@ export async function getMenuSnapUsersAction(params?: {
         SUM(CASE WHEN is_subscriber = 1 OR stage IN ('customer', 'subscriber', 'subscribed', 'donated') THEN 1 ELSE 0 END) as totalSubscribers,
         SUM(CASE WHEN is_subscriber = 0 AND (stage IS NULL OR stage NOT IN ('customer', 'subscriber', 'subscribed', 'donated')) THEN 1 ELSE 0 END) as totalFreeLeads,
         SUM(CASE WHEN business_type = 'restaurant' THEN 1 ELSE 0 END) as totalRestaurants,
-        SUM(CASE WHEN business_type = 'parlour' THEN 1 ELSE 0 END) as totalParlours
+        SUM(CASE WHEN business_type = 'parlour' THEN 1 ELSE 0 END) as totalParlours,
+        SUM(CASE WHEN subscription_package LIKE '%Pro%' OR (subscription_package IS NULL AND (is_subscriber = 1 OR stage IN ('customer', 'subscriber', 'subscribed', 'donated'))) THEN 1 ELSE 0 END) as proSubscribers,
+        SUM(CASE WHEN subscription_package LIKE '%Starter%' THEN 1 ELSE 0 END) as starterSubscribers
       FROM clients
     `);
 
@@ -201,13 +231,42 @@ export async function getMenuSnapUsersAction(params?: {
       totalFreeLeads: Number(stat.totalFreeLeads) || 0,
       totalRestaurants: Number(stat.totalRestaurants) || 0,
       totalParlours: Number(stat.totalParlours) || 0,
+      proSubscribers: Number(stat.proSubscribers) || 0,
+      starterSubscribers: Number(stat.starterSubscribers) || 0,
     };
+
+    // 4. Fetch available packages from pricing_packages table
+    let availablePackages = [
+      { id: 'free', name: 'Free Plan', price: 0 },
+      { id: 'starter', name: 'Starter Lifetime', price: 499 },
+      { id: 'pro', name: 'Pro Lifetime', price: 1499 },
+      { id: 'enterprise', name: 'Enterprise Lifetime', price: 4999 },
+    ];
+
+    try {
+      const [pkgRows]: any = await pool.execute(
+        'SELECT package_id, name, price FROM pricing_packages WHERE is_active = 1 ORDER BY sort_order ASC'
+      );
+      if (Array.isArray(pkgRows) && pkgRows.length > 0) {
+        availablePackages = [
+          { id: 'free', name: 'Free Plan', price: 0 },
+          ...pkgRows.map((r: any) => ({
+            id: r.package_id,
+            name: `${r.name} Lifetime`,
+            price: Number(r.price) || 0,
+          })),
+        ];
+      }
+    } catch {
+      // Fallback
+    }
 
     return {
       success: true,
       users,
       total,
       stats,
+      availablePackages,
     };
   } catch (error: any) {
     console.error('[MenuSnap Users] getMenuSnapUsersAction error:', error);
@@ -215,7 +274,8 @@ export async function getMenuSnapUsersAction(params?: {
       success: false,
       users: [],
       total: 0,
-      stats: { totalUsers: 0, totalSubscribers: 0, totalFreeLeads: 0, totalRestaurants: 0, totalParlours: 0 },
+      stats: { totalUsers: 0, totalSubscribers: 0, totalFreeLeads: 0, totalRestaurants: 0, totalParlours: 0, proSubscribers: 0, starterSubscribers: 0 },
+      availablePackages: [],
       error: error.message || 'Failed to fetch MenuSnap users.',
     };
   }
@@ -226,7 +286,8 @@ export async function getMenuSnapUsersAction(params?: {
  */
 export async function toggleSubscriberStatusAction(
   userId: number,
-  targetStatus: boolean
+  targetStatus: boolean,
+  targetPackage?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const session = await getAdminSessionAction();
@@ -236,11 +297,13 @@ export async function toggleSubscriberStatusAction(
 
     await ensureClientsSchema();
 
+    const pkg = targetStatus ? (targetPackage || 'Pro Lifetime') : 'Free Plan';
+
     await pool.execute(
       `UPDATE clients 
-       SET is_subscriber = ?, stage = ? 
+       SET is_subscriber = ?, stage = ?, subscription_package = ? 
        WHERE id = ?`,
-      [targetStatus ? 1 : 0, targetStatus ? 'customer' : 'new-lead', userId]
+      [targetStatus ? 1 : 0, targetStatus ? 'customer' : 'new-lead', pkg, userId]
     );
 
     revalidatePath('/m-admin/menusnap-users');
@@ -249,12 +312,50 @@ export async function toggleSubscriberStatusAction(
     return {
       success: true,
       message: targetStatus
-        ? 'User granted full Subscriber Access.'
+        ? `VIP Subscriber Access granted (${pkg}).`
         : 'User set to Free Lead status.',
     };
   } catch (error: any) {
     console.error('[MenuSnap Users] toggleSubscriberStatusAction error:', error);
     return { success: false, error: error.message || 'Failed to update subscriber status.' };
+  }
+}
+
+/**
+ * 1-Click Update of Package Assignment for client.
+ */
+export async function updateUserPackageAction(
+  userId: number,
+  packageName: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const session = await getAdminSessionAction();
+    if (!session) {
+      return { success: false, error: 'Unauthorized access.' };
+    }
+
+    await ensureClientsSchema();
+
+    const isFree = packageName.toLowerCase().includes('free');
+    const isSub = !isFree;
+
+    await pool.execute(
+      `UPDATE clients 
+       SET subscription_package = ?, is_subscriber = ?, stage = ? 
+       WHERE id = ?`,
+      [packageName, isSub ? 1 : 0, isSub ? 'customer' : 'new-lead', userId]
+    );
+
+    revalidatePath('/m-admin/menusnap-users');
+    revalidatePath('/m-admin/contacts');
+
+    return {
+      success: true,
+      message: `Subscription package updated to "${packageName}".`,
+    };
+  } catch (error: any) {
+    console.error('[MenuSnap Users] updateUserPackageAction error:', error);
+    return { success: false, error: error.message || 'Failed to update package.' };
   }
 }
 
@@ -270,6 +371,7 @@ export async function adminCreateMenuSnapUserAction(payload: {
   district?: string;
   password?: string;
   isSubscriber?: boolean;
+  subscriptionPackage?: string;
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const session = await getAdminSessionAction();
@@ -302,12 +404,16 @@ export async function adminCreateMenuSnapUserAction(payload: {
     }
 
     const isSub = Boolean(payload.isSubscriber);
+    let pkg = payload.subscriptionPackage;
+    if (!pkg) {
+      pkg = isSub ? 'Pro Lifetime' : 'Free Plan';
+    }
 
     await pool.execute(
       `INSERT INTO clients (
         business_name, business_type, whatsapp_number, email, division, district,
-        password_hash, is_subscriber, stage
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        password_hash, is_subscriber, subscription_package, stage
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.businessName.trim(),
         payload.businessType,
@@ -317,6 +423,7 @@ export async function adminCreateMenuSnapUserAction(payload: {
         payload.district?.trim() || null,
         passwordHash,
         isSub ? 1 : 0,
+        pkg,
         isSub ? 'customer' : 'new-lead',
       ]
     );
@@ -345,6 +452,7 @@ export async function adminUpdateMenuSnapUserAction(
     district?: string;
     password?: string;
     isSubscriber?: boolean;
+    subscriptionPackage?: string;
   }
 ): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
@@ -370,6 +478,10 @@ export async function adminUpdateMenuSnapUserAction(
     }
 
     const isSub = Boolean(payload.isSubscriber);
+    let pkg = payload.subscriptionPackage;
+    if (!pkg) {
+      pkg = isSub ? 'Pro Lifetime' : 'Free Plan';
+    }
 
     if (payload.password && payload.password.trim()) {
       if (payload.password.trim().length < 6) {
@@ -379,7 +491,7 @@ export async function adminUpdateMenuSnapUserAction(
       await pool.execute(
         `UPDATE clients SET 
           business_name = ?, business_type = ?, whatsapp_number = ?, email = ?,
-          division = ?, district = ?, password_hash = ?, is_subscriber = ?, stage = ?
+          division = ?, district = ?, password_hash = ?, is_subscriber = ?, subscription_package = ?, stage = ?
         WHERE id = ?`,
         [
           payload.businessName.trim(),
@@ -390,6 +502,7 @@ export async function adminUpdateMenuSnapUserAction(
           payload.district?.trim() || null,
           newHash,
           isSub ? 1 : 0,
+          pkg,
           isSub ? 'customer' : 'new-lead',
           userId,
         ]
@@ -398,7 +511,7 @@ export async function adminUpdateMenuSnapUserAction(
       await pool.execute(
         `UPDATE clients SET 
           business_name = ?, business_type = ?, whatsapp_number = ?, email = ?,
-          division = ?, district = ?, is_subscriber = ?, stage = ?
+          division = ?, district = ?, is_subscriber = ?, subscription_package = ?, stage = ?
         WHERE id = ?`,
         [
           payload.businessName.trim(),
@@ -408,6 +521,7 @@ export async function adminUpdateMenuSnapUserAction(
           payload.division?.trim() || null,
           payload.district?.trim() || null,
           isSub ? 1 : 0,
+          pkg,
           isSub ? 'customer' : 'new-lead',
           userId,
         ]
