@@ -19,6 +19,7 @@ import { PlanTier, BillingPeriod, PricingPackage } from "@/lib/menusnap-types";
 import { trackEvent } from "@/lib/analytics";
 import { ThreeDTiltCard } from "@/components/landing/three-d-tilt-card";
 import { getPublicPricingPackagesAction } from "@/app/actions/packages";
+import { useClientAuth } from "@/hooks/use-client-auth";
 
 interface PricingSectionProps {
   onSelectPlan: (plan: PlanTier, duration: BillingPeriod, coupon?: string) => void;
@@ -37,6 +38,10 @@ const FALLBACK_PACKAGES: PricingPackage[] = [
     discount_tag: "",
     coupon_code: "",
     coupon_discount: 0,
+    is_category_unlimited: false,
+    category_limit: 5,
+    is_item_unlimited: false,
+    item_limit: 30,
     features: [
       "3,000+ Menu Database Access",
       "Restaurant & Cuisine Browse",
@@ -65,13 +70,16 @@ const FALLBACK_PACKAGES: PricingPackage[] = [
     discount_tag: "LIFETIME DEAL: MENUSNAP500",
     coupon_code: "MENUSNAP500",
     coupon_discount: 500,
+    is_category_unlimited: true,
+    category_limit: 0,
+    is_item_unlimited: true,
+    item_limit: 0,
     features: [
       "Everything in Starter",
       "Advanced Item & Competitor Research",
       "Market Price Spread Comparison",
       "Unlimited Menu Building Projects",
       "Item Shortlist & Favorites",
-      "Custom Category Organization",
       "Custom Pricing & Portion Weights",
       "Rich Description Editing",
       "Print-Ready PDF & Clean Excel Export",
@@ -95,9 +103,13 @@ const FALLBACK_PACKAGES: PricingPackage[] = [
     discount_tag: "",
     coupon_code: "",
     coupon_discount: 0,
+    is_category_unlimited: true,
+    category_limit: 0,
+    is_item_unlimited: true,
+    item_limit: 0,
     features: [
       "Everything in Pro",
-      "Multiple Restaurant Blueprints",
+      "Multiple Restaurant Projects",
       "Client-wise Menu Workspaces",
       "Agency Multi-user Access",
       "Higher Export & Query Limits",
@@ -150,6 +162,12 @@ export function CircleCheckIcon({ className = "w-4 h-4" }: { className?: string 
 
 export function PricingSection({ onSelectPlan }: PricingSectionProps) {
   const [packages, setPackages] = useState<PricingPackage[]>(FALLBACK_PACKAGES);
+  const { clientUser, isClientLoggedIn, isSubscriber, currentPackage, isAdmin } = useClientAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -167,6 +185,31 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
       isMounted = false;
     };
   }, []);
+
+  const checkIsCurrentPlan = (pkg: PricingPackage) => {
+    if (!mounted) return false;
+    if (!isSubscriber && !isClientLoggedIn && !isAdmin) return false;
+
+    const activePlan = (
+      clientUser?.subscriptionPackage ||
+      currentPackage ||
+      (isAdmin ? "agency" : "")
+    )
+      .toLowerCase()
+      .trim();
+
+    if (!activePlan) return false;
+
+    const pkgId = pkg.package_id.toLowerCase().trim();
+    const pkgName = pkg.name.toLowerCase().trim();
+
+    return (
+      activePlan.includes(pkgId) ||
+      activePlan.includes(pkgName) ||
+      pkgId.includes(activePlan) ||
+      pkgName.includes(activePlan)
+    );
+  };
 
   return (
     <section id="pricing" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#EAEAEA] text-neutral-900 relative overflow-hidden">
@@ -190,6 +233,7 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
           {packages.map((pkg) => {
             const isPop = pkg.is_popular;
             const couponToPass = pkg.coupon_code || undefined;
+            const isCurrentPlan = checkIsCurrentPlan(pkg);
 
             return (
               <div
@@ -201,14 +245,14 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
                 }`}
               >
                 <div>
-                  {/* Top Row: Brand Swirl SVG + Optional Popular Badge */}
+                  {/* Top Row: Brand Swirl SVG + Badges */}
                   <div className="flex items-center justify-between mb-6">
                     <SwirlBrandIcon className={`w-7 h-7 ${isPop ? "text-white" : "text-black"}`} />
-                    {isPop && (
+                    {isPop ? (
                       <span className="px-3.5 py-1 rounded-full bg-[#272727] text-neutral-300 text-xs font-medium tracking-tight">
                         {pkg.badge_text || "Popular"}
                       </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Plan Name & Tagline */}
@@ -232,24 +276,39 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
                   </div>
 
                   {/* Pill CTA Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      trackEvent("plan_selected", {
-                        plan: pkg.package_id,
-                        duration: "lifetime",
-                        coupon: couponToPass,
-                      });
-                      onSelectPlan(pkg.package_id, "lifetime", couponToPass);
-                    }}
-                    className={`w-full py-3.5 px-6 rounded-full font-semibold text-sm transition-all duration-150 text-center cursor-pointer active:scale-[0.98] ${
-                      isPop
-                        ? "bg-white text-black hover:bg-neutral-100 shadow-[0_4px_16px_rgba(255,255,255,0.12)]"
-                        : "bg-white text-black border border-neutral-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:bg-neutral-50"
-                    }`}
-                  >
-                    {pkg.button_text || (isPop ? "Subscribe Now" : "Started Now")}
-                  </button>
+                  {isCurrentPlan ? (
+                    <button
+                      type="button"
+                      disabled
+                      aria-disabled="true"
+                      className={`w-full py-3.5 px-6 rounded-full font-semibold text-sm text-center cursor-not-allowed select-none transition-all ${
+                        isPop
+                          ? "bg-[#272727] text-neutral-400"
+                          : "bg-neutral-100 text-neutral-600 border border-neutral-200/80"
+                      }`}
+                    >
+                      Current Plan
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        trackEvent("plan_selected", {
+                          plan: pkg.package_id,
+                          duration: "lifetime",
+                          coupon: couponToPass,
+                        });
+                        onSelectPlan(pkg.package_id, "lifetime", couponToPass);
+                      }}
+                      className={`w-full py-3.5 px-6 rounded-full font-semibold text-sm transition-all duration-150 text-center cursor-pointer active:scale-[0.98] ${
+                        isPop
+                          ? "bg-white text-black hover:bg-neutral-100 shadow-[0_4px_16px_rgba(255,255,255,0.12)]"
+                          : "bg-white text-black border border-neutral-200/90 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:bg-neutral-50"
+                      }`}
+                    >
+                      {pkg.button_text || (isPop ? "Subscribe Now" : "Started Now")}
+                    </button>
+                  )}
 
                   {/* Divider Line */}
                   <div className={`h-px w-full my-7 ${isPop ? "bg-neutral-800/80" : "bg-neutral-100"}`} />

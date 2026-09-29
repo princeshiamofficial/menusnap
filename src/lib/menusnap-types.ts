@@ -31,6 +31,10 @@ export interface PricingPackage {
   is_popular: boolean;
   is_active: boolean;
   sort_order: number;
+  is_category_unlimited?: boolean;
+  category_limit?: number;
+  is_item_unlimited?: boolean;
+  item_limit?: number;
   created_at?: string;
   updated_at?: string;
 }

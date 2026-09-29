@@ -623,7 +623,16 @@ const Typewriter = React.memo(function Typewriter({ words, className }: { words:
 
 
 export default function MagicTabPage() {
-  const { clientUser, clientLoading, isSubscriber, subscriptionLoading, refreshSubscription } = useClientAuth();
+  const { 
+    clientUser, 
+    clientLoading, 
+    isSubscriber, 
+    subscriptionLoading, 
+    refreshSubscription,
+    packageLimits,
+    currentPackage,
+    isAdmin
+  } = useClientAuth();
   const { toast } = useToast();
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [refreshingAccess, setRefreshingAccess] = useState(false);
@@ -1043,6 +1052,20 @@ export default function MagicTabPage() {
         setIsSubmitting(false);
         return;
       }
+
+      // Check item limit quota
+      if (!isAdmin && packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0) {
+        if (allMenuItems.length >= packageLimits.itemLimit) {
+          toast({
+            title: "Item Limit Reached",
+            description: `Your ${currentPackage ? currentPackage.toUpperCase() : 'current'} plan allows up to ${packageLimits.itemLimit} menu items. Please upgrade your package for unlimited items!`,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       itemToSave = {
         ...data,
         id: `custom-item-${Date.now()}`,
@@ -1073,7 +1096,7 @@ export default function MagicTabPage() {
     setIsFormDialogOpen(false);
     setEditingItem(null);
     setIsSubmitting(false);
-  }, [allMenuItems, editingItem, selectedCategory]);
+  }, [allMenuItems, editingItem, selectedCategory, isAdmin, packageLimits, currentPackage, toast, selectedMenuType]);
 
 
   const handleOpenEditCategory = useCallback((category: Category) => {
@@ -1109,6 +1132,18 @@ export default function MagicTabPage() {
         return;
     }
 
+    // Check category limit quota
+    if (!isAdmin && packageLimits && !packageLimits.isCategoryUnlimited && packageLimits.categoryLimit > 0) {
+      if (apiCategories.length >= packageLimits.categoryLimit) {
+        toast({
+          title: "Category Limit Reached",
+          description: `Your ${currentPackage ? currentPackage.toUpperCase() : 'current'} plan allows up to ${packageLimits.categoryLimit} categories. Please upgrade your package for unlimited categories!`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const newCategory: Category = {
       id: `custom-category-${customSlugify(formattedName)}-${Date.now()}`,
       name: formattedName,
@@ -1131,7 +1166,7 @@ export default function MagicTabPage() {
     } catch (e) {
       // Error handling without toast
     }
-  }, [apiCategories, setActiveCategoryId]);
+  }, [apiCategories, setActiveCategoryId, isAdmin, packageLimits, currentPackage, toast, selectedMenuType]);
 
   const currentMenuItems = useMemo(() => {
     if (debouncedSearchTerm) {

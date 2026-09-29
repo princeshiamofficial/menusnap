@@ -21,6 +21,14 @@ export interface ClientUser {
   district?: string;
   email?: string;
   isSubscriber?: boolean;
+  subscriptionPackage?: string;
+}
+
+export interface PackageLimits {
+  isCategoryUnlimited: boolean;
+  categoryLimit: number;
+  isItemUnlimited: boolean;
+  itemLimit: number;
 }
 
 export interface ClientAuthContextType {
@@ -29,6 +37,9 @@ export interface ClientAuthContextType {
   clientLoading: boolean;
   isSubscriber: boolean;
   subscriptionLoading: boolean;
+  currentPackage?: string | null;
+  packageLimits?: PackageLimits;
+  isAdmin?: boolean;
   refreshSubscription: (userToCheck?: ClientUser | null) => Promise<boolean>;
   login: (
     businessName: string,
@@ -57,13 +68,38 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
   const [clientLoading, setClientLoading] = useState(true);
   const [isSubscriber, setIsSubscriber] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [currentPackage, setCurrentPackage] = useState<string | null>(null);
+  const [packageLimits, setPackageLimits] = useState<PackageLimits>({
+    isCategoryUnlimited: true,
+    categoryLimit: 0,
+    isItemUnlimited: true,
+    itemLimit: 0,
+  });
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   const refreshSubscription = useCallback(async (userToCheck?: ClientUser | null) => {
     const target = userToCheck !== undefined ? userToCheck : clientUser;
     if (!target) {
+      try {
+        const adminRes = await checkClientSubscription();
+        if (adminRes.success && adminRes.isAdmin) {
+          setIsAdmin(true);
+          setIsSubscriber(true);
+          if (adminRes.plan) setCurrentPackage(adminRes.plan);
+          if (adminRes.limits) setPackageLimits(adminRes.limits);
+          return true;
+        }
+      } catch {}
       setIsSubscriber(false);
+      setCurrentPackage(null);
+      setPackageLimits({
+        isCategoryUnlimited: true,
+        categoryLimit: 0,
+        isItemUnlimited: true,
+        itemLimit: 0,
+      });
       return false;
     }
     setSubscriptionLoading(true);
@@ -71,16 +107,31 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       const res = await checkClientSubscription(target.whatsappNumber, target.email);
       const isSub = Boolean(res.success && res.isSubscriber);
       setIsSubscriber(isSub);
+      if (res.isAdmin) setIsAdmin(true);
+      if (res.plan) {
+        setCurrentPackage(res.plan);
+      }
+      if (res.limits) {
+        setPackageLimits(res.limits);
+      }
 
       if (typeof window !== 'undefined') {
         const stored = localStorage.getItem(CLIENT_STORAGE_KEY);
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
+            let hasChanged = false;
             if (parsed.isSubscriber !== isSub) {
               parsed.isSubscriber = isSub;
+              hasChanged = true;
+            }
+            if (res.plan && parsed.subscriptionPackage !== res.plan) {
+              parsed.subscriptionPackage = res.plan;
+              hasChanged = true;
+            }
+            if (hasChanged) {
               localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(parsed));
-              setClientUser(parsed);
+              setClientUser({ ...parsed });
             }
           } catch {}
         }
@@ -103,20 +154,46 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         if (parsed.isSubscriber !== undefined) {
           setIsSubscriber(Boolean(parsed.isSubscriber));
         }
+        if (parsed.subscriptionPackage) {
+          setCurrentPackage(parsed.subscriptionPackage);
+        }
         // Verify with server in background
         checkClientSubscription(parsed.whatsappNumber, parsed.email)
           .then((res) => {
             const isSub = Boolean(res.success && res.isSubscriber);
             setIsSubscriber(isSub);
+            if (res.isAdmin) setIsAdmin(true);
+            if (res.plan) {
+              setCurrentPackage(res.plan);
+            }
+            let hasChanged = false;
             if (parsed.isSubscriber !== isSub) {
               parsed.isSubscriber = isSub;
+              hasChanged = true;
+            }
+            if (res.plan && parsed.subscriptionPackage !== res.plan) {
+              parsed.subscriptionPackage = res.plan;
+              hasChanged = true;
+            }
+            if (hasChanged) {
               localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(parsed));
-              setClientUser(parsed);
+              setClientUser({ ...parsed });
             }
           })
           .catch((err) => {
             console.error("Failed background subscription check:", err);
           });
+      } else {
+        // Check if admin session is active
+        checkClientSubscription()
+          .then((res) => {
+            if (res.success && res.isAdmin) {
+              setIsAdmin(true);
+              setIsSubscriber(true);
+              if (res.plan) setCurrentPackage(res.plan);
+            }
+          })
+          .catch(() => {});
       }
     } catch (error) {
       console.error("Failed to parse client user from localStorage", error);
@@ -177,6 +254,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     let loginAction: 'created' | 'updated' = 'created';
     let dbIsSubscriber = false;
     let savedId: number | undefined;
+    let dbSubPackage: string | undefined = undefined;
     if (whatsappNumber) {
         try {
             const dbResult = await saveClientLogin(
@@ -192,6 +270,7 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
                 loginAction = (dbResult.action as 'created' | 'updated') || 'updated';
                 dbIsSubscriber = Boolean(dbResult.isSubscriber);
                 savedId = dbResult.clientId;
+                dbSubPackage = dbResult.subscriptionPackage;
                 console.log(`Client authenticated successfully (${dbResult.action})`);
             } else {
                 toast({
@@ -225,10 +304,14 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         district,
         email: email?.trim(),
         isSubscriber: dbIsSubscriber,
+        subscriptionPackage: dbSubPackage,
       };
       localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
       setClientUser(userToStore);
       setIsSubscriber(dbIsSubscriber);
+      if (dbSubPackage) {
+        setCurrentPackage(dbSubPackage);
+      }
 
       // Handle Remember Me
       if (typeof window !== 'undefined') {
@@ -305,11 +388,15 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         district: client.district,
         email: client.email,
         isSubscriber: Boolean(client.isSubscriber),
+        subscriptionPackage: client.subscriptionPackage,
       };
 
       localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(userToStore));
       setClientUser(userToStore);
       setIsSubscriber(Boolean(client.isSubscriber));
+      if (client.subscriptionPackage) {
+        setCurrentPackage(client.subscriptionPackage);
+      }
 
       // Handle Remember Me
       if (typeof window !== 'undefined') {
@@ -355,6 +442,13 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(CLIENT_STORAGE_KEY);
     setClientUser(null);
     setIsSubscriber(false);
+    setCurrentPackage(null);
+    setPackageLimits({
+      isCategoryUnlimited: true,
+      categoryLimit: 0,
+      isItemUnlimited: true,
+      itemLimit: 0,
+    });
     router.push('/login');
     toast({
       title: "Logged Out",
@@ -373,6 +467,9 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
         clientLoading,
         isSubscriber,
         subscriptionLoading,
+        currentPackage,
+        packageLimits,
+        isAdmin,
         refreshSubscription,
         login,
         loginWithCredentials,

@@ -117,6 +117,7 @@ export default function AdminPaymentsPage() {
     isSandbox: true,
     merchantId: '',
     password: '',
+    payWithCharge: 1,
   });
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -254,6 +255,7 @@ export default function AdminPaymentsPage() {
         isSandbox: settings.isSandbox,
         merchantId: settings.merchantId.trim(),
         password: settings.password.trim(),
+        payWithCharge: settings.payWithCharge !== undefined ? Number(settings.payWithCharge) : 1,
       });
 
       if (res.success) {
@@ -990,6 +992,35 @@ export default function AdminPaymentsPage() {
                     checked={settings.isSandbox}
                     onCheckedChange={checked => setSettings(s => ({ ...s, isSandbox: checked }))}
                     className="data-[state=checked]:bg-amber-500"
+                  />
+                </div>
+
+                {/* Gateway Fee Bearer (pay_with_charge) Switch */}
+                <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <div className="space-y-0.5 max-w-[80%]">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="paystation-charge" className="text-sm font-semibold text-slate-900 cursor-pointer">
+                        Customer Bears Gateway Charge (pay_with_charge)
+                      </Label>
+                      <Badge
+                        className={
+                          settings.payWithCharge === 1
+                            ? 'bg-blue-100 text-blue-800 border-blue-300'
+                            : 'bg-slate-200 text-slate-800 border-slate-300'
+                        }
+                      >
+                        {settings.payWithCharge === 1 ? '1: Customer Bears Charge' : '0: Merchant Bears Charge'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Will the merchant bear the payment charge or not. If enabled (1), the customer will bear the charge; if disabled (0), the merchant will bear the charge.
+                    </p>
+                  </div>
+                  <Switch
+                    id="paystation-charge"
+                    checked={settings.payWithCharge === 1}
+                    onCheckedChange={checked => setSettings(s => ({ ...s, payWithCharge: checked ? 1 : 0 }))}
+                    className="data-[state=checked]:bg-blue-600"
                   />
                 </div>
 

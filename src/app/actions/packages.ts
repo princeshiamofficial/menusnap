@@ -33,6 +33,10 @@ const DEFAULT_PACKAGES: Omit<PricingPackage, 'id'>[] = [
     is_popular: false,
     is_active: true,
     sort_order: 1,
+    is_category_unlimited: false,
+    category_limit: 5,
+    is_item_unlimited: false,
+    item_limit: 30,
   },
   {
     package_id: 'pro',
@@ -62,6 +66,10 @@ const DEFAULT_PACKAGES: Omit<PricingPackage, 'id'>[] = [
     is_popular: true,
     is_active: true,
     sort_order: 2,
+    is_category_unlimited: true,
+    category_limit: 0,
+    is_item_unlimited: true,
+    item_limit: 0,
   },
   {
     package_id: 'agency',
@@ -88,6 +96,10 @@ const DEFAULT_PACKAGES: Omit<PricingPackage, 'id'>[] = [
     is_popular: false,
     is_active: true,
     sort_order: 3,
+    is_category_unlimited: true,
+    category_limit: 0,
+    is_item_unlimited: true,
+    item_limit: 0,
   },
 ];
 
@@ -115,6 +127,10 @@ export async function ensurePricingPackagesTable(): Promise<void> {
         is_popular TINYINT(1) NOT NULL DEFAULT 0,
         is_active TINYINT(1) NOT NULL DEFAULT 1,
         sort_order INT NOT NULL DEFAULT 0,
+        is_category_unlimited TINYINT(1) NOT NULL DEFAULT 1,
+        category_limit INT NOT NULL DEFAULT 0,
+        is_item_unlimited TINYINT(1) NOT NULL DEFAULT 1,
+        item_limit INT NOT NULL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_active_sort (is_active, sort_order)
@@ -140,6 +156,19 @@ export async function ensurePricingPackagesTable(): Promise<void> {
       }
     }
 
+    // Migration Check: Check if limit columns exist
+    const [limitCols]: any = await (pool as any).execute("SHOW COLUMNS FROM pricing_packages LIKE 'is_category_unlimited'");
+    if (!limitCols || limitCols.length === 0) {
+      try {
+        await (pool as any).execute("ALTER TABLE pricing_packages ADD COLUMN is_category_unlimited TINYINT(1) NOT NULL DEFAULT 1 AFTER sort_order");
+        await (pool as any).execute("ALTER TABLE pricing_packages ADD COLUMN category_limit INT NOT NULL DEFAULT 0 AFTER is_category_unlimited");
+        await (pool as any).execute("ALTER TABLE pricing_packages ADD COLUMN is_item_unlimited TINYINT(1) NOT NULL DEFAULT 1 AFTER category_limit");
+        await (pool as any).execute("ALTER TABLE pricing_packages ADD COLUMN item_limit INT NOT NULL DEFAULT 0 AFTER is_item_unlimited");
+      } catch (e) {
+        console.error('Migration error adding limit columns:', e);
+      }
+    }
+
     // Check if table is empty and seed
     const [countRows]: any = await (pool as any).execute('SELECT COUNT(*) as count FROM pricing_packages');
     if (countRows[0]?.count === 0) {
@@ -148,8 +177,9 @@ export async function ensurePricingPackagesTable(): Promise<void> {
           `INSERT INTO pricing_packages (
             package_id, name, tagline, badge_text, price, original_price, billing_period_text,
             discount_tag, coupon_code, coupon_discount,
-            features, feature_highlight_title, button_text, is_popular, is_active, sort_order
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            features, feature_highlight_title, button_text, is_popular, is_active, sort_order,
+            is_category_unlimited, category_limit, is_item_unlimited, item_limit
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             pkg.package_id,
             pkg.name,
@@ -167,6 +197,10 @@ export async function ensurePricingPackagesTable(): Promise<void> {
             pkg.is_popular ? 1 : 0,
             pkg.is_active ? 1 : 0,
             pkg.sort_order || 0,
+            pkg.is_category_unlimited ? 1 : 0,
+            pkg.category_limit || 0,
+            pkg.is_item_unlimited ? 1 : 0,
+            pkg.item_limit || 0,
           ]
         );
       }
@@ -213,6 +247,10 @@ function normalizePackageRow(row: any): PricingPackage {
     is_popular: Boolean(row.is_popular),
     is_active: Boolean(row.is_active),
     sort_order: Number(row.sort_order) || 0,
+    is_category_unlimited: row.is_category_unlimited !== undefined && row.is_category_unlimited !== null ? Boolean(row.is_category_unlimited) : true,
+    category_limit: Number(row.category_limit) || 0,
+    is_item_unlimited: row.is_item_unlimited !== undefined && row.is_item_unlimited !== null ? Boolean(row.is_item_unlimited) : true,
+    item_limit: Number(row.item_limit) || 0,
     created_at: row.created_at ? new Date(row.created_at).toISOString() : undefined,
     updated_at: row.updated_at ? new Date(row.updated_at).toISOString() : undefined,
   };
@@ -298,6 +336,10 @@ export async function createPricingPackageAction(payload: {
   is_popular?: boolean;
   is_active?: boolean;
   sort_order?: number;
+  is_category_unlimited?: boolean;
+  category_limit?: number;
+  is_item_unlimited?: boolean;
+  item_limit?: number;
 }): Promise<{
   success: boolean;
   data?: PricingPackage;
@@ -336,8 +378,9 @@ export async function createPricingPackageAction(payload: {
       `INSERT INTO pricing_packages (
         package_id, name, tagline, badge_text, price, original_price, billing_period_text,
         discount_tag, coupon_code, coupon_discount,
-        features, feature_highlight_title, button_text, is_popular, is_active, sort_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        features, feature_highlight_title, button_text, is_popular, is_active, sort_order,
+        is_category_unlimited, category_limit, is_item_unlimited, item_limit
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         cleanPackageId,
         payload.name.trim(),
@@ -355,6 +398,10 @@ export async function createPricingPackageAction(payload: {
         payload.is_popular ? 1 : 0,
         payload.is_active !== false ? 1 : 0,
         Number(payload.sort_order) || 0,
+        payload.is_category_unlimited !== false ? 1 : 0,
+        Number(payload.category_limit) || 0,
+        payload.is_item_unlimited !== false ? 1 : 0,
+        Number(payload.item_limit) || 0,
       ]
     );
 
@@ -389,6 +436,10 @@ export async function updatePricingPackageAction(
     is_popular?: boolean;
     is_active?: boolean;
     sort_order?: number;
+    is_category_unlimited?: boolean;
+    category_limit?: number;
+    is_item_unlimited?: boolean;
+    item_limit?: number;
   }
 ): Promise<{
   success: boolean;
@@ -444,7 +495,11 @@ export async function updatePricingPackageAction(
         button_text = ?,
         is_popular = ?,
         is_active = ?,
-        sort_order = ?
+        sort_order = ?,
+        is_category_unlimited = ?,
+        category_limit = ?,
+        is_item_unlimited = ?,
+        item_limit = ?
       WHERE id = ?`,
       [
         cleanPackageId,
@@ -463,6 +518,10 @@ export async function updatePricingPackageAction(
         payload.is_popular !== undefined ? (payload.is_popular ? 1 : 0) : (current.is_popular ? 1 : 0),
         payload.is_active !== undefined ? (payload.is_active ? 1 : 0) : (current.is_active ? 1 : 0),
         payload.sort_order !== undefined ? Number(payload.sort_order) : current.sort_order,
+        payload.is_category_unlimited !== undefined ? (payload.is_category_unlimited ? 1 : 0) : (current.is_category_unlimited ? 1 : 0),
+        payload.category_limit !== undefined ? Number(payload.category_limit) : (current.category_limit || 0),
+        payload.is_item_unlimited !== undefined ? (payload.is_item_unlimited ? 1 : 0) : (current.is_item_unlimited ? 1 : 0),
+        payload.item_limit !== undefined ? Number(payload.item_limit) : (current.item_limit || 0),
         id,
       ]
     );
@@ -472,6 +531,65 @@ export async function updatePricingPackageAction(
   } catch (error: any) {
     console.error('updatePricingPackageAction error:', error);
     return { success: false, error: error.message || 'Failed to update package' };
+  }
+}
+
+/**
+ * Retrieves limits (category and item quotas) for a specific package ID or slug.
+ */
+export async function getPackageLimitsAction(packageIdOrSlug: string): Promise<{
+  success: boolean;
+  data?: {
+    packageId: string;
+    packageName: string;
+    isCategoryUnlimited: boolean;
+    categoryLimit: number;
+    isItemUnlimited: boolean;
+    itemLimit: number;
+  };
+  error?: string;
+}> {
+  try {
+    await ensurePricingPackagesTable();
+    const cleanId = (packageIdOrSlug || '').trim().toLowerCase();
+    const [rows]: any = await (pool as any).execute(
+      'SELECT package_id, name, is_category_unlimited, category_limit, is_item_unlimited, item_limit FROM pricing_packages WHERE package_id = ? OR LOWER(name) = ? LIMIT 1',
+      [cleanId, cleanId]
+    );
+
+    if (!rows || rows.length === 0) {
+      // Default to unlimited if not found
+      return {
+        success: true,
+        data: {
+          packageId: cleanId,
+          packageName: cleanId,
+          isCategoryUnlimited: true,
+          categoryLimit: 0,
+          isItemUnlimited: true,
+          itemLimit: 0,
+        },
+      };
+    }
+
+    const row = rows[0];
+    return {
+      success: true,
+      data: {
+        packageId: row.package_id,
+        packageName: row.name,
+        isCategoryUnlimited: row.is_category_unlimited !== undefined && row.is_category_unlimited !== null ? Boolean(row.is_category_unlimited) : true,
+        categoryLimit: Number(row.category_limit) || 0,
+        isItemUnlimited: row.is_item_unlimited !== undefined && row.is_item_unlimited !== null ? Boolean(row.is_item_unlimited) : true,
+        itemLimit: Number(row.item_limit) || 0,
+      },
+    };
+  } catch (error: any) {
+    console.error('getPackageLimitsAction error:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to get package limits',
+    };
   }
 }
 

@@ -31,6 +31,7 @@ import {
   ChevronRight,
   Zap,
   SlidersHorizontal,
+  Folder,
   X
 } from "lucide-react";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
@@ -104,6 +105,10 @@ interface PackageFormData {
   is_popular: boolean;
   is_active: boolean;
   sort_order: number;
+  is_category_unlimited: boolean;
+  category_limit: number | "";
+  is_item_unlimited: boolean;
+  item_limit: number | "";
 }
 
 const DEFAULT_FORM_DATA: PackageFormData = {
@@ -129,6 +134,10 @@ const DEFAULT_FORM_DATA: PackageFormData = {
   is_popular: false,
   is_active: true,
   sort_order: 1,
+  is_category_unlimited: true,
+  category_limit: 10,
+  is_item_unlimited: true,
+  item_limit: 100,
 };
 
 const FEATURE_PRESETS = [
@@ -269,6 +278,10 @@ export default function AdminPackagesPage() {
       ...DEFAULT_FORM_DATA,
       sort_order: nextOrder,
       is_popular: packages.length === 0,
+      is_category_unlimited: true,
+      category_limit: 10,
+      is_item_unlimited: true,
+      item_limit: 100,
     });
     setNewFeatureInput("");
     setIsEditing(false);
@@ -295,6 +308,10 @@ export default function AdminPackagesPage() {
       is_popular: pkg.is_popular,
       is_active: pkg.is_active,
       sort_order: pkg.sort_order,
+      is_category_unlimited: pkg.is_category_unlimited !== false,
+      category_limit: pkg.category_limit !== undefined && pkg.category_limit !== null ? pkg.category_limit : 10,
+      is_item_unlimited: pkg.is_item_unlimited !== false,
+      item_limit: pkg.item_limit !== undefined && pkg.item_limit !== null ? pkg.item_limit : 100,
     });
     setNewFeatureInput("");
     setIsEditing(true);
@@ -359,6 +376,10 @@ export default function AdminPackagesPage() {
         is_popular: formData.is_popular,
         is_active: formData.is_active,
         sort_order: Number(formData.sort_order) || 0,
+        is_category_unlimited: formData.is_category_unlimited,
+        category_limit: formData.is_category_unlimited ? 0 : (Number(formData.category_limit) || 0),
+        is_item_unlimited: formData.is_item_unlimited,
+        item_limit: formData.is_item_unlimited ? 0 : (Number(formData.item_limit) || 0),
       };
 
       if (isEditing && formData.id) {
@@ -782,6 +803,21 @@ export default function AdminPackagesPage() {
                     {pkg.button_text || (isPop ? "Subscribe Now" : "Started Now")}
                   </div>
 
+                  {/* Quota Limits Badge Strip */}
+                  <div className={`mt-3 py-2 px-3 rounded-xl flex items-center justify-between text-[11px] font-medium ${
+                    isPop ? "bg-white/10 text-neutral-300" : "bg-neutral-100 text-neutral-700"
+                  }`}>
+                    <span className="flex items-center gap-1.5">
+                      <Folder className="w-3 h-3 text-amber-500" />
+                      <span>Cats: <strong>{pkg.is_category_unlimited !== false ? "Unlimited" : `Max ${pkg.category_limit || 0}`}</strong></span>
+                    </span>
+                    <span className="opacity-40">•</span>
+                    <span className="flex items-center gap-1.5">
+                      <Package className="w-3 h-3 text-blue-500" />
+                      <span>Items: <strong>{pkg.is_item_unlimited !== false ? "Unlimited" : `Max ${pkg.item_limit || 0}`}</strong></span>
+                    </span>
+                  </div>
+
                   {/* Divider Line */}
                   <div className={`h-px w-full my-7 ${isPop ? "bg-neutral-800/80" : "bg-neutral-100"}`} />
 
@@ -849,6 +885,7 @@ export default function AdminPackagesPage() {
                 <TableHead>Lifetime Fee</TableHead>
                 <TableHead>Original</TableHead>
                 <TableHead>Promo Tag / Coupon</TableHead>
+                <TableHead>Quotas (Cat / Item)</TableHead>
                 <TableHead>Features</TableHead>
                 <TableHead>Featured</TableHead>
                 <TableHead>Live</TableHead>
@@ -894,6 +931,18 @@ export default function AdminPackagesPage() {
                     ) : (
                       <span className="text-xs text-slate-400">—</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-0.5 text-xs">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                        <Folder className="w-3 h-3 text-amber-500" />
+                        {pkg.is_category_unlimited !== false ? "Unlimited" : `Max ${pkg.category_limit}`}
+                      </span>
+                      <span className="text-slate-500 flex items-center gap-1 text-[11px]">
+                        <Package className="w-3 h-3 text-blue-500" />
+                        {pkg.is_item_unlimited !== false ? "Unlimited" : `Max ${pkg.item_limit}`}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
@@ -1127,7 +1176,181 @@ export default function AdminPackagesPage() {
               </div>
             </div>
 
-            {/* Section 3: Features Builder */}
+            {/* Section 3: Category & Item Limits (Quotas) */}
+            <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-3 h-3 text-[#FF5A36]" /> Category & Item Limits (Quotas)
+                </h4>
+                <span className="text-[11px] text-slate-400">Configure allowances for this package</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Category Limit Box */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  formData.is_category_unlimited 
+                    ? "bg-slate-50/70 border-slate-200/80 dark:bg-slate-900/40 dark:border-slate-800" 
+                    : "bg-amber-500/5 border-amber-500/30"
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs font-bold flex items-center gap-1.5">
+                        <Folder className="w-3.5 h-3.5 text-amber-500" />
+                        Category Quota
+                      </Label>
+                      <p className="text-[10px] text-slate-500">
+                        {formData.is_category_unlimited ? "Unlimited categories allowed" : "Fixed maximum categories"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, is_category_unlimited: true }))}
+                        className={`px-2.5 py-1 rounded-md transition-all ${
+                          formData.is_category_unlimited 
+                            ? "bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-white" 
+                            : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                        }`}
+                      >
+                        ∞ Unlimited
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ 
+                          ...prev, 
+                          is_category_unlimited: false,
+                          category_limit: prev.category_limit ? prev.category_limit : 5
+                        }))}
+                        className={`px-2.5 py-1 rounded-md transition-all ${
+                          !formData.is_category_unlimited 
+                            ? "bg-amber-500 text-white shadow-xs" 
+                            : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                        }`}
+                      >
+                        Limited
+                      </button>
+                    </div>
+                  </div>
+
+                  {!formData.is_category_unlimited && (
+                    <div className="pt-2 space-y-2 border-t border-amber-500/20">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Max Categories:</span>
+                        <Input
+                          type="number"
+                          min={1}
+                          required={!formData.is_category_unlimited}
+                          placeholder="e.g. 5"
+                          value={formData.category_limit}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, category_limit: e.target.value === "" ? "" : Number(e.target.value) }))}
+                          className="w-24 h-8 rounded-lg text-xs font-bold bg-white dark:bg-slate-950 text-right"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <span className="text-[10px] text-slate-400">Quick set:</span>
+                        {[3, 5, 10, 20].map((num) => (
+                          <button
+                            key={num}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, category_limit: num }))}
+                            className={`text-[10px] px-2 py-0.5 rounded font-medium transition-colors ${
+                              formData.category_limit === num 
+                                ? "bg-amber-500 text-white font-bold" 
+                                : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300"
+                            }`}
+                          >
+                            {num}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Item Limit Box */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  formData.is_item_unlimited 
+                    ? "bg-slate-50/70 border-slate-200/80 dark:bg-slate-900/40 dark:border-slate-800" 
+                    : "bg-blue-500/5 border-blue-500/30"
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs font-bold flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-blue-500" />
+                        Menu Item Quota
+                      </Label>
+                      <p className="text-[10px] text-slate-500">
+                        {formData.is_item_unlimited ? "Unlimited items allowed" : "Fixed maximum items"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, is_item_unlimited: true }))}
+                        className={`px-2.5 py-1 rounded-md transition-all ${
+                          formData.is_item_unlimited 
+                            ? "bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-white" 
+                            : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                        }`}
+                      >
+                        ∞ Unlimited
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ 
+                          ...prev, 
+                          is_item_unlimited: false,
+                          item_limit: prev.item_limit ? prev.item_limit : 30
+                        }))}
+                        className={`px-2.5 py-1 rounded-md transition-all ${
+                          !formData.is_item_unlimited 
+                            ? "bg-blue-600 text-white shadow-xs" 
+                            : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                        }`}
+                      >
+                        Limited
+                      </button>
+                    </div>
+                  </div>
+
+                  {!formData.is_item_unlimited && (
+                    <div className="pt-2 space-y-2 border-t border-blue-500/20">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Max Menu Items:</span>
+                        <Input
+                          type="number"
+                          min={1}
+                          required={!formData.is_item_unlimited}
+                          placeholder="e.g. 50"
+                          value={formData.item_limit}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, item_limit: e.target.value === "" ? "" : Number(e.target.value) }))}
+                          className="w-24 h-8 rounded-lg text-xs font-bold bg-white dark:bg-slate-950 text-right"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <span className="text-[10px] text-slate-400">Quick set:</span>
+                        {[20, 30, 50, 100, 250].map((num) => (
+                          <button
+                            key={num}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, item_limit: num }))}
+                            className={`text-[10px] px-2 py-0.5 rounded font-medium transition-colors ${
+                              formData.item_limit === num 
+                                ? "bg-blue-600 text-white font-bold" 
+                                : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300"
+                            }`}
+                          >
+                            {num}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4: Features Builder */}
             <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">

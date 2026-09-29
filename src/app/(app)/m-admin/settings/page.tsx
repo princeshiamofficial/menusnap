@@ -38,6 +38,7 @@ const payStationFormSchema = z.object({
   isSandbox: z.boolean(),
   merchantId: z.string().optional(),
   password: z.string().optional(),
+  payWithCharge: z.number().optional(),
 });
 
 type PayStationFormValues = z.infer<typeof payStationFormSchema>;
@@ -219,6 +220,7 @@ function PayStationSettingsForm(): ReactNode {
       isSandbox: true,
       merchantId: "",
       password: "",
+      payWithCharge: 1,
     },
   });
 
@@ -234,6 +236,7 @@ function PayStationSettingsForm(): ReactNode {
           isSandbox: settings.isSandbox,
           merchantId: settings.merchantId || "",
           password: settings.password || "",
+          payWithCharge: settings.payWithCharge ?? 1,
         });
       } catch (error: any) {
         console.error("Failed to load PayStation settings", error);
@@ -288,6 +291,7 @@ function PayStationSettingsForm(): ReactNode {
         isSandbox: data.isSandbox,
         merchantId: data.merchantId?.trim() || "",
         password: data.password?.trim() || "",
+        payWithCharge: data.payWithCharge ?? 1,
       });
 
       if (res.success) {
@@ -369,6 +373,33 @@ function PayStationSettingsForm(): ReactNode {
               checked={isSandbox}
               onCheckedChange={(checked) => form.setValue("isSandbox", checked)}
               className="data-[state=checked]:bg-amber-500"
+            />
+          </div>
+
+          {/* Fee Bearer Switch (pay_with_charge) */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/80">
+            <div className="space-y-0.5 max-w-[80%]">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="payWithCharge" className="text-xs font-semibold text-slate-800">
+                  Customer Bears Payment Charge (pay_with_charge)
+                </Label>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  form.watch("payWithCharge") === 1
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-slate-100 text-slate-700 border-slate-200"
+                }`}>
+                  {form.watch("payWithCharge") === 1 ? "1: Customer Bears Charge" : "0: Merchant Bears Charge"}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Will the merchant bear the payment charge or not. If enabled (1), the customer will bear the charge; if disabled (0), the merchant will bear the charge.
+              </p>
+            </div>
+            <Switch
+              id="payWithCharge"
+              checked={form.watch("payWithCharge") === 1}
+              onCheckedChange={(checked) => form.setValue("payWithCharge", checked ? 1 : 0)}
+              className="data-[state=checked]:bg-blue-600"
             />
           </div>
 

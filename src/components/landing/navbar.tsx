@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ArrowRight, Sparkles } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
+import { useClientAuth } from "@/hooks/use-client-auth";
 
 interface NavItem {
   label: string;
@@ -21,14 +22,24 @@ const NAV_ITEMS: NavItem[] = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const { isClientLoggedIn, clientLoading } = useClientAuth();
 
   useEffect(() => {
+    setMounted(true);
+    if (typeof document !== 'undefined' && document.cookie.includes('admin_session=')) {
+      setIsAdminLoggedIn(true);
+    }
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const loggedIn = mounted && !clientLoading && (isClientLoggedIn || isAdminLoggedIn);
+  const dashboardHref = isClientLoggedIn ? "/dashboard" : "/m-admin";
 
   return (
     <header
@@ -70,20 +81,32 @@ export function Navbar() {
 
         {/* Right CTA / Login (Desktop) */}
         <div className="hidden md:flex items-center gap-4">
-          <Link
-            href="/login"
-            className="text-[14px] font-medium text-gray-700 hover:text-gray-950 transition-colors px-3 py-1.5 cursor-pointer select-none"
-          >
-            Login
-          </Link>
-          <Link
-            href="#pricing"
-            onClick={() => trackEvent("hero_cta_clicked", { source: "navbar" })}
-            className="inline-flex items-center gap-1.5 bg-[#FF5A36] hover:bg-[#e84d2a] text-white text-[13.5px] font-semibold px-4 sm:px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:shadow-orange-500/20 transition-all active:scale-[0.98] cursor-pointer"
-          >
-            <span>Get MenuSnap</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          {!loggedIn && (
+            <Link
+              href="/login"
+              className="text-[14px] font-medium text-gray-700 hover:text-gray-950 transition-colors px-3 py-1.5 cursor-pointer select-none"
+            >
+              Login
+            </Link>
+          )}
+          {loggedIn ? (
+            <Link
+              href={dashboardHref}
+              className="inline-flex items-center gap-1.5 bg-[#FF5A36] hover:bg-[#e84d2a] text-white text-[13.5px] font-semibold px-4 sm:px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:shadow-orange-500/20 transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <span>Dashboard</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          ) : (
+            <Link
+              href="#pricing"
+              onClick={() => trackEvent("hero_cta_clicked", { source: "navbar" })}
+              className="inline-flex items-center gap-1.5 bg-[#FF5A36] hover:bg-[#e84d2a] text-white text-[13.5px] font-semibold px-4 sm:px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md hover:shadow-orange-500/20 transition-all active:scale-[0.98] cursor-pointer"
+            >
+              <span>Get MenuSnap</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
         </div>
 
         {/* Mobile Hamburger Toggle */}
@@ -123,24 +146,37 @@ export function Navbar() {
             </div>
 
             <div className="pt-4 mt-3 border-t border-gray-100 flex flex-col gap-2.5">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 text-[14.5px] font-semibold text-gray-800 hover:bg-gray-50 rounded-xl transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="#pricing"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  trackEvent("hero_cta_clicked", { source: "mobile_navbar" });
-                }}
-                className="w-full flex items-center justify-center gap-2 bg-[#FF5A36] text-white text-[14px] font-semibold py-3 rounded-xl shadow-md transition-all active:scale-[0.98]"
-              >
-                <span>Get MenuSnap</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {!loggedIn && (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center py-2.5 text-[14.5px] font-semibold text-gray-800 hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  Login
+                </Link>
+              )}
+              {loggedIn ? (
+                <Link
+                  href={dashboardHref}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 bg-[#FF5A36] text-white text-[14px] font-semibold py-3 rounded-xl shadow-md transition-all active:scale-[0.98]"
+                >
+                  <span>Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <Link
+                  href="#pricing"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    trackEvent("hero_cta_clicked", { source: "mobile_navbar" });
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-[#FF5A36] text-white text-[14px] font-semibold py-3 rounded-xl shadow-md transition-all active:scale-[0.98]"
+                >
+                  <span>Get MenuSnap</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

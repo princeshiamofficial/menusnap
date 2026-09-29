@@ -170,6 +170,7 @@ export async function saveClientLogin(
   clientId?: number;
   action?: 'created' | 'updated';
   isSubscriber?: boolean;
+  subscriptionPackage?: string;
   error?: string;
 }> {
   try {
@@ -179,7 +180,7 @@ export async function saveClientLogin(
 
     // Check if client already exists with this WhatsApp number
     const [rows]: any = await pool.execute(
-      'SELECT id, stage, is_subscriber, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
+      'SELECT id, stage, is_subscriber, subscription_package, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
       [cleanPhone]
     );
 
@@ -231,28 +232,44 @@ export async function saveClientLogin(
         stageLower === 'donated'
       );
 
-      // Check PayStation transactions in case client paid via PayStation
-      if (!isSubscriber) {
-        try {
-          const [txRows]: any = await pool.execute(
-            `SELECT id FROM paystation_transactions 
-             WHERE status = 'Successful' AND ((customer_phone = ? AND ? != '') OR (customer_email = ? AND ? != '')) 
-             LIMIT 1`,
-            [cleanPhone, cleanPhone, email?.trim() || '', email?.trim() || '']
+      let activePlan = existingClient.subscription_package || undefined;
+
+      // Check PayStation transactions for accurate purchased package
+      try {
+        const [txRows]: any = await pool.execute(
+          `SELECT id, plan FROM paystation_transactions 
+           WHERE (status = 'Successful' OR status = 'Free') 
+             AND ((customer_phone = ? AND ? != '') OR (customer_email = ? AND ? != '')) 
+           ORDER BY id DESC LIMIT 1`,
+          [cleanPhone, cleanPhone, email?.trim() || '', email?.trim() || '']
+        );
+        if (txRows && txRows.length > 0 && txRows[0].plan) {
+          isSubscriber = true;
+          activePlan = txRows[0].plan;
+          await pool.execute(
+            `UPDATE clients SET is_subscriber = 1, stage = 'customer', subscription_package = ? WHERE id = ?`,
+            [activePlan, existingClient.id]
           );
-          if (txRows && txRows.length > 0) {
-            isSubscriber = true;
-            await pool.execute(
-              `UPDATE clients SET is_subscriber = 1, stage = 'customer' WHERE id = ?`,
-              [existingClient.id]
-            );
+        } else if (!activePlan && isSubscriber && existingClient.note) {
+          const noteLower = (existingClient.note || '').toLowerCase();
+          if (noteLower.includes('starter')) activePlan = 'starter';
+          else if (noteLower.includes('agency')) activePlan = 'agency';
+          else if (noteLower.includes('pro')) activePlan = 'pro';
+          if (activePlan) {
+            await pool.execute(`UPDATE clients SET subscription_package = ? WHERE id = ?`, [activePlan, existingClient.id]);
           }
-        } catch (txErr) {
-          console.error("Paystation check error in saveClientLogin:", txErr);
         }
+      } catch (txErr) {
+        console.error("Paystation check error in saveClientLogin:", txErr);
       }
 
-      return { success: true, clientId: existingClient.id, action: 'updated', isSubscriber };
+      return { 
+        success: true, 
+        clientId: existingClient.id, 
+        action: 'updated', 
+        isSubscriber,
+        subscriptionPackage: activePlan || existingClient.subscription_package || (isSubscriber ? 'starter' : undefined)
+      };
     } else {
       // New Client Registration: password is required
       if (!cleanPassword) {
@@ -332,6 +349,7 @@ export async function clientLoginAction(
     district?: string;
     email?: string;
     isSubscriber?: boolean;
+    subscriptionPackage?: string;
   };
   error?: string;
 }> {
@@ -349,7 +367,7 @@ export async function clientLoginAction(
 
     // Search by WhatsApp number or Email
     const [rows]: any = await pool.execute(
-      `SELECT id, business_name, business_type, whatsapp_number, division, district, email, stage, is_subscriber, password_hash 
+      `SELECT id, business_name, business_type, whatsapp_number, division, district, email, stage, is_subscriber, subscription_package, password_hash 
        FROM clients 
        WHERE whatsapp_number = ? OR email = ? 
        ORDER BY last_login DESC LIMIT 1`,
@@ -392,19 +410,32 @@ export async function clientLoginAction(
       stageLower === 'donated'
     );
 
-    if (!isSubscriber) {
-      try {
-        const [txRows]: any = await pool.execute(
-          `SELECT id FROM paystation_transactions 
-           WHERE status = 'Successful' AND ((customer_phone = ? AND ? != '') OR (customer_email = ? AND ? != '')) 
-           LIMIT 1`,
-          [client.whatsapp_number, client.whatsapp_number, client.email || '', client.email || '']
-        );
-        if (txRows && txRows.length > 0) {
-          isSubscriber = true;
-          await pool.execute('UPDATE clients SET is_subscriber = 1, stage = \'customer\' WHERE id = ?', [client.id]);
+    let activePlan = client.subscription_package || undefined;
+
+    // Check PayStation transactions for accurate purchased package
+    try {
+      const [txRows]: any = await pool.execute(
+        `SELECT id, plan FROM paystation_transactions 
+         WHERE (status = 'Successful' OR status = 'Free') 
+           AND ((customer_phone = ? AND ? != '') OR (customer_email = ? AND ? != '')) 
+         ORDER BY id DESC LIMIT 1`,
+        [client.whatsapp_number, client.whatsapp_number, client.email || '', client.email || '']
+      );
+      if (txRows && txRows.length > 0 && txRows[0].plan) {
+        isSubscriber = true;
+        activePlan = txRows[0].plan;
+        await pool.execute('UPDATE clients SET is_subscriber = 1, stage = \'customer\', subscription_package = ? WHERE id = ?', [activePlan, client.id]);
+      } else if (!activePlan && isSubscriber && client.note) {
+        const noteLower = (client.note || '').toLowerCase();
+        if (noteLower.includes('starter')) activePlan = 'starter';
+        else if (noteLower.includes('agency')) activePlan = 'agency';
+        else if (noteLower.includes('pro')) activePlan = 'pro';
+        if (activePlan) {
+          await pool.execute('UPDATE clients SET subscription_package = ? WHERE id = ?', [activePlan, client.id]);
         }
-      } catch {}
+      }
+    } catch (txErr) {
+      console.error('Error during transaction check in clientLoginAction:', txErr);
     }
 
     return {
@@ -418,6 +449,7 @@ export async function clientLoginAction(
         district: client.district || undefined,
         email: client.email || undefined,
         isSubscriber,
+        subscriptionPackage: activePlan || client.subscription_package || (isSubscriber ? 'starter' : undefined),
       }
     };
   } catch (error: any) {
@@ -654,6 +686,12 @@ export async function checkClientSubscription(
   isSubscriber: boolean;
   isAdmin?: boolean;
   plan?: string;
+  limits?: {
+    isCategoryUnlimited: boolean;
+    categoryLimit: number;
+    isItemUnlimited: boolean;
+    itemLimit: number;
+  };
   error?: string;
 }> {
   try {
@@ -661,7 +699,17 @@ export async function checkClientSubscription(
     try {
       const adminSession = await getAdminSessionAction();
       if (adminSession) {
-        return { success: true, isSubscriber: true, isAdmin: true };
+        return {
+          success: true,
+          isSubscriber: true,
+          isAdmin: true,
+          limits: {
+            isCategoryUnlimited: true,
+            categoryLimit: 0,
+            isItemUnlimited: true,
+            itemLimit: 0,
+          },
+        };
       }
     } catch {
       // Ignore admin check errors
@@ -675,17 +723,62 @@ export async function checkClientSubscription(
       return { success: true, isSubscriber: false };
     }
 
+    // Helper to get limits for a resolved plan
+    const getLimitsForPlan = async (planName?: string) => {
+      if (!planName) {
+        return {
+          isCategoryUnlimited: true,
+          categoryLimit: 0,
+          isItemUnlimited: true,
+          itemLimit: 0,
+        };
+      }
+      try {
+        const cleanP = planName.toLowerCase().trim();
+        const [pkgRows]: any = await pool.execute(
+          `SELECT is_category_unlimited, category_limit, is_item_unlimited, item_limit 
+           FROM pricing_packages 
+           WHERE package_id = ? OR LOWER(name) = ? 
+           LIMIT 1`,
+          [cleanP, cleanP]
+        );
+        if (pkgRows && pkgRows.length > 0) {
+          return {
+            isCategoryUnlimited: pkgRows[0].is_category_unlimited !== 0,
+            categoryLimit: Number(pkgRows[0].category_limit) || 0,
+            isItemUnlimited: pkgRows[0].is_item_unlimited !== 0,
+            itemLimit: Number(pkgRows[0].item_limit) || 0,
+          };
+        }
+      } catch (err) {
+        console.error('Error fetching plan limits in checkClientSubscription:', err);
+      }
+      return {
+        isCategoryUnlimited: true,
+        categoryLimit: 0,
+        isItemUnlimited: true,
+        itemLimit: 0,
+      };
+    };
+
     // 1. Check clients table
     const [clientRows]: any = await pool.execute(
-      `SELECT id, stage, is_subscriber FROM clients 
+      `SELECT id, stage, is_subscriber, subscription_package, note FROM clients 
        WHERE (whatsapp_number = ? AND ? != '') OR (email = ? AND ? != '') 
        LIMIT 1`,
       [cleanPhone, cleanPhone, cleanEmail, cleanEmail]
     );
 
     let clientSubscriber = false;
+    let clientPlan: string | undefined = undefined;
+    let clientId: number | undefined = undefined;
+    let clientNote: string | undefined = undefined;
+
     if (clientRows && clientRows.length > 0) {
       const c = clientRows[0];
+      clientId = c.id;
+      clientPlan = c.subscription_package || undefined;
+      clientNote = c.note || undefined;
       const stageLower = (c.stage || '').toLowerCase().trim();
       if (
         c.is_subscriber === 1 ||
@@ -698,30 +791,45 @@ export async function checkClientSubscription(
       }
     }
 
-    if (clientSubscriber) {
-      return { success: true, isSubscriber: true };
-    }
-
-    // 2. Check paystation_transactions table for successful payment
+    // Always query paystation_transactions for accurate package
     try {
       const [txRows]: any = await pool.execute(
         `SELECT id, plan FROM paystation_transactions 
-         WHERE status = 'Successful' AND ((customer_phone = ? AND ? != '') OR (customer_email = ? AND ? != ''))
-         LIMIT 1`,
+         WHERE (status = 'Successful' OR status = 'Free') 
+           AND ((customer_phone = ? AND ? != '') OR (customer_email = ? AND ? != ''))
+         ORDER BY id DESC LIMIT 1`,
         [cleanPhone, cleanPhone, cleanEmail, cleanEmail]
       );
 
-      if (txRows && txRows.length > 0) {
-        if (clientRows && clientRows.length > 0) {
+      if (txRows && txRows.length > 0 && txRows[0].plan) {
+        const txPlan = txRows[0].plan;
+        if (clientId) {
           await pool.execute(
-            `UPDATE clients SET is_subscriber = 1, stage = 'customer' WHERE id = ?`,
-            [clientRows[0].id]
+            `UPDATE clients SET is_subscriber = 1, stage = 'customer', subscription_package = ? WHERE id = ?`,
+            [txPlan, clientId]
           );
         }
-        return { success: true, isSubscriber: true, plan: txRows[0].plan };
+        const limits = await getLimitsForPlan(txPlan);
+        return { success: true, isSubscriber: true, plan: txPlan, limits };
       }
     } catch (txErr) {
       console.error('Error querying paystation_transactions for subscription:', txErr);
+    }
+
+    // Fallback: If client is subscriber, check clientPlan or note
+    if (clientSubscriber) {
+      if (!clientPlan && clientNote) {
+        const noteLower = clientNote.toLowerCase();
+        if (noteLower.includes('starter')) clientPlan = 'starter';
+        else if (noteLower.includes('agency')) clientPlan = 'agency';
+        else if (noteLower.includes('pro')) clientPlan = 'pro';
+        if (clientPlan && clientId) {
+          await pool.execute(`UPDATE clients SET subscription_package = ? WHERE id = ?`, [clientPlan, clientId]);
+        }
+      }
+      const finalPlan = clientPlan || 'starter';
+      const limits = await getLimitsForPlan(finalPlan);
+      return { success: true, isSubscriber: true, plan: finalPlan, limits };
     }
 
     return { success: true, isSubscriber: false };

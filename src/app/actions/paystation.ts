@@ -8,6 +8,7 @@ export interface PayStationSettings {
   isSandbox: boolean;
   merchantId: string;
   password: string;
+  payWithCharge?: number; // 1 = Customer bears charge, 0 = Merchant bears charge
 }
 
 export interface PayStationTransaction {
@@ -21,6 +22,7 @@ export interface PayStationTransaction {
   duration: string;
   amount: number;
   currency: string;
+  payWithCharge?: number;
   status: 'Pending' | 'Successful' | 'Failed' | 'Cancelled';
   paymentCategory?: string | null;
   reference?: string | null;
@@ -34,6 +36,7 @@ const DEFAULT_SETTINGS: PayStationSettings = {
   isSandbox: true,
   merchantId: '',
   password: '',
+  payWithCharge: 1,
 };
 
 /**
@@ -49,15 +52,24 @@ export async function ensurePayStationTables(): Promise<void> {
         is_sandbox TINYINT(1) DEFAULT 1,
         merchant_id VARCHAR(255) DEFAULT '',
         password VARCHAR(255) DEFAULT '',
+        pay_with_charge TINYINT(1) DEFAULT 1,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
     // Insert default settings row if not present
     await pool.execute(`
-      INSERT IGNORE INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password)
-      VALUES (1, 0, 1, '', '')
+      INSERT IGNORE INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password, pay_with_charge)
+      VALUES (1, 0, 1, '', '', 1)
     `);
+
+    // Self-healing migrations
+    try {
+      await pool.execute(`ALTER TABLE paystation_settings ADD COLUMN pay_with_charge TINYINT(1) DEFAULT 1 AFTER password`);
+    } catch {}
+    try {
+      await pool.execute(`ALTER TABLE paystation_transactions ADD COLUMN pay_with_charge TINYINT(1) DEFAULT 1 AFTER currency`);
+    } catch {}
 
     // 2. Transactions Table
     await pool.execute(`
@@ -72,6 +84,7 @@ export async function ensurePayStationTables(): Promise<void> {
         duration VARCHAR(50) NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
         currency VARCHAR(10) DEFAULT 'BDT',
+        pay_with_charge TINYINT(1) DEFAULT 1,
         status VARCHAR(50) DEFAULT 'Pending',
         payment_category VARCHAR(50) DEFAULT NULL,
         reference VARCHAR(255) DEFAULT NULL,
@@ -104,6 +117,7 @@ export async function getPayStationSettings(): Promise<PayStationSettings> {
       isSandbox: !!row.is_sandbox,
       merchantId: row.merchant_id || '',
       password: row.password || '',
+      payWithCharge: row.pay_with_charge !== undefined && row.pay_with_charge !== null ? Number(row.pay_with_charge) : 1,
     };
   } catch (error) {
     console.error('Error retrieving PayStation settings:', error);
@@ -140,21 +154,25 @@ export async function savePayStationSettings(settings: PayStationSettings): Prom
   try {
     await ensurePayStationTables();
 
+    const payCharge = settings.payWithCharge !== undefined ? Number(settings.payWithCharge) : 1;
+
     await pool.execute(
       `
-      INSERT INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password)
-      VALUES (1, ?, ?, ?, ?)
+      INSERT INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password, pay_with_charge)
+      VALUES (1, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         is_enabled = VALUES(is_enabled),
         is_sandbox = VALUES(is_sandbox),
         merchant_id = VALUES(merchant_id),
-        password = VALUES(password)
+        password = VALUES(password),
+        pay_with_charge = VALUES(pay_with_charge)
     `,
       [
         settings.isEnabled ? 1 : 0,
         settings.isSandbox ? 1 : 0,
         (settings.merchantId || '').trim(),
         (settings.password || '').trim(),
+        payCharge,
       ]
     );
 
@@ -284,13 +302,16 @@ export async function initiatePayStationPaymentAction(payload: {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const invoiceNumber = `MS-INV-${timestamp}-${randomSuffix}`;
 
+    // Determine if customer (1) or merchant (0) bears gateway charge
+    const payWithCharge = settings.payWithCharge !== undefined ? Number(settings.payWithCharge) : 1;
+
     // Record pending transaction in MySQL
     await pool.execute(
       `
       INSERT INTO paystation_transactions (
         invoice_number, customer_name, customer_email, customer_phone,
-        plan, duration, amount, currency, status, reference
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'BDT', 'Pending', ?)
+        plan, duration, amount, currency, pay_with_charge, status, reference
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'BDT', ?, 'Pending', ?)
     `,
       [
         invoiceNumber,
@@ -300,6 +321,7 @@ export async function initiatePayStationPaymentAction(payload: {
         payload.plan,
         payload.duration,
         payload.amount,
+        payWithCharge,
         `Coupon: ${payload.coupon || 'None'}`,
       ]
     );
@@ -316,6 +338,7 @@ export async function initiatePayStationPaymentAction(payload: {
       invoice_number: invoiceNumber,
       currency: 'BDT',
       payment_amount: Number(payload.amount),
+      pay_with_charge: payWithCharge,
       reference: `MenuSnap_${payload.plan.toUpperCase()}_${payload.duration}`,
       cust_name: payload.fullName.trim(),
       cust_phone: payload.phone.trim(),

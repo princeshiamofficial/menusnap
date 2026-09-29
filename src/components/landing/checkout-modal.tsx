@@ -22,6 +22,8 @@ import {
 } from "@/app/actions/paystation";
 import { getPublicPricingPackagesAction } from "@/app/actions/packages";
 import { validateCouponAction } from "@/app/actions/coupons";
+import { checkClientSubscription } from "@/app/actions/clients";
+import { useClientAuth } from "@/hooks/use-client-auth";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -38,6 +40,8 @@ export function CheckoutModal({
   duration,
   coupon,
 }: CheckoutModalProps) {
+  const { clientUser, isClientLoggedIn, isSubscriber, currentPackage, isAdmin } = useClientAuth();
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -47,6 +51,7 @@ export function CheckoutModal({
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [typedPhonePackage, setTypedPhonePackage] = useState<string | null>(null);
 
   const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>("bkash");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -56,6 +61,42 @@ export function CheckoutModal({
 
   // Dynamic Packages
   const [packages, setPackages] = useState<PricingPackage[]>([]);
+
+  // Auto-fill logged in client user information
+  useEffect(() => {
+    if (clientUser && isOpen) {
+      if (!fullName && clientUser.businessName) setFullName(clientUser.businessName);
+      if (!email && clientUser.email) setEmail(clientUser.email);
+      if (!phone && clientUser.whatsappNumber) setPhone(clientUser.whatsappNumber);
+    }
+  }, [clientUser, isOpen, fullName, email, phone]);
+
+  // Live lookup if guest enters phone or email already registered with lifetime package
+  useEffect(() => {
+    const cleanP = phone.trim();
+    const cleanE = email.trim();
+    if (cleanP.length >= 11 || (cleanE.includes('@') && cleanE.includes('.'))) {
+      let isSubMounted = true;
+      const timer = setTimeout(() => {
+        checkClientSubscription(cleanP, cleanE)
+          .then((res) => {
+            if (isSubMounted && res.success && res.isSubscriber && res.plan) {
+              setTypedPhonePackage(res.plan);
+            } else if (isSubMounted && !res.isSubscriber) {
+              setTypedPhonePackage(null);
+            }
+          })
+          .catch(() => {});
+      }, 350);
+
+      return () => {
+        isSubMounted = false;
+        clearTimeout(timer);
+      };
+    } else {
+      setTypedPhonePackage(null);
+    }
+  }, [phone, email]);
 
   useEffect(() => {
     let isMounted = true;
@@ -105,6 +146,27 @@ export function CheckoutModal({
     : plan === "agency"
     ? "Agency Plan"
     : `${plan.toUpperCase()} Plan`;
+
+  // Check if logged in user or entered phone already owns this lifetime package
+  const activeUserPlan = (
+    clientUser?.subscriptionPackage ||
+    currentPackage ||
+    (isAdmin ? "agency" : "")
+  )
+    .toLowerCase()
+    .trim();
+
+  const detectedPlan = (typedPhonePackage || activeUserPlan || "").toLowerCase().trim();
+
+  const isSamePlanAlreadyPurchased = Boolean(
+    (isSubscriber || Boolean(typedPhonePackage) || isAdmin) &&
+    detectedPlan && (
+      detectedPlan.includes(plan.toLowerCase().trim()) ||
+      (matchedPackage && detectedPlan.includes(matchedPackage.name.toLowerCase().trim())) ||
+      plan.toLowerCase().trim().includes(detectedPlan) ||
+      (matchedPackage && matchedPackage.name.toLowerCase().trim().includes(detectedPlan))
+    )
+  );
 
   // Base price calculation
   let basePrice = 0;
@@ -211,12 +273,28 @@ export function CheckoutModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSamePlanAlreadyPurchased) {
+      setErrorMessage(`Your account already has active lifetime access to ${planDisplayName}. Duplicate purchase is not permitted.`);
+      return;
+    }
     if (!fullName || !email || !phone) return;
 
     setErrorMessage(null);
     setIsProcessing(true);
 
     try {
+      // Live server check to strictly prevent double purchase
+      const checkRes = await checkClientSubscription(phone.trim(), email.trim());
+      if (checkRes.success && checkRes.isSubscriber && checkRes.plan) {
+        const livePlan = checkRes.plan.toLowerCase().trim();
+        const targetPlan = plan.toLowerCase().trim();
+        if (livePlan.includes(targetPlan) || targetPlan.includes(livePlan)) {
+          setErrorMessage(`Your account already has active lifetime access to ${planDisplayName}. You do not need to purchase it again.`);
+          setIsProcessing(false);
+          return;
+        }
+      }
+
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const response = await initiatePayStationPaymentAction({
         plan,
@@ -323,6 +401,21 @@ export function CheckoutModal({
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Already Owned Alert */}
+              {isSamePlanAlreadyPurchased && (
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl flex items-start gap-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1">
+                    <span className="font-extrabold block text-emerald-950 text-sm">
+                      You Already Own This Package
+                    </span>
+                    <p className="text-emerald-800 leading-relaxed font-normal">
+                      Your account already has active lifetime access to <strong>{planDisplayName}</strong>. You do not need to purchase it again.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Order Summary Box */}
               <div className="bg-[#FAFAF8] rounded-2xl p-4 border border-gray-200 space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -482,34 +575,46 @@ export function CheckoutModal({
               )}
 
               {/* Submit CTA */}
-              <button
-                type="submit"
-                disabled={isProcessing}
-                className={`w-full flex items-center justify-center gap-2 text-white font-extrabold text-sm py-3.5 px-6 rounded-xl shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 ${
-                  finalAmount === 0
-                    ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
-                    : "bg-[#FF5A36] hover:bg-[#e64c29] shadow-orange-500/20"
-                }`}
-              >
-                {isProcessing ? (
-                  <span>
-                    {finalAmount === 0
-                      ? "Activating Free Lifetime Access..."
-                      : "Redirecting to PayStation Gateway..."}
-                  </span>
-                ) : finalAmount === 0 ? (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>Claim Free Access (৳0)</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    <span>Pay ৳{finalAmount.toLocaleString()} with PayStation</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
+              {isSamePlanAlreadyPurchased ? (
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="w-full flex items-center justify-center gap-2 text-emerald-800 bg-emerald-100/90 border border-emerald-300/80 font-bold text-sm py-3.5 px-6 rounded-xl cursor-not-allowed select-none opacity-90"
+                >
+                  <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+                  <span>Already Owned (Lifetime Active)</span>
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className={`w-full flex items-center justify-center gap-2 text-white font-extrabold text-sm py-3.5 px-6 rounded-xl shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 ${
+                    finalAmount === 0
+                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                      : "bg-[#FF5A36] hover:bg-[#e64c29] shadow-orange-500/20"
+                  }`}
+                >
+                  {isProcessing ? (
+                    <span>
+                      {finalAmount === 0
+                        ? "Activating Free Lifetime Access..."
+                        : "Redirecting to PayStation Gateway..."}
+                    </span>
+                  ) : finalAmount === 0 ? (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Claim Free Access (৳0)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Pay ৳{finalAmount.toLocaleString()} with PayStation</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              )}
 
               <div className="flex items-center justify-center gap-2 text-[11px] text-gray-500 font-medium">
                 {finalAmount === 0 ? (
