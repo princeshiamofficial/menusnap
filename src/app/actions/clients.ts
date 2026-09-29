@@ -66,6 +66,15 @@ async function ensureClientsTable() {
       await pool.execute("ALTER TABLE clients ADD COLUMN is_subscriber TINYINT(1) DEFAULT 0 AFTER stage");
     }
 
+    // Check for subscription_package column
+    const [subPackageCol]: any = await pool.execute("SHOW COLUMNS FROM clients LIKE 'subscription_package'");
+    if (subPackageCol.length === 0) {
+      console.log("Adding 'subscription_package' column to clients table...");
+      try {
+        await pool.execute("ALTER TABLE clients ADD COLUMN subscription_package VARCHAR(100) NULL DEFAULT NULL AFTER is_subscriber");
+      } catch {}
+    }
+
     // 5. Create client_notes table for history
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS client_notes (
@@ -178,11 +187,26 @@ export async function saveClientLogin(
     const cleanPhone = (whatsappNumber || '').trim();
     const cleanPassword = (password || '').trim();
 
-    // Check if client already exists with this WhatsApp number
-    const [rows]: any = await pool.execute(
-      'SELECT id, stage, is_subscriber, subscription_package, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
-      [cleanPhone]
-    );
+    // Check if client already exists with this WhatsApp number (with self-healing fallback)
+    let rows: any[] = [];
+    try {
+      const [res]: any = await pool.execute(
+        'SELECT id, stage, is_subscriber, subscription_package, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
+        [cleanPhone]
+      );
+      rows = res;
+    } catch (queryErr: any) {
+      if (queryErr?.message?.includes('subscription_package')) {
+        await pool.execute('ALTER TABLE clients ADD COLUMN subscription_package VARCHAR(100) NULL DEFAULT NULL AFTER is_subscriber').catch(() => {});
+        const [res]: any = await pool.execute(
+          'SELECT id, stage, is_subscriber, subscription_package, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
+          [cleanPhone]
+        );
+        rows = res;
+      } else {
+        throw queryErr;
+      }
+    }
 
     if (rows.length > 0) {
       const existingClient = rows[0];
@@ -365,14 +389,32 @@ export async function clientLoginAction(
       return { success: false, error: 'Please enter your password.' };
     }
 
-    // Search by WhatsApp number or Email
-    const [rows]: any = await pool.execute(
-      `SELECT id, business_name, business_type, whatsapp_number, division, district, email, stage, is_subscriber, subscription_package, password_hash 
-       FROM clients 
-       WHERE whatsapp_number = ? OR email = ? 
-       ORDER BY last_login DESC LIMIT 1`,
-      [cleanId, cleanId]
-    );
+    // Search by WhatsApp number or Email (with self-healing fallback)
+    let rows: any[] = [];
+    try {
+      const [res]: any = await pool.execute(
+        `SELECT id, business_name, business_type, whatsapp_number, division, district, email, stage, is_subscriber, subscription_package, password_hash 
+         FROM clients 
+         WHERE whatsapp_number = ? OR email = ? 
+         ORDER BY last_login DESC LIMIT 1`,
+        [cleanId, cleanId]
+      );
+      rows = res;
+    } catch (queryErr: any) {
+      if (queryErr?.message?.includes('subscription_package')) {
+        await pool.execute('ALTER TABLE clients ADD COLUMN subscription_package VARCHAR(100) NULL DEFAULT NULL AFTER is_subscriber').catch(() => {});
+        const [res]: any = await pool.execute(
+          `SELECT id, business_name, business_type, whatsapp_number, division, district, email, stage, is_subscriber, subscription_package, password_hash 
+           FROM clients 
+           WHERE whatsapp_number = ? OR email = ? 
+           ORDER BY last_login DESC LIMIT 1`,
+          [cleanId, cleanId]
+        );
+        rows = res;
+      } else {
+        throw queryErr;
+      }
+    }
 
     if (!rows || rows.length === 0) {
       return {
@@ -761,13 +803,30 @@ export async function checkClientSubscription(
       };
     };
 
-    // 1. Check clients table
-    const [clientRows]: any = await pool.execute(
-      `SELECT id, stage, is_subscriber, subscription_package, note FROM clients 
-       WHERE (whatsapp_number = ? AND ? != '') OR (email = ? AND ? != '') 
-       LIMIT 1`,
-      [cleanPhone, cleanPhone, cleanEmail, cleanEmail]
-    );
+    // 1. Check clients table (with self-healing fallback)
+    let clientRows: any[] = [];
+    try {
+      const [cRows]: any = await pool.execute(
+        `SELECT id, stage, is_subscriber, subscription_package, note FROM clients 
+         WHERE (whatsapp_number = ? AND ? != '') OR (email = ? AND ? != '') 
+         LIMIT 1`,
+        [cleanPhone, cleanPhone, cleanEmail, cleanEmail]
+      );
+      clientRows = cRows;
+    } catch (queryErr: any) {
+      if (queryErr?.message?.includes('subscription_package')) {
+        await pool.execute('ALTER TABLE clients ADD COLUMN subscription_package VARCHAR(100) NULL DEFAULT NULL AFTER is_subscriber').catch(() => {});
+        const [cRows]: any = await pool.execute(
+          `SELECT id, stage, is_subscriber, subscription_package, note FROM clients 
+           WHERE (whatsapp_number = ? AND ? != '') OR (email = ? AND ? != '') 
+           LIMIT 1`,
+          [cleanPhone, cleanPhone, cleanEmail, cleanEmail]
+        );
+        clientRows = cRows;
+      } else {
+        throw queryErr;
+      }
+    }
 
     let clientSubscriber = false;
     let clientPlan: string | undefined = undefined;
