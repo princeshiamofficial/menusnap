@@ -737,14 +737,28 @@ export async function checkClientSubscription(
   error?: string;
 }> {
   try {
-    // 0. Active Admin Check
+    // Check if active admin session exists
+    let hasAdminSession = false;
     try {
       const adminSession = await getAdminSessionAction();
       if (adminSession) {
+        hasAdminSession = true;
+      }
+    } catch {
+      // Ignore admin check errors
+    }
+
+    const cleanPhone = (whatsappNumber || '').trim();
+    const cleanEmail = (email || '').trim();
+
+    // If no client phone or email provided, check admin session or return unsubscribed
+    if (!cleanPhone && !cleanEmail) {
+      if (hasAdminSession) {
         return {
           success: true,
           isSubscriber: true,
           isAdmin: true,
+          plan: 'admin',
           limits: {
             isCategoryUnlimited: true,
             categoryLimit: 0,
@@ -753,17 +767,10 @@ export async function checkClientSubscription(
           },
         };
       }
-    } catch {
-      // Ignore admin check errors
+      return { success: true, isSubscriber: false };
     }
 
     await ensureClientsTable();
-    const cleanPhone = (whatsappNumber || '').trim();
-    const cleanEmail = (email || '').trim();
-
-    if (!cleanPhone && !cleanEmail) {
-      return { success: true, isSubscriber: false };
-    }
 
     // Helper to get limits for a resolved plan
     const getLimitsForPlan = async (planName?: string) => {
@@ -780,15 +787,15 @@ export async function checkClientSubscription(
         const [pkgRows]: any = await pool.execute(
           `SELECT is_category_unlimited, category_limit, is_item_unlimited, item_limit 
            FROM pricing_packages 
-           WHERE package_id = ? OR LOWER(name) = ? 
+           WHERE package_id = ? OR LOWER(name) = ? OR ? LIKE CONCAT('%', package_id, '%')
            LIMIT 1`,
-          [cleanP, cleanP]
+          [cleanP, cleanP, cleanP]
         );
         if (pkgRows && pkgRows.length > 0) {
           return {
-            isCategoryUnlimited: pkgRows[0].is_category_unlimited !== 0,
+            isCategoryUnlimited: Number(pkgRows[0].is_category_unlimited) === 1,
             categoryLimit: Number(pkgRows[0].category_limit) || 0,
-            isItemUnlimited: pkgRows[0].is_item_unlimited !== 0,
+            isItemUnlimited: Number(pkgRows[0].is_item_unlimited) === 1,
             itemLimit: Number(pkgRows[0].item_limit) || 0,
           };
         }
@@ -841,6 +848,7 @@ export async function checkClientSubscription(
       const stageLower = (c.stage || '').toLowerCase().trim();
       if (
         c.is_subscriber === 1 ||
+        Boolean(c.subscription_package) ||
         stageLower === 'customer' ||
         stageLower === 'subscriber' ||
         stageLower === 'subscribed' ||
@@ -869,7 +877,7 @@ export async function checkClientSubscription(
           );
         }
         const limits = await getLimitsForPlan(txPlan);
-        return { success: true, isSubscriber: true, plan: txPlan, limits };
+        return { success: true, isSubscriber: true, plan: txPlan, limits, isAdmin: hasAdminSession };
       }
     } catch (txErr) {
       console.error('Error querying paystation_transactions for subscription:', txErr);
@@ -888,7 +896,23 @@ export async function checkClientSubscription(
       }
       const finalPlan = clientPlan || 'starter';
       const limits = await getLimitsForPlan(finalPlan);
-      return { success: true, isSubscriber: true, plan: finalPlan, limits };
+      return { success: true, isSubscriber: true, plan: finalPlan, limits, isAdmin: hasAdminSession };
+    }
+
+    // If client record itself is not subscribed, but admin is testing with empty/free client
+    if (hasAdminSession) {
+      return {
+        success: true,
+        isSubscriber: true,
+        isAdmin: true,
+        plan: 'admin',
+        limits: {
+          isCategoryUnlimited: true,
+          categoryLimit: 0,
+          isItemUnlimited: true,
+          itemLimit: 0,
+        },
+      };
     }
 
     return { success: true, isSubscriber: false };

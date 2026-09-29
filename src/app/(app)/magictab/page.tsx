@@ -731,15 +731,27 @@ export default function MagicTabPage() {
       }
     }
 
-    return [...apiCategories].map(cat => ({
-      ...cat,
-      itemCount: countMap.has(cat.id) ? countMap.get(cat.id)! : (cat.itemCount || 0)
-    })).sort((a, b) => {
+    let cats = [...apiCategories].map(cat => {
+      const calculatedCount = countMap.has(cat.id) ? countMap.get(cat.id)! : (cat.itemCount || 0);
+      const displayCount = (packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0)
+        ? Math.min(calculatedCount, packageLimits.itemLimit)
+        : calculatedCount;
+      return {
+        ...cat,
+        itemCount: displayCount
+      };
+    }).sort((a, b) => {
       const diff = (b.itemCount || 0) - (a.itemCount || 0);
       if (diff !== 0) return diff;
       return a.name.localeCompare(b.name);
     });
-  }, [apiCategories, allMenuItems]);
+
+    if (packageLimits && !packageLimits.isCategoryUnlimited && packageLimits.categoryLimit > 0) {
+      cats = cats.slice(0, packageLimits.categoryLimit);
+    }
+
+    return cats;
+  }, [apiCategories, allMenuItems, packageLimits]);
 
   const selectedCategory = useMemo(() => {
     return sortedCategories.find(c => c.id === activeCategoryId) || null;
@@ -1053,12 +1065,13 @@ export default function MagicTabPage() {
         return;
       }
 
-      // Check item limit quota
-      if (!isAdmin && packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0) {
-        if (allMenuItems.length >= packageLimits.itemLimit) {
+      // Check per-category item limit quota
+      if (packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0) {
+        const categoryItemsCount = allMenuItems.filter(item => String(item.category) === String(selectedCategory.id)).length;
+        if (categoryItemsCount >= packageLimits.itemLimit) {
           toast({
-            title: "Item Limit Reached",
-            description: `Your ${currentPackage ? currentPackage.toUpperCase() : 'current'} plan allows up to ${packageLimits.itemLimit} menu items. Please upgrade your package for unlimited items!`,
+            title: "Category Item Limit Reached",
+            description: `Your ${currentPackage ? currentPackage.toUpperCase() : 'current'} plan allows up to ${packageLimits.itemLimit} items per category. Please upgrade your package for unlimited items!`,
             variant: "destructive",
           });
           setIsSubmitting(false);
@@ -1096,7 +1109,7 @@ export default function MagicTabPage() {
     setIsFormDialogOpen(false);
     setEditingItem(null);
     setIsSubmitting(false);
-  }, [allMenuItems, editingItem, selectedCategory, isAdmin, packageLimits, currentPackage, toast, selectedMenuType]);
+  }, [allMenuItems, editingItem, selectedCategory, packageLimits, currentPackage, toast, selectedMenuType]);
 
 
   const handleOpenEditCategory = useCallback((category: Category) => {
@@ -1133,7 +1146,7 @@ export default function MagicTabPage() {
     }
 
     // Check category limit quota
-    if (!isAdmin && packageLimits && !packageLimits.isCategoryUnlimited && packageLimits.categoryLimit > 0) {
+    if (packageLimits && !packageLimits.isCategoryUnlimited && packageLimits.categoryLimit > 0) {
       if (apiCategories.length >= packageLimits.categoryLimit) {
         toast({
           title: "Category Limit Reached",
@@ -1166,19 +1179,26 @@ export default function MagicTabPage() {
     } catch (e) {
       // Error handling without toast
     }
-  }, [apiCategories, setActiveCategoryId, isAdmin, packageLimits, currentPackage, toast, selectedMenuType]);
+  }, [apiCategories, setActiveCategoryId, packageLimits, currentPackage, toast, selectedMenuType]);
 
   const currentMenuItems = useMemo(() => {
+    let items = allMenuItems;
+
     if (debouncedSearchTerm) {
-      return allMenuItems.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+      items = allMenuItems.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
     }
 
-    if (!activeCategoryId) {
-      return allMenuItems;
+    if (activeCategoryId) {
+      items = items.filter(item => String(item.category) === String(activeCategoryId));
     }
 
-    return allMenuItems.filter(item => item.category === activeCategoryId);
-  }, [activeCategoryId, allMenuItems, debouncedSearchTerm]);
+    // Cap items per category to package item limit
+    if (packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0) {
+      items = items.slice(0, packageLimits.itemLimit);
+    }
+
+    return items;
+  }, [activeCategoryId, allMenuItems, debouncedSearchTerm, packageLimits]);
 
   const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => {
     setSelectedItems(prev => {

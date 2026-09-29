@@ -814,7 +814,7 @@ export default function AdminPackagesPage() {
                     <span className="opacity-40">•</span>
                     <span className="flex items-center gap-1.5">
                       <Package className="w-3 h-3 text-blue-500" />
-                      <span>Items: <strong>{pkg.is_item_unlimited !== false ? "Unlimited" : `Max ${pkg.item_limit || 0}`}</strong></span>
+                      <span>Items: <strong>{pkg.is_item_unlimited !== false ? "Unlimited" : `Max ${pkg.item_limit || 0}/cat`}</strong></span>
                     </span>
                   </div>
 
@@ -940,7 +940,7 @@ export default function AdminPackagesPage() {
                       </span>
                       <span className="text-slate-500 flex items-center gap-1 text-[11px]">
                         <Package className="w-3 h-3 text-blue-500" />
-                        {pkg.is_item_unlimited !== false ? "Unlimited" : `Max ${pkg.item_limit}`}
+                        {pkg.is_item_unlimited !== false ? "Unlimited" : `Max ${pkg.item_limit}/category`}
                       </span>
                     </div>
                   </TableCell>
@@ -1277,10 +1277,10 @@ export default function AdminPackagesPage() {
                     <div className="space-y-0.5">
                       <Label className="text-xs font-bold flex items-center gap-1.5">
                         <Package className="w-3.5 h-3.5 text-blue-500" />
-                        Menu Item Quota
+                        Items per Category Quota
                       </Label>
                       <p className="text-[10px] text-slate-500">
-                        {formData.is_item_unlimited ? "Unlimited items allowed" : "Fixed maximum items"}
+                        {formData.is_item_unlimited ? "Unlimited items per category" : "Fixed max items in each category"}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-lg text-[10px] font-bold">
@@ -1300,7 +1300,7 @@ export default function AdminPackagesPage() {
                         onClick={() => setFormData((prev) => ({ 
                           ...prev, 
                           is_item_unlimited: false,
-                          item_limit: prev.item_limit ? prev.item_limit : 30
+                          item_limit: prev.item_limit ? prev.item_limit : 5
                         }))}
                         className={`px-2.5 py-1 rounded-md transition-all ${
                           !formData.is_item_unlimited 
@@ -1316,12 +1316,12 @@ export default function AdminPackagesPage() {
                   {!formData.is_item_unlimited && (
                     <div className="pt-2 space-y-2 border-t border-blue-500/20">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Max Menu Items:</span>
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">Max Items per Category:</span>
                         <Input
                           type="number"
                           min={1}
                           required={!formData.is_item_unlimited}
-                          placeholder="e.g. 50"
+                          placeholder="e.g. 5"
                           value={formData.item_limit}
                           onChange={(e) => setFormData((prev) => ({ ...prev, item_limit: e.target.value === "" ? "" : Number(e.target.value) }))}
                           className="w-24 h-8 rounded-lg text-xs font-bold bg-white dark:bg-slate-950 text-right"
@@ -1329,7 +1329,7 @@ export default function AdminPackagesPage() {
                       </div>
                       <div className="flex items-center gap-1.5 pt-1">
                         <span className="text-[10px] text-slate-400">Quick set:</span>
-                        {[20, 30, 50, 100, 250].map((num) => (
+                        {[3, 5, 10, 20, 50].map((num) => (
                           <button
                             key={num}
                             type="button"
