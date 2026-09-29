@@ -64,11 +64,45 @@ function PageTitleManager() {
   return null;
 }
 
+function ChunkErrorAutoReloader() {
+  useEffect(() => {
+    const handleError = (event: ErrorEvent | PromiseRejectionEvent) => {
+      const error = 'error' in event ? event.error : event.reason;
+      const isChunkError =
+        error?.name === 'ChunkLoadError' ||
+        (typeof error?.message === 'string' &&
+          (error.message.includes('Loading chunk') ||
+            error.message.includes('Failed to load chunk') ||
+            error.message.includes('Loading CSS chunk')));
+
+      if (isChunkError) {
+        const lastReload = sessionStorage.getItem('chunk_reload_timestamp');
+        const now = Date.now();
+        // Prevent continuous infinite reload loop (require at least 10 seconds between auto-reloads)
+        if (!lastReload || now - Number(lastReload) > 10000) {
+          sessionStorage.setItem('chunk_reload_timestamp', String(now));
+          window.location.reload();
+        }
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleError);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
+    };
+  }, []);
+
+  return null;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ClientAuthProvider>
       <ThemeProvider>
         <Suspense fallback={null}>
+          <ChunkErrorAutoReloader />
           <MetaPixelScriptLoader />
           <GtmScriptLoader />
           <PageTitleManager />
