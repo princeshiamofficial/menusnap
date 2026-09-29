@@ -17,7 +17,9 @@ import {
   UploadCloud,
   ShoppingBag,
   HeartHandshake,
+  Sparkles,
 } from 'lucide-react';
+import { useMemo } from 'react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -39,7 +41,19 @@ const mainNavItems: { href: string, label: string, icon: React.ElementType, hasC
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { clientUser, logout, clientLoading, isSubscriber } = useClientAuth();
+  const { clientUser, logout, clientLoading, isSubscriber, currentPackage, isAdmin } = useClientAuth();
+
+  const displayPackage = useMemo(() => {
+    const raw = currentPackage || clientUser?.subscriptionPackage;
+    if (raw) {
+      let clean = raw.trim();
+      clean = clean.replace(/_plan$/i, '').replace(/ plan$/i, '');
+      return clean.charAt(0).toUpperCase() + clean.slice(1);
+    }
+    if (isAdmin) return 'Admin';
+    if (isSubscriber) return 'Pro';
+    return 'Free';
+  }, [currentPackage, clientUser?.subscriptionPackage, isAdmin, isSubscriber]);
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -127,13 +141,20 @@ export function SidebarNav() {
               </div>
             </div>
           ) : clientUser ? (
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-full bg-sidebar-accent">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-sidebar-accent shrink-0">
                 <Building className="h-4 w-4 text-sidebar-accent-foreground" />
               </div>
-              <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-semibold truncate">{clientUser.businessName}</p>
-                <p className="text-xs text-sidebar-foreground/70 capitalize">{clientUser.type}</p>
+              <div className="flex-1 overflow-hidden min-w-0">
+                <p className="text-sm font-semibold truncate text-sidebar-foreground">{clientUser.businessName}</p>
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                  <span className="text-xs text-sidebar-foreground/70 capitalize truncate">{clientUser.type}</span>
+                  <span className="text-[10px] text-sidebar-foreground/40">•</span>
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-gradient-to-r from-amber-500/15 to-orange-500/15 text-[#FF5A36] border border-orange-500/25">
+                    <Sparkles className="w-2.5 h-2.5 mr-1 text-amber-500" />
+                    {displayPackage === 'Admin' ? 'Admin' : `${displayPackage} Plan`}
+                  </span>
+                </div>
               </div>
             </div>
           ) : null}
