@@ -9,6 +9,7 @@ import { checkWhatsAppAvailability } from '@/app/actions/whatsapp';
 import { saveClientLogin, checkClientSubscription, clientLoginAction } from '@/app/actions/clients';
 
 const CLIENT_STORAGE_KEY = 'colorHutClientUser';
+export const CLIENT_LIMITS_KEY = 'menusnap_client_limits';
 export const REMEMBER_ME_STORAGE_KEY = 'menusnap_remember_me';
 export const REMEMBER_ID_STORAGE_KEY = 'menusnap_remembered_identifier';
 
@@ -69,11 +70,19 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
   const [isSubscriber, setIsSubscriber] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [currentPackage, setCurrentPackage] = useState<string | null>(null);
-  const [packageLimits, setPackageLimits] = useState<PackageLimits>({
-    isCategoryUnlimited: true,
-    categoryLimit: 0,
-    isItemUnlimited: true,
-    itemLimit: 0,
+  const [packageLimits, setPackageLimits] = useState<PackageLimits>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(CLIENT_LIMITS_KEY);
+        if (stored) return JSON.parse(stored);
+      } catch {}
+    }
+    return {
+      isCategoryUnlimited: true,
+      categoryLimit: 0,
+      isItemUnlimited: true,
+      itemLimit: 0,
+    };
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
@@ -88,7 +97,12 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
           setIsAdmin(true);
           setIsSubscriber(true);
           if (adminRes.plan) setCurrentPackage(adminRes.plan);
-          if (adminRes.limits) setPackageLimits(adminRes.limits);
+          if (adminRes.limits) {
+            setPackageLimits(adminRes.limits);
+            try {
+              localStorage.setItem(CLIENT_LIMITS_KEY, JSON.stringify(adminRes.limits));
+            } catch {}
+          }
           return true;
         }
       } catch {}
@@ -113,6 +127,9 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
       }
       if (res.limits) {
         setPackageLimits(res.limits);
+        try {
+          localStorage.setItem(CLIENT_LIMITS_KEY, JSON.stringify(res.limits));
+        } catch {}
       }
 
       if (typeof window !== 'undefined') {
@@ -166,6 +183,12 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
             if (res.plan) {
               setCurrentPackage(res.plan);
             }
+            if (res.limits) {
+              setPackageLimits(res.limits);
+              try {
+                localStorage.setItem(CLIENT_LIMITS_KEY, JSON.stringify(res.limits));
+              } catch {}
+            }
             let hasChanged = false;
             if (parsed.isSubscriber !== isSub) {
               parsed.isSubscriber = isSub;
@@ -191,6 +214,12 @@ export function ClientAuthProvider({ children }: { children: ReactNode }) {
               setIsAdmin(true);
               setIsSubscriber(true);
               if (res.plan) setCurrentPackage(res.plan);
+              if (res.limits) {
+                setPackageLimits(res.limits);
+                try {
+                  localStorage.setItem(CLIENT_LIMITS_KEY, JSON.stringify(res.limits));
+                } catch {}
+              }
             }
           })
           .catch(() => {});

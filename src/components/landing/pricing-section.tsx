@@ -41,7 +41,7 @@ const FALLBACK_PACKAGES: PricingPackage[] = [
     is_category_unlimited: false,
     category_limit: 5,
     is_item_unlimited: false,
-    item_limit: 30,
+    item_limit: 10,
     features: [
       "3,000+ Menu Database Access",
       "Restaurant & Cuisine Browse",
@@ -70,10 +70,10 @@ const FALLBACK_PACKAGES: PricingPackage[] = [
     discount_tag: "LIFETIME DEAL: MENUSNAP500",
     coupon_code: "MENUSNAP500",
     coupon_discount: 500,
-    is_category_unlimited: true,
-    category_limit: 0,
-    is_item_unlimited: true,
-    item_limit: 0,
+    is_category_unlimited: false,
+    category_limit: 10,
+    is_item_unlimited: false,
+    item_limit: 20,
     features: [
       "Everything in Starter",
       "Advanced Item & Competitor Research",

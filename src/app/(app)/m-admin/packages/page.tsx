@@ -137,7 +137,7 @@ const DEFAULT_FORM_DATA: PackageFormData = {
   is_category_unlimited: true,
   category_limit: 10,
   is_item_unlimited: true,
-  item_limit: 100,
+  item_limit: 20,
 };
 
 const FEATURE_PRESETS = [
@@ -281,7 +281,7 @@ export default function AdminPackagesPage() {
       is_category_unlimited: true,
       category_limit: 10,
       is_item_unlimited: true,
-      item_limit: 100,
+      item_limit: 20,
     });
     setNewFeatureInput("");
     setIsEditing(false);
@@ -308,10 +308,10 @@ export default function AdminPackagesPage() {
       is_popular: pkg.is_popular,
       is_active: pkg.is_active,
       sort_order: pkg.sort_order,
-      is_category_unlimited: pkg.is_category_unlimited !== false,
-      category_limit: pkg.category_limit !== undefined && pkg.category_limit !== null ? pkg.category_limit : 10,
-      is_item_unlimited: pkg.is_item_unlimited !== false,
-      item_limit: pkg.item_limit !== undefined && pkg.item_limit !== null ? pkg.item_limit : 100,
+      is_category_unlimited: Boolean(pkg.is_category_unlimited),
+      category_limit: pkg.category_limit !== undefined && pkg.category_limit !== null ? pkg.category_limit : 5,
+      is_item_unlimited: Boolean(pkg.is_item_unlimited),
+      item_limit: pkg.item_limit !== undefined && pkg.item_limit !== null ? pkg.item_limit : 10,
     });
     setNewFeatureInput("");
     setIsEditing(true);
@@ -809,12 +809,12 @@ export default function AdminPackagesPage() {
                   }`}>
                     <span className="flex items-center gap-1.5">
                       <Folder className="w-3 h-3 text-amber-500" />
-                      <span>Cats: <strong>{pkg.is_category_unlimited !== false ? "Unlimited" : `Max ${pkg.category_limit || 0}`}</strong></span>
+                      <span>Cats: <strong>{Boolean(pkg.is_category_unlimited) ? "Unlimited" : `Max ${pkg.category_limit || 0}`}</strong></span>
                     </span>
                     <span className="opacity-40">•</span>
                     <span className="flex items-center gap-1.5">
                       <Package className="w-3 h-3 text-blue-500" />
-                      <span>Items: <strong>{pkg.is_item_unlimited !== false ? "Unlimited" : `Max ${pkg.item_limit || 0}/cat`}</strong></span>
+                      <span>Items: <strong>{Boolean(pkg.is_item_unlimited) ? "Unlimited" : `Max ${pkg.item_limit || 0}/cat`}</strong></span>
                     </span>
                   </div>
 
@@ -936,11 +936,11 @@ export default function AdminPackagesPage() {
                     <div className="flex flex-col gap-0.5 text-xs">
                       <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                         <Folder className="w-3 h-3 text-amber-500" />
-                        {pkg.is_category_unlimited !== false ? "Unlimited" : `Max ${pkg.category_limit}`}
+                        {Boolean(pkg.is_category_unlimited) ? "Unlimited" : `Max ${pkg.category_limit}`}
                       </span>
                       <span className="text-slate-500 flex items-center gap-1 text-[11px]">
                         <Package className="w-3 h-3 text-blue-500" />
-                        {pkg.is_item_unlimited !== false ? "Unlimited" : `Max ${pkg.item_limit}/category`}
+                        {Boolean(pkg.is_item_unlimited) ? "Unlimited" : `Max ${pkg.item_limit}/category`}
                       </span>
                     </div>
                   </TableCell>
@@ -1248,7 +1248,7 @@ export default function AdminPackagesPage() {
                       </div>
                       <div className="flex items-center gap-1.5 pt-1">
                         <span className="text-[10px] text-slate-400">Quick set:</span>
-                        {[3, 5, 10, 20].map((num) => (
+                        {[5, 10, 15, 20].map((num) => (
                           <button
                             key={num}
                             type="button"
@@ -1300,7 +1300,7 @@ export default function AdminPackagesPage() {
                         onClick={() => setFormData((prev) => ({ 
                           ...prev, 
                           is_item_unlimited: false,
-                          item_limit: prev.item_limit ? prev.item_limit : 5
+                          item_limit: prev.item_limit ? prev.item_limit : 10
                         }))}
                         className={`px-2.5 py-1 rounded-md transition-all ${
                           !formData.is_item_unlimited 
@@ -1321,7 +1321,7 @@ export default function AdminPackagesPage() {
                           type="number"
                           min={1}
                           required={!formData.is_item_unlimited}
-                          placeholder="e.g. 5"
+                          placeholder="e.g. 10"
                           value={formData.item_limit}
                           onChange={(e) => setFormData((prev) => ({ ...prev, item_limit: e.target.value === "" ? "" : Number(e.target.value) }))}
                           className="w-24 h-8 rounded-lg text-xs font-bold bg-white dark:bg-slate-950 text-right"
@@ -1329,7 +1329,7 @@ export default function AdminPackagesPage() {
                       </div>
                       <div className="flex items-center gap-1.5 pt-1">
                         <span className="text-[10px] text-slate-400">Quick set:</span>
-                        {[3, 5, 10, 20, 50].map((num) => (
+                        {[10, 20, 30, 50].map((num) => (
                           <button
                             key={num}
                             type="button"

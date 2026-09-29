@@ -292,7 +292,7 @@ export async function saveClientLogin(
         clientId: existingClient.id, 
         action: 'updated', 
         isSubscriber,
-        subscriptionPackage: activePlan || existingClient.subscription_package || (isSubscriber ? 'starter' : undefined)
+        subscriptionPackage: activePlan || existingClient.subscription_package || (isSubscriber ? 'starter' : 'free')
       };
     } else {
       // New Client Registration: password is required
@@ -348,7 +348,7 @@ export async function saveClientLogin(
       }
       // -----------------------------
 
-      return { success: true, clientId: Number(result.insertId), action: 'created', isSubscriber };
+      return { success: true, clientId: Number(result.insertId), action: 'created', isSubscriber, subscriptionPackage: isSubscriber ? 'starter' : 'free' };
     }
   } catch (error: any) {
     console.error("Database Error saving client login:", error);
@@ -774,16 +774,8 @@ export async function checkClientSubscription(
 
     // Helper to get limits for a resolved plan
     const getLimitsForPlan = async (planName?: string) => {
-      if (!planName) {
-        return {
-          isCategoryUnlimited: true,
-          categoryLimit: 0,
-          isItemUnlimited: true,
-          itemLimit: 0,
-        };
-      }
+      const cleanP = (planName || 'free').toLowerCase().trim();
       try {
-        const cleanP = planName.toLowerCase().trim();
         const [pkgRows]: any = await pool.execute(
           `SELECT is_category_unlimited, category_limit, is_item_unlimited, item_limit 
            FROM pricing_packages 
@@ -802,6 +794,30 @@ export async function checkClientSubscription(
       } catch (err) {
         console.error('Error fetching plan limits in checkClientSubscription:', err);
       }
+      if (cleanP === 'starter') {
+        return {
+          isCategoryUnlimited: false,
+          categoryLimit: 5,
+          isItemUnlimited: false,
+          itemLimit: 10,
+        };
+      }
+      if (cleanP === 'pro') {
+        return {
+          isCategoryUnlimited: false,
+          categoryLimit: 10,
+          isItemUnlimited: false,
+          itemLimit: 20,
+        };
+      }
+      if (cleanP === 'free') {
+        return {
+          isCategoryUnlimited: false,
+          categoryLimit: 5,
+          isItemUnlimited: false,
+          itemLimit: 10,
+        };
+      }
       return {
         isCategoryUnlimited: true,
         categoryLimit: 0,
@@ -809,6 +825,26 @@ export async function checkClientSubscription(
         itemLimit: 0,
       };
     };
+
+    // If no client phone or email provided, check if an admin is logged in
+    if (!cleanPhone && !cleanEmail) {
+      if (hasAdminSession) {
+        return {
+          success: true,
+          isSubscriber: true,
+          isAdmin: true,
+          plan: 'admin',
+          limits: {
+            isCategoryUnlimited: true,
+            categoryLimit: 0,
+            isItemUnlimited: true,
+            itemLimit: 0,
+          },
+        };
+      }
+      const freeLimits = await getLimitsForPlan('free');
+      return { success: true, isSubscriber: true, plan: 'free', limits: freeLimits };
+    }
 
     // 1. Check clients table (with self-healing fallback)
     let clientRows: any[] = [];
@@ -883,39 +919,38 @@ export async function checkClientSubscription(
       console.error('Error querying paystation_transactions for subscription:', txErr);
     }
 
-    // Fallback: If client is subscriber, check clientPlan or note
+    // Fallback: If client has explicit subscription_package
+    if (clientPlan) {
+      const limits = await getLimitsForPlan(clientPlan);
+      return { success: true, isSubscriber: true, plan: clientPlan, limits, isAdmin: hasAdminSession };
+    }
+
+    // Fallback: If client is subscriber, check clientNote
     if (clientSubscriber) {
-      if (!clientPlan && clientNote) {
+      let resolvedPlan = 'starter';
+      if (clientNote) {
         const noteLower = clientNote.toLowerCase();
-        if (noteLower.includes('starter')) clientPlan = 'starter';
-        else if (noteLower.includes('agency')) clientPlan = 'agency';
-        else if (noteLower.includes('pro')) clientPlan = 'pro';
-        if (clientPlan && clientId) {
-          await pool.execute(`UPDATE clients SET subscription_package = ? WHERE id = ?`, [clientPlan, clientId]);
-        }
+        if (noteLower.includes('starter')) resolvedPlan = 'starter';
+        else if (noteLower.includes('agency')) resolvedPlan = 'agency';
+        else if (noteLower.includes('pro')) resolvedPlan = 'pro';
+        else if (noteLower.includes('free')) resolvedPlan = 'free';
       }
-      const finalPlan = clientPlan || 'starter';
-      const limits = await getLimitsForPlan(finalPlan);
-      return { success: true, isSubscriber: true, plan: finalPlan, limits, isAdmin: hasAdminSession };
+      if (clientId) {
+        await pool.execute(`UPDATE clients SET subscription_package = ? WHERE id = ?`, [resolvedPlan, clientId]);
+      }
+      const limits = await getLimitsForPlan(resolvedPlan);
+      return { success: true, isSubscriber: true, plan: resolvedPlan, limits, isAdmin: hasAdminSession };
     }
 
-    // If client record itself is not subscribed, but admin is testing with empty/free client
-    if (hasAdminSession) {
-      return {
-        success: true,
-        isSubscriber: true,
-        isAdmin: true,
-        plan: 'admin',
-        limits: {
-          isCategoryUnlimited: true,
-          categoryLimit: 0,
-          isItemUnlimited: true,
-          itemLimit: 0,
-        },
-      };
-    }
-
-    return { success: true, isSubscriber: false };
+    // Unsubscribed / default client: resolve 'free' package limits
+    const freeLimits = await getLimitsForPlan('free');
+    return {
+      success: true,
+      isSubscriber: true,
+      plan: 'free',
+      limits: freeLimits,
+      isAdmin: hasAdminSession,
+    };
   } catch (error: any) {
     console.error('Error checking client subscription:', error);
     return { success: false, isSubscriber: false, error: error.message };

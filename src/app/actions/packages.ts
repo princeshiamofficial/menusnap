@@ -36,7 +36,7 @@ const DEFAULT_PACKAGES: Omit<PricingPackage, 'id'>[] = [
     is_category_unlimited: false,
     category_limit: 5,
     is_item_unlimited: false,
-    item_limit: 30,
+    item_limit: 10,
   },
   {
     package_id: 'pro',
@@ -66,10 +66,10 @@ const DEFAULT_PACKAGES: Omit<PricingPackage, 'id'>[] = [
     is_popular: true,
     is_active: true,
     sort_order: 2,
-    is_category_unlimited: true,
-    category_limit: 0,
-    is_item_unlimited: true,
-    item_limit: 0,
+    is_category_unlimited: false,
+    category_limit: 10,
+    is_item_unlimited: false,
+    item_limit: 20,
   },
   {
     package_id: 'agency',
@@ -558,6 +558,32 @@ export async function getPackageLimitsAction(packageIdOrSlug: string): Promise<{
     );
 
     if (!rows || rows.length === 0) {
+      if (cleanId === 'starter') {
+        return {
+          success: true,
+          data: {
+            packageId: 'starter',
+            packageName: 'Starter',
+            isCategoryUnlimited: false,
+            categoryLimit: 5,
+            isItemUnlimited: false,
+            itemLimit: 10,
+          },
+        };
+      }
+      if (cleanId === 'pro') {
+        return {
+          success: true,
+          data: {
+            packageId: 'pro',
+            packageName: 'Pro',
+            isCategoryUnlimited: false,
+            categoryLimit: 10,
+            isItemUnlimited: false,
+            itemLimit: 20,
+          },
+        };
+      }
       // Default to unlimited if not found
       return {
         success: true,
