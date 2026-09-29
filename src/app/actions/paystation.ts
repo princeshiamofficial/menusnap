@@ -44,7 +44,7 @@ const DEFAULT_SETTINGS: PayStationSettings = {
  */
 export async function ensurePayStationTables(): Promise<void> {
   try {
-    // 1. Settings Table
+    // 1. Settings Table - ensure basic table exists
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS paystation_settings (
         id INT PRIMARY KEY DEFAULT 1,
@@ -52,23 +52,21 @@ export async function ensurePayStationTables(): Promise<void> {
         is_sandbox TINYINT(1) DEFAULT 1,
         merchant_id VARCHAR(255) DEFAULT '',
         password VARCHAR(255) DEFAULT '',
-        pay_with_charge TINYINT(1) DEFAULT 1,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
-    // Insert default settings row if not present
-    await pool.execute(`
-      INSERT IGNORE INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password, pay_with_charge)
-      VALUES (1, 0, 1, '', '', 1)
-    `);
-
-    // Self-healing migrations
+    // Self-healing migration: Add pay_with_charge BEFORE any INSERT statements
     try {
       await pool.execute(`ALTER TABLE paystation_settings ADD COLUMN pay_with_charge TINYINT(1) DEFAULT 1 AFTER password`);
     } catch {}
+
+    // Insert default settings row if not present using base columns
     try {
-      await pool.execute(`ALTER TABLE paystation_transactions ADD COLUMN pay_with_charge TINYINT(1) DEFAULT 1 AFTER currency`);
+      await pool.execute(`
+        INSERT IGNORE INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password)
+        VALUES (1, 0, 1, '', '')
+      `);
     } catch {}
 
     // 2. Transactions Table
@@ -84,7 +82,6 @@ export async function ensurePayStationTables(): Promise<void> {
         duration VARCHAR(50) NOT NULL,
         amount DECIMAL(10,2) NOT NULL,
         currency VARCHAR(10) DEFAULT 'BDT',
-        pay_with_charge TINYINT(1) DEFAULT 1,
         status VARCHAR(50) DEFAULT 'Pending',
         payment_category VARCHAR(50) DEFAULT NULL,
         reference VARCHAR(255) DEFAULT NULL,
@@ -96,9 +93,13 @@ export async function ensurePayStationTables(): Promise<void> {
         INDEX idx_status (status)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Self-healing migration: Add pay_with_charge to transactions table
+    try {
+      await pool.execute(`ALTER TABLE paystation_transactions ADD COLUMN pay_with_charge TINYINT(1) DEFAULT 1 AFTER currency`);
+    } catch {}
   } catch (error) {
     console.error('Error ensuring PayStation tables:', error);
-    throw error;
   }
 }
 
@@ -156,25 +157,74 @@ export async function savePayStationSettings(settings: PayStationSettings): Prom
 
     const payCharge = settings.payWithCharge !== undefined ? Number(settings.payWithCharge) : 1;
 
-    await pool.execute(
-      `
-      INSERT INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password, pay_with_charge)
-      VALUES (1, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        is_enabled = VALUES(is_enabled),
-        is_sandbox = VALUES(is_sandbox),
-        merchant_id = VALUES(merchant_id),
-        password = VALUES(password),
-        pay_with_charge = VALUES(pay_with_charge)
-    `,
-      [
-        settings.isEnabled ? 1 : 0,
-        settings.isSandbox ? 1 : 0,
-        (settings.merchantId || '').trim(),
-        (settings.password || '').trim(),
-        payCharge,
-      ]
-    );
+    try {
+      await pool.execute(
+        `
+        INSERT INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password, pay_with_charge)
+        VALUES (1, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          is_enabled = VALUES(is_enabled),
+          is_sandbox = VALUES(is_sandbox),
+          merchant_id = VALUES(merchant_id),
+          password = VALUES(password),
+          pay_with_charge = VALUES(pay_with_charge)
+      `,
+        [
+          settings.isEnabled ? 1 : 0,
+          settings.isSandbox ? 1 : 0,
+          (settings.merchantId || '').trim(),
+          (settings.password || '').trim(),
+          payCharge,
+        ]
+      );
+    } catch (saveErr: any) {
+      // If error is due to missing pay_with_charge column, alter and retry
+      if (saveErr?.message?.includes('pay_with_charge')) {
+        try {
+          await pool.execute(`ALTER TABLE paystation_settings ADD COLUMN pay_with_charge TINYINT(1) DEFAULT 1 AFTER password`);
+          await pool.execute(
+            `
+            INSERT INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password, pay_with_charge)
+            VALUES (1, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              is_enabled = VALUES(is_enabled),
+              is_sandbox = VALUES(is_sandbox),
+              merchant_id = VALUES(merchant_id),
+              password = VALUES(password),
+              pay_with_charge = VALUES(pay_with_charge)
+          `,
+            [
+              settings.isEnabled ? 1 : 0,
+              settings.isSandbox ? 1 : 0,
+              (settings.merchantId || '').trim(),
+              (settings.password || '').trim(),
+              payCharge,
+            ]
+          );
+        } catch {
+          // Fallback: save without pay_with_charge so admin credentials never fail to save
+          await pool.execute(
+            `
+            INSERT INTO paystation_settings (id, is_enabled, is_sandbox, merchant_id, password)
+            VALUES (1, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              is_enabled = VALUES(is_enabled),
+              is_sandbox = VALUES(is_sandbox),
+              merchant_id = VALUES(merchant_id),
+              password = VALUES(password)
+          `,
+            [
+              settings.isEnabled ? 1 : 0,
+              settings.isSandbox ? 1 : 0,
+              (settings.merchantId || '').trim(),
+              (settings.password || '').trim(),
+            ]
+          );
+        }
+      } else {
+        throw saveErr;
+      }
+    }
 
     return { success: true, message: 'PayStation settings updated successfully.' };
   } catch (error: any) {
@@ -305,26 +355,47 @@ export async function initiatePayStationPaymentAction(payload: {
     // Determine if customer (1) or merchant (0) bears gateway charge
     const payWithCharge = settings.payWithCharge !== undefined ? Number(settings.payWithCharge) : 1;
 
-    // Record pending transaction in MySQL
-    await pool.execute(
-      `
-      INSERT INTO paystation_transactions (
-        invoice_number, customer_name, customer_email, customer_phone,
-        plan, duration, amount, currency, pay_with_charge, status, reference
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'BDT', ?, 'Pending', ?)
-    `,
-      [
-        invoiceNumber,
-        payload.fullName.trim(),
-        payload.email.trim(),
-        payload.phone.trim(),
-        payload.plan,
-        payload.duration,
-        payload.amount,
-        payWithCharge,
-        `Coupon: ${payload.coupon || 'None'}`,
-      ]
-    );
+    // Record pending transaction in MySQL with fallback
+    try {
+      await pool.execute(
+        `
+        INSERT INTO paystation_transactions (
+          invoice_number, customer_name, customer_email, customer_phone,
+          plan, duration, amount, currency, pay_with_charge, status, reference
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'BDT', ?, 'Pending', ?)
+      `,
+        [
+          invoiceNumber,
+          payload.fullName.trim(),
+          payload.email.trim(),
+          payload.phone.trim(),
+          payload.plan,
+          payload.duration,
+          payload.amount,
+          payWithCharge,
+          `Coupon: ${payload.coupon || 'None'}`,
+        ]
+      );
+    } catch {
+      await pool.execute(
+        `
+        INSERT INTO paystation_transactions (
+          invoice_number, customer_name, customer_email, customer_phone,
+          plan, duration, amount, currency, status, reference
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'BDT', 'Pending', ?)
+      `,
+        [
+          invoiceNumber,
+          payload.fullName.trim(),
+          payload.email.trim(),
+          payload.phone.trim(),
+          payload.plan,
+          payload.duration,
+          payload.amount,
+          `Coupon: ${payload.coupon || 'None'}`,
+        ]
+      );
+    }
 
     // Compute callback URL
     let siteUrl = payload.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
