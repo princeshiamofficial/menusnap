@@ -731,27 +731,15 @@ export default function MagicTabPage() {
       }
     }
 
-    let cats = [...apiCategories].map(cat => {
-      const calculatedCount = countMap.has(cat.id) ? countMap.get(cat.id)! : (cat.itemCount || 0);
-      const displayCount = (packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0)
-        ? Math.min(calculatedCount, packageLimits.itemLimit)
-        : calculatedCount;
-      return {
-        ...cat,
-        itemCount: displayCount
-      };
-    }).sort((a, b) => {
+    return [...apiCategories].map(cat => ({
+      ...cat,
+      itemCount: countMap.has(cat.id) ? countMap.get(cat.id)! : (cat.itemCount || 0)
+    })).sort((a, b) => {
       const diff = (b.itemCount || 0) - (a.itemCount || 0);
       if (diff !== 0) return diff;
       return a.name.localeCompare(b.name);
     });
-
-    if (packageLimits && !packageLimits.isCategoryUnlimited && packageLimits.categoryLimit > 0) {
-      cats = cats.slice(0, packageLimits.categoryLimit);
-    }
-
-    return cats;
-  }, [apiCategories, allMenuItems, packageLimits]);
+  }, [apiCategories, allMenuItems]);
 
   const selectedCategory = useMemo(() => {
     return sortedCategories.find(c => c.id === activeCategoryId) || null;
@@ -833,7 +821,52 @@ export default function MagicTabPage() {
           }))
         : [];
 
-      // Local custom categories
+      // 1. Limit server categories loaded from our system database according to packageLimits
+      let allowedServerCategories = serverCategories;
+      if (packageLimits && !packageLimits.isCategoryUnlimited && packageLimits.categoryLimit > 0) {
+        allowedServerCategories = [...serverCategories]
+          .sort((a, b) => (Number(b.itemCount) || 0) - (Number(a.itemCount) || 0))
+          .slice(0, packageLimits.categoryLimit);
+      }
+
+      const allowedCatIdSet = new Set(allowedServerCategories.map(c => String(c.id).toLowerCase()));
+      const allowedCatNameSet = new Set(allowedServerCategories.map(c => decodeHtmlEntities(c.name).trim().toLowerCase()));
+
+      // 2. Limit server items loaded from our system database according to packageLimits (per category)
+      let allowedServerItems: MenuItem[] = [];
+      const countPerCat = new Map<string, number>();
+
+      for (const item of serverItems) {
+        const catKey = String(item.category || '').trim().toLowerCase();
+        
+        let matchedCatId: string | null = null;
+        for (const cat of allowedServerCategories) {
+          if (String(cat.id).toLowerCase() === catKey || decodeHtmlEntities(cat.name).trim().toLowerCase() === catKey) {
+            matchedCatId = String(cat.id).toLowerCase();
+            break;
+          }
+        }
+
+        // If server categories are limited, only keep items for the allowed server categories
+        if (packageLimits && !packageLimits.isCategoryUnlimited && packageLimits.categoryLimit > 0 && !matchedCatId) {
+          continue;
+        }
+
+        const groupingKey = matchedCatId || catKey;
+        const currentCount = countPerCat.get(groupingKey) || 0;
+
+        if (packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0) {
+          if (currentCount < packageLimits.itemLimit) {
+            allowedServerItems.push(item);
+            countPerCat.set(groupingKey, currentCount + 1);
+          }
+        } else {
+          allowedServerItems.push(item);
+          countPerCat.set(groupingKey, currentCount + 1);
+        }
+      }
+
+      // 3. Local custom categories (CLIENT'S OWN - ALWAYS UNLIMITED)
       let localCategories: Category[] = [];
       try {
         const localCatsRaw = localStorage.getItem(`${CUSTOM_CATEGORIES_STORAGE_KEY}_${type}`) || localStorage.getItem(CUSTOM_CATEGORIES_STORAGE_KEY) || '[]';
@@ -843,7 +876,7 @@ export default function MagicTabPage() {
         }
       } catch {}
 
-      // Local custom items
+      // 4. Local custom items (CLIENT'S OWN - ALWAYS UNLIMITED)
       let localItems: MenuItem[] = [];
       try {
         const localItemsRaw = localStorage.getItem(`${CUSTOM_MENU_ITEMS_STORAGE_KEY}_${type}`) || localStorage.getItem(CUSTOM_MENU_ITEMS_STORAGE_KEY) || '[]';
@@ -855,12 +888,12 @@ export default function MagicTabPage() {
 
       // Calculate item count per category
       const countByCatId = new Map<string, number>();
-      for (const it of [...serverItems, ...localItems]) {
+      for (const it of [...allowedServerItems, ...localItems]) {
         const catKey = String(it.category || '').toLowerCase();
         countByCatId.set(catKey, (countByCatId.get(catKey) || 0) + 1);
       }
 
-      const combinedCategories = [...serverCategories, ...localCategories].map(cat => {
+      const combinedCategories = [...allowedServerCategories, ...localCategories].map(cat => {
         const calculatedCount =
           countByCatId.get(String(cat.id).toLowerCase()) ||
           countByCatId.get(decodeHtmlEntities(cat.name).trim().toLowerCase()) ||
@@ -894,7 +927,7 @@ export default function MagicTabPage() {
 
       setApiCategories(uniqueCategories);
       setActiveCategoryId(prev => (prev && uniqueCategories.some(c => c.id === prev) ? prev : uniqueCategories[0]?.id || null));
-      setAllMenuItems([...serverItems, ...localItems]);
+      setAllMenuItems([...allowedServerItems, ...localItems]);
     } catch (err: any) {
       console.error("MagicTab Data Load Error:", err);
       setError(err.message || "Could not load menu items and categories.");
@@ -902,7 +935,7 @@ export default function MagicTabPage() {
       setLoadingCategories(false);
       setLoadingItems(false);
     }
-  }, []);
+  }, [packageLimits]);
 
   useEffect(() => {
     if (selectedMenuType && isSubscriber) {
@@ -1065,20 +1098,6 @@ export default function MagicTabPage() {
         return;
       }
 
-      // Check per-category item limit quota
-      if (packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0) {
-        const categoryItemsCount = allMenuItems.filter(item => String(item.category) === String(selectedCategory.id)).length;
-        if (categoryItemsCount >= packageLimits.itemLimit) {
-          toast({
-            title: "Category Item Limit Reached",
-            description: `Your ${currentPackage ? currentPackage.toUpperCase() : 'current'} plan allows up to ${packageLimits.itemLimit} items per category. Please upgrade your package for unlimited items!`,
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
       itemToSave = {
         ...data,
         id: `custom-item-${Date.now()}`,
@@ -1109,7 +1128,7 @@ export default function MagicTabPage() {
     setIsFormDialogOpen(false);
     setEditingItem(null);
     setIsSubmitting(false);
-  }, [allMenuItems, editingItem, selectedCategory, packageLimits, currentPackage, toast, selectedMenuType]);
+  }, [allMenuItems, editingItem, selectedCategory, selectedMenuType]);
 
 
   const handleOpenEditCategory = useCallback((category: Category) => {
@@ -1145,18 +1164,6 @@ export default function MagicTabPage() {
         return;
     }
 
-    // Check category limit quota
-    if (packageLimits && !packageLimits.isCategoryUnlimited && packageLimits.categoryLimit > 0) {
-      if (apiCategories.length >= packageLimits.categoryLimit) {
-        toast({
-          title: "Category Limit Reached",
-          description: `Your ${currentPackage ? currentPackage.toUpperCase() : 'current'} plan allows up to ${packageLimits.categoryLimit} categories. Please upgrade your package for unlimited categories!`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     const newCategory: Category = {
       id: `custom-category-${customSlugify(formattedName)}-${Date.now()}`,
       name: formattedName,
@@ -1179,7 +1186,7 @@ export default function MagicTabPage() {
     } catch (e) {
       // Error handling without toast
     }
-  }, [apiCategories, setActiveCategoryId, packageLimits, currentPackage, toast, selectedMenuType]);
+  }, [apiCategories, setActiveCategoryId, selectedMenuType]);
 
   const currentMenuItems = useMemo(() => {
     let items = allMenuItems;
@@ -1192,13 +1199,8 @@ export default function MagicTabPage() {
       items = items.filter(item => String(item.category) === String(activeCategoryId));
     }
 
-    // Cap items per category to package item limit
-    if (packageLimits && !packageLimits.isItemUnlimited && packageLimits.itemLimit > 0) {
-      items = items.slice(0, packageLimits.itemLimit);
-    }
-
     return items;
-  }, [activeCategoryId, allMenuItems, debouncedSearchTerm, packageLimits]);
+  }, [activeCategoryId, allMenuItems, debouncedSearchTerm]);
 
   const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => {
     setSelectedItems(prev => {
