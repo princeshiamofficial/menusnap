@@ -94,8 +94,40 @@ app.prepare().then(() => {
   });
 
   const PORT = process.env.PORT || 3007;
+
+  httpServer.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+      console.error(
+        `> Port ${PORT} is already in use. Free it with: fuser -k ${PORT}/tcp (or set PORT to another value).`
+      );
+      process.exit(1);
+    }
+    throw err;
+  });
+
   httpServer.listen(PORT, (err) => {
     if (err) throw err;
     console.log(`> Unified Server ready on http://localhost:${PORT}`);
   });
+
+  let shuttingDown = false;
+  const shutdown = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`> ${signal} received, shutting down gracefully...`);
+
+    const forceExit = setTimeout(() => process.exit(0), 5000);
+    if (typeof forceExit.unref === 'function') forceExit.unref();
+
+    try {
+      io.close();
+    } catch (e) {
+      // ignore: engine may already be closed
+    }
+
+    httpServer.close(() => process.exit(0));
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 });

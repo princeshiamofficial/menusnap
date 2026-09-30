@@ -83,6 +83,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning={true}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var K='chunk_reload_timestamp';function hit(e){if(!e)return false;var m=e.message||(e.reason&&e.reason.message)||'';var n=e.name||(e.reason&&e.reason.name)||'';return n==='ChunkLoadError'||m.indexOf('Loading chunk')>-1||m.indexOf('Failed to load chunk')>-1||m.indexOf('Loading CSS chunk')>-1;}function handle(ev){var err=ev.error||ev.reason;if(!hit(err))return;var last=0;try{last=Number(sessionStorage.getItem(K))||0;}catch(e){}var now=Date.now();if(now-last>10000){try{sessionStorage.setItem(K,String(now));}catch(e){}window.location.reload();}}window.addEventListener('error',handle);window.addEventListener('unhandledrejection',handle);})();`,
+          }}
+        />
       </head>
       <MicrosoftClarityLoader />
       <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
