@@ -29,6 +29,7 @@ interface Category {
 
 interface CategoryListProps {
   categories: Category[];
+  selectedCategoryId?: string | null;
   onCategoryChange: (categoryId: string | null) => void;
   onEditCategory: (category: Category) => void;
   onQuickAdd?: (name: string) => void;
@@ -38,6 +39,7 @@ interface CategoryListProps {
 
 function CategoryListComponent({
   categories,
+  selectedCategoryId: controlledSelectedCategoryId,
   onCategoryChange,
   onEditCategory,
   onQuickAdd,
@@ -45,7 +47,9 @@ function CategoryListComponent({
   error,
 }: CategoryListProps): ReactNode {
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [internalSelectedCategoryId, setInternalSelectedCategoryId] = useState<string | null>(null);
+  const selectedCategoryId = controlledSelectedCategoryId !== undefined ? controlledSelectedCategoryId : internalSelectedCategoryId;
+  const setSelectedCategoryId = controlledSelectedCategoryId !== undefined ? onCategoryChange : setInternalSelectedCategoryId;
   const [catSearch, setCatSearch] = useState('');
 
   const containerRef = React.useRef<HTMLDivElement>(null);

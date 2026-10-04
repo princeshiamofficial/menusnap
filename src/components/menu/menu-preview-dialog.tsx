@@ -99,9 +99,19 @@ export function MenuPreviewDialog({
   }, []);
 
   const derivedDisplayedCategories = useMemo(() => {
-    const categoryIdsInSelection = new Set(selectedItems.map(item => item.category));
+    const categoryIdsInSelection = new Set(
+      selectedItems.map(item => String(item.category || '').toLowerCase())
+    );
+    const categoryNamesInSelection = new Set(
+      selectedItems.map(item => decodeHtmlEntities(item.category || '').trim().toLowerCase())
+    );
+
     return allCategories
-      .filter(cat => categoryIdsInSelection.has(cat.id))
+      .filter(cat => {
+        const catId = String(cat.id).toLowerCase();
+        const catName = decodeHtmlEntities(cat.name).trim().toLowerCase();
+        return categoryIdsInSelection.has(catId) || categoryNamesInSelection.has(catName) || categoryIdsInSelection.has(catName);
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [selectedItems, allCategories]);
 
@@ -134,14 +144,23 @@ export function MenuPreviewDialog({
 
   const itemsGroupedByCategory = useMemo(() => {
     const grouped: Record<string, MenuItem[]> = {};
+    const catMap = new Map<string, string>();
+    for (const cat of allCategories) {
+      catMap.set(String(cat.id).toLowerCase(), cat.id);
+      catMap.set(decodeHtmlEntities(cat.name).trim().toLowerCase(), cat.id);
+    }
+
     selectedItems.forEach(item => {
-      if (!grouped[item.category]) {
-        grouped[item.category] = [];
+      const itemCatKey = String(item.category || '').trim().toLowerCase();
+      const resolvedCatId = catMap.get(itemCatKey) || item.category || 'other';
+
+      if (!grouped[resolvedCatId]) {
+        grouped[resolvedCatId] = [];
       }
-      grouped[item.category].push(item);
+      grouped[resolvedCatId].push(item);
     });
     return grouped;
-  }, [selectedItems]);
+  }, [selectedItems, allCategories]);
 
   // Per-category ordered item lists (for drag-to-reorder within each category)
   const [orderedItemsByCategory, setOrderedItemsByCategory] = useState<Record<string, MenuItem[]>>({});

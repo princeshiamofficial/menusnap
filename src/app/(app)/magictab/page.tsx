@@ -418,27 +418,32 @@ const MenuItemCard = React.memo(function MenuItemCard({
       ref={handleCardRef} 
       className={cn(
         "shadow-sm hover:shadow-md transition-all rounded-lg bg-card border border-border h-full flex flex-col cursor-pointer select-none",
-        isSelected ? "bg-primary/5 shadow-md" : ""
+        isSelected ? "bg-primary/5 shadow-md ring-1 ring-primary/25 border-primary/40" : ""
       )}
       onClick={() => onSelectItem(item.id, !isSelected)}
     >
       <CardContent className="p-4 flex flex-col flex-grow">
         <div className="flex items-center gap-4">
-          <Checkbox 
-            id={`item-${item.id}`} 
-            checked={isSelected} 
-            onCheckedChange={(checked) => onSelectItem(item.id, !!checked)}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <div 
+            className="shrink-0 flex items-center justify-center"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelectItem(item.id, !isSelected);
+            }}
+          >
+            <Checkbox 
+              id={`item-${item.id}`} 
+              checked={isSelected} 
+              onCheckedChange={(checked) => onSelectItem(item.id, !!checked)}
+            />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-4">
-              <label 
-                htmlFor={`item-${item.id}`} 
-                className="text-sm font-medium text-foreground cursor-pointer block truncate-2-lines"
-                onClick={(e) => e.stopPropagation()}
+              <span 
+                className="text-sm font-medium text-foreground block truncate-2-lines cursor-pointer"
               >
                 {decodeHtmlEntities(item.name)}
-              </label>
+              </span>
               <div className="flex items-center gap-3 shrink-0">
                 <div className="text-sm text-muted-foreground font-semibold whitespace-nowrap">
                   {item.price > 0 && `৳${item.price.toLocaleString()}`}
@@ -483,7 +488,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
               {isSubItemsExpanded ? <ChevronDown className="h-3 w-3 ml-1" /> : <ChevronRight className="h-3 w-3 ml-1" />}
             </Button>
             {isSubItemsExpanded && (
-              <div className="mt-2 pl-4 space-y-2 border-l-2 border-primary/20 pt-2 pb-1 bg-muted/30 rounded-r-md">
+              <div className="mt-2 pl-4 space-y-2 border-l-2 border-primary/20 pt-2 pb-1 bg-muted/30 rounded-r-md" onClick={(e) => e.stopPropagation()}>
                 {item.subItems.map((subItem, index) => (
                   <div key={subItem.id || index} className="flex justify-between items-center text-xs p-1.5 rounded-md bg-card shadow-sm">
                     <span className="text-foreground">{decodeHtmlEntities(subItem.name)}</span>
@@ -499,9 +504,7 @@ const MenuItemCard = React.memo(function MenuItemCard({
   );
 }, (prevProps, nextProps) => {
   return (
-    prevProps.item.id === nextProps.item.id &&
-    prevProps.item.name === nextProps.item.name &&
-    prevProps.item.price === nextProps.item.price &&
+    prevProps.item === nextProps.item &&
     prevProps.isSelected === nextProps.isSelected &&
     prevProps.isSubItemsExpanded === nextProps.isSubItemsExpanded
   );
@@ -725,9 +728,19 @@ export default function MagicTabPage() {
   // Dynamically sort categories by item count descending (whichever category has the most items stays on top)
   const sortedCategories = useMemo(() => {
     const countMap = new Map<string, number>();
+    
+    // Build category lookup map
+    const catIdLookup = new Map<string, string>();
+    for (const cat of apiCategories) {
+      catIdLookup.set(String(cat.id).toLowerCase(), String(cat.id));
+      catIdLookup.set(decodeHtmlEntities(cat.name).trim().toLowerCase(), String(cat.id));
+    }
+
     for (const item of allMenuItems) {
       if (item.category) {
-        countMap.set(item.category, (countMap.get(item.category) || 0) + 1);
+        const catKey = String(item.category).trim().toLowerCase();
+        const resolvedId = catIdLookup.get(catKey) || String(item.category);
+        countMap.set(resolvedId, (countMap.get(resolvedId) || 0) + 1);
       }
     }
 
@@ -829,9 +842,6 @@ export default function MagicTabPage() {
           .slice(0, packageLimits.categoryLimit);
       }
 
-      const allowedCatIdSet = new Set(allowedServerCategories.map(c => String(c.id).toLowerCase()));
-      const allowedCatNameSet = new Set(allowedServerCategories.map(c => decodeHtmlEntities(c.name).trim().toLowerCase()));
-
       // 2. Limit server items loaded from our system database according to packageLimits (per category)
       let allowedServerItems: MenuItem[] = [];
       const countPerCat = new Map<string, number>();
@@ -886,14 +896,45 @@ export default function MagicTabPage() {
         }
       } catch {}
 
+      const combinedCategoriesRaw = [...allowedServerCategories, ...localCategories];
+      const seenCatIds = new Set<string>();
+      const seenCatNames = new Set<string>();
+      const uniqueCategories: Category[] = [];
+
+      for (const cat of combinedCategoriesRaw) {
+        const idKey = String(cat.id).toLowerCase();
+        const nameKey = decodeHtmlEntities(cat.name).trim().toLowerCase();
+        if (!seenCatIds.has(idKey) && !seenCatNames.has(nameKey)) {
+          seenCatIds.add(idKey);
+          seenCatNames.add(nameKey);
+          uniqueCategories.push(cat);
+        }
+      }
+
+      // Normalize all item categories to matching canonical category IDs
+      const catIdMap = new Map<string, string>();
+      for (const cat of uniqueCategories) {
+        catIdMap.set(String(cat.id).toLowerCase(), String(cat.id));
+        catIdMap.set(decodeHtmlEntities(cat.name).trim().toLowerCase(), String(cat.id));
+      }
+
+      const allItemsCombined = [...allowedServerItems, ...localItems].map(item => {
+        const catKey = String(item.category || '').trim().toLowerCase();
+        const matchedId = catIdMap.get(catKey);
+        return {
+          ...item,
+          category: matchedId || item.category,
+        };
+      });
+
       // Calculate item count per category
       const countByCatId = new Map<string, number>();
-      for (const it of [...allowedServerItems, ...localItems]) {
+      for (const it of allItemsCombined) {
         const catKey = String(it.category || '').toLowerCase();
         countByCatId.set(catKey, (countByCatId.get(catKey) || 0) + 1);
       }
 
-      const combinedCategories = [...allowedServerCategories, ...localCategories].map(cat => {
+      const combinedCategories = uniqueCategories.map(cat => {
         const calculatedCount =
           countByCatId.get(String(cat.id).toLowerCase()) ||
           countByCatId.get(decodeHtmlEntities(cat.name).trim().toLowerCase()) ||
@@ -905,29 +946,16 @@ export default function MagicTabPage() {
         };
       });
 
-      const seenCatIds = new Set<string>();
-      const seenCatNames = new Set<string>();
-      const uniqueCategories: Category[] = [];
-      for (const cat of combinedCategories) {
-        const idKey = String(cat.id).toLowerCase();
-        const nameKey = decodeHtmlEntities(cat.name).trim().toLowerCase();
-        if (!seenCatIds.has(idKey) && !seenCatNames.has(nameKey)) {
-          seenCatIds.add(idKey);
-          seenCatNames.add(nameKey);
-          uniqueCategories.push(cat);
-        }
-      }
-
       // Sort with highest item count at the top
-      uniqueCategories.sort((a, b) => {
+      combinedCategories.sort((a, b) => {
         const diff = (b.itemCount || 0) - (a.itemCount || 0);
         if (diff !== 0) return diff;
         return a.name.localeCompare(b.name);
       });
 
-      setApiCategories(uniqueCategories);
-      setActiveCategoryId(prev => (prev && uniqueCategories.some(c => c.id === prev) ? prev : uniqueCategories[0]?.id || null));
-      setAllMenuItems([...allowedServerItems, ...localItems]);
+      setApiCategories(combinedCategories);
+      setActiveCategoryId(prev => (prev && combinedCategories.some(c => c.id === prev) ? prev : combinedCategories[0]?.id || null));
+      setAllMenuItems(allItemsCombined);
     } catch (err: any) {
       console.error("MagicTab Data Load Error:", err);
       setError(err.message || "Could not load menu items and categories.");
@@ -1193,14 +1221,19 @@ export default function MagicTabPage() {
 
     if (debouncedSearchTerm) {
       items = allMenuItems.filter(item => decodeHtmlEntities(item.name).toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
-    }
+    } else if (activeCategoryId) {
+      const activeCat = apiCategories.find(c => String(c.id).toLowerCase() === String(activeCategoryId).toLowerCase());
+      const activeCatName = activeCat ? decodeHtmlEntities(activeCat.name).trim().toLowerCase() : '';
+      const activeCatIdStr = String(activeCategoryId).toLowerCase();
 
-    if (activeCategoryId) {
-      items = items.filter(item => String(item.category) === String(activeCategoryId));
+      items = items.filter(item => {
+        const itemCat = String(item.category || '').trim().toLowerCase();
+        return itemCat === activeCatIdStr || (activeCatName && itemCat === activeCatName);
+      });
     }
 
     return items;
-  }, [activeCategoryId, allMenuItems, debouncedSearchTerm]);
+  }, [activeCategoryId, allMenuItems, debouncedSearchTerm, apiCategories]);
 
   const handleSelectItem = useCallback((itemId: string, isSelected: boolean) => {
     setSelectedItems(prev => {
@@ -1468,6 +1501,7 @@ export default function MagicTabPage() {
         <div className="hidden md:block h-full">
           <CategoryList
             categories={sortedCategories}
+            selectedCategoryId={activeCategoryId}
             onCategoryChange={setActiveCategoryId}
             onEditCategory={handleOpenEditCategory}
             onQuickAdd={handleQuickAddCategory}
