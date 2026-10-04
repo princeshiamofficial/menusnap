@@ -29,7 +29,7 @@ interface Category {
 
 interface CategoryListProps {
   categories: Category[];
-  selectedCategoryId?: string | null;
+  activeCategoryId?: string | null;
   onCategoryChange: (categoryId: string | null) => void;
   onEditCategory: (category: Category) => void;
   onQuickAdd?: (name: string) => void;
@@ -39,7 +39,7 @@ interface CategoryListProps {
 
 function CategoryListComponent({
   categories,
-  selectedCategoryId: controlledSelectedCategoryId,
+  activeCategoryId,
   onCategoryChange,
   onEditCategory,
   onQuickAdd,
@@ -47,12 +47,16 @@ function CategoryListComponent({
   error,
 }: CategoryListProps): ReactNode {
 
-  const [internalSelectedCategoryId, setInternalSelectedCategoryId] = useState<string | null>(null);
-  const selectedCategoryId = controlledSelectedCategoryId !== undefined ? controlledSelectedCategoryId : internalSelectedCategoryId;
-  const setSelectedCategoryId = controlledSelectedCategoryId !== undefined ? onCategoryChange : setInternalSelectedCategoryId;
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(activeCategoryId ?? null);
   const [catSearch, setCatSearch] = useState('');
 
   const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (activeCategoryId !== undefined) {
+      setSelectedCategoryId(activeCategoryId);
+    }
+  }, [activeCategoryId]);
 
   useEffect(() => {
     // If there's no selection or the current selection is no longer valid, select the top category (by item count)
