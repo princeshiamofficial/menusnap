@@ -17,7 +17,7 @@ export default function HomePage() {
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanTier>("pro");
   const [selectedDuration, setSelectedDuration] = useState<BillingPeriod>("lifetime");
-  const [activeCoupon, setActiveCoupon] = useState<string | undefined>("MENUSNAP500");
+  const [activeCoupon, setActiveCoupon] = useState<string | undefined>(undefined);
 
   const handleOpenCheckout = (
     plan: PlanTier,

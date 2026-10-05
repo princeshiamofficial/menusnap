@@ -51,6 +51,10 @@ async function ensureClientsTable() {
     if (districtCol.length === 0) {
       await pool.execute("ALTER TABLE clients ADD COLUMN district VARCHAR(100) AFTER division");
     }
+    const [addressCol]: any = await pool.execute("SHOW COLUMNS FROM clients LIKE 'address'");
+    if (addressCol.length === 0) {
+      await pool.execute("ALTER TABLE clients ADD COLUMN address TEXT NULL AFTER district");
+    }
     const [emailCol]: any = await pool.execute("SHOW COLUMNS FROM clients LIKE 'email'");
     if (emailCol.length === 0) {
       await pool.execute("ALTER TABLE clients ADD COLUMN email VARCHAR(255) AFTER district");
@@ -113,6 +117,7 @@ export async function checkClientStatus(whatsappNumber: string): Promise<{
     businessType: 'restaurant' | 'parlour';
     division?: string;
     district?: string;
+    address?: string;
     email?: string;
     isSubscriber?: boolean;
   };
@@ -126,7 +131,7 @@ export async function checkClientStatus(whatsappNumber: string): Promise<{
     }
 
     const [rows]: any = await pool.execute(
-      'SELECT id, business_name, business_type, division, district, email, stage, is_subscriber, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
+      'SELECT id, business_name, business_type, division, district, address, email, stage, is_subscriber, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
       [cleanNumber]
     );
 
@@ -150,6 +155,7 @@ export async function checkClientStatus(whatsappNumber: string): Promise<{
           businessType: row.business_type,
           division: row.division || undefined,
           district: row.district || undefined,
+          address: row.address || undefined,
           email: row.email || undefined,
           isSubscriber: isSub,
         },
@@ -191,7 +197,7 @@ export async function saveClientLogin(
     let rows: any[] = [];
     try {
       const [res]: any = await pool.execute(
-        'SELECT id, stage, is_subscriber, subscription_package, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
+        'SELECT id, stage, is_subscriber, subscription_package, password_hash, division, district, address FROM clients WHERE whatsapp_number = ? LIMIT 1',
         [cleanPhone]
       );
       rows = res;
@@ -199,7 +205,7 @@ export async function saveClientLogin(
       if (queryErr?.message?.includes('subscription_package')) {
         await pool.execute('ALTER TABLE clients ADD COLUMN subscription_package VARCHAR(100) NULL DEFAULT NULL AFTER is_subscriber').catch(() => {});
         const [res]: any = await pool.execute(
-          'SELECT id, stage, is_subscriber, subscription_package, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
+          'SELECT id, stage, is_subscriber, subscription_package, password_hash, division, district, address FROM clients WHERE whatsapp_number = ? LIMIT 1',
           [cleanPhone]
         );
         rows = res;
@@ -241,10 +247,31 @@ export async function saveClientLogin(
         );
       }
 
-      // Update existing client last login and name/type if changed
+      // Update existing client last login and profile without accidentally nulling address/division/district
+      const cleanDivision = division?.trim() || null;
+      const cleanDistrict = district?.trim() || null;
+      const cleanEmail = email?.trim() || null;
+      const computedAddress = [cleanDistrict, cleanDivision].filter(Boolean).join(', ') || null;
+
       await pool.execute(
-        'UPDATE clients SET business_name = ?, business_type = ?, division = ?, district = ?, email = ?, last_login = CURRENT_TIMESTAMP WHERE id = ?',
-        [businessName.trim(), businessType, division || null, district || null, email?.trim() || null, existingClient.id]
+        `UPDATE clients SET 
+          business_name = COALESCE(NULLIF(?, ''), business_name), 
+          business_type = COALESCE(NULLIF(?, ''), business_type), 
+          division = COALESCE(NULLIF(?, ''), division), 
+          district = COALESCE(NULLIF(?, ''), district), 
+          address = COALESCE(NULLIF(?, ''), address),
+          email = COALESCE(NULLIF(?, ''), email), 
+          last_login = CURRENT_TIMESTAMP 
+        WHERE id = ?`,
+        [
+          businessName.trim(), 
+          businessType, 
+          cleanDivision, 
+          cleanDistrict, 
+          computedAddress, 
+          cleanEmail, 
+          existingClient.id
+        ]
       );
 
       const stageLower = (existingClient.stage || '').toLowerCase().trim();
@@ -326,9 +353,13 @@ export async function saveClientLogin(
         }
       } catch {}
 
+      const cleanDivision = division?.trim() || null;
+      const cleanDistrict = district?.trim() || null;
+      const computedAddress = [cleanDistrict, cleanDivision].filter(Boolean).join(', ') || null;
+
       const [result]: any = await pool.execute(
-        'INSERT INTO clients (business_name, business_type, whatsapp_number, division, district, email, password_hash, is_subscriber, stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [businessName.trim(), businessType, cleanPhone, division || null, district || null, email?.trim() || null, passwordHash, isSubscriber ? 1 : 0, isSubscriber ? 'customer' : 'new-lead']
+        'INSERT INTO clients (business_name, business_type, whatsapp_number, division, district, address, email, password_hash, is_subscriber, stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [businessName.trim(), businessType, cleanPhone, cleanDivision, cleanDistrict, computedAddress, email?.trim() || null, passwordHash, isSubscriber ? 1 : 0, isSubscriber ? 'customer' : 'new-lead']
       );
 
       // --- SEND GREETING MESSAGE ---
@@ -371,6 +402,7 @@ export async function clientLoginAction(
     whatsappNumber: string;
     division?: string;
     district?: string;
+    address?: string;
     email?: string;
     isSubscriber?: boolean;
     subscriptionPackage?: string;
@@ -393,7 +425,7 @@ export async function clientLoginAction(
     let rows: any[] = [];
     try {
       const [res]: any = await pool.execute(
-        `SELECT id, business_name, business_type, whatsapp_number, division, district, email, stage, is_subscriber, subscription_package, password_hash 
+        `SELECT id, business_name, business_type, whatsapp_number, division, district, address, email, stage, is_subscriber, subscription_package, password_hash 
          FROM clients 
          WHERE whatsapp_number = ? OR email = ? 
          ORDER BY last_login DESC LIMIT 1`,
@@ -404,7 +436,7 @@ export async function clientLoginAction(
       if (queryErr?.message?.includes('subscription_package')) {
         await pool.execute('ALTER TABLE clients ADD COLUMN subscription_package VARCHAR(100) NULL DEFAULT NULL AFTER is_subscriber').catch(() => {});
         const [res]: any = await pool.execute(
-          `SELECT id, business_name, business_type, whatsapp_number, division, district, email, stage, is_subscriber, subscription_package, password_hash 
+          `SELECT id, business_name, business_type, whatsapp_number, division, district, address, email, stage, is_subscriber, subscription_package, password_hash 
            FROM clients 
            WHERE whatsapp_number = ? OR email = ? 
            ORDER BY last_login DESC LIMIT 1`,
@@ -480,6 +512,8 @@ export async function clientLoginAction(
       console.error('Error during transaction check in clientLoginAction:', txErr);
     }
 
+    const computedAddress = client.address || [client.district, client.division].filter(Boolean).join(', ') || undefined;
+
     return {
       success: true,
       client: {
@@ -489,6 +523,7 @@ export async function clientLoginAction(
         whatsappNumber: client.whatsapp_number,
         division: client.division || undefined,
         district: client.district || undefined,
+        address: computedAddress,
         email: client.email || undefined,
         isSubscriber,
         subscriptionPackage: activePlan || client.subscription_package || (isSubscriber ? 'starter' : undefined),
@@ -524,8 +559,9 @@ export async function getLeads(
       const conditions: string[] = [];
       
       if (filters.search) {
-        conditions.push('(c.business_name LIKE ? OR c.whatsapp_number LIKE ?)');
-        params.push(`%${filters.search}%`, `%${filters.search}%`);
+        conditions.push('(c.business_name LIKE ? OR c.whatsapp_number LIKE ? OR c.email LIKE ? OR c.district LIKE ? OR c.division LIKE ? OR c.address LIKE ?)');
+        const searchPattern = `%${filters.search}%`;
+        params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
       }
       
       if (filters.stage && filters.stage !== 'All') {
@@ -549,7 +585,7 @@ export async function getLeads(
     }
 
     const query = `
-      SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.email, c.stage, c.is_subscriber, c.division, c.district,
+      SELECT c.id, c.business_name, c.business_type, c.whatsapp_number, c.email, c.stage, c.is_subscriber, c.division, c.district, c.address,
       (SELECT note FROM client_notes WHERE client_id = c.id ORDER BY created_at DESC LIMIT 1) as latest_note,
       (SELECT a.id FROM client_notes cn JOIN admins a ON cn.updated_by = a.id WHERE cn.client_id = c.id ORDER BY cn.created_at DESC LIMIT 1) as updated_by_id,
       DATE_FORMAT(c.last_login, '%Y-%m-%d %H:%i:%s') as last_login,
@@ -591,7 +627,14 @@ export async function getLeads(
         stageLower === 'donated'
       );
 
-      return { ...lead, stage, is_subscriber: isSubscriber };
+      const computedAddress = lead.address || [lead.district, lead.division].filter(Boolean).join(', ') || null;
+
+      return { 
+        ...lead, 
+        address: computedAddress,
+        stage, 
+        is_subscriber: isSubscriber 
+      };
     });
 
     return {

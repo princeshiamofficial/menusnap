@@ -13,6 +13,7 @@ import {
   Loader2,
   Check,
   Sparkles,
+  LogIn,
 } from "lucide-react";
 import { PlanTier, BillingPeriod, PaymentGateway, PricingPackage } from "@/lib/menusnap-types";
 import { trackEvent } from "@/lib/analytics";
@@ -236,11 +237,19 @@ export function CheckoutModal({
     [basePrice, matchedPackage, plan]
   );
 
-  // Auto-apply initial coupon if passed via props
+  // Auto-apply initial coupon if passed via props, or reset if no coupon
   useEffect(() => {
-    if (coupon && isOpen && basePrice > 0) {
-      setCouponInput(coupon);
-      handleApplyCoupon(coupon);
+    if (isOpen) {
+      if (coupon && basePrice > 0) {
+        setCouponInput(coupon);
+        handleApplyCoupon(coupon);
+      } else if (!coupon) {
+        setCouponInput("");
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+        setCouponMessage(null);
+        setCouponError(null);
+      }
     }
   }, [coupon, isOpen, basePrice, handleApplyCoupon]);
 
@@ -465,7 +474,7 @@ export function CheckoutModal({
                     <Tag className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Enter promo code (e.g. MENUSNAP500)"
+                      placeholder="Enter promo code"
                       value={couponInput}
                       disabled={!!appliedCoupon || isValidatingCoupon}
                       onChange={(e) => {
@@ -520,14 +529,14 @@ export function CheckoutModal({
               <div className="space-y-3 pt-1">
                 <div>
                   <label className="text-xs font-bold text-gray-700 block mb-1">
-                    Your Full Name *
+                    Business Name *
                   </label>
                   <input
                     type="text"
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Mr. Awal Khan"
+                    placeholder="e.g. Sultan's Dine / Food Express"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 focus:outline-none focus:border-orange-500 transition-colors"
                   />
                 </div>
@@ -576,15 +585,24 @@ export function CheckoutModal({
 
               {/* Submit CTA */}
               {isSamePlanAlreadyPurchased ? (
-                <button
-                  type="button"
-                  disabled
-                  aria-disabled="true"
-                  className="w-full flex items-center justify-center gap-2 text-emerald-800 bg-emerald-100/90 border border-emerald-300/80 font-bold text-sm py-3.5 px-6 rounded-xl cursor-not-allowed select-none opacity-90"
+                <Link
+                  href={
+                    phone || email
+                      ? `/login?identifier=${encodeURIComponent(phone.trim() || email.trim())}`
+                      : "/login"
+                  }
+                  className="block w-full"
+                  onClick={onClose}
                 >
-                  <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
-                  <span>Already Owned (Lifetime Active)</span>
-                </button>
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-center gap-2 text-white bg-[#FF5A36] hover:bg-[#e64c29] font-extrabold text-sm py-3.5 px-6 rounded-xl shadow-md shadow-orange-500/20 transition-all active:scale-[0.99] cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Go to Login</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </Link>
               ) : (
                 <button
                   type="submit"
@@ -599,17 +617,17 @@ export function CheckoutModal({
                     <span>
                       {finalAmount === 0
                         ? "Activating Free Lifetime Access..."
-                        : "Redirecting to PayStation Gateway..."}
+                        : "Redirecting to Payment Gateway..."}
                     </span>
                   ) : finalAmount === 0 ? (
                     <>
                       <Sparkles className="w-4 h-4" />
-                      <span>Claim Free Access (৳0)</span>
+                      <span>Claim Free Access</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   ) : (
                     <>
-                      <span>Pay ৳{finalAmount.toLocaleString()} with PayStation</span>
+                      <span>Pay ৳{finalAmount.toLocaleString()}</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}

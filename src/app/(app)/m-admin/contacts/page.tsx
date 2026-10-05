@@ -219,6 +219,18 @@ const getSolidBadgeStyle = (colorClasses: string): React.CSSProperties => {
   return defaultStyle;
 };
 
+const formatContactLocation = (contact: { address?: string; district?: string; division?: string }) => {
+  if (contact.address && contact.address.trim()) {
+    return contact.address.trim();
+  }
+  const parts = [contact.district?.trim(), contact.division?.trim()].filter(Boolean) as string[];
+  if (parts.length === 0) return '-';
+  if (parts.length === 2 && parts[0].toLowerCase() === parts[1].toLowerCase()) {
+    return toTitleCase(parts[0]);
+  }
+  return parts.map(toTitleCase).join(', ');
+};
+
 interface Contact {
   id: number;
   business_name: string;
@@ -226,6 +238,7 @@ interface Contact {
   whatsapp_number: string;
   division?: string;
   district?: string;
+  address?: string;
   email?: string;
   latest_note: string | null;
   updated_by_id?: number | null;
@@ -722,14 +735,16 @@ export default function ContactsPage() {
       return;
     }
 
-    const headers = ['SL', 'Business Name', 'Business Type', 'WhatsApp', 'Email', 'Division', 'District', 'Joined Date', 'Last Activity', 'Status', 'Latest Comment'];
+    const headers = ['SL', 'Business Name', 'Business Type', 'WhatsApp', 'Email', 'Address', 'Division', 'District', 'Joined Date', 'Last Activity', 'Status', 'Latest Comment'];
     const rows = filteredContacts.map((c, idx) => {
+      const location = formatContactLocation(c);
       return [
         c.id || (idx + 1),
         `"${(c.business_name || '').replace(/"/g, '""')}"`,
         `"${(c.business_type || '').replace(/"/g, '""')}"`,
         `"${(c.whatsapp_number || '').replace(/"/g, '""')}"`,
         `"${(c.email || '').replace(/"/g, '""')}"`,
+        `"${(location === '-' ? '' : location).replace(/"/g, '""')}"`,
         `"${(c.division || '').replace(/"/g, '""')}"`,
         `"${(c.district || '').replace(/"/g, '""')}"`,
         `"${formatDate(c.created_at)}"`,
@@ -1280,7 +1295,7 @@ const ContactRow = React.memo(function ContactRow({ contact, index, stages, admi
       </TableCell>
       <TableCell>
           <div className="text-[12px] font-bold text-slate-600 tracking-tight">
-              {contact.district && contact.division ? `${toTitleCase(contact.district)}, ${toTitleCase(contact.division)}` : '-'}
+              {formatContactLocation(contact)}
           </div>
       </TableCell>
       <TableCell className="text-[13px] text-slate-500 font-medium whitespace-nowrap">
@@ -1471,12 +1486,12 @@ const MobileContactCard = React.memo(function MobileContactCard({ contact, index
                 </div>
                 <div className="flex items-center gap-2">
                     <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{contact.business_type}</p>
-                    {(contact.district || contact.division) && (
+                    {(contact.address || contact.district || contact.division) && formatContactLocation(contact) !== '-' && (
                         <>
                             <span className="text-slate-200 text-[10px]">•</span>
                             <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold tracking-widest">
                                 <Globe className="h-2.5 w-2.5" />
-                                {toTitleCase(contact.district || contact.division || '')}
+                                {formatContactLocation(contact)}
                             </div>
                         </>
                     )}

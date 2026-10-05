@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { useClientAuth } from '@/hooks/use-client-auth';
 import { Button } from '@/components/ui/button';
@@ -43,14 +44,22 @@ function LoginContent() {
   const emailParam = searchParams.get('email');
   const whatsappParam = searchParams.get('whatsapp') || searchParams.get('phone');
   const nameParam = searchParams.get('name') || searchParams.get('business');
+  const identifierParam = searchParams.get('identifier');
   const fromParam = searchParams.get('from');
+  const hasParams = Boolean(
+    fromParam ||
+    emailParam ||
+    whatsappParam ||
+    nameParam ||
+    tabParam === 'register'
+  );
 
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(
-    tabParam === 'register' || fromParam === 'checkout' ? 'register' : 'login'
+    hasParams ? 'register' : 'login'
   );
 
   // Login form state
-  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState(identifierParam || '');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
@@ -74,8 +83,10 @@ function LoginContent() {
 
   // Initialize from searchParams
   useEffect(() => {
-    if (tabParam === 'register' || fromParam === 'checkout') {
+    if (hasParams) {
       setActiveTab('register');
+    } else {
+      setActiveTab('login');
     }
     if (emailParam) setEmail(emailParam);
     if (whatsappParam) {
@@ -83,7 +94,7 @@ function LoginContent() {
       setLoginIdentifier(whatsappParam);
     }
     if (nameParam) setBusinessName(nameParam);
-  }, [tabParam, emailParam, whatsappParam, nameParam, fromParam]);
+  }, [hasParams, emailParam, whatsappParam, nameParam]);
 
   // Load Remember Me credentials on mount
   useEffect(() => {
@@ -179,8 +190,12 @@ function LoginContent() {
   // Submit Registration
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (businessName && type && whatsapp && registerPassword && division && district) {
-      if (!isValidWhatsApp(whatsapp)) {
+    const effectiveBusinessName = (businessName || nameParam || '').trim() || (type === 'parlour' ? 'My Parlour' : 'My Restaurant');
+    const effectiveWhatsapp = (whatsapp || whatsappParam || '').trim();
+    const effectiveEmail = (email || emailParam || '').trim();
+
+    if (effectiveBusinessName && type && registerPassword && division && district) {
+      if (effectiveWhatsapp && !isValidWhatsApp(effectiveWhatsapp)) {
         return;
       }
       if (registerPassword.length < 6) {
@@ -193,21 +208,21 @@ function LoginContent() {
         (window as any).dataLayer.push({
           event: 'register_attempt',
           business_type: type,
-          business_name: businessName,
-          email: email,
+          business_name: effectiveBusinessName,
+          email: effectiveEmail,
           division: division,
           district: district,
         });
       }
 
       const success = await login(
-        businessName,
+        effectiveBusinessName,
         type,
-        whatsapp,
+        effectiveWhatsapp,
         registerPassword,
         division,
         district,
-        email,
+        effectiveEmail,
         '/dashboard#login-success',
         rememberMe
       );
@@ -219,8 +234,8 @@ function LoginContent() {
             event: 'register_success',
             method: 'whatsapp',
             business_type: type,
-            business_name: businessName,
-            email: email,
+            business_name: effectiveBusinessName,
+            email: effectiveEmail,
           });
           localStorage.setItem('loginSuccessUntil', (Date.now() + 20000).toString());
           localStorage.setItem('loginToastShown', 'false');
@@ -254,11 +269,13 @@ function LoginContent() {
           </div>
           <div className="px-8 pt-5 pb-1">
             <CardDescription className="text-[#64748b] font-medium text-center text-sm">
-              Access your dedicated menu builder
+              {hasParams
+                ? 'Complete your account registration'
+                : 'Access your dedicated menu builder'}
             </CardDescription>
 
             {/* If redirected from checkout, show welcome banner */}
-            {fromParam === 'checkout' && (
+            {hasParams && (
               <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200/90 rounded-xl flex items-start gap-2.5 text-xs text-emerald-900 shadow-xs text-left">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
@@ -269,40 +286,12 @@ function LoginContent() {
                 </div>
               </div>
             )}
-
-            {/* Segmented Tab Switcher */}
-            <div className="mt-4 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/80">
-              <button
-                type="button"
-                onClick={() => setActiveTab('login')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  activeTab === 'login'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <LogIn className="h-4 w-4" />
-                Login
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('register')}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  activeTab === 'register'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <UserPlus className="h-4 w-4" />
-                Registration
-              </button>
-            </div>
           </div>
         </CardHeader>
 
         <CardContent className="p-8 pt-4">
-          {activeTab === 'login' ? (
-            /* ================= LOGIN TAB ================= */
+          {!hasParams ? (
+            /* ================= LOGIN FORM (No Params) ================= */
             <form onSubmit={handleLoginSubmit} className="space-y-5 animate-in fade-in-50 duration-200">
               <div className="space-y-1.5">
                 <Label htmlFor="login-identifier" className="flex items-center text-[#1a2b4b] font-bold text-sm">
@@ -388,19 +377,18 @@ function LoginContent() {
 
               <div className="text-center pt-2">
                 <p className="text-xs text-slate-500">
-                  Don't have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('register')}
+                  Need an account?{' '}
+                  <Link
+                    href="/#pricing"
                     className="font-bold text-orange-600 hover:text-orange-700 underline underline-offset-2 ml-1"
                   >
-                    Register Now
-                  </button>
+                    View Plans & Pricing
+                  </Link>
                 </p>
               </div>
             </form>
           ) : (
-            /* ================= REGISTRATION TAB ================= */
+            /* ================= REGISTRATION FORM (With Params) ================= */
             <form onSubmit={handleRegisterSubmit} className="space-y-4 animate-in fade-in-50 duration-200">
               <div className="space-y-1">
                 <Label htmlFor="business-type" className="flex items-center text-[#1a2b4b] font-bold text-sm">
@@ -420,22 +408,6 @@ function LoginContent() {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="business-name" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                  <Building className="h-4 w-4 mr-2" />
-                  {businessNameLabel}
-                </Label>
-                <Input
-                  id="business-name"
-                  type="text"
-                  className="h-11 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm"
-                  placeholder={businessNamePlaceholder}
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  required
-                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -471,45 +443,6 @@ function LoginContent() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="email" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email Address
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  className="h-11 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="whatsapp" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                  <WhatsAppIcon className="h-4 w-4 mr-2 text-green-600" />
-                  WhatsApp Number
-                </Label>
-                <Input
-                  id="whatsapp"
-                  type="tel"
-                  className={`h-11 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm ${isWhatsAppInvalid ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                  placeholder="Enter your WhatsApp number"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  required
-                />
-                {isWhatsAppInvalid && (
-                  <p className="text-xs text-red-500 flex items-center mt-1 font-medium animate-in fade-in slide-in-from-top-1">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    Please enter a valid active WhatsApp mobile number
-                  </p>
-                )}
               </div>
 
               <div className="space-y-1">
@@ -564,7 +497,7 @@ function LoginContent() {
               <Button 
                 type="submit" 
                 className="w-full text-base h-13 py-3.5 rounded-xl bg-[#f97316] hover:bg-[#ea580c] text-white font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-2" 
-                disabled={clientLoading || !businessName || !type || !whatsapp || !division || !district || !registerPassword || registerPassword.length < 6 || isWhatsAppInvalid}
+                disabled={clientLoading || !(businessName || nameParam) || !type || !(whatsapp || whatsappParam) || !division || !district || !registerPassword || registerPassword.length < 6 || isWhatsAppInvalid}
               >
                 {clientLoading ? (
                   <span className="flex items-center justify-center">
@@ -581,13 +514,12 @@ function LoginContent() {
               <div className="text-center pt-1">
                 <p className="text-xs text-slate-500">
                   Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('login')}
+                  <Link
+                    href="/login"
                     className="font-bold text-orange-600 hover:text-orange-700 underline underline-offset-2 ml-1"
                   >
                     Login here
-                  </button>
+                  </Link>
                 </p>
               </div>
             </form>

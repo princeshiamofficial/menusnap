@@ -145,8 +145,12 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
   // Submit Registration
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (businessName && type && whatsapp && registerPassword && division && district) {
-      if (!isValidWhatsApp(whatsapp)) return;
+    const effectiveBusinessName = businessName.trim() || (type === 'parlour' ? 'My Parlour' : 'My Restaurant');
+    const effectiveWhatsapp = whatsapp.trim();
+    const effectiveEmail = email.trim();
+
+    if (effectiveBusinessName && type && registerPassword && division && district) {
+      if (effectiveWhatsapp && !isValidWhatsApp(effectiveWhatsapp)) return;
       if (registerPassword.length < 6) return;
 
       if (typeof window !== 'undefined') {
@@ -154,21 +158,21 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
         (window as any).dataLayer.push({
           event: 'register_attempt',
           business_type: type,
-          business_name: businessName,
-          email: email,
+          business_name: effectiveBusinessName,
+          email: effectiveEmail,
           division: division,
           district: district,
         });
       }
 
       const success = await login(
-        businessName,
+        effectiveBusinessName,
         type,
-        whatsapp,
+        effectiveWhatsapp,
         registerPassword,
         division,
         district,
-        email,
+        effectiveEmail,
         null,
         rememberMe
       );
@@ -180,8 +184,8 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
             event: 'register_success',
             method: 'whatsapp',
             business_type: type,
-            business_name: businessName,
-            email: email,
+            business_name: effectiveBusinessName,
+            email: effectiveEmail,
           });
         }
         if (onSuccess) {
@@ -365,22 +369,6 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="gate-business-name" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
-                <Building className="h-4 w-4 mr-2" />
-                {businessNameLabel}
-              </Label>
-              <Input
-                id="gate-business-name"
-                type="text"
-                className="h-11 border-gray-200 dark:border-slate-800 rounded-xl focus-visible:ring-orange-500 transition-all bg-transparent text-sm"
-                placeholder={businessNamePlaceholder}
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                required
-              />
-            </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label htmlFor="gate-division" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
@@ -414,45 +402,6 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="gate-email" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
-                <Mail className="h-4 w-4 mr-2" />
-                Email Address
-              </Label>
-              <Input
-                id="gate-email"
-                type="email"
-                name="email"
-                autoComplete="email"
-                className="h-11 border-gray-200 dark:border-slate-800 rounded-xl focus-visible:ring-orange-500 transition-all bg-transparent text-sm"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="gate-whatsapp" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
-                <WhatsAppIcon className="h-4 w-4 mr-2 text-green-600" />
-                WhatsApp Number
-              </Label>
-              <Input
-                id="gate-whatsapp"
-                type="tel"
-                className={`h-11 border-gray-200 dark:border-slate-800 rounded-xl focus-visible:ring-orange-500 transition-all bg-transparent text-sm ${isWhatsAppInvalid ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                placeholder="Enter your WhatsApp number"
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
-                required
-              />
-              {isWhatsAppInvalid && (
-                <p className="text-xs text-red-500 flex items-center mt-1 font-medium animate-in fade-in slide-in-from-top-1">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Please enter a valid active WhatsApp mobile number
-                </p>
-              )}
             </div>
 
             <div className="space-y-1">

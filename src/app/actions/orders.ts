@@ -45,6 +45,24 @@ export async function submitOrderToMySql(orderPayload: any) {
       ]
     );
 
+    // Sync address to clients CRM if customer provided an address
+    if (finalCustomer.address && (finalCustomer.phone || finalCustomer.email)) {
+      try {
+        const cleanPhone = (finalCustomer.phone || '').trim();
+        const cleanEmail = (finalCustomer.email || '').trim();
+        const cleanAddr = (finalCustomer.address || '').trim();
+        if (cleanAddr) {
+          await pool.execute(
+            `UPDATE clients SET address = COALESCE(NULLIF(?, ''), address) 
+             WHERE (whatsapp_number = ? AND ? != '') OR (email = ? AND ? != '')`,
+            [cleanAddr, cleanPhone, cleanPhone, cleanEmail, cleanEmail]
+          );
+        }
+      } catch {
+        // Non-blocking sync
+      }
+    }
+
     cachedOrderCatalog = {};
     revalidatePath('/m-admin/manage-orders');
     return { success: true, message: 'Order submitted directly to MySQL.' };

@@ -46,9 +46,9 @@ const DEFAULT_PACKAGES: Omit<PricingPackage, 'id'>[] = [
     price: 1499,
     original_price: 2999,
     billing_period_text: 'Lifetime Access • One-time payment',
-    discount_tag: 'LIFETIME DEAL: MENUSNAP500',
-    coupon_code: 'MENUSNAP500',
-    coupon_discount: 500,
+    discount_tag: '',
+    coupon_code: '',
+    coupon_discount: 0,
     features: [
       'Everything in Starter',
       'Advanced Item & Competitor Research',

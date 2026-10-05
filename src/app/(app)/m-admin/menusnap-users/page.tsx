@@ -826,10 +826,16 @@ export default function MenuSnapUsersPage() {
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-                          <span className="truncate max-w-[140px]">
-                            {[user.district, user.division].filter(Boolean).join(', ') || (
-                              <span className="text-muted-foreground/40">—</span>
-                            )}
+                          <span className="truncate max-w-[140px]" title={user.address || [user.district, user.division].filter(Boolean).join(', ')}>
+                            {(() => {
+                              if (user.address && user.address.trim()) return user.address.trim();
+                              const parts = [user.district?.trim(), user.division?.trim()].filter(Boolean) as string[];
+                              if (parts.length === 0) return <span className="text-muted-foreground/40">—</span>;
+                              if (parts.length === 2 && parts[0].toLowerCase() === parts[1].toLowerCase()) {
+                                return parts[0];
+                              }
+                              return parts.join(', ');
+                            })()}
                           </span>
                         </div>
                       </TableCell>

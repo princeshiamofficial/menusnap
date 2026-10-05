@@ -13,6 +13,7 @@ export interface MenuSnapUser {
   email: string | null;
   division: string | null;
   district: string | null;
+  address?: string | null;
   stage: string;
   isSubscriber: boolean;
   subscriptionPackage: string; // e.g. 'Pro Lifetime', 'Starter Lifetime', 'Enterprise', 'Free Plan'
@@ -45,6 +46,7 @@ async function ensureClientsSchema() {
         whatsapp_number VARCHAR(20) NOT NULL,
         division VARCHAR(100) NULL,
         district VARCHAR(100) NULL,
+        address TEXT NULL,
         email VARCHAR(255) NULL,
         password_hash VARCHAR(255) NULL,
         note TEXT NULL,
@@ -76,6 +78,9 @@ async function ensureClientsSchema() {
     }
     if (!existingCols.has('district')) {
       await pool.execute('ALTER TABLE clients ADD COLUMN district VARCHAR(100) NULL AFTER division');
+    }
+    if (!existingCols.has('address')) {
+      await pool.execute('ALTER TABLE clients ADD COLUMN address TEXT NULL AFTER district');
     }
     if (!existingCols.has('email')) {
       await pool.execute('ALTER TABLE clients ADD COLUMN email VARCHAR(255) NULL AFTER district');
@@ -130,9 +135,9 @@ export async function getMenuSnapUsersAction(params?: {
     const queryParams: any[] = [];
 
     if (search) {
-      conditions.push('(business_name LIKE ? OR whatsapp_number LIKE ? OR email LIKE ? OR district LIKE ? OR division LIKE ?)');
+      conditions.push('(business_name LIKE ? OR whatsapp_number LIKE ? OR email LIKE ? OR district LIKE ? OR division LIKE ? OR address LIKE ?)');
       const term = `%${search}%`;
-      queryParams.push(term, term, term, term, term);
+      queryParams.push(term, term, term, term, term, term);
     }
 
     if (typeFilter !== 'all') {
@@ -167,7 +172,7 @@ export async function getMenuSnapUsersAction(params?: {
     // 2. Get paginated users
     const [rows]: any = await pool.execute(
       `SELECT 
-        id, business_name, business_type, whatsapp_number, email, division, district,
+        id, business_name, business_type, whatsapp_number, email, division, district, address,
         stage, is_subscriber, subscription_package, password_hash,
         DATE_FORMAT(last_login, '%Y-%m-%d %H:%i:%s') as last_login,
         DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') as created_at
@@ -194,6 +199,8 @@ export async function getMenuSnapUsersAction(params?: {
         pkgName = isSub ? 'Pro Lifetime' : 'Free Plan';
       }
 
+      const computedAddress = row.address || [row.district, row.division].filter(Boolean).join(', ') || null;
+
       return {
         id: row.id,
         businessName: row.business_name,
@@ -202,6 +209,7 @@ export async function getMenuSnapUsersAction(params?: {
         email: row.email || null,
         division: row.division || null,
         district: row.district || null,
+        address: computedAddress,
         stage: row.stage || 'new-lead',
         isSubscriber: isSub,
         subscriptionPackage: pkgName,
@@ -409,18 +417,23 @@ export async function adminCreateMenuSnapUserAction(payload: {
       pkg = isSub ? 'Pro Lifetime' : 'Free Plan';
     }
 
+    const cleanDivision = payload.division?.trim() || null;
+    const cleanDistrict = payload.district?.trim() || null;
+    const computedAddress = [cleanDistrict, cleanDivision].filter(Boolean).join(', ') || null;
+
     await pool.execute(
       `INSERT INTO clients (
-        business_name, business_type, whatsapp_number, email, division, district,
+        business_name, business_type, whatsapp_number, email, division, district, address,
         password_hash, is_subscriber, subscription_package, stage
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.businessName.trim(),
         payload.businessType,
         cleanPhone,
         payload.email?.trim() || null,
-        payload.division?.trim() || null,
-        payload.district?.trim() || null,
+        cleanDivision,
+        cleanDistrict,
+        computedAddress,
         passwordHash,
         isSub ? 1 : 0,
         pkg,
@@ -483,6 +496,10 @@ export async function adminUpdateMenuSnapUserAction(
       pkg = isSub ? 'Pro Lifetime' : 'Free Plan';
     }
 
+    const cleanDivision = payload.division?.trim() || null;
+    const cleanDistrict = payload.district?.trim() || null;
+    const computedAddress = [cleanDistrict, cleanDivision].filter(Boolean).join(', ') || null;
+
     if (payload.password && payload.password.trim()) {
       if (payload.password.trim().length < 6) {
         return { success: false, error: 'Password must be at least 6 characters.' };
@@ -491,15 +508,16 @@ export async function adminUpdateMenuSnapUserAction(
       await pool.execute(
         `UPDATE clients SET 
           business_name = ?, business_type = ?, whatsapp_number = ?, email = ?,
-          division = ?, district = ?, password_hash = ?, is_subscriber = ?, subscription_package = ?, stage = ?
+          division = ?, district = ?, address = ?, password_hash = ?, is_subscriber = ?, subscription_package = ?, stage = ?
         WHERE id = ?`,
         [
           payload.businessName.trim(),
           payload.businessType,
           cleanPhone,
           payload.email?.trim() || null,
-          payload.division?.trim() || null,
-          payload.district?.trim() || null,
+          cleanDivision,
+          cleanDistrict,
+          computedAddress,
           newHash,
           isSub ? 1 : 0,
           pkg,
@@ -511,15 +529,16 @@ export async function adminUpdateMenuSnapUserAction(
       await pool.execute(
         `UPDATE clients SET 
           business_name = ?, business_type = ?, whatsapp_number = ?, email = ?,
-          division = ?, district = ?, is_subscriber = ?, subscription_package = ?, stage = ?
+          division = ?, district = ?, address = ?, is_subscriber = ?, subscription_package = ?, stage = ?
         WHERE id = ?`,
         [
           payload.businessName.trim(),
           payload.businessType,
           cleanPhone,
           payload.email?.trim() || null,
-          payload.division?.trim() || null,
-          payload.district?.trim() || null,
+          cleanDivision,
+          cleanDistrict,
+          computedAddress,
           isSub ? 1 : 0,
           pkg,
           isSub ? 'customer' : 'new-lead',
