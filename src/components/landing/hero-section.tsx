@@ -23,7 +23,7 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({
-  videoSrc = "https://v1.pinimg.com/videos/mc/720p/ab/94/65/ab9465dc20b9a1842b3f7957251cd14d.mp4",
+  videoSrc = "https://v1.pinimg.com/videos/iht/expMp4/f5/95/a4/f595a4da623d1223b1717a624b53940c_720w.mp4",
   videoPoster = "/images/hero-sf-wallpaper.jpg",
 }: HeroSectionProps) {
   const [activeTab, setActiveTab] = useState<"explore" | "builder" | "pricing">("explore");
