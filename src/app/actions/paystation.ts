@@ -756,10 +756,10 @@ export async function getPayStationTransactionsAction(
 
     if (search) {
       conditions.push(
-        '(invoice_number LIKE ? OR trx_id LIKE ? OR customer_name LIKE ? OR customer_email LIKE ? OR customer_phone LIKE ? OR plan LIKE ?)'
+        '(invoice_number LIKE ? OR trx_id LIKE ? OR customer_name LIKE ? OR customer_email LIKE ? OR customer_phone LIKE ? OR plan LIKE ? OR payment_category LIKE ?)'
       );
       const wildcard = `%${search}%`;
-      params.push(wildcard, wildcard, wildcard, wildcard, wildcard, wildcard);
+      params.push(wildcard, wildcard, wildcard, wildcard, wildcard, wildcard, wildcard);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

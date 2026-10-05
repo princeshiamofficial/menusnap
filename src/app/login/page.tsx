@@ -54,12 +54,10 @@ function LoginContent() {
     tabParam === 'register'
   );
 
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>(
-    hasParams ? 'register' : 'login'
-  );
+  const [accountExists, setAccountExists] = useState<boolean>(false);
 
   // Login form state
-  const [loginIdentifier, setLoginIdentifier] = useState(identifierParam || '');
+  const [loginIdentifier, setLoginIdentifier] = useState(identifierParam || whatsappParam || emailParam || '');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
@@ -81,12 +79,24 @@ function LoginContent() {
   const { setTheme } = useTheme();
   const router = useRouter();
 
-  // Initialize from searchParams
+  // Check if account already exists from searchParams on mount
   useEffect(() => {
-    if (hasParams) {
-      setActiveTab('register');
-    } else {
-      setActiveTab('login');
+    const targetId = (identifierParam || whatsappParam || emailParam || '').trim();
+    if (targetId) {
+      let isCancelled = false;
+      checkClientStatus(targetId)
+        .then(res => {
+          if (isCancelled) return;
+          if (res.success && res.exists) {
+            setAccountExists(true);
+            setLoginIdentifier(targetId);
+          }
+        })
+        .catch(() => {});
+
+      return () => {
+        isCancelled = true;
+      };
     }
     if (emailParam) setEmail(emailParam);
     if (whatsappParam) {
@@ -94,7 +104,30 @@ function LoginContent() {
       setLoginIdentifier(whatsappParam);
     }
     if (nameParam) setBusinessName(nameParam);
-  }, [hasParams, emailParam, whatsappParam, nameParam]);
+  }, [identifierParam, whatsappParam, emailParam, nameParam]);
+
+  // When WhatsApp or Email is typed in registration, check if client already exists
+  useEffect(() => {
+    const targetId = (whatsapp || email || '').trim();
+    if (targetId && (isValidWhatsApp(targetId) || targetId.includes('@'))) {
+      let isCancelled = false;
+      checkClientStatus(targetId)
+        .then(res => {
+          if (isCancelled) return;
+          if (res.success && res.exists) {
+            setAccountExists(true);
+            setLoginIdentifier(targetId);
+          } else if (res.success && !res.exists) {
+            setAccountExists(false);
+          }
+        })
+        .catch(() => {});
+
+      return () => {
+        isCancelled = true;
+      };
+    }
+  }, [whatsapp, email]);
 
   // Load Remember Me credentials on mount
   useEffect(() => {
@@ -118,9 +151,9 @@ function LoginContent() {
     }
   }, [isClientLoggedIn, router, loggingIn]);
 
-  // When WhatsApp is typed in registration, check if client already exists to auto-fill
+  // Auto-fill business details when existing client is loaded in registration view
   useEffect(() => {
-    if (activeTab === 'register' && isValidWhatsApp(whatsapp)) {
+    if (isValidWhatsApp(whatsapp)) {
       let isCancelled = false;
       checkClientStatus(whatsapp)
         .then(res => {
@@ -142,7 +175,7 @@ function LoginContent() {
         isCancelled = true;
       };
     }
-  }, [whatsapp, activeTab, businessName, type, division, district, email, setTheme]);
+  }, [whatsapp, businessName, type, division, district, email, setTheme]);
 
   const handleTypeChange = (value: 'restaurant' | 'parlour') => {
     setType(value);
@@ -247,6 +280,7 @@ function LoginContent() {
   };
 
   const isWhatsAppInvalid = whatsapp.length > 0 && !isValidWhatsApp(whatsapp);
+  const isRegisterView = hasParams && !accountExists && tabParam !== 'login';
   const businessNameLabel = type === 'restaurant' ? 'Restaurant Name' : type === 'parlour' ? 'Parlour Name' : 'Business Name';
   const businessNamePlaceholder = `Enter your ${type ? type : 'business'} name`;
 
@@ -269,13 +303,28 @@ function LoginContent() {
           </div>
           <div className="px-8 pt-5 pb-1">
             <CardDescription className="text-[#64748b] font-medium text-center text-sm">
-              {hasParams
+              {isRegisterView
                 ? 'Complete your account registration'
+                : accountExists
+                ? 'Welcome back! Please login with your password'
                 : 'Access your dedicated menu builder'}
             </CardDescription>
 
-            {/* If redirected from checkout, show welcome banner */}
-            {hasParams && (
+            {/* If account already exists */}
+            {accountExists && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200/90 rounded-xl flex items-start gap-2.5 text-xs text-blue-900 shadow-xs text-left">
+                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-blue-950">Account Already Exists</p>
+                  <p className="text-[11px] text-blue-800 leading-snug">
+                    An existing account was found for <span className="font-semibold">{loginIdentifier}</span>. Please enter your password to login.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* If redirected from checkout as a new user, show welcome banner */}
+            {isRegisterView && (
               <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200/90 rounded-xl flex items-start gap-2.5 text-xs text-emerald-900 shadow-xs text-left">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
@@ -290,8 +339,8 @@ function LoginContent() {
         </CardHeader>
 
         <CardContent className="p-8 pt-4">
-          {!hasParams ? (
-            /* ================= LOGIN FORM (No Params) ================= */
+          {!isRegisterView ? (
+            /* ================= LOGIN FORM ================= */
             <form onSubmit={handleLoginSubmit} className="space-y-5 animate-in fade-in-50 duration-200">
               <div className="space-y-1.5">
                 <Label htmlFor="login-identifier" className="flex items-center text-[#1a2b4b] font-bold text-sm">

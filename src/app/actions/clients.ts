@@ -107,7 +107,7 @@ async function ensureClientsTable() {
 /**
  * Checks if a client already exists by WhatsApp number and if they have a password configured.
  */
-export async function checkClientStatus(whatsappNumber: string): Promise<{
+export async function checkClientStatus(identifier: string): Promise<{
   success: boolean;
   exists: boolean;
   hasPassword: boolean;
@@ -119,20 +119,21 @@ export async function checkClientStatus(whatsappNumber: string): Promise<{
     district?: string;
     address?: string;
     email?: string;
+    whatsappNumber?: string;
     isSubscriber?: boolean;
   };
   error?: string;
 }> {
   try {
     await ensureClientsTable();
-    const cleanNumber = (whatsappNumber || '').trim();
-    if (!cleanNumber) {
-      return { success: false, exists: false, hasPassword: false, isSubscriber: false, error: 'WhatsApp number is required.' };
+    const cleanId = (identifier || '').trim();
+    if (!cleanId) {
+      return { success: false, exists: false, hasPassword: false, isSubscriber: false, error: 'Identifier is required.' };
     }
 
     const [rows]: any = await pool.execute(
-      'SELECT id, business_name, business_type, division, district, address, email, stage, is_subscriber, password_hash FROM clients WHERE whatsapp_number = ? LIMIT 1',
-      [cleanNumber]
+      'SELECT id, business_name, business_type, division, district, address, email, whatsapp_number, stage, is_subscriber, password_hash FROM clients WHERE whatsapp_number = ? OR email = ? LIMIT 1',
+      [cleanId, cleanId]
     );
 
     if (rows.length > 0) {
@@ -157,6 +158,7 @@ export async function checkClientStatus(whatsappNumber: string): Promise<{
           district: row.district || undefined,
           address: row.address || undefined,
           email: row.email || undefined,
+          whatsappNumber: row.whatsapp_number || undefined,
           isSubscriber: isSub,
         },
       };

@@ -15,10 +15,14 @@ import {
 import { Button } from "@/components/ui/button";
 import confetti from 'canvas-confetti';
 import Link from 'next/link';
+import { useClientAuth } from '@/hooks/use-client-auth';
+import { checkClientStatus } from '@/app/actions/clients';
 
 function CheckoutResultContent() {
+  const { isClientLoggedIn } = useClientAuth();
   const searchParams = useSearchParams();
   const [copied, setCopied] = React.useState(false);
+  const [hasAccount, setHasAccount] = React.useState(false);
 
   const status = searchParams.get('status') || '';
   const invoice = searchParams.get('invoice') || '';
@@ -36,6 +40,19 @@ function CheckoutResultContent() {
   const isSuccess = statusLower === 'success' || statusLower === 'successful';
   const isCancelled = statusLower.includes('cancel');
 
+  React.useEffect(() => {
+    const targetIdentifier = (phone || email || '').trim();
+    if (targetIdentifier) {
+      checkClientStatus(targetIdentifier)
+        .then(res => {
+          if (res.success && res.exists && res.hasPassword) {
+            setHasAccount(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [phone, email]);
+
   const registerParams = new URLSearchParams();
   registerParams.set('tab', 'register');
   registerParams.set('from', 'checkout');
@@ -44,7 +61,17 @@ function CheckoutResultContent() {
   if (name) registerParams.set('name', name);
   if (plan) registerParams.set('plan', plan);
 
-  const registerUrl = `/login?${registerParams.toString()}`;
+  const targetUrl = isClientLoggedIn
+    ? '/dashboard'
+    : hasAccount
+    ? `/login?tab=login&identifier=${encodeURIComponent(phone || email)}`
+    : `/login?${registerParams.toString()}`;
+
+  const buttonLabel = isClientLoggedIn
+    ? 'Go to Dashboard'
+    : hasAccount
+    ? 'Go to Login'
+    : 'Complete Registration';
 
   useEffect(() => {
     if (isSuccess) {
@@ -140,9 +167,9 @@ function CheckoutResultContent() {
 
             {/* CTAs */}
             <div className="w-full space-y-2">
-              <Link href={registerUrl} className="block w-full">
+              <Link href={targetUrl} className="block w-full">
                 <Button className="w-full bg-slate-900 hover:bg-black text-white text-xs font-semibold h-11 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]">
-                  <span>Complete Registration</span>
+                  <span>{buttonLabel}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </Link>

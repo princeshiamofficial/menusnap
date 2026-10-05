@@ -443,6 +443,62 @@ export default function AdminPaymentsPage() {
     }
   };
 
+  // Payment Method Badge Component
+  const renderPaymentMethodBadge = (category?: string | null) => {
+    if (!category || category === 'N/A' || category === 'None' || category === '') {
+      return <span className="text-slate-400 text-xs italic">—</span>;
+    }
+
+    const catLower = category.toLowerCase();
+
+    if (catLower.includes('bkash')) {
+      return (
+        <Badge className="bg-pink-500/10 text-pink-600 border border-pink-500/30 hover:bg-pink-500/20 font-semibold text-[11px] px-2.5 py-0.5 gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
+          bKash
+        </Badge>
+      );
+    }
+
+    if (catLower.includes('nagad')) {
+      return (
+        <Badge className="bg-orange-500/10 text-orange-600 border border-orange-500/30 hover:bg-orange-500/20 font-semibold text-[11px] px-2.5 py-0.5 gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+          Nagad
+        </Badge>
+      );
+    }
+
+    if (catLower.includes('rocket')) {
+      return (
+        <Badge className="bg-purple-500/10 text-purple-600 border border-purple-500/30 hover:bg-purple-500/20 font-semibold text-[11px] px-2.5 py-0.5 gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+          Rocket
+        </Badge>
+      );
+    }
+
+    if (
+      catLower.includes('card') ||
+      catLower.includes('visa') ||
+      catLower.includes('master') ||
+      catLower.includes('amex')
+    ) {
+      return (
+        <Badge className="bg-blue-500/10 text-blue-600 border border-blue-500/30 hover:bg-blue-500/20 font-semibold text-[11px] px-2.5 py-0.5 gap-1.5">
+          <CreditCard className="w-3 h-3 text-blue-500" />
+          {category}
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge className="bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 font-medium text-[11px] px-2.5 py-0.5">
+        {category}
+      </Badge>
+    );
+  };
+
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   return (
@@ -700,6 +756,7 @@ export default function AdminPaymentsPage() {
                     <TableHead className="font-semibold text-xs text-slate-600">PayStation TrxID</TableHead>
                     <TableHead className="font-semibold text-xs text-slate-600">Customer Details</TableHead>
                     <TableHead className="font-semibold text-xs text-slate-600">Plan & Billing</TableHead>
+                    <TableHead className="font-semibold text-xs text-slate-600">Method</TableHead>
                     <TableHead className="font-semibold text-xs text-slate-600 text-right">Amount</TableHead>
                     <TableHead className="font-semibold text-xs text-slate-600 text-center">Status</TableHead>
                     <TableHead className="font-semibold text-xs text-slate-600 text-right pr-6">Actions</TableHead>
@@ -709,14 +766,14 @@ export default function AdminPaymentsPage() {
                   {loadingTransactions ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell colSpan={8} className="py-6 text-center">
+                        <TableCell colSpan={9} className="py-6 text-center">
                           <div className="h-5 bg-slate-100 rounded-md animate-pulse max-w-2xl mx-auto" />
                         </TableCell>
                       </TableRow>
                     ))
                   ) : transactions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-16 text-slate-400">
+                      <TableCell colSpan={9} className="text-center py-16 text-slate-400">
                         <div className="flex flex-col items-center justify-center space-y-2">
                           <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                             <Receipt className="w-6 h-6" />
@@ -813,6 +870,11 @@ export default function AdminPaymentsPage() {
                           <span className="text-[11px] text-slate-500 ml-1.5 capitalize">
                             {tx.duration}
                           </span>
+                        </TableCell>
+
+                        {/* Payment Method */}
+                        <TableCell className="text-xs whitespace-nowrap">
+                          {renderPaymentMethodBadge(tx.paymentCategory)}
                         </TableCell>
 
                         {/* Amount */}
@@ -1212,7 +1274,9 @@ export default function AdminPaymentsPage() {
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-semibold">Payment Method</span>
-                  <span className="font-medium text-slate-700">{selectedTx.paymentCategory || 'Online Gateway'}</span>
+                  <div className="mt-1">
+                    {renderPaymentMethodBadge(selectedTx.paymentCategory)}
+                  </div>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-semibold">Created Date</span>

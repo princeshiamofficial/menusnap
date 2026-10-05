@@ -75,22 +75,18 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
     }
   }, []);
 
-  // When WhatsApp is typed in registration, check if client already exists to auto-fill
+  // When WhatsApp or Email is typed in registration, check if client already exists
   useEffect(() => {
-    if (activeTab === 'register' && isValidWhatsApp(whatsapp)) {
+    const targetId = (whatsapp || email || '').trim();
+    if (activeTab === 'register' && (isValidWhatsApp(targetId) || targetId.includes('@'))) {
       let isCancelled = false;
-      checkClientStatus(whatsapp)
+      checkClientStatus(targetId)
         .then(res => {
           if (isCancelled) return;
-          if (res.success && res.exists && res.client) {
-            if (res.client.businessName && !businessName) setBusinessName(res.client.businessName);
-            if (res.client.businessType && !type) {
-              setType(res.client.businessType);
-              setTheme(res.client.businessType === 'parlour' ? 'parlour' : 'default');
-            }
-            if (res.client.division && !division) setDivision(res.client.division);
-            if (res.client.district && !district) setDistrict(res.client.district);
-            if (res.client.email && !email) setEmail(res.client.email);
+          if (res.success && res.exists) {
+            // Account already exists -> switch to login tab
+            setActiveTab('login');
+            setLoginIdentifier(targetId);
           }
         })
         .catch(() => {});
@@ -99,7 +95,7 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
         isCancelled = true;
       };
     }
-  }, [whatsapp, activeTab, businessName, type, division, district, email, setTheme]);
+  }, [whatsapp, email, activeTab]);
 
   const handleTypeChange = (value: 'restaurant' | 'parlour') => {
     setType(value);
