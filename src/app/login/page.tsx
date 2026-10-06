@@ -345,77 +345,8 @@ function LoginContent() {
             <CardDescription className="text-[#64748b] font-medium text-center text-sm">
               {activeTab === 'register'
                 ? 'Complete your account registration'
-                : accountExists
-                ? 'Welcome back! Please login with your password'
                 : 'Access your dedicated menu builder'}
             </CardDescription>
-
-            {/* Segmented Tab Switcher */}
-            <div className="mt-3 p-1 bg-slate-100 rounded-xl flex items-center gap-1 border border-slate-200/80">
-              <button
-                type="button"
-                onClick={() => { setActiveTab('login'); }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  activeTab === 'login'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <LogIn className="h-4 w-4" />
-                Login
-              </button>
-              <button
-                type="button"
-                onClick={() => { setActiveTab('register'); }}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  activeTab === 'register'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <UserPlus className="h-4 w-4" />
-                Registration
-              </button>
-            </div>
-
-            {/* If account already exists with password */}
-            {activeTab === 'login' && accountExists && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200/90 rounded-xl flex items-start gap-2.5 text-xs text-blue-900 shadow-xs text-left">
-                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-blue-950">Account Already Exists</p>
-                  <p className="text-[11px] text-blue-800 leading-snug">
-                    An existing account was found for <span className="font-semibold">{loginIdentifier || whatsapp}</span>. Please enter your password to login.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* If account exists but needs password setup */}
-            {activeTab === 'register' && accountNeedsPassword && (
-              <div className="mt-3 p-3 bg-amber-50 border border-amber-200/90 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 shadow-xs text-left">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-amber-950">Account Found — Complete Registration</p>
-                  <p className="text-[11px] text-amber-800 leading-snug">
-                    An existing record was found for <span className="font-semibold">{whatsapp || email || loginIdentifier}</span>. Please choose a password and confirm your details to activate your account.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* If redirected from checkout as a new user */}
-            {activeTab === 'register' && hasParams && !accountNeedsPassword && (
-              <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200/90 rounded-xl flex items-start gap-2.5 text-xs text-emerald-900 shadow-xs text-left">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-emerald-950">Payment Verified!</p>
-                  <p className="text-[11px] text-emerald-800 leading-snug">
-                    Please choose a password to complete your account registration.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </CardHeader>
 
