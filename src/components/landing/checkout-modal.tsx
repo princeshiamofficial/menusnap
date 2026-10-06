@@ -81,9 +81,9 @@ export function CheckoutModal({
       const timer = setTimeout(() => {
         checkClientSubscription(cleanP, cleanE)
           .then((res) => {
-            if (isSubMounted && res.success && res.isSubscriber && res.plan) {
+            if (isSubMounted && res.success && res.isSubscriber && res.plan && res.plan.toLowerCase().trim() !== 'free') {
               setTypedPhonePackage(res.plan);
-            } else if (isSubMounted && !res.isSubscriber) {
+            } else if (isSubMounted && (!res.isSubscriber || res.plan?.toLowerCase().trim() === 'free')) {
               setTypedPhonePackage(null);
             }
           })
@@ -161,7 +161,9 @@ export function CheckoutModal({
 
   const isSamePlanAlreadyPurchased = Boolean(
     (isSubscriber || Boolean(typedPhonePackage) || isAdmin) &&
-    detectedPlan && (
+    detectedPlan &&
+    detectedPlan !== "free" &&
+    plan.toLowerCase().trim() !== "free" && (
       detectedPlan.includes(plan.toLowerCase().trim()) ||
       (matchedPackage && detectedPlan.includes(matchedPackage.name.toLowerCase().trim())) ||
       plan.toLowerCase().trim().includes(detectedPlan) ||
@@ -294,10 +296,10 @@ export function CheckoutModal({
     try {
       // Live server check to strictly prevent double purchase
       const checkRes = await checkClientSubscription(phone.trim(), email.trim());
-      if (checkRes.success && checkRes.isSubscriber && checkRes.plan) {
+      if (checkRes.success && checkRes.isSubscriber && checkRes.plan && checkRes.plan.toLowerCase().trim() !== 'free') {
         const livePlan = checkRes.plan.toLowerCase().trim();
         const targetPlan = plan.toLowerCase().trim();
-        if (livePlan.includes(targetPlan) || targetPlan.includes(livePlan)) {
+        if (targetPlan !== 'free' && (livePlan.includes(targetPlan) || targetPlan.includes(livePlan))) {
           setErrorMessage(`Your account already has active lifetime access to ${planDisplayName}. You do not need to purchase it again.`);
           setIsProcessing(false);
           return;

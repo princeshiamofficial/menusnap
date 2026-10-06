@@ -871,26 +871,6 @@ export async function checkClientSubscription(
       };
     };
 
-    // If no client phone or email provided, check if an admin is logged in
-    if (!cleanPhone && !cleanEmail) {
-      if (hasAdminSession) {
-        return {
-          success: true,
-          isSubscriber: true,
-          isAdmin: true,
-          plan: 'admin',
-          limits: {
-            isCategoryUnlimited: true,
-            categoryLimit: 0,
-            isItemUnlimited: true,
-            itemLimit: 0,
-          },
-        };
-      }
-      const freeLimits = await getLimitsForPlan('free');
-      return { success: true, isSubscriber: true, plan: 'free', limits: freeLimits };
-    }
-
     // 1. Check clients table (with self-healing fallback)
     let clientRows: any[] = [];
     try {
@@ -929,7 +909,7 @@ export async function checkClientSubscription(
       const stageLower = (c.stage || '').toLowerCase().trim();
       if (
         c.is_subscriber === 1 ||
-        Boolean(c.subscription_package) ||
+        (Boolean(c.subscription_package) && c.subscription_package.toLowerCase().trim() !== 'free') ||
         stageLower === 'customer' ||
         stageLower === 'subscriber' ||
         stageLower === 'subscribed' ||
@@ -958,14 +938,15 @@ export async function checkClientSubscription(
           );
         }
         const limits = await getLimitsForPlan(txPlan);
-        return { success: true, isSubscriber: true, plan: txPlan, limits, isAdmin: hasAdminSession };
+        const isPaidOrSubscriber = txPlan.toLowerCase().trim() !== 'free';
+        return { success: true, isSubscriber: isPaidOrSubscriber, plan: txPlan, limits, isAdmin: hasAdminSession };
       }
     } catch (txErr) {
       console.error('Error querying paystation_transactions for subscription:', txErr);
     }
 
     // Fallback: If client has explicit subscription_package
-    if (clientPlan) {
+    if (clientPlan && clientPlan.toLowerCase().trim() !== 'free') {
       const limits = await getLimitsForPlan(clientPlan);
       return { success: true, isSubscriber: true, plan: clientPlan, limits, isAdmin: hasAdminSession };
     }
@@ -984,14 +965,15 @@ export async function checkClientSubscription(
         await pool.execute(`UPDATE clients SET subscription_package = ? WHERE id = ?`, [resolvedPlan, clientId]);
       }
       const limits = await getLimitsForPlan(resolvedPlan);
-      return { success: true, isSubscriber: true, plan: resolvedPlan, limits, isAdmin: hasAdminSession };
+      const isPaidSub = resolvedPlan !== 'free';
+      return { success: true, isSubscriber: isPaidSub, plan: resolvedPlan, limits, isAdmin: hasAdminSession };
     }
 
     // Unsubscribed / default client: resolve 'free' package limits
     const freeLimits = await getLimitsForPlan('free');
     return {
       success: true,
-      isSubscriber: true,
+      isSubscriber: false,
       plan: 'free',
       limits: freeLimits,
       isAdmin: hasAdminSession,
