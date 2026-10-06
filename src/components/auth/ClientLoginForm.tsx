@@ -38,6 +38,7 @@ const BD_ADDRESS_DATA: Record<string, string[]> = {
 
 export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const [accountNeedsPassword, setAccountNeedsPassword] = useState(false);
 
   // Login form state
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -84,9 +85,28 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
         .then(res => {
           if (isCancelled) return;
           if (res.success && res.exists) {
-            // Account already exists -> switch to login tab
-            setActiveTab('login');
-            setLoginIdentifier(targetId);
+            if (res.hasPassword) {
+              // Account already exists with password -> switch to login tab
+              setActiveTab('login');
+              setLoginIdentifier(targetId);
+              setAccountNeedsPassword(false);
+            } else {
+              // Account exists but has NO password -> keep on register tab, pre-fill details!
+              setAccountNeedsPassword(true);
+              if (res.client) {
+                if (res.client.businessName && !businessName) setBusinessName(res.client.businessName);
+                if (res.client.businessType && !type) {
+                  setType(res.client.businessType);
+                  setTheme(res.client.businessType === 'parlour' ? 'parlour' : 'default');
+                }
+                if (res.client.division && !division) setDivision(res.client.division);
+                if (res.client.district && !district) setDistrict(res.client.district);
+                if (res.client.email && !email) setEmail(res.client.email);
+                if (res.client.whatsappNumber && !whatsapp) setWhatsapp(res.client.whatsappNumber);
+              }
+            }
+          } else if (res.success && !res.exists) {
+            setAccountNeedsPassword(false);
           }
         })
         .catch(() => {});
@@ -95,7 +115,7 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
         isCancelled = true;
       };
     }
-  }, [whatsapp, email, activeTab]);
+  }, [whatsapp, email, activeTab, businessName, type, division, district, setTheme]);
 
   const handleTypeChange = (value: 'restaurant' | 'parlour') => {
     setType(value);
@@ -105,19 +125,39 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
   // Submit Login
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginIdentifier.trim() || !loginPassword) return;
+    const cleanId = loginIdentifier.trim();
+    if (!cleanId || !loginPassword) return;
+
+    // Check if account has no password yet
+    const statusRes = await checkClientStatus(cleanId);
+    if (statusRes.success && statusRes.exists && !statusRes.hasPassword) {
+      setAccountNeedsPassword(true);
+      setActiveTab('register');
+      if (statusRes.client) {
+        if (statusRes.client.businessName) setBusinessName(statusRes.client.businessName);
+        if (statusRes.client.businessType) {
+          setType(statusRes.client.businessType);
+          setTheme(statusRes.client.businessType === 'parlour' ? 'parlour' : 'default');
+        }
+        if (statusRes.client.division) setDivision(statusRes.client.division);
+        if (statusRes.client.district) setDistrict(statusRes.client.district);
+        if (statusRes.client.email) setEmail(statusRes.client.email);
+        if (statusRes.client.whatsappNumber) setWhatsapp(statusRes.client.whatsappNumber);
+      }
+      return;
+    }
 
     if (typeof window !== 'undefined') {
       (window as any).dataLayer = (window as any).dataLayer || [];
       (window as any).dataLayer.push({
         event: 'login_attempt',
         method: 'credentials',
-        identifier: loginIdentifier,
+        identifier: cleanId,
       });
     }
 
     const success = await loginWithCredentials(
-      loginIdentifier.trim(),
+      cleanId,
       loginPassword,
       rememberMe,
       null
@@ -129,7 +169,7 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
         (window as any).dataLayer.push({
           event: 'login_success',
           method: 'credentials',
-          identifier: loginIdentifier,
+          identifier: cleanId,
         });
       }
       if (onSuccess) {
@@ -345,6 +385,17 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
         ) : (
           /* ================= REGISTRATION TAB ================= */
           <form onSubmit={handleRegisterSubmit} className="space-y-4 animate-in fade-in-50 duration-200">
+            {accountNeedsPassword && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/90 dark:border-amber-800/60 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200 shadow-xs text-left">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-amber-950 dark:text-amber-100">Account Found — Complete Registration</p>
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-snug">
+                    An account was found for <span className="font-semibold">{whatsapp || email || loginIdentifier}</span>. Please choose a password and verify your details to complete setup.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="space-y-1">
               <Label htmlFor="gate-business-type" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
                 {type === 'restaurant' ? <Utensils className="h-4 w-4 mr-2" /> : type === 'parlour' ? <Sparkles className="h-4 w-4 mr-2" /> : <Building className="h-4 w-4 mr-2" />}
