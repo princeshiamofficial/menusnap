@@ -819,26 +819,39 @@ export async function checkClientSubscription(
 
     // Dynamic helper to fetch limits for any package from pricing_packages table
     const getLimitsForPlan = async (planName?: string) => {
-      const cleanP = (planName || 'free').toLowerCase().trim();
+      const cleanP = (planName || '').toLowerCase().trim();
       try {
         const [pkgRows]: any = await pool.execute(
           `SELECT is_category_unlimited, category_limit, is_item_unlimited, item_limit 
            FROM pricing_packages 
-           WHERE package_id = ? OR LOWER(name) = ? OR ? LIKE CONCAT('%', package_id, '%')
+           WHERE package_id = ? 
+              OR LOWER(name) = ? 
+              OR ? LIKE CONCAT('%', package_id, '%')
+              OR ? LIKE CONCAT('%', LOWER(name), '%')
+              OR package_id LIKE CONCAT('%', ?, '%')
+              OR LOWER(name) LIKE CONCAT('%', ?, '%')
+           ORDER BY 
+              CASE 
+                WHEN package_id = ? THEN 1
+                WHEN LOWER(name) = ? THEN 2
+                ELSE 3
+              END
            LIMIT 1`,
-          [cleanP, cleanP, cleanP]
+          [cleanP, cleanP, cleanP, cleanP, cleanP, cleanP, cleanP, cleanP]
         );
         if (pkgRows && pkgRows.length > 0) {
+          const row = pkgRows[0];
           return {
-            isCategoryUnlimited: Number(pkgRows[0].is_category_unlimited) === 1,
-            categoryLimit: Number(pkgRows[0].category_limit) || 0,
-            isItemUnlimited: Number(pkgRows[0].is_item_unlimited) === 1,
-            itemLimit: Number(pkgRows[0].item_limit) || 0,
+            isCategoryUnlimited: Number(row.is_category_unlimited) === 1,
+            categoryLimit: Number(row.category_limit) || 0,
+            isItemUnlimited: Number(row.is_item_unlimited) === 1,
+            itemLimit: Number(row.item_limit) || 0,
           };
         }
       } catch (err) {
         console.error('Error fetching dynamic plan limits in checkClientSubscription:', err);
       }
+
       return {
         isCategoryUnlimited: true,
         categoryLimit: 0,
@@ -893,14 +906,14 @@ export async function checkClientSubscription(
       console.error('Error querying paystation_transactions for subscription:', txErr);
     }
 
-    // 3. Resolve active plan dynamically from database
-    const resolvedPlan = transactionPlan || clientRow?.subscription_package || 'free';
+    // 3. Resolve active plan: prioritize clients table (admin set), then transaction plan, then 'free'
+    const resolvedPlan = clientRow?.subscription_package || transactionPlan || 'free';
     const isPaidPackage = resolvedPlan.toLowerCase().trim() !== 'free';
     const isVipSubscriber = Number(clientRow?.is_subscriber) === 1 || clientRow?.stage === 'customer' || clientRow?.stage === 'subscriber';
     const isSubscriber = isPaidPackage || isVipSubscriber;
 
-    // Sync transaction plan back to client record if needed
-    if (clientRow?.id && transactionPlan && clientRow.subscription_package !== transactionPlan) {
+    // If client had no package set in clients table but had a transaction plan, save it
+    if (clientRow?.id && !clientRow.subscription_package && transactionPlan) {
       await pool.execute(
         `UPDATE clients SET is_subscriber = ?, stage = ?, subscription_package = ? WHERE id = ?`,
         [isSubscriber ? 1 : 0, isSubscriber ? 'customer' : 'new-lead', transactionPlan, clientRow.id]

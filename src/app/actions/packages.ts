@@ -553,38 +553,25 @@ export async function getPackageLimitsAction(packageIdOrSlug: string): Promise<{
     await ensurePricingPackagesTable();
     const cleanId = (packageIdOrSlug || '').trim().toLowerCase();
     const [rows]: any = await (pool as any).execute(
-      'SELECT package_id, name, is_category_unlimited, category_limit, is_item_unlimited, item_limit FROM pricing_packages WHERE package_id = ? OR LOWER(name) = ? LIMIT 1',
-      [cleanId, cleanId]
+      `SELECT package_id, name, is_category_unlimited, category_limit, is_item_unlimited, item_limit 
+       FROM pricing_packages 
+       WHERE package_id = ? 
+          OR LOWER(name) = ? 
+          OR ? LIKE CONCAT('%', package_id, '%')
+          OR ? LIKE CONCAT('%', LOWER(name), '%')
+          OR package_id LIKE CONCAT('%', ?, '%')
+          OR LOWER(name) LIKE CONCAT('%', ?, '%')
+       ORDER BY 
+          CASE 
+            WHEN package_id = ? THEN 1
+            WHEN LOWER(name) = ? THEN 2
+            ELSE 3
+          END
+       LIMIT 1`,
+      [cleanId, cleanId, cleanId, cleanId, cleanId, cleanId, cleanId, cleanId]
     );
 
     if (!rows || rows.length === 0) {
-      if (cleanId === 'starter') {
-        return {
-          success: true,
-          data: {
-            packageId: 'starter',
-            packageName: 'Starter',
-            isCategoryUnlimited: false,
-            categoryLimit: 5,
-            isItemUnlimited: false,
-            itemLimit: 10,
-          },
-        };
-      }
-      if (cleanId === 'pro') {
-        return {
-          success: true,
-          data: {
-            packageId: 'pro',
-            packageName: 'Pro',
-            isCategoryUnlimited: false,
-            categoryLimit: 10,
-            isItemUnlimited: false,
-            itemLimit: 20,
-          },
-        };
-      }
-      // Default to unlimited if not found
       return {
         success: true,
         data: {
