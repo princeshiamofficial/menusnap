@@ -8,10 +8,23 @@ import { useClientAuth } from '@/hooks/use-client-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building, Utensils, Sparkles, LogIn, AlertCircle, MapPin, Mail, Lock, Eye, EyeOff, UserPlus, Phone, CheckCircle2 } from 'lucide-react';
+import { 
+  Building, 
+  Utensils, 
+  Sparkles, 
+  MapPin, 
+  Mail, 
+  Lock, 
+  UserPlus, 
+  Globe, 
+  ArrowUpRight, 
+  CheckCircle2, 
+  Phone, 
+  HelpCircle,
+  MessageSquare
+} from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { isValidWhatsApp } from '@/lib/utils';
 import { checkClientStatus } from '@/app/actions/clients';
@@ -325,66 +338,102 @@ function LoginContent() {
   const businessNamePlaceholder = `Enter your ${type ? type : 'business'} name`;
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden bg-cover bg-center" style={{ backgroundImage: "url('/login-bg.png')" }}>
-      {/* Backdrop overlay for soft blur and focus */}
-      <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px]" />
+    <div 
+      className="min-h-screen w-full bg-[#FAF7F2] text-slate-800 flex flex-col justify-between relative overflow-hidden font-sans select-none bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('/login-illustration-bg.jpg')" }}
+    >
+      
+      {/* 1. TOP HEADER NAVIGATION */}
+      <header className="w-full px-6 sm:px-12 py-6 flex items-center justify-between z-20">
+        {/* Brand Logo & Subtitle */}
+        <div className="flex flex-col">
+          <Link href="/" className="flex items-center gap-1 group">
+            <span className="text-2xl font-black tracking-tight text-slate-900 group-hover:text-orange-600 transition-colors">
+              Menu<span className="text-orange-500">Snap</span>
+            </span>
+          </Link>
+          <Link 
+            href="mailto:support@menusnap.app" 
+            className="text-[11px] font-medium text-slate-400 hover:text-slate-700 flex items-center gap-0.5 mt-0.5 transition-colors"
+          >
+            <span>support@menusnap.app</span>
+            <span className="text-[10px]">→</span>
+          </Link>
+        </div>
 
-      <Card className="w-full max-w-md shadow-2xl rounded-2xl border-none relative overflow-hidden z-10 bg-white">
-        <CardHeader className="p-0">
-          <div className="bg-black w-full py-4 px-8 flex justify-center items-center">
-            <Image
-              src="/menusnap-logo-white.png"
-              alt="MenuSnap Logo"
-              width={280}
-              height={80}
-              className="object-contain"
-              priority
-            />
+        {/* Top Right Action Links */}
+        <div className="flex items-center gap-4 sm:gap-6">
+          <div className="hidden sm:flex items-center text-slate-400 text-sm">
+            <Globe className="h-4 w-4 mr-1 text-slate-400" />
+            <span className="text-xs font-semibold text-slate-500">EN</span>
           </div>
-          <div className="px-8 pt-5 pb-1">
-            <CardDescription className="text-[#64748b] font-medium text-center text-sm">
+
+          <Link
+            href="/#pricing"
+            className="text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            Pricing
+          </Link>
+
+          <Link
+            href="/#pricing"
+            className="text-xs sm:text-sm font-bold bg-[#F7B67C] hover:bg-[#EEA768] text-slate-900 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all shadow-sm active:scale-95 flex items-center gap-1"
+          >
+            <span>View Packages</span>
+          </Link>
+        </div>
+      </header>
+
+      {/* 2. MAIN CENTER FLOATING CARD */}
+      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 z-10 my-2 sm:my-4">
+        <div className="w-full max-w-[440px] bg-white rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.06)] border border-slate-100/80 p-8 sm:p-10 transition-all duration-300">
+          
+          {/* Card Header */}
+          <div className="text-center mb-6">
+            <h1 className="text-2xl sm:text-[26px] font-extrabold text-slate-900 tracking-tight">
+              {activeTab === 'register' 
+                ? (accountNeedsPassword ? 'Complete Setup' : 'Create Account') 
+                : 'Client Login'}
+            </h1>
+            <p className="text-xs sm:text-[13px] text-slate-400 font-medium mt-1.5 leading-relaxed">
               {activeTab === 'register'
-                ? 'Complete your account registration'
-                : 'Access your dedicated menu builder'}
-            </CardDescription>
+                ? 'Fill in your business details to setup your menu'
+                : 'Hey, Enter your details to get sign in to your account'}
+            </p>
           </div>
-        </CardHeader>
 
-        <CardContent className="p-8 pt-4">
+          {/* Tab Form Content */}
           {activeTab === 'login' ? (
             /* ================= LOGIN FORM ================= */
-            <form onSubmit={handleLoginSubmit} className="space-y-5 animate-in fade-in-50 duration-200">
-              <div className="space-y-1.5">
-                <Label htmlFor="login-identifier" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                  <WhatsAppIcon className="h-4 w-4 mr-2 text-green-600" />
-                  WhatsApp or Email
-                </Label>
-                <Input
-                  id="login-identifier"
-                  type="text"
-                  autoComplete="username"
-                  className="h-12 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm"
-                  placeholder="Enter your WhatsApp number or email"
-                  value={loginIdentifier}
-                  onChange={(e) => setLoginIdentifier(e.target.value)}
-                  required
-                />
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              {/* WhatsApp or Email */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <Input
+                    id="login-identifier"
+                    type="text"
+                    autoComplete="username"
+                    className="h-12 px-4 text-sm bg-transparent border border-slate-200 rounded-xl focus-visible:ring-2 focus-visible:ring-[#F7B67C] focus-visible:border-transparent transition-all placeholder:text-slate-400 text-slate-800"
+                    placeholder="Enter Email / Phone No"
+                    value={loginIdentifier}
+                    onChange={(e) => setLoginIdentifier(e.target.value)}
+                    required
+                  />
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
+                    <div className="w-2.5 h-2.5 rounded-full border border-slate-300" />
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="login-password" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                    <Lock className="h-4 w-4 mr-2 text-slate-600" />
-                    Password
-                  </Label>
-                </div>
+              {/* Password */}
+              <div className="space-y-1">
                 <div className="relative">
                   <Input
                     id="login-password"
                     type={showLoginPassword ? 'text' : 'password'}
                     autoComplete="current-password"
-                    className="h-12 pr-11 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm"
-                    placeholder="Enter your password"
+                    className="h-12 px-4 pr-16 text-sm bg-transparent border border-slate-200 rounded-xl focus-visible:ring-2 focus-visible:ring-[#F7B67C] focus-visible:border-transparent transition-all placeholder:text-slate-400 text-slate-800"
+                    placeholder="Passcode"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
@@ -393,141 +442,151 @@ function LoginContent() {
                     type="button"
                     tabIndex={-1}
                     onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-                    aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-slate-700 select-none py-1 px-1.5 transition-colors"
                   >
-                    {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showLoginPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
 
-              {/* Remember Me Checkbox */}
-              <div className="flex items-center justify-between pt-1">
+              {/* Trouble in sign in & Remember me */}
+              <div className="flex items-center justify-between text-xs pt-0.5">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="login-remember-me"
                     checked={rememberMe}
                     onCheckedChange={(val) => setRememberMe(Boolean(val))}
-                    className="border-slate-300 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                    className="border-slate-300 data-[state=checked]:bg-[#F7B67C] data-[state=checked]:border-[#F7B67C] rounded"
                   />
                   <Label
                     htmlFor="login-remember-me"
-                    className="text-xs font-semibold text-slate-600 cursor-pointer select-none"
+                    className="text-xs font-medium text-slate-500 cursor-pointer select-none"
                   >
                     Remember me
                   </Label>
                 </div>
+
+                <Link
+                  href="https://wa.me/8801700000000?text=Hi%20MenuSnap%20Support,%20I%20am%20having%20trouble%20signing%20in"
+                  target="_blank"
+                  className="text-slate-400 hover:text-slate-700 transition-colors text-xs font-medium"
+                >
+                  Having trouble in sign in?
+                </Link>
               </div>
 
+              {/* Submit CTA Button */}
               <Button 
                 type="submit" 
-                className="w-full text-base h-13 py-3.5 rounded-xl bg-[#f97316] hover:bg-[#ea580c] text-white font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" 
+                className="w-full text-sm sm:text-base h-12 rounded-xl bg-[#F7B67C] hover:bg-[#EEA768] text-slate-900 font-bold transition-all shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed mt-2" 
                 disabled={clientLoading || !loginIdentifier.trim() || !loginPassword}
               >
                 {clientLoading ? (
-                  <span className="flex items-center justify-center">
-                    <span className="animate-spin mr-2">⏳</span>
-                    Signing in...
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin text-sm">⏳</span>
+                    <span>Signing in...</span>
                   </span>
                 ) : (
-                  <span className="flex items-center justify-center">
-                    <LogIn className="mr-2 h-5 w-5" /> Login
-                  </span>
+                  <span>Sign in</span>
                 )}
               </Button>
 
-              <div className="text-center pt-2">
-                <p className="text-xs text-slate-500">
-                  Don't have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('register')}
-                    className="font-bold text-orange-600 hover:text-orange-700 underline underline-offset-2 ml-1"
+              {/* Card Footer / View Packages */}
+              <div className="text-center pt-3">
+                <p className="text-xs text-slate-400">
+                  Don&apos;t have an account?{' '}
+                  <Link
+                    href="/#pricing"
+                    className="font-bold text-slate-800 hover:text-orange-600 underline underline-offset-2 ml-0.5 transition-colors"
                   >
-                    Register Now
-                  </button>
+                    View Packages
+                  </Link>
                 </p>
               </div>
             </form>
           ) : (
             /* ================= REGISTRATION FORM ================= */
-            <form onSubmit={handleRegisterSubmit} className="space-y-4 animate-in fade-in-50 duration-200">
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+              {/* Business Type */}
               <div className="space-y-1">
-                <Label htmlFor="business-type" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                  {type === 'restaurant' ? <Utensils className="h-4 w-4 mr-2" /> : type === 'parlour' ? <Sparkles className="h-4 w-4 mr-2" /> : <Building className="h-4 w-4 mr-2" />}
+                <Label htmlFor="business-type" className="text-xs font-bold text-slate-700 flex items-center">
+                  {type === 'restaurant' ? <Utensils className="h-3.5 w-3.5 mr-1.5 text-orange-500" /> : type === 'parlour' ? <Sparkles className="h-3.5 w-3.5 mr-1.5 text-pink-500" /> : <Building className="h-3.5 w-3.5 mr-1.5 text-slate-500" />}
                   Business Type
                 </Label>
                 <Select onValueChange={handleTypeChange} required value={type}>
-                  <SelectTrigger id="business-type" className="h-11 border-gray-200 rounded-xl focus:ring-orange-500 text-sm">
-                    <SelectValue placeholder="Select your business type" />
+                  <SelectTrigger id="business-type" className="h-11 border-slate-200 rounded-xl focus:ring-[#F7B67C] text-xs sm:text-sm">
+                    <SelectValue placeholder="Select business type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="restaurant">
-                      <div className="flex items-center"><Utensils className="h-4 w-4 mr-2 text-muted-foreground"/>Restaurant</div>
+                      <div className="flex items-center"><Utensils className="h-4 w-4 mr-2 text-orange-500"/>Restaurant</div>
                     </SelectItem>
                     <SelectItem value="parlour">
-                      <div className="flex items-center"><Sparkles className="h-4 w-4 mr-2 text-muted-foreground"/>Parlour</div>
+                      <div className="flex items-center"><Sparkles className="h-4 w-4 mr-2 text-pink-500"/>Parlour</div>
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
+              {/* Business Name */}
               <div className="space-y-1">
-                <Label htmlFor="business-name" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                  <Building className="h-4 w-4 mr-2 text-slate-600" />
+                <Label htmlFor="business-name" className="text-xs font-bold text-slate-700 flex items-center">
+                  <Building className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
                   {businessNameLabel}
                 </Label>
                 <Input
                   id="business-name"
                   type="text"
                   placeholder={businessNamePlaceholder}
-                  className="h-11 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm"
+                  className="h-11 border-slate-200 rounded-xl focus-visible:ring-2 focus-visible:ring-[#F7B67C] text-xs sm:text-sm"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* WhatsApp & Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="space-y-1">
-                  <Label htmlFor="register-whatsapp" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                    <WhatsAppIcon className="h-4 w-4 mr-1.5 text-green-600" />
+                  <Label htmlFor="register-whatsapp" className="text-xs font-bold text-slate-700 flex items-center">
+                    <WhatsAppIcon className="h-3.5 w-3.5 mr-1.5 text-green-600" />
                     WhatsApp
                   </Label>
                   <Input
                     id="register-whatsapp"
                     type="tel"
                     placeholder="01XXXXXXXXX"
-                    className="h-11 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm"
+                    className="h-11 border-slate-200 rounded-xl focus-visible:ring-2 focus-visible:ring-[#F7B67C] text-xs sm:text-sm"
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="register-email" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                    <Mail className="h-4 w-4 mr-1.5 text-slate-600" />
+                  <Label htmlFor="register-email" className="text-xs font-bold text-slate-700 flex items-center">
+                    <Mail className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
                     Email (Optional)
                   </Label>
                   <Input
                     id="register-email"
                     type="email"
                     placeholder="name@email.com"
-                    className="h-11 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm"
+                    className="h-11 border-slate-200 rounded-xl focus-visible:ring-2 focus-visible:ring-[#F7B67C] text-xs sm:text-sm"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Division & District */}
+              <div className="grid grid-cols-2 gap-2.5">
                 <div className="space-y-1">
-                  <Label htmlFor="division" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                    <MapPin className="h-4 w-4 mr-1.5" />
+                  <Label htmlFor="division" className="text-xs font-bold text-slate-700 flex items-center">
+                    <MapPin className="h-3.5 w-3.5 mr-1 text-slate-500" />
                     Division
                   </Label>
                   <Select onValueChange={(val) => { setDivision(val); setDistrict(''); }} required value={division}>
-                    <SelectTrigger id="division" className="h-11 border-gray-200 rounded-xl focus:ring-orange-500 text-sm">
+                    <SelectTrigger id="division" className="h-11 border-slate-200 rounded-xl focus:ring-[#F7B67C] text-xs sm:text-sm">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
@@ -538,12 +597,12 @@ function LoginContent() {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="district" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                    <MapPin className="h-4 w-4 mr-1.5" />
+                  <Label htmlFor="district" className="text-xs font-bold text-slate-700 flex items-center">
+                    <MapPin className="h-3.5 w-3.5 mr-1 text-slate-500" />
                     District
                   </Label>
                   <Select onValueChange={setDistrict} required value={district} disabled={!division}>
-                    <SelectTrigger id="district" className="h-11 border-gray-200 rounded-xl focus:ring-orange-500 text-sm">
+                    <SelectTrigger id="district" className="h-11 border-slate-200 rounded-xl focus:ring-[#F7B67C] text-xs sm:text-sm">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
                     <SelectContent>
@@ -555,10 +614,11 @@ function LoginContent() {
                 </div>
               </div>
 
+              {/* Password */}
               <div className="space-y-1">
-                <Label htmlFor="register-password" className="flex items-center text-[#1a2b4b] font-bold text-sm">
-                  <Lock className="h-4 w-4 mr-2 text-slate-600" />
-                  {accountNeedsPassword ? 'Set New Password' : 'Set Password'}
+                <Label htmlFor="register-password" className="text-xs font-bold text-slate-700 flex items-center">
+                  <Lock className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
+                  {accountNeedsPassword ? 'Set New Password' : 'Create Password'}
                 </Label>
                 <div className="relative">
                   <Input
@@ -566,8 +626,8 @@ function LoginContent() {
                     type={showRegisterPassword ? 'text' : 'password'}
                     name="password"
                     autoComplete="new-password"
-                    className="h-11 pr-11 border-gray-200 rounded-xl focus-visible:ring-orange-500 transition-all text-sm"
-                    placeholder="Create password (min 6 characters)"
+                    className="h-11 pr-14 border-slate-200 rounded-xl focus-visible:ring-2 focus-visible:ring-[#F7B67C] text-xs sm:text-sm"
+                    placeholder="Min 6 characters"
                     value={registerPassword}
                     onChange={(e) => setRegisterPassword(e.target.value)}
                     minLength={6}
@@ -577,28 +637,24 @@ function LoginContent() {
                     type="button"
                     tabIndex={-1}
                     onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
-                    aria-label={showRegisterPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 hover:text-slate-700 select-none py-1 px-1 transition-colors"
                   >
-                    {showRegisterPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showRegisterPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  Must be at least 6 characters long to secure your account.
-                </p>
               </div>
 
-              {/* Remember Me Checkbox for Registration */}
+              {/* Remember Me Checkbox */}
               <div className="flex items-center space-x-2 pt-0.5">
                 <Checkbox
                   id="register-remember-me"
                   checked={rememberMe}
                   onCheckedChange={(val) => setRememberMe(Boolean(val))}
-                  className="border-slate-300 data-[state=checked]:bg-orange-500 data-[state=checked]:border-orange-500"
+                  className="border-slate-300 data-[state=checked]:bg-[#F7B67C] data-[state=checked]:border-[#F7B67C] rounded"
                 />
                 <Label
                   htmlFor="register-remember-me"
-                  className="text-xs font-semibold text-slate-600 cursor-pointer select-none"
+                  className="text-xs font-medium text-slate-600 cursor-pointer select-none"
                 >
                   Remember me
                 </Label>
@@ -606,29 +662,26 @@ function LoginContent() {
 
               <Button 
                 type="submit" 
-                className="w-full text-base h-13 py-3.5 rounded-xl bg-[#f97316] hover:bg-[#ea580c] text-white font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-2" 
+                className="w-full text-sm sm:text-base h-12 rounded-xl bg-[#F7B67C] hover:bg-[#EEA768] text-slate-900 font-bold transition-all shadow-sm active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed mt-2" 
                 disabled={clientLoading || !businessName || !type || !whatsapp || !division || !district || !registerPassword || registerPassword.length < 6 || isWhatsAppInvalid}
               >
                 {clientLoading ? (
-                  <span className="flex items-center justify-center">
-                    <span className="animate-spin mr-2">⏳</span>
-                    {accountNeedsPassword ? 'Completing Setup...' : 'Creating Account...'}
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin text-sm">⏳</span>
+                    <span>{accountNeedsPassword ? 'Completing Setup...' : 'Creating Account...'}</span>
                   </span>
                 ) : (
-                  <span className="flex items-center justify-center">
-                    <UserPlus className="mr-2 h-5 w-5" />
-                    {accountNeedsPassword ? 'Complete Registration' : 'Create Account'}
-                  </span>
+                  <span>{accountNeedsPassword ? 'Complete Setup' : 'Create Account'}</span>
                 )}
               </Button>
 
-              <div className="text-center pt-1">
-                <p className="text-xs text-slate-500">
+              <div className="text-center pt-2">
+                <p className="text-xs text-slate-400">
                   Already have an account?{' '}
                   <button
                     type="button"
                     onClick={() => setActiveTab('login')}
-                    className="font-bold text-orange-600 hover:text-orange-700 underline underline-offset-2 ml-1"
+                    className="font-bold text-slate-800 hover:text-orange-600 underline underline-offset-2 ml-1 transition-colors"
                   >
                     Login here
                   </button>
@@ -636,8 +689,21 @@ function LoginContent() {
               </div>
             </form>
           )}
-        </CardContent>
-      </Card>
+
+        </div>
+      </main>
+
+      {/* 4. BOTTOM COPYRIGHT FOOTER */}
+      <footer className="w-full py-6 text-center text-xs text-slate-400 font-medium z-10">
+        <p className="flex items-center justify-center gap-2 flex-wrap">
+          <span>Copyright © MenuSnap {new Date().getFullYear()}</span>
+          <span>|</span>
+          <Link href="/terms" className="hover:text-slate-600 transition-colors">Privacy Policy</Link>
+          <span>|</span>
+          <Link href="/terms" className="hover:text-slate-600 transition-colors">Terms of Service</Link>
+        </p>
+      </footer>
+
     </div>
   );
 }
@@ -646,8 +712,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-black/25">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-orange-500 border-t-transparent" />
+        <div className="flex min-h-screen items-center justify-center bg-[#FAF7F2]">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#F7B67C] border-t-transparent" />
         </div>
       }
     >
