@@ -122,7 +122,7 @@ export function ProblemSection() {
             </h3>
 
             <p className="text-sm text-gray-400 font-bengali leading-relaxed mb-6">
-              একটি মাত্র সার্চেই বাংলাদেশের 500+ রেস্টুরেন্টের সঠিক ক্যাটাগরি, আইটেমের নাম, এবং মার্কেট রেফারেন্স প্রাইস পেয়ে যান।
+              একটি মাত্র সার্চেই বাংলাদেশের 5,000+ রেস্টুরেন্টের সঠিক ক্যাটাগরি, আইটেমের নাম, এবং মার্কেট রেফারেন্স প্রাইস পেয়ে যান।
             </p>
 
             {/* 4 Clarity Pillars */}
@@ -130,7 +130,7 @@ export function ProblemSection() {
               <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
                 <CheckCircle2 className="w-4 h-4 text-[#FF5A36] flex-shrink-0" />
                 <span className="text-xs sm:text-sm font-medium text-gray-200">
-                  এক ক্লিকে 500+ রেস্টুরেন্টের ভেরিফাইড মেন্যু ডাটাবেজ
+                  এক ক্লিকে 5,000+ রেস্টুরেন্টের ভেরিফাইড মেন্যু ডাটাবেজ
                 </span>
               </div>
 

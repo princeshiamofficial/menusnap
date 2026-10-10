@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -10,9 +10,7 @@ import {
   Pause,
   Volume2,
   VolumeX,
-  Zap,
   ChefHat,
-  TrendingUp,
   ArrowDown
 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
@@ -26,14 +24,27 @@ export function HeroSection({
   videoSrc = "https://v1.pinimg.com/videos/iht/expMp4/f5/95/a4/f595a4da623d1223b1717a624b53940c_720w.mp4",
   videoPoster = "/images/hero-sf-wallpaper.jpg",
 }: HeroSectionProps) {
-  const [activeTab, setActiveTab] = useState<"explore" | "builder" | "pricing">("explore");
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState("00:00");
   const [duration, setDuration] = useState("00:00");
   const [showControls, setShowControls] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      videoRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          setIsPlaying(false);
+        });
+    }
+  }, [videoSrc]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -101,7 +112,7 @@ export function HeroSection({
           <Link
             href="#pricing"
             onClick={() => trackEvent("hero_cta_clicked", { button: "announcement_pill" })}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#111111] hover:bg-black text-white text-xs font-medium shadow-md transition-all cursor-pointer mb-5 group"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#111111] hover:bg-black text-white text-xs font-medium shadow-md transition-all cursor-pointer mb-6 sm:mb-8 group"
           >
             <span className="bg-[#38bdf8] text-black text-[10px] font-bold px-1.5 py-0.5 rounded-full tracking-wide">
               NEW
@@ -113,78 +124,14 @@ export function HeroSection({
           </Link>
         </motion.div>
 
-        {/* 2. Floating Segmented Mode Selector Bar with 'Click me' Pointer */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.08 }}
-          className="relative inline-flex items-center mb-6 sm:mb-7"
-        >
-          {/* Blue 'Click me' Tooltip on Left */}
-          <div className="absolute -left-20 sm:-left-24 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1 pointer-events-none">
-            <span className="bg-[#2563eb] text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
-              Click me <ArrowRight className="w-2.5 h-2.5" />
-            </span>
-            {/* Mouse Cursor SVG */}
-            <svg
-              className="w-4 h-4 text-neutral-900 fill-current drop-shadow-sm -rotate-45 translate-y-0.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="M3 3l7 18 3-7 7-3L3 3z" />
-            </svg>
-          </div>
-
-          {/* Mode Pill Bar */}
-          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.06)]">
-            <button
-              type="button"
-              onClick={() => setActiveTab("explore")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                activeTab === "explore"
-                  ? "bg-neutral-100 text-neutral-900 font-semibold shadow-2xs"
-                  : "text-neutral-500 hover:text-neutral-800"
-              }`}
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span>Explore Menus</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("builder")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                activeTab === "builder"
-                  ? "bg-neutral-100 text-neutral-900 font-semibold shadow-2xs"
-                  : "text-neutral-500 hover:text-neutral-800"
-              }`}
-            >
-              <ChefHat className="w-3.5 h-3.5 text-orange-500" />
-              <span>Menu Builder</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("pricing")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                activeTab === "pricing"
-                  ? "bg-neutral-100 text-neutral-900 font-semibold shadow-2xs"
-                  : "text-neutral-500 hover:text-neutral-800"
-              }`}
-            >
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Price Matrix</span>
-            </button>
-          </div>
-        </motion.div>
-
-        {/* 3. Main Headline */}
+        {/* 2. Main Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.12 }}
-          className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-[#111827] tracking-tight leading-[1.08] mb-5 text-center"
+          className="text-3xl sm:text-5xl md:text-6xl lg:text-[62px] font-extrabold text-[#111827] font-bengali tracking-tight leading-[1.2] sm:leading-[1.18] mb-5 text-center max-w-4xl mx-auto"
         >
-          Research. Build. Launch.
+          আপনার <span className="text-[#FF5A36]">Restaurant</span>-এর Menu বানানো এখন অনেক সহজ।
         </motion.h1>
 
         {/* 4. Subtitle */}
@@ -192,9 +139,9 @@ export function HeroSection({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.18 }}
-          className="text-sm sm:text-base text-neutral-600 max-w-2xl mx-auto text-center font-normal leading-relaxed mb-8"
+          className="text-sm sm:text-base md:text-[17px] text-neutral-600 font-bengali max-w-2xl sm:max-w-3xl mx-auto text-center font-normal leading-relaxed sm:leading-[1.7] mb-8"
         >
-          The all-in-one menu intelligence and design studio for restaurants. Explore 3,000+ real menus, benchmark competitor pricing, and export print-ready blueprints in minutes.
+          বাংলাদেশের 5,000+ Restaurant & Parlor-এর Menu Reference Explore করুন, হাজারো Food Item Search করুন, Price সম্পর্কে ধারণা নিন এবং নিজের Restaurant-এর Complete Menu List তৈরি করুন।
         </motion.p>
 
         {/* 5. Action Buttons */}
@@ -202,7 +149,7 @@ export function HeroSection({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.24 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto mb-4"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full sm:w-auto mb-10 sm:mb-14"
         >
           {/* Primary CTA */}
           <Link
@@ -228,26 +175,6 @@ export function HeroSection({
               <ArrowDown className="w-2.5 h-2.5" />
             </div>
           </button>
-        </motion.div>
-
-        {/* 6. Subtext & Platform Badges */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="flex flex-col items-center gap-2 text-xs text-neutral-500 mb-10 sm:mb-12"
-        >
-          <div className="flex items-center gap-1.5 hover:text-neutral-800 transition-colors cursor-pointer">
-            <span className="w-2 h-2 rounded-full bg-[#8b5cf6]" />
-            <span>Switching from manual spreadsheets?</span>
-            <span className="font-semibold underline underline-offset-2">Import your menu library →</span>
-          </div>
-
-          <div className="flex items-center gap-2 text-[11px] text-neutral-400 font-medium mt-0.5">
-            <span>Trusted by 300+ food businesses across</span>
-            <span className="font-semibold text-neutral-600">Dhaka • Chittagong • Sylhet</span>
-            <span>🇧🇩</span>
-          </div>
         </motion.div>
 
         {/* 7. Pixel-Perfect Laptop Mockup with Inside Demo Video Player */}
@@ -277,10 +204,11 @@ export function HeroSection({
                   ref={videoRef}
                   src={videoSrc}
                   poster={videoPoster}
-                  preload="metadata"
-                  loop
+                  autoPlay
                   muted={isMuted}
                   playsInline
+                  loop
+                  preload="auto"
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
                   onLoadedMetadata={handleTimeUpdate}

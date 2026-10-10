@@ -2,71 +2,81 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Store, Utensils, Layers, CheckCircle2 } from "lucide-react";
 
 interface StatItem {
   value: string;
   label: string;
-  sublabel: string;
-  icon: React.ReactNode;
+  sublabel?: string;
+  highlight?: boolean;
 }
 
 const STATS: StatItem[] = [
   {
-    value: "3,000+",
-    label: "Restaurant & Parlor Menus",
-    sublabel: "Across Dhaka, Chittagong & Bangladesh",
-    icon: <Store className="w-5 h-5 text-[#FF5A36]" />,
-  },
-  {
     value: "30,000+",
-    label: "Menu Items & Categories",
-    sublabel: "Verified names, descriptions & prices",
-    icon: <Utensils className="w-5 h-5 text-[#FF5A36]" />,
+    label: "Restaurant & Parlor Menus",
   },
   {
-    value: "500+",
-    label: "Cuisines & Specialties",
-    sublabel: "Fast food, café, bakery, traditional",
-    icon: <Layers className="w-5 h-5 text-[#FF5A36]" />,
+    value: "Thousands",
+    label: "Menu Items",
+    highlight: true,
+  },
+  {
+    value: "5,000+",
+    label: "Food Categories",
   },
   {
     value: "One Platform",
-    label: "To Build Your Menu",
-    sublabel: "From research to print-ready export",
-    icon: <CheckCircle2 className="w-5 h-5 text-[#FF5A36]" />,
+    label: "to Build Your Menu",
+    highlight: true,
   },
 ];
 
 export function StatsStrip() {
+  const borderClasses = [
+    "border-b sm:border-b lg:border-b-0 sm:border-r border-gray-100", // item 0
+    "border-b sm:border-b lg:border-b-0 lg:border-r border-gray-100", // item 1
+    "border-b sm:border-b-0 sm:border-r border-gray-100",            // item 2
+    "",                                                               // item 3
+  ];
+
   return (
-    <section className="w-full bg-white border-y border-gray-100 py-10 sm:py-14 px-4 sm:px-6 lg:px-8">
+    <section className="w-full bg-white py-8 sm:py-12 px-4 sm:px-6 lg:px-8 border-b border-gray-100">
       <div className="max-w-[1240px] mx-auto">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-          {STATS.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.45, delay: i * 0.1 }}
-              className="flex flex-col items-start p-4 sm:p-5 rounded-2xl bg-[#FAFAF8] border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.01)] hover:border-orange-200 transition-all"
-            >
-              <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center mb-3 shadow-2xs">
-                {stat.icon}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="bg-white rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-[0_4px_25px_rgba(0,0,0,0.03),0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {STATS.map((stat, i) => (
+              <div
+                key={stat.label}
+                className={`flex flex-col p-5 sm:p-6 lg:p-7 hover:bg-orange-50/20 transition-colors group ${borderClasses[i] || ""}`}
+              >
+                {/* Bold Stat Value */}
+                <span
+                  className={`text-3xl sm:text-4xl lg:text-[36px] font-black tracking-tight leading-none mb-2 sm:mb-2.5 ${
+                    stat.highlight ? "text-[#FF5A36]" : "text-gray-950"
+                  }`}
+                >
+                  {stat.value}
+                </span>
+
+                {/* Label underneath */}
+                <span className="text-sm sm:text-base font-bold text-gray-800 leading-snug">
+                  {stat.label}
+                </span>
+                {stat.sublabel && (
+                  <span className="text-xs sm:text-[13px] text-gray-500 font-medium leading-normal mt-1">
+                    {stat.sublabel}
+                  </span>
+                )}
               </div>
-              <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-950 tracking-tight leading-tight">
-                {stat.value}
-              </span>
-              <span className="text-sm font-bold text-gray-800 leading-snug mt-1">
-                {stat.label}
-              </span>
-              <span className="text-xs text-gray-500 font-medium leading-normal mt-0.5">
-                {stat.sublabel}
-              </span>
-            </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   );
