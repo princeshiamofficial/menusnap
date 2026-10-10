@@ -2,6 +2,7 @@
 
 import pool from '@/lib/mysql';
 import { recordCouponUsageAction } from '@/app/actions/coupons';
+import { headers } from 'next/headers';
 
 export interface PayStationSettings {
   isEnabled: boolean;
@@ -307,7 +308,20 @@ export async function initiatePayStationPaymentAction(payload: {
         }
       }
 
-      let siteUrl = payload.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+      let siteUrl = process.env.NEXT_PUBLIC_APP_URL || payload.origin;
+      if (!siteUrl || siteUrl.includes('localhost')) {
+        try {
+          const headerList = await headers();
+          const forwardedHost = headerList.get('x-forwarded-host');
+          const proto = headerList.get('x-forwarded-proto') || 'https';
+          if (forwardedHost && !forwardedHost.includes('localhost')) {
+            siteUrl = `${proto}://${forwardedHost}`;
+          }
+        } catch {}
+      }
+      if (!siteUrl) {
+        siteUrl = 'http://localhost:9002';
+      }
       siteUrl = siteUrl.replace(/\/$/, '');
       const redirectUrl = `${siteUrl}/checkout/result?status=success&invoice=${encodeURIComponent(
         invoiceNumber
@@ -398,7 +412,20 @@ export async function initiatePayStationPaymentAction(payload: {
     }
 
     // Compute callback URL
-    let siteUrl = payload.origin || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002';
+    let siteUrl = process.env.NEXT_PUBLIC_APP_URL || payload.origin;
+    if (!siteUrl || siteUrl.includes('localhost')) {
+      try {
+        const headerList = await headers();
+        const forwardedHost = headerList.get('x-forwarded-host');
+        const proto = headerList.get('x-forwarded-proto') || 'https';
+        if (forwardedHost && !forwardedHost.includes('localhost')) {
+          siteUrl = `${proto}://${forwardedHost}`;
+        }
+      } catch {}
+    }
+    if (!siteUrl) {
+      siteUrl = 'http://localhost:9002';
+    }
     // Remove trailing slash if present
     siteUrl = siteUrl.replace(/\/$/, '');
     const callbackUrl = `${siteUrl}/api/payment/paystation/callback`;

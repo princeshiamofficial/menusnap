@@ -3,6 +3,23 @@ import { verifyPayStationTransaction } from '@/app/actions/paystation';
 
 export const dynamic = 'force-dynamic';
 
+function getPublicOrigin(request: NextRequest): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+  }
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`.replace(/\/$/, '');
+  }
+  const host = request.headers.get('host');
+  if (host && !host.includes('localhost:')) {
+    const proto = request.url.startsWith('https') ? 'https' : 'http';
+    return `${proto}://${host}`.replace(/\/$/, '');
+  }
+  return new URL(request.url).origin;
+}
+
 /**
  * Handles PayStation callback redirection (GET request from customer browser).
  */
@@ -23,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     const statusParam = searchParams.get('status') || searchParams.get('trx_status') || '';
 
-    const origin = new URL(request.url).origin;
+    const origin = getPublicOrigin(request);
 
     if (!invoiceNumber) {
       console.warn('[PayStation Callback] Missing invoice_number in GET callback');
@@ -85,7 +102,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   } catch (error: any) {
     console.error('[PayStation Callback GET Error]', error);
-    const origin = new URL(request.url).origin;
+    const origin = getPublicOrigin(request);
     return NextResponse.redirect(
       new URL('/checkout/result?status=failed&message=Server+error+verifying+transaction', origin)
     );
@@ -97,7 +114,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const origin = new URL(request.url).origin;
+    const origin = getPublicOrigin(request);
     let invoiceNumber: string | null = null;
     let trxId: string | null = null;
     let statusParam: string = '';
@@ -188,7 +205,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('[PayStation Callback POST Error]', error);
-    const origin = new URL(request.url).origin;
+    const origin = getPublicOrigin(request);
     return NextResponse.redirect(
       new URL('/checkout/result?status=failed&message=Server+error+verifying+transaction', origin)
     );
