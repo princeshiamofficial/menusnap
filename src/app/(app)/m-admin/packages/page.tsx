@@ -1141,7 +1141,7 @@ export default function AdminPackagesPage() {
                 <div className="space-y-1">
                   <Label className="text-xs font-bold">Discount Tag</Label>
                   <Input
-                    placeholder="e.g. LIFETIME DEAL: MENUSNAP500"
+                    placeholder="e.g. SPECIAL LAUNCH DEAL"
                     value={formData.discount_tag}
                     onChange={(e) => setFormData((prev) => ({ ...prev, discount_tag: e.target.value }))}
                     className="rounded-xl h-9 text-xs"
@@ -1151,7 +1151,7 @@ export default function AdminPackagesPage() {
                 <div className="space-y-1">
                   <Label className="text-xs font-bold">Promo Coupon Code</Label>
                   <Input
-                    placeholder="e.g. MENUSNAP500"
+                    placeholder="e.g. SAVE20"
                     value={formData.coupon_code}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, coupon_code: e.target.value.toUpperCase() }))

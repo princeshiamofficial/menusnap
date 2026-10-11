@@ -639,7 +639,7 @@ export default function AdminCouponsPage() {
               <div className="flex items-center gap-2">
                 <Input
                   required
-                  placeholder="e.g. MENUSNAP500"
+                  placeholder="e.g. SAVE20"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                   className="h-10 font-mono font-bold uppercase tracking-wider bg-slate-50/50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl focus-visible:ring-orange-500 text-sm"

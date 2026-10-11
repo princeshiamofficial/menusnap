@@ -61,7 +61,10 @@ export default function HomePage() {
       {/* Interactive Modals */}
       <CheckoutModal
         isOpen={checkoutModalOpen}
-        onClose={() => setCheckoutModalOpen(false)}
+        onClose={() => {
+          setCheckoutModalOpen(false);
+          setActiveCoupon(undefined);
+        }}
         plan={selectedPlan}
         duration={selectedDuration}
         coupon={activeCoupon}

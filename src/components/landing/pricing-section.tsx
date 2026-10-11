@@ -232,7 +232,6 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
         <div className={`grid grid-cols-1 ${packages.length === 1 ? 'max-w-sm' : packages.length === 2 ? 'md:grid-cols-2 max-w-2xl' : 'md:grid-cols-3 max-w-5xl'} gap-6 lg:gap-7 items-stretch text-left mx-auto mb-14`}>
           {packages.map((pkg) => {
             const isPop = pkg.is_popular;
-            const couponToPass = pkg.coupon_code || undefined;
             const isCurrentPlan = checkIsCurrentPlan(pkg);
 
             return (
@@ -296,9 +295,8 @@ export function PricingSection({ onSelectPlan }: PricingSectionProps) {
                         trackEvent("plan_selected", {
                           plan: pkg.package_id,
                           duration: "lifetime",
-                          coupon: couponToPass,
                         });
-                        onSelectPlan(pkg.package_id, "lifetime", couponToPass);
+                        onSelectPlan(pkg.package_id, "lifetime");
                       }}
                       className={`w-full py-3.5 px-6 rounded-full font-semibold text-sm transition-all duration-150 text-center cursor-pointer active:scale-[0.98] ${
                         isPop
