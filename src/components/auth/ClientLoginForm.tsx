@@ -233,7 +233,7 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
 
   const isWhatsAppInvalid = whatsapp.length > 0 && !isValidWhatsApp(whatsapp);
   const businessNameLabel = type === 'restaurant' ? 'Restaurant Name' : type === 'parlour' ? 'Parlour Name' : 'Business Name';
-  const businessNamePlaceholder = `Enter your ${type ? type : 'business'} name`;
+  const businessNamePlaceholder = type === 'restaurant' ? 'e.g. Food Express / ফুড এক্সপ্রেস' : type === 'parlour' ? 'e.g. Glow Parlour / গ্লো পার্লার' : 'Enter your business name';
 
   return (
     <Card className="w-full max-w-md shadow-2xl rounded-2xl border-none relative overflow-hidden z-10 bg-white dark:bg-slate-900 mx-auto">
@@ -414,6 +414,54 @@ export function ClientLoginForm({ onSuccess }: { onSuccess?: () => void }) {
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="gate-business-name" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
+                <Building className="h-4 w-4 mr-2" />
+                {businessNameLabel}
+              </Label>
+              <Input
+                id="gate-business-name"
+                type="text"
+                placeholder={businessNamePlaceholder}
+                className="h-11 border-gray-200 dark:border-slate-800 rounded-xl focus-visible:ring-orange-500 transition-all bg-transparent text-sm"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+              />
+            </div>
+
+            {/* WhatsApp & Email */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="gate-whatsapp" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
+                  <WhatsAppIcon className="h-4 w-4 mr-2 text-green-600" />
+                  WhatsApp
+                </Label>
+                <Input
+                  id="gate-whatsapp"
+                  type="tel"
+                  placeholder="01XXXXXXXXX"
+                  className="h-11 border-gray-200 dark:border-slate-800 rounded-xl focus-visible:ring-orange-500 transition-all bg-transparent text-sm"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="gate-email" className="flex items-center text-slate-700 dark:text-slate-300 font-bold text-sm">
+                  <Mail className="h-4 w-4 mr-2 text-slate-500" />
+                  Email
+                </Label>
+                <Input
+                  id="gate-email"
+                  type="email"
+                  placeholder="name@email.com"
+                  className="h-11 border-gray-200 dark:border-slate-800 rounded-xl focus-visible:ring-orange-500 transition-all bg-transparent text-sm"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

@@ -335,7 +335,7 @@ function LoginContent() {
 
   const isWhatsAppInvalid = whatsapp.length > 0 && !isValidWhatsApp(whatsapp);
   const businessNameLabel = type === 'restaurant' ? 'Restaurant Name' : type === 'parlour' ? 'Parlour Name' : 'Business Name';
-  const businessNamePlaceholder = `Enter your ${type ? type : 'business'} name`;
+  const businessNamePlaceholder = type === 'restaurant' ? 'e.g. Food Express / ফুড এক্সপ্রেস' : type === 'parlour' ? 'e.g. Glow Parlour / গ্লো পার্লার' : 'Enter your business name';
 
   return (
     <div 

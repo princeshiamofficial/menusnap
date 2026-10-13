@@ -997,7 +997,7 @@ export default function MenuSnapUsersPage() {
               <label className="text-xs font-semibold text-foreground">Business Name *</label>
               <Input
                 required
-                placeholder="e.g. Sultan's Dine"
+                placeholder="e.g. Sultan's Dine / সুলতানস ডাইন"
                 value={formData.businessName}
                 onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
               />
