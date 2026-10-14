@@ -1325,7 +1325,7 @@ export default function MagicTabPage() {
 
   if (!isSubscriber) {
     return (
-      <div className="min-h-screen bg-[#FDFDFC] text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 relative overflow-hidden">
+      <div className="min-h-screen bg-[#FDFDFC] text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 pb-24 md:pb-10 relative overflow-hidden">
         {/* Background radial glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-3xl aspect-square bg-orange-100/50 rounded-full blur-[140px] -z-10 pointer-events-none" />
 
@@ -1465,7 +1465,7 @@ export default function MagicTabPage() {
         document.body
       )}
 
-      <div className="flex flex-col md:flex-row h-[calc(100vh-theme(spacing.16))] md:h-screen overflow-hidden">
+      <div className="flex flex-col md:flex-row h-[100dvh] md:h-screen overflow-hidden">
 
         <div className="hidden md:block h-full">
           <CategoryList
@@ -1624,7 +1624,7 @@ export default function MagicTabPage() {
 
                         <div className="flex-1 overflow-hidden flex flex-col -mx-2">
                           <ScrollArea className="flex-1 w-full">
-                            <div className="px-2 pb-10 space-y-1">
+                            <div className="px-2 pb-24 space-y-1">
                               {categorySearchTerm.trim() && !apiCategories.some(cat => decodeHtmlEntities(cat.name).toLowerCase() === categorySearchTerm.trim().toLowerCase()) && (
                                 <div className="pt-2">
                                   <Button 
@@ -1691,11 +1691,11 @@ export default function MagicTabPage() {
           </div>
           <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4 sm:p-6 bg-[#fafafa]/50">
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-24 w-full rounded-xl" />)}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-32 md:pb-6">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-24 w-full rounded-xl" />)}</div>
             ) : error ? (
               <div className="text-center py-10"><p className="text-destructive font-medium">Error: {error}</p></div>
             ) : (
-              <div className={cn("grid grid-cols-1 gap-3 md:gap-4", gridLayoutClasses)}>
+              <div className={cn("grid grid-cols-1 gap-3 md:gap-4 pb-32 md:pb-6", gridLayoutClasses)}>
                   {currentMenuItems.map((item) => (
                     <MenuItemCard
                       key={item.id}
@@ -1709,7 +1709,7 @@ export default function MagicTabPage() {
                     />
                   ))}
                 {currentMenuItems.length === 0 && (
-                  <div className="text-center py-20 col-span-full">
+                  <div className="text-center py-20 pb-36 col-span-full">
                     <div className="bg-muted/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-border">
                         <Search className="h-6 w-6 text-muted-foreground/50" />
                     </div>

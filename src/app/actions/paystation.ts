@@ -549,7 +549,7 @@ export async function verifyPayStationTransaction(
           amount: Number(currentTx.amount),
           currency: currentTx.currency,
           status: currentTx.status,
-          paymentCategory: currentTx.payment_category,
+          paymentCategory: currentTx.payment_category || (() => { try { const d = JSON.parse(currentTx.raw_response || '{}'); return d.data?.payment_method || d.data?.payment_category || null; } catch { return null; } })(),
         },
       };
     }
@@ -594,7 +594,7 @@ export async function verifyPayStationTransaction(
     const resolvedTrxId =
       trxId || dataObj.trx_id || statusResponse?.trx_id || null;
     const paymentCategory =
-      dataObj.payment_category || dataObj.method || statusResponse?.payment_category || null;
+      dataObj.payment_category || dataObj.payment_method || dataObj.method || statusResponse?.payment_category || statusResponse?.payment_method || null;
 
     let finalStatus: 'Successful' | 'Failed' | 'Cancelled' | 'Pending' = 'Failed';
 
@@ -820,7 +820,7 @@ export async function getPayStationTransactionsAction(
       amount: Number(r.amount),
       currency: r.currency,
       status: r.status,
-      paymentCategory: r.payment_category,
+      paymentCategory: r.payment_category || (() => { try { const d = JSON.parse(r.raw_response || '{}'); return d.data?.payment_method || d.data?.payment_category || d.payment_method || d.payment_category || null; } catch { return null; } })(),
       reference: r.reference,
       rawResponse: r.raw_response,
       createdAt: r.created_at,
