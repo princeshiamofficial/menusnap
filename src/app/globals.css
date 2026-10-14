@@ -354,4 +354,82 @@
   background-size: 46px 46px;
 }
 
+/* Tempmenu landing page design tokens & utilities */
+.container-site {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 1240px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+@media (min-width: 640px) {
+  .container-site {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .container-site {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+}
+
+.section-pad {
+  padding-block: clamp(4rem, 8.5vw, 7.5rem);
+}
+
+.reveal {
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal.is-hidden {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100%;
+  z-index: 100;
+  background: #111111;
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.bg-dots {
+  background-image: radial-gradient(circle, rgb(17 17 17 / 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Landing muted colors */
+.text-muted {
+  color: #667085;
+}
+.text-muted\/50 {
+  color: rgb(102 112 133 / 0.5);
+}
+.placeholder\:text-muted\/60::placeholder {
+  color: rgb(102 112 133 / 0.6);
+}
+.placeholder\:text-muted\/70::placeholder {
+  color: rgb(102 112 133 / 0.7);
+}
 

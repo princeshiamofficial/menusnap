@@ -21,6 +21,9 @@ export interface PricingPackage {
   badge_text?: string | null;
   price: number;
   original_price?: number | null;
+  price_1_month?: number | null;
+  price_3_months?: number | null;
+  original_price_3_months?: number | null;
   billing_period_text?: string | null;
   discount_tag?: string | null;
   coupon_code?: string | null;

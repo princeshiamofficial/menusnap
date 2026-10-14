@@ -35,6 +35,7 @@ export async function ensureCouponsTable(): Promise<void> {
       await pool.execute(`
         INSERT INTO coupons (code, discount_type, discount_value, applicable_package, min_amount, is_active, description)
         VALUES 
+        ('MENUSNAP500', 'fixed', 500.00, 'all', 0.00, 1, 'Standard ৳500 Special Coupon'),
         ('SAVE20', 'percentage', 20.00, 'all', 1000.00, 1, '20% Off Launch Promotion')
       `);
     }

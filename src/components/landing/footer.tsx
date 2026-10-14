@@ -1,139 +1,62 @@
-"use client";
-
-import React from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { MapPin } from "lucide-react";
+import { Container } from "@/components/landing/ui";
+import { Logo } from "@/components/landing/Logo";
+import { FOOTER_COLUMNS, SITE_TAGLINE } from "@/lib/data";
 
 export function Footer() {
   return (
-    <footer className="w-full bg-[#111111] text-gray-400 py-16 px-4 sm:px-6 lg:px-8 border-t border-gray-800">
-      <div className="max-w-[1240px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-10 lg:gap-12 mb-12">
-          
-          {/* Brand Info (Span 2) */}
-          <div className="md:col-span-2 space-y-4">
-            <Link href="/" className="inline-flex items-center group select-none">
-              <Image
-                src="/menusnap-logo-white.png"
-                alt="MenuSnap Logo"
-                width={150}
-                height={32}
-                className="h-7 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
-              />
-            </Link>
-
-            <p className="text-base font-bold text-gray-200">
-              Research Less. Build Smarter.
+    <footer className="border-t border-line bg-cream">
+      <Container className="py-14 lg:py-16">
+        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          {/* Brand */}
+          <div className="flex max-w-sm flex-col gap-4">
+            <Logo />
+            <p className="text-[15px] font-semibold text-ink">{SITE_TAGLINE}</p>
+            <p className="text-sm leading-relaxed text-muted">
+              MenuSnap is a restaurant menu research &amp; menu building platform for
+              Bangladesh — explore 500+ menu references, research items and prices, and
+              build your own menu in one organized workspace.
             </p>
-
-            <p className="text-xs text-gray-400 leading-relaxed max-w-sm font-sans">
-              Restaurant Menu Research & Menu Builder SaaS platform designed primarily for food entrepreneurs, café owners, and restaurants across Bangladesh.
-            </p>
-
-            <div className="text-[11px] text-gray-500 pt-2 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#FF5A36]" />
-              <span>Proudly built for Bangladesh&apos;s food industry.</span>
-            </div>
+            <p className="text-sm text-muted">Made in Bangladesh 🇧🇩</p>
           </div>
 
-          {/* Column 1: Product */}
-          <div className="space-y-3 text-xs">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Product
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="#how-it-works" className="hover:text-white transition-colors">
-                  How It Works
-                </Link>
-              </li>
-              <li>
-                <Link href="/free-design" className="hover:text-white transition-colors">
-                  Free Menu Design
-                </Link>
-              </li>
-              <li>
-                <Link href="#pricing" className="hover:text-white transition-colors">
-                  Pricing Plans
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-white transition-colors">
-                  Client Login
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 2: Resources */}
-          <div className="space-y-3 text-xs">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Resources
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="#how-it-works" className="hover:text-white transition-colors">
-                  How It Works
-                </Link>
-              </li>
-              <li>
-                <Link href="#faq" className="hover:text-white transition-colors">
-                  Frequently Asked Questions
-                </Link>
-              </li>
-              <li>
-                <a href="https://wa.me/8801800000000" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
-                  WhatsApp Support
-                </a>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-white transition-colors">
-                  Help Center
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: Legal */}
-          <div className="space-y-3 text-xs">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-              Legal
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  Terms & Conditions
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  Refund Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  Data Accuracy Disclaimer
-                </Link>
-              </li>
-            </ul>
-          </div>
-
+          {/* Link columns */}
+          {FOOTER_COLUMNS.map((column) => (
+            <nav key={column.title} aria-label={column.title}>
+              <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-ink">
+                {column.title}
+              </h3>
+              <ul className="flex flex-col gap-2.5">
+                {column.links.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      className="inline-block rounded text-[15px] text-muted transition-colors hover:text-ink"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
-          <p>© 2026 MenuSnap. All rights reserved.</p>
-          <p className="text-[11px]">
-            Third-party menu references belong to their respective restaurants and are used for research and comparison purposes only.
+        {/* Legal microcopy */}
+        <div className="mt-12 border-t border-line pt-6">
+          <p className="max-w-3xl text-xs leading-relaxed text-muted/90">
+            Menu references shown on MenuSnap are research information. Restaurant names,
+            brands and menu content belong to their respective owners; MenuSnap is not
+            affiliated with or endorsed by the restaurants referenced. Listed prices are
+            references only, may change, and are not recommendations or guarantees.
           </p>
+          <div className="mt-6 flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted">
+              © 2026 MenuSnap. All rights reserved.
+            </p>
+            <p className="text-sm font-semibold text-ink">{SITE_TAGLINE}</p>
+          </div>
         </div>
-      </div>
+      </Container>
     </footer>
   );
 }

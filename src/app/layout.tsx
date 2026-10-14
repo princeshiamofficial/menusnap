@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
@@ -82,8 +83,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
-        <script
+        <Script
+          id="chunk-reload-and-extension-cleaner"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){
               // 1. Chunk load error autoreload
@@ -135,8 +137,8 @@ export default function RootLayout({
           }}
         />
       </head>
-      <MicrosoftClarityLoader />
       <body className={`${inter.variable} ${robotoMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
+        <MicrosoftClarityLoader />
         <Providers>
           <WhatsAppFloat />
           {children}
