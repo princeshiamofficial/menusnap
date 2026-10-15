@@ -1,6 +1,7 @@
 "use server";
 
 import pool from '@/lib/mysql';
+import { z } from 'zod';
 
 /**
  * Ensures the ebook_leads table exists.
@@ -26,12 +27,14 @@ async function ensureEbookLeadsTable() {
  */
 export async function submitEbookLead(email: string) {
   try {
+    const parsed = z.string().trim().email().max(254).safeParse(email);
+    if (!parsed.success) return { success: false, error: 'Enter a valid email address.' };
     await ensureEbookLeadsTable();
 
     // Save lead to database
     await pool.execute(
       'INSERT INTO ebook_leads (email) VALUES (?)',
-      [email]
+      [parsed.data]
     );
 
     return { 

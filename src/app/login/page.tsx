@@ -206,7 +206,7 @@ function LoginContent() {
   // Auto-redirect if already logged in
   useEffect(() => {
     if (isClientLoggedIn && !loggingIn) {
-      router.push('/dashboard#login-success');
+      router.push('/magictab/#login-success');
     }
   }, [isClientLoggedIn, router, loggingIn]);
 
@@ -255,7 +255,7 @@ function LoginContent() {
       cleanId,
       loginPassword,
       rememberMe,
-      '/dashboard#login-success'
+      '/magictab/#login-success'
     );
 
     if (success) {
@@ -310,7 +310,7 @@ function LoginContent() {
         division,
         district,
         effectiveEmail,
-        '/dashboard#login-success',
+        '/magictab/#login-success',
         rememberMe
       );
 

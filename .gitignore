@@ -22,6 +22,7 @@ Thumbs.db
 *.pem
 
 # debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -56,6 +57,7 @@ auth_info_baileys/
 
 # User Uploads
 /public/uploads/
+/storage/ebooks/
 
 # Local Agents Configuration
 .agents/

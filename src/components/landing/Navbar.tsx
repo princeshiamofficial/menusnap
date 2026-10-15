@@ -6,8 +6,10 @@ import { NAV_LINKS } from "@/lib/data";
 import { Logo } from "@/components/landing/Logo";
 import { Button } from "@/components/landing/ui";
 import { CloseIcon, MenuIcon } from "@/components/landing/icons";
+import { useClientAuth } from "@/hooks/use-client-auth";
 
 export function Navbar() {
+  const { isClientLoggedIn } = useClientAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -63,15 +65,23 @@ export function Navbar() {
 
         {/* Right — actions */}
         <div className="hidden items-center gap-2 lg:flex">
-          <a
-            href="/login"
-            className="rounded-lg px-3.5 py-2 text-[15px] font-semibold text-ink transition-colors hover:bg-ink/5"
-          >
-            Login
-          </a>
-          <Button href="#pricing" size="sm">
-            Get MenuSnap
-          </Button>
+          {isClientLoggedIn ? (
+            <Button href="/magictab/" size="sm">
+              Open Dashboard
+            </Button>
+          ) : (
+            <>
+              <a
+                href="/login"
+                className="rounded-lg px-3.5 py-2 text-[15px] font-semibold text-ink transition-colors hover:bg-ink/5"
+              >
+                Login
+              </a>
+              <Button href="#pricing" size="sm">
+                Get MenuSnap
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile — hamburger */}
@@ -127,16 +137,24 @@ export function Navbar() {
               </a>
             ))}
             <div className="mt-2 flex flex-col gap-2 border-t border-line pt-4">
-              <a
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="rounded-xl px-4 py-3 text-center text-base font-semibold text-ink"
-              >
-                Login
-              </a>
-              <Button href="#pricing" size="lg" className="w-full" onClick={() => setOpen(false)}>
-                Get MenuSnap
-              </Button>
+              {isClientLoggedIn ? (
+                <Button href="/magictab/" size="lg" className="w-full" onClick={() => setOpen(false)}>
+                  Open Dashboard
+                </Button>
+              ) : (
+                <>
+                  <a
+                    href="/login"
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl px-4 py-3 text-center text-base font-semibold text-ink"
+                  >
+                    Login
+                  </a>
+                  <Button href="#pricing" size="lg" className="w-full" onClick={() => setOpen(false)}>
+                    Get MenuSnap
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
