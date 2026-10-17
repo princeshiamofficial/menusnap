@@ -49,7 +49,7 @@ export function StickyMobileCTA() {
         onClick={() => trackEvent("mobileCtaClicked")}
         className="flex h-12 w-full items-center justify-center rounded-xl bg-accent text-[15px] font-bold text-white shadow-pop transition-colors hover:bg-accent-deep"
       >
-        Get Lifetime Deal — From ৳499
+        Get Lifetime Deal — From ৳199
       </a>
     </div>
   );

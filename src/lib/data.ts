@@ -76,7 +76,7 @@ export type Stat = {
 export const STATS: Stat[] = [
   { value: 500, suffix: "+", label: "Restaurant & Parlor Menus" },
   { text: "Thousands", label: "Menu Items" },
-  { value: 50, suffix: "+", label: "Food Categories" },
+  { value: 2000, suffix: "+", label: "Categories" },
   { text: "One Platform", label: "to Build Your Menu" },
 ];
 
@@ -248,7 +248,7 @@ export const PRICE_COMPARISONS: PriceComparison[] = [
     item: "Chicken Burger",
     emoji: "🍔",
     count: "14 references",
-    range: "৳220 – ৳320",
+    range: "৳220",
     rows: [
       { name: "Restaurant A", price: 220 },
       { name: "Restaurant B", price: 250 },
@@ -260,7 +260,7 @@ export const PRICE_COMPARISONS: PriceComparison[] = [
     item: "Cold Coffee",
     emoji: "☕",
     count: "9 references",
-    range: "৳130 – ৳190",
+    range: "৳130",
     rows: [
       { name: "Restaurant A", price: 130 },
       { name: "Restaurant B", price: 150 },
@@ -272,7 +272,7 @@ export const PRICE_COMPARISONS: PriceComparison[] = [
     item: "Chicken Pasta",
     emoji: "🍝",
     count: "11 references",
-    range: "৳280 – ৳380",
+    range: "৳280",
     rows: [
       { name: "Restaurant A", price: 280 },
       { name: "Restaurant B", price: 310 },

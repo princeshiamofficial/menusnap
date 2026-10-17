@@ -36,7 +36,7 @@ export function StickyMobileCTA() {
                 </p>
               </div>
               <p className="text-[11px] text-gray-400 font-medium">
-                Plans from only <strong className="text-white">৳499</strong>
+                Plans from only <strong className="text-white">৳199</strong>
               </p>
             </div>
 

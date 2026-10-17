@@ -246,9 +246,9 @@ export async function getMenuSnapUsersAction(params?: {
     // 4. Fetch available packages from pricing_packages table
     let availablePackages = [
       { id: 'free', name: 'Free Plan', price: 0 },
-      { id: 'starter', name: 'Starter Lifetime', price: 499 },
-      { id: 'pro', name: 'Pro Lifetime', price: 1499 },
-      { id: 'enterprise', name: 'Enterprise Lifetime', price: 4999 },
+      { id: 'starter', name: 'Starter Lifetime', price: 199 },
+      { id: 'pro', name: 'Pro Lifetime', price: 499 },
+      { id: 'enterprise', name: 'Enterprise Lifetime', price: 1499 },
     ];
 
     try {

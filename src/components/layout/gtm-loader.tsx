@@ -7,7 +7,10 @@ import { getGtmSettings, type GtmSettings } from '@/app/actions/gtm-settings';
 
 export function GtmScriptLoader() {
   const pathname = usePathname();
-  const [settings, setSettings] = useState<GtmSettings | null>(null);
+  const [settings, setSettings] = useState<GtmSettings | null>(() => ({
+    isEnabled: true,
+    gtmId: process.env.NEXT_PUBLIC_GTM_ID || 'GTM-MXJ6F2W2',
+  }));
 
   useEffect(() => {
     async function fetchSettings() {
@@ -20,6 +23,23 @@ export function GtmScriptLoader() {
     }
     fetchSettings();
   }, []);
+
+  // Track pageviews on SPA route changes
+  useEffect(() => {
+    if (
+      settings?.isEnabled &&
+      settings?.gtmId &&
+      !pathname?.startsWith('/m-admin') &&
+      !pathname?.startsWith('/panel') &&
+      typeof window !== 'undefined'
+    ) {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'page_view',
+        page_path: pathname,
+      });
+    }
+  }, [pathname, settings]);
 
   // Disable GTM on admin pages
   if (pathname?.startsWith('/m-admin') || pathname?.startsWith('/panel')) {

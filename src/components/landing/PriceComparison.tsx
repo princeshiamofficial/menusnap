@@ -146,7 +146,7 @@ export function PriceComparison() {
               {/* Range insight */}
               <div className="mt-7 rounded-2xl border border-accent/30 bg-accent/15 p-5">
                 <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-accent">
-                  Reference Range
+                  Reference Value
                 </p>
                 <p className="mt-1 text-[clamp(1.7rem,3vw,2.3rem)] font-extrabold tracking-tight text-white">
                   {comparison.range}

@@ -16,7 +16,7 @@ import {
   LogIn,
 } from "lucide-react";
 import { PlanTier, BillingPeriod, PaymentGateway, PricingPackage } from "@/lib/menusnap-types";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackBeginCheckout } from "@/lib/analytics";
 import {
   initiatePayStationPaymentAction,
   getPayStationPublicStatus,
@@ -177,11 +177,11 @@ export function CheckoutModal({
     basePrice = matchedPackage.price;
   } else {
     if (plan === "starter") {
-      basePrice = 499;
+      basePrice = 199;
     } else if (plan === "pro") {
-      basePrice = 1499;
+      basePrice = 499;
     } else if (plan === "agency") {
-      basePrice = 4999;
+      basePrice = 1499;
     }
   }
 
@@ -263,24 +263,41 @@ export function CheckoutModal({
     setCouponMessage(null);
   };
 
+  const finalAmount = Math.max(0, basePrice - couponDiscount);
+  const hasTrackedCheckoutRef = React.useRef<string | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
       setIsSuccess(false);
       setIsProcessing(false);
       setErrorMessage(null);
-      trackEvent("checkout_started", { plan, duration, coupon });
+
+      // Track begin_checkout once per modal open/price change
+      if (basePrice > 0) {
+        const trackingKey = `${plan}-${finalAmount}-${appliedCoupon || ""}`;
+        if (hasTrackedCheckoutRef.current !== trackingKey) {
+          hasTrackedCheckoutRef.current = trackingKey;
+          trackBeginCheckout({
+            planId: plan,
+            planName: planDisplayName,
+            price: finalAmount,
+            currency: "BDT",
+            coupon: appliedCoupon || undefined,
+            checkoutMethod: "online",
+          });
+        }
+      }
     } else {
       document.body.style.overflow = "unset";
+      hasTrackedCheckoutRef.current = null;
     }
     return () => {
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, plan, duration, coupon]);
+  }, [isOpen, plan, planDisplayName, basePrice, finalAmount, appliedCoupon]);
 
   if (!isOpen) return null;
-
-  const finalAmount = Math.max(0, basePrice - couponDiscount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

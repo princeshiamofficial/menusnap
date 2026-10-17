@@ -13,6 +13,7 @@ import { MAX_EBOOK_TOTAL_BYTES, prepareEbookFile } from '@/lib/ebook-files';
 import { z } from 'zod';
 
 const storageDirectory = path.join(process.cwd(), 'storage', 'ebooks');
+const EBOOK_AI_API_KEY = process.env.EBOOK_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
 const idSchema = z.number().int().positive();
 const cursorSchema = idSchema.nullable();
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string };

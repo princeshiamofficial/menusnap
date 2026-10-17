@@ -34,6 +34,7 @@ export type AnalyticsEvent =
   | "plan_selected"
   | "checkout_started"
   | "checkout_initiated"
+  | "begin_checkout"
   | "payment_success"
   | "faq_opened"
   | "final_cta_clicked";
@@ -64,5 +65,120 @@ export function trackEvent(event: EventName, props: EventProps = {}): void {
     }
   } catch {
     // Analytics must never break the page.
+  }
+}
+
+export interface BeginCheckoutItem {
+  item_id: string;
+  item_name: string;
+  price: number;
+  quantity?: number;
+  item_category?: string;
+  item_variant?: string;
+}
+
+export interface BeginCheckoutParams {
+  planId: string;
+  planName: string;
+  price: number;
+  currency?: string;
+  coupon?: string;
+  checkoutMethod?: string;
+  eventId?: string;
+}
+
+/**
+ * Pushes GA4 & GTM standard ecommerce `begin_checkout` event to window.dataLayer
+ * and forwards InitiateCheckout to Meta Pixel (fbq) with optional eventId for CAPI deduplication.
+ */
+export function trackBeginCheckout({
+  planId,
+  planName,
+  price,
+  currency = "BDT",
+  coupon,
+  checkoutMethod = "online",
+  eventId,
+}: BeginCheckoutParams): void {
+  if (typeof window === "undefined") return;
+
+  const cleanPlanId = String(planId).toLowerCase().trim();
+  const cleanPrice = Number(price) || 0;
+  const cleanCurrency = currency || "BDT";
+  const formattedItemName = planName.startsWith("MenuSnap")
+    ? planName
+    : `MenuSnap ${planName.replace(/\s*Plan$/i, "")}`;
+
+  const items: BeginCheckoutItem[] = [
+    {
+      item_id: cleanPlanId,
+      item_name: formattedItemName,
+      price: cleanPrice,
+      quantity: 1,
+      item_category: "Software Subscription",
+      item_variant: "lifetime",
+    },
+  ];
+
+  const ecommercePayload: Record<string, unknown> = {
+    currency: cleanCurrency,
+    value: cleanPrice,
+    items,
+  };
+
+  if (coupon) {
+    ecommercePayload.coupon = coupon;
+  }
+
+  try {
+    // 1. Safe dataLayer initialization
+    window.dataLayer = window.dataLayer || [];
+
+    // Clear previous ecommerce object per GA4 / GTM best practice to prevent state pollution
+    window.dataLayer.push({ ecommerce: null });
+
+    // 2. Push standard begin_checkout event
+    const dataLayerEvent: Record<string, unknown> = {
+      event: "begin_checkout",
+      ecommerce: ecommercePayload,
+      plan_id: cleanPlanId,
+      checkout_method: checkoutMethod,
+    };
+
+    if (eventId) {
+      dataLayerEvent.event_id = eventId;
+    }
+
+    window.dataLayer.push(dataLayerEvent);
+
+    // 3. Forward to gtag if present
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "begin_checkout", ecommercePayload);
+    }
+
+    // 4. Forward to Meta Pixel if fbq is present
+    if (typeof window.fbq === "function") {
+      const pixelPayload: Record<string, unknown> = {
+        content_name: formattedItemName,
+        content_category: "Software Subscription",
+        content_ids: [cleanPlanId],
+        contents: [{ id: cleanPlanId, quantity: 1, item_price: cleanPrice }],
+        value: cleanPrice,
+        currency: cleanCurrency,
+        num_items: 1,
+      };
+
+      if (eventId) {
+        window.fbq("track", "InitiateCheckout", pixelPayload, { eventID: eventId });
+      } else {
+        window.fbq("track", "InitiateCheckout", pixelPayload);
+      }
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.debug("[MenuSnap analytics] begin_checkout", dataLayerEvent);
+    }
+  } catch (err) {
+    console.error("[MenuSnap analytics] Error pushing begin_checkout", err);
   }
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { Stats } from "@/components/landing/Stats";
@@ -22,26 +21,9 @@ import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
 import { StickyMobileCTA } from "@/components/landing/StickyMobileCTA";
-import { CheckoutModal } from "@/components/landing/checkout-modal";
 import { FAQS } from "@/lib/data";
-import type { PlanTier, BillingPeriod } from "@/lib/menusnap-types";
 
 export default function HomePage() {
-  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<PlanTier>("pro");
-  const [selectedDuration, setSelectedDuration] = useState<BillingPeriod>("lifetime");
-  const [activeCoupon, setActiveCoupon] = useState<string | undefined>(undefined);
-
-  const handleOpenCheckout = (
-    plan: PlanTier,
-    duration: BillingPeriod = "lifetime",
-    coupon?: string
-  ) => {
-    setSelectedPlan(plan);
-    setSelectedDuration(duration);
-    setActiveCoupon(coupon);
-    setCheckoutModalOpen(true);
-  };
 
   const softwareJsonLd = {
     "@context": "https://schema.org",
@@ -52,9 +34,9 @@ export default function HomePage() {
     description:
       "Restaurant menu research and menu builder for Bangladesh. Explore 500+ restaurant and parlor menu references, research food items and price references, and build your own restaurant menu.",
     offers: [
-      { "@type": "Offer", name: "Starter", price: "499", priceCurrency: "BDT" },
-      { "@type": "Offer", name: "Pro", price: "1499", priceCurrency: "BDT" },
-      { "@type": "Offer", name: "Agency", price: "4999", priceCurrency: "BDT" },
+      { "@type": "Offer", name: "Starter", price: "199", priceCurrency: "BDT" },
+      { "@type": "Offer", name: "Pro", price: "499", priceCurrency: "BDT" },
+      { "@type": "Offer", name: "Agency", price: "1499", priceCurrency: "BDT" },
     ],
     inLanguage: ["bn", "en"],
     publisher: { "@type": "Organization", name: "MenuSnap" },
@@ -87,7 +69,7 @@ export default function HomePage() {
         <Benefits />
         <Audience />
         <BeforeAfter />
-        <Pricing onSelectPlan={handleOpenCheckout} />
+        <Pricing />
         <PurchaseFlow />
         <Testimonials />
         <FAQ />
@@ -95,18 +77,6 @@ export default function HomePage() {
       </main>
       <Footer />
       <StickyMobileCTA />
-
-      {/* Interactive PayStation Checkout Modal */}
-      <CheckoutModal
-        isOpen={checkoutModalOpen}
-        onClose={() => {
-          setCheckoutModalOpen(false);
-          setActiveCoupon(undefined);
-        }}
-        plan={selectedPlan}
-        duration={selectedDuration}
-        coupon={activeCoupon}
-      />
 
       <script
         type="application/ld+json"

@@ -26,8 +26,8 @@ const FALLBACK_LIFETIME_PACKAGES: Omit<PricingPackage, "id">[] = [
     name: "Starter",
     tagline: "For solo entrepreneurs exploring initial restaurant ideas.",
     badge_text: "Lifetime Access",
-    price: 499,
-    original_price: 999,
+    price: 199,
+    original_price: 499,
     billing_period_text: "Lifetime Access • Pay once, use forever",
     features: [
       "3,000+ Menu Database Access",
@@ -49,8 +49,8 @@ const FALLBACK_LIFETIME_PACKAGES: Omit<PricingPackage, "id">[] = [
     name: "Pro",
     tagline: "Complete menu research, market pricing & unlimited menu exports.",
     badge_text: "Most Popular • Lifetime Deal",
-    price: 1499,
-    original_price: 2999,
+    price: 499,
+    original_price: 1499,
     billing_period_text: "Lifetime Access • One-time payment",
     features: [
       "Everything in Starter",
@@ -74,8 +74,8 @@ const FALLBACK_LIFETIME_PACKAGES: Omit<PricingPackage, "id">[] = [
     name: "Agency",
     tagline: "For consultants and agencies managing multiple restaurant brands.",
     badge_text: "Full Team • Lifetime",
-    price: 4999,
-    original_price: 9999,
+    price: 1499,
+    original_price: 4999,
     billing_period_text: "Lifetime Team Access • One-time payment",
     features: [
       "Everything in Pro",
@@ -160,7 +160,7 @@ export function Pricing({ onSelectPlan }: PricingProps) {
 
     try {
       const proPkg = packages.find((p) => p.is_popular || p.package_id === "pro");
-      const basePrice = proPkg ? Number(proPkg.price || 1499) : 1499;
+      const basePrice = proPkg ? Number(proPkg.price || 499) : 499;
 
       const res = await validateCouponAction(code, "pro", basePrice);
 

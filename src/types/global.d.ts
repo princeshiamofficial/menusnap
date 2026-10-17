@@ -11,6 +11,7 @@ declare global {
             q?: any[];
         };
         _fbq: any;
+        dataLayer?: any[];
     }
     namespace JSX {
         interface IntrinsicElements {

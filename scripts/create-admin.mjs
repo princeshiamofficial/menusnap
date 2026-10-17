@@ -22,12 +22,12 @@ async function run() {
   console.log('admins table created (or already exists)');
 
   try {
-    const hash = await bcrypt.hash('admin123', 10);
+    const hash = await bcrypt.hash('C0l0rHu7@456', 10);
     await pool.execute(
       'INSERT INTO admins (email, password_hash) VALUES (?, ?) ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash)',
       ['admin@colorhut.com', hash]
     );
-    console.log('Default admin created or password reset: admin@colorhut.com / admin123');
+    console.log('Default admin created or password reset: admin@colorhut.com / C0l0rHu7@456');
     console.log('IMPORTANT: Change the password after first login!');
   } catch (err) {
     console.log('Error creating/updating admin:', err.message);

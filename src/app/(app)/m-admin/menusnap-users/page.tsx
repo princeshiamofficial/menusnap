@@ -105,9 +105,9 @@ export default function MenuSnapUsersPage() {
   });
   const [availablePackages, setAvailablePackages] = useState<{ id: string; name: string; price: number }[]>([
     { id: 'free', name: 'Free Plan', price: 0 },
-    { id: 'starter', name: 'Starter Lifetime', price: 499 },
-    { id: 'pro', name: 'Pro Lifetime', price: 1499 },
-    { id: 'enterprise', name: 'Enterprise Lifetime', price: 4999 },
+    { id: 'starter', name: 'Starter Lifetime', price: 199 },
+    { id: 'pro', name: 'Pro Lifetime', price: 499 },
+    { id: 'enterprise', name: 'Enterprise Lifetime', price: 1499 },
   ]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);

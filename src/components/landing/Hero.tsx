@@ -356,7 +356,7 @@ export function Hero() {
         <VideoShowcase />
 
         {/* Product mockup */}
-        <HeroMockup />
+        {/* <HeroMockup /> */}
       </Container>
     </section>
   );

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/cn";
 
 export function Logo({
@@ -10,33 +11,35 @@ export function Logo({
   compact?: boolean;
 }) {
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-accent shadow-pop">
-        <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-          <rect x="3.5" y="5.5" width="9" height="2.4" rx="1.2" fill="#fff" />
-          <rect x="3.5" y="10.8" width="13" height="2.4" rx="1.2" fill="#fff" opacity="0.88" />
-          <rect x="3.5" y="16.1" width="6.5" height="2.4" rx="1.2" fill="#fff" opacity="0.72" />
-          <circle cx="17.6" cy="17.6" r="3.1" fill="#101010" />
-          <path
-            d="M15.9 17.6l1 1 1.8-2"
-            stroke="#ff5a36"
-            strokeWidth="1.3"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
-      {!compact && (
-        <span
-          className={cn(
-            "text-[1.15rem] font-extrabold tracking-tight",
-            dark ? "text-white" : "text-ink",
-          )}
-        >
-          Menu<span className="text-accent">Snap</span>
-        </span>
-      )}
+    <span className={cn("inline-flex items-center", className)}>
+      <Image
+        src="/menusnap-logo-white.png"
+        alt="MenuSnap Logo"
+        width={160}
+        height={36}
+        priority
+        className="h-7 sm:h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+        style={dark ? undefined : { filter: "url(#menusnap-white-to-black)" }}
+      />
+      {/* SVG filter converting white text in logo to dark while preserving orange accent on light backgrounds */}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="hidden"
+        aria-hidden="true"
+        style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}
+      >
+        <defs>
+          <filter id="menusnap-white-to-black">
+            <feColorMatrix
+              type="matrix"
+              values="1 -1 0 0 0
+                      0  0 0 0 0
+                      0  0 0 0 0
+                      0  0 0 1 0"
+            />
+          </filter>
+        </defs>
+      </svg>
     </span>
   );
 }

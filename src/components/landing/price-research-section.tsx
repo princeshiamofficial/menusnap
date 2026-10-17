@@ -149,10 +149,10 @@ export function PriceResearchSection() {
           <div className="lg:col-span-4 space-y-4">
             <div className="bg-gradient-to-br from-emerald-950/60 to-gray-950 border border-emerald-500/30 rounded-3xl p-6 sm:p-7 shadow-xl">
               <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 block mb-1">
-                MARKET REFERENCE RANGE
+                MARKET REFERENCE VALUE
               </span>
               <div className="text-3xl sm:text-4xl font-black text-white tracking-tight my-2">
-                ৳{current.min} – ৳{current.max}
+                ৳{current.min}
               </div>
               <p className="text-xs text-gray-300 font-medium mb-4">
                 Average Market Benchmark: <span className="text-emerald-400 font-bold">৳{current.avg}</span>

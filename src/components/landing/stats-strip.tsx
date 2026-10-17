@@ -21,8 +21,8 @@ const STATS: StatItem[] = [
     highlight: true,
   },
   {
-    value: "5,000+",
-    label: "Food Categories",
+    value: "2000+",
+    label: "Categories",
   },
   {
     value: "One Platform",
