@@ -22,6 +22,7 @@ export function getPermissionKey(pathname: string): string {
   if (cleanPath.startsWith('/m-admin/consultation-events')) return 'consultation-events';
   if (cleanPath.startsWith('/m-admin/coupons')) return 'coupons';
   if (cleanPath.startsWith('/m-admin/menusnap-users')) return 'menusnap-users';
+  if (cleanPath.startsWith('/m-admin/free-guides')) return 'free-guides';
   if (cleanPath.startsWith('/m-admin/packages') || cleanPath.startsWith('/m-admin/manage-packages')) return 'packages';
   return '';
 }
@@ -47,6 +48,7 @@ export function checkClientPermission(
     const defaultUserPermissions: Record<string, string[]> = {
       'dashboard': ['view'],
       'menusnap-users': ['view', 'create', 'edit', 'delete'],
+      'free-guides': ['view', 'create', 'edit', 'delete'],
       'packages': ['view', 'create', 'edit', 'delete'],
       'coupons': ['view', 'create', 'edit', 'delete'],
       'quick-manager': ['view', 'create', 'edit', 'delete'],

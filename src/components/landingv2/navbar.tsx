@@ -16,10 +16,16 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "How It Works", href: "#how-it-works" },
   { label: "Pricing", href: "#pricing" },
+  { label: "Free Guide", href: "/free-guide" },
   { label: "FAQ", href: "#faq" },
 ];
 
-export function Navbar() {
+interface NavbarProps {
+  theme?: "light" | "dark";
+}
+
+export function Navbar({ theme = "light" }: NavbarProps) {
+  const isDark = theme === "dark";
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -45,7 +51,9 @@ export function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] py-3"
+          ? isDark
+            ? "bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.5)] py-3"
+            : "bg-white/90 backdrop-blur-md border-b border-gray-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] py-3"
           : "bg-transparent py-4 sm:py-5"
       }`}
     >
@@ -62,17 +70,27 @@ export function Navbar() {
             height={36}
             priority
             className="h-7 sm:h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
-            style={{ filter: "url(#menusnap-white-to-black)" }}
+            style={isDark ? undefined : { filter: "url(#menusnap-white-to-black)" }}
           />
         </Link>
 
         {/* Center Nav Items (Desktop) */}
-        <nav className="hidden md:flex items-center gap-7 lg:gap-8 bg-white/80 border border-gray-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)] px-5 py-2 rounded-full backdrop-blur-sm">
+        <nav
+          className={`hidden md:flex items-center gap-7 lg:gap-8 px-5 py-2 rounded-full backdrop-blur-sm transition-colors ${
+            isDark
+              ? "bg-white/10 border border-white/15 shadow-[0_2px_8px_rgba(0,0,0,0.3)]"
+              : "bg-white/80 border border-gray-200/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
+          }`}
+        >
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.label}
               href={item.href}
-              className="text-[13.5px] lg:text-[14px] font-medium text-gray-600 hover:text-gray-950 transition-colors cursor-pointer select-none"
+              className={`text-[13.5px] lg:text-[14px] font-medium transition-colors cursor-pointer select-none ${
+                isDark
+                  ? "text-gray-200 hover:text-white"
+                  : "text-gray-600 hover:text-gray-950"
+              }`}
             >
               {item.label}
             </Link>
@@ -84,7 +102,11 @@ export function Navbar() {
           {!loggedIn && (
             <Link
               href="/login"
-              className="text-[14px] font-medium text-gray-700 hover:text-gray-950 transition-colors px-3 py-1.5 cursor-pointer select-none"
+              className={`text-[14px] font-medium transition-colors px-3 py-1.5 cursor-pointer select-none ${
+                isDark
+                  ? "text-gray-200 hover:text-white"
+                  : "text-gray-700 hover:text-gray-950"
+              }`}
             >
               Login
             </Link>
@@ -114,7 +136,11 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-xl text-gray-700 hover:text-gray-950 hover:bg-gray-100/80 transition-colors focus:outline-none"
+            className={`p-2 rounded-xl transition-colors focus:outline-none ${
+              isDark
+                ? "text-gray-200 hover:text-white hover:bg-white/10"
+                : "text-gray-700 hover:text-gray-950 hover:bg-gray-100/80"
+            }`}
             aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -130,7 +156,11 @@ export function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.22, ease: "easeInOut" }}
-            className="md:hidden bg-white border-b border-gray-200 px-5 pt-3 pb-6 shadow-xl overflow-hidden"
+            className={`md:hidden px-5 pt-3 pb-6 shadow-xl overflow-hidden border-b ${
+              isDark
+                ? "bg-[#0e0e0e] border-white/10 text-white"
+                : "bg-white border-gray-200"
+            }`}
           >
             <div className="flex flex-col space-y-1.5">
               {NAV_ITEMS.map((item) => (
@@ -138,19 +168,31 @@ export function Navbar() {
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2.5 rounded-lg text-[15px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-950 transition-colors"
+                  className={`px-3 py-2.5 rounded-lg text-[15px] font-medium transition-colors ${
+                    isDark
+                      ? "text-gray-200 hover:bg-white/5 hover:text-white"
+                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-950"
+                  }`}
                 >
                   {item.label}
                 </Link>
               ))}
             </div>
 
-            <div className="pt-4 mt-3 border-t border-gray-100 flex flex-col gap-2.5">
+            <div
+              className={`pt-4 mt-3 border-t flex flex-col gap-2.5 ${
+                isDark ? "border-white/10" : "border-gray-100"
+              }`}
+            >
               {!loggedIn && (
                 <Link
                   href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center py-2.5 text-[14.5px] font-semibold text-gray-800 hover:bg-gray-50 rounded-xl transition-colors"
+                  className={`w-full text-center py-2.5 text-[14.5px] font-semibold rounded-xl transition-colors ${
+                    isDark
+                      ? "text-gray-200 hover:bg-white/5 hover:text-white"
+                      : "text-gray-800 hover:bg-gray-50"
+                  }`}
                 >
                   Login
                 </Link>

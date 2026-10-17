@@ -182,3 +182,59 @@ export function trackBeginCheckout({
     console.error("[MenuSnap analytics] Error pushing begin_checkout", err);
   }
 }
+
+export interface EbookLeadParams {
+  eventId?: string;
+  leadId: string | number;
+  ebookName: string;
+  leadType?: string;
+  formId?: string;
+}
+
+/**
+ * Pushes standard `ebook_lead` event to window.dataLayer for GTM
+ * and optionally forwards Lead event to Meta Pixel (fbq).
+ */
+export function trackEbookLead({
+  eventId,
+  leadId,
+  ebookName,
+  leadType = "free_ebook",
+  formId = "ebook_lead_form",
+}: EbookLeadParams): void {
+  if (typeof window === "undefined") return;
+
+  const resolvedEventId = eventId || `lead_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+  try {
+    window.dataLayer = window.dataLayer || [];
+
+    const payload: Record<string, unknown> = {
+      event: "ebook_lead",
+      event_id: resolvedEventId,
+      lead_type: leadType,
+      ebook_name: ebookName,
+      lead_id: String(leadId),
+      form_id: formId,
+      page_location: window.location.href,
+    };
+
+    window.dataLayer.push(payload);
+
+    // Forward to Meta Pixel if fbq is present
+    if (typeof window.fbq === "function") {
+      const pixelParams: Record<string, unknown> = {
+        content_name: ebookName,
+        content_category: leadType,
+      };
+      window.fbq("track", "Lead", pixelParams, { eventID: resolvedEventId });
+    }
+
+    if (process.env.NODE_ENV === "development") {
+      console.debug("[MenuSnap analytics] ebook_lead", payload);
+    }
+  } catch (err) {
+    console.error("[MenuSnap analytics] Error pushing ebook_lead", err);
+  }
+}
+

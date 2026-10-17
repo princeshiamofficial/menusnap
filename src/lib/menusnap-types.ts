@@ -152,3 +152,37 @@ export interface Coupon {
   updated_at?: string;
 }
 
+export interface GuideChapter {
+  title: string;
+  description: string;
+}
+
+export interface FreeGuide {
+  id: number;
+  title: string;
+  slug: string;
+  description?: string | null;
+  cover_image?: string | null;
+  file_url?: string | null;
+  category: string;
+  badge_text?: string | null;
+  chapters?: GuideChapter[] | null;
+  download_count: number;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface GuideLead {
+  id: number;
+  guide_id?: number | null;
+  guide_name: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  restaurant_name: string;
+  event_id?: string | null;
+  created_at: string;
+}
+

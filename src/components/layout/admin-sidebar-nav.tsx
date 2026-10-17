@@ -26,6 +26,7 @@ import {
   Package,
   TicketPercent,
   Users,
+  BookOpen,
 } from 'lucide-react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,7 @@ const menuNavItems: NavItem[] = [
   { href: '/m-admin', label: 'Dashboard', icon: LayoutGrid },
   { href: '/m-admin/menusnap-users', label: 'MenuSnap Users', icon: Users },
   { href: '/m-admin/packages', label: 'Packages', icon: Package },
+  { href: '/m-admin/free-guides', label: 'Free Guides', icon: BookOpen },
   { href: '/m-admin/coupons', label: 'Coupons', icon: TicketPercent },
   { href: '/m-admin/manage-orders', label: 'Orders', icon: ArrowLeftRight },
   { href: '/m-admin/payments', label: 'Payments', icon: CreditCard },
